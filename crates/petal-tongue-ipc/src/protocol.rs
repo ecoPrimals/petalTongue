@@ -281,7 +281,7 @@ mod tests {
         assert!(IpcCommand::GetStatus.requires_running());
         assert!(
             IpcCommand::SetPanel {
-                panel: "audio".to_string(),
+                panel: "audio".to_owned(),
                 visible: true,
             }
             .requires_running()
@@ -313,7 +313,7 @@ mod tests {
             instance_id: petal_tongue_core::InstanceId::new(),
             pid: 1234,
             window_id: Some(1),
-            name: Some("test".to_string()),
+            name: Some("test".to_owned()),
             uptime_seconds: 60,
             node_count: 5,
             edge_count: 3,
@@ -343,7 +343,7 @@ mod tests {
     #[test]
     fn test_command_set_panel_to_motor() {
         let cmd = IpcCommand::SetPanel {
-            panel: "left_sidebar".to_string(),
+            panel: "left_sidebar".to_owned(),
             visible: true,
         };
         let motor = cmd.to_motor_command().unwrap();
@@ -403,7 +403,7 @@ mod tests {
     #[test]
     fn test_command_to_motor_custom_panel() {
         let cmd = IpcCommand::SetPanel {
-            panel: "custom_panel".to_string(),
+            panel: "custom_panel".to_owned(),
             visible: false,
         };
         let motor = cmd.to_motor_command().expect("motor");

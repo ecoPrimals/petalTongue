@@ -221,7 +221,7 @@ fn add_sky_and_floor_planes(scene: &mut SceneGraph, scene_width: f64, scene_heig
         fill: Some(SceneColor::from_rgba8(100, 150, 200, 255)),
         stroke: None,
         corner_radius: 0.0,
-        data_id: Some("sky".to_string()),
+        data_id: Some("sky".to_owned()),
     }));
     scene.add_to_root(SceneNode::new("floor").with_primitive(Primitive::Rect {
         x: 0.0,
@@ -231,7 +231,7 @@ fn add_sky_and_floor_planes(scene: &mut SceneGraph, scene_width: f64, scene_heig
         fill: Some(SceneColor::from_rgba8(64, 64, 64, 255)),
         stroke: None,
         corner_radius: 0.0,
-        data_id: Some("floor".to_string()),
+        data_id: Some("floor".to_owned()),
     }));
 }
 

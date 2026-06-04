@@ -82,7 +82,7 @@ impl ProprioceptionSystem {
                 health: 0.0,
                 confidence: 0.0,
                 last_loop_confirmation: None,
-                status: "System initializing...".to_string(),
+                status: "System initializing...".to_owned(),
                 frame_rate: 0.0,
                 time_since_last_frame: Duration::from_secs(0),
                 is_hanging: false,

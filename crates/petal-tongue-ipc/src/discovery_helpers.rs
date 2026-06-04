@@ -100,7 +100,7 @@ mod tests {
 
     #[test]
     fn resolve_skips_env_var_when_path_missing() {
-        let env = |k: &str| (k == "MYPRIMAL_SOCKET").then(|| "/nonexistent/path.sock".to_string());
+        let env = |k: &str| (k == "MYPRIMAL_SOCKET").then(|| "/nonexistent/path.sock".to_owned());
         assert!(resolve_primal_socket_with_env("myprimal", env).is_none());
     }
 

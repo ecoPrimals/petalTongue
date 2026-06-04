@@ -33,7 +33,7 @@ pub(super) fn validate_edges(graph: &VisualGraph, result: &mut ValidationResult)
             result.add_issue(
                 ValidationIssue::warning(format!("Node '{}' has a self-loop edge", edge.from))
                     .with_suggestion(
-                        "Remove self-loop edges - they may cause infinite loops".to_string(),
+                        "Remove self-loop edges - they may cause infinite loops".to_owned(),
                     ),
             );
         }
@@ -48,15 +48,15 @@ mod tests {
 
     #[test]
     fn test_edge_to_nonexistent_source() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        node.set_parameter("primal_name".to_string(), "x".to_string());
-        node.set_parameter("family_id".to_string(), "f1".to_string());
+        node.set_parameter("primal_name".to_owned(), "x".to_owned());
+        node.set_parameter("family_id".to_owned(), "f1".to_owned());
         let id = node.id.clone();
         graph.add_node(node);
         graph
             .edges
-            .push(GraphEdge::dependency("ghost".to_string(), id));
+            .push(GraphEdge::dependency("ghost".to_owned(), id));
         let mut result = ValidationResult::new();
         validate_edges(&graph, &mut result);
         assert!(!result.is_valid());
@@ -64,15 +64,15 @@ mod tests {
 
     #[test]
     fn test_edge_to_nonexistent_target() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        node.set_parameter("primal_name".to_string(), "x".to_string());
-        node.set_parameter("family_id".to_string(), "f1".to_string());
+        node.set_parameter("primal_name".to_owned(), "x".to_owned());
+        node.set_parameter("family_id".to_owned(), "f1".to_owned());
         let id = node.id.clone();
         graph.add_node(node);
         graph
             .edges
-            .push(GraphEdge::dependency(id, "ghost".to_string()));
+            .push(GraphEdge::dependency(id, "ghost".to_owned()));
         let mut result = ValidationResult::new();
         validate_edges(&graph, &mut result);
         assert!(!result.is_valid());
@@ -80,10 +80,10 @@ mod tests {
 
     #[test]
     fn test_self_loop_warning() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        node.set_parameter("primal_name".to_string(), "x".to_string());
-        node.set_parameter("family_id".to_string(), "f1".to_string());
+        node.set_parameter("primal_name".to_owned(), "x".to_owned());
+        node.set_parameter("family_id".to_owned(), "f1".to_owned());
         let id = node.id.clone();
         graph.add_node(node);
         let _ = graph.add_edge(GraphEdge::dependency(id.clone(), id));
@@ -100,14 +100,14 @@ mod tests {
 
     #[test]
     fn test_valid_edges() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut n1 = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        n1.set_parameter("primal_name".to_string(), "a".to_string());
-        n1.set_parameter("family_id".to_string(), "f1".to_string());
+        n1.set_parameter("primal_name".to_owned(), "a".to_owned());
+        n1.set_parameter("family_id".to_owned(), "f1".to_owned());
         let id1 = n1.id.clone();
         let mut n2 = GraphNode::new(NodeType::Verification, Vec2::zero());
-        n2.set_parameter("primal_name".to_string(), "b".to_string());
-        n2.set_parameter("timeout".to_string(), "30".to_string());
+        n2.set_parameter("primal_name".to_owned(), "b".to_owned());
+        n2.set_parameter("timeout".to_owned(), "30".to_owned());
         let id2 = n2.id.clone();
         graph.add_node(n1);
         graph.add_node(n2);
@@ -121,11 +121,11 @@ mod tests {
 
     #[test]
     fn test_edge_both_source_and_target_nonexistent() {
-        let graph = VisualGraph::new("g".to_string());
+        let graph = VisualGraph::new("g".to_owned());
         let mut g = graph;
         g.edges.push(GraphEdge::dependency(
-            "ghost1".to_string(),
-            "ghost2".to_string(),
+            "ghost1".to_owned(),
+            "ghost2".to_owned(),
         ));
         let mut result = ValidationResult::new();
         validate_edges(&g, &mut result);
@@ -135,10 +135,10 @@ mod tests {
 
     #[test]
     fn test_edge_empty_graph_with_orphan_edge() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         graph
             .edges
-            .push(GraphEdge::dependency("a".to_string(), "b".to_string()));
+            .push(GraphEdge::dependency("a".to_owned(), "b".to_owned()));
         let mut result = ValidationResult::new();
         validate_edges(&graph, &mut result);
         assert!(!result.is_valid());
@@ -146,18 +146,18 @@ mod tests {
 
     #[test]
     fn test_multiple_valid_edges_no_issues() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut n1 = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        n1.set_parameter("primal_name".to_string(), "a".to_string());
-        n1.set_parameter("family_id".to_string(), "f1".to_string());
+        n1.set_parameter("primal_name".to_owned(), "a".to_owned());
+        n1.set_parameter("family_id".to_owned(), "f1".to_owned());
         let id1 = n1.id.clone();
         let mut n2 = GraphNode::new(NodeType::Verification, Vec2::zero());
-        n2.set_parameter("primal_name".to_string(), "b".to_string());
-        n2.set_parameter("timeout".to_string(), "30".to_string());
+        n2.set_parameter("primal_name".to_owned(), "b".to_owned());
+        n2.set_parameter("timeout".to_owned(), "30".to_owned());
         let id2 = n2.id.clone();
         let mut n3 = GraphNode::new(NodeType::Verification, Vec2::zero());
-        n3.set_parameter("primal_name".to_string(), "c".to_string());
-        n3.set_parameter("timeout".to_string(), "30".to_string());
+        n3.set_parameter("primal_name".to_owned(), "c".to_owned());
+        n3.set_parameter("timeout".to_owned(), "30".to_owned());
         let id3 = n3.id.clone();
         graph.add_node(n1);
         graph.add_node(n2);

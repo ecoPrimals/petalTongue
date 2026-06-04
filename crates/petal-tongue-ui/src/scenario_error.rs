@@ -200,8 +200,8 @@ mod tests {
     #[test]
     fn test_unknown_panel_type() {
         let err = ScenarioError::UnknownPanelType {
-            panel_type: "unknown_panel".to_string(),
-            available_types: vec!["doom_game".to_string(), "web_view".to_string()],
+            panel_type: "unknown_panel".to_owned(),
+            available_types: vec!["doom_game".to_owned(), "web_view".to_owned()],
         };
 
         assert!(
@@ -283,9 +283,9 @@ mod tests {
     #[test]
     fn test_sensory_config_error() {
         let err = ScenarioError::SensoryConfigError {
-            message: "Rate too high".to_string(),
-            field: "poll_rate".to_string(),
-            suggestion: "Use 60 or lower".to_string(),
+            message: "Rate too high".to_owned(),
+            field: "poll_rate".to_owned(),
+            suggestion: "Use 60 or lower".to_owned(),
         };
         assert!(err.to_string().contains("Sensory configuration error"));
         assert!(err.to_string().contains("Rate too high"));
@@ -293,7 +293,7 @@ mod tests {
 
     #[test]
     fn test_generic_error() {
-        let err = ScenarioError::Generic("Something went wrong".to_string());
+        let err = ScenarioError::Generic("Something went wrong".to_owned());
         assert_eq!(err.to_string(), "Something went wrong");
         assert!(err.help_text().is_none());
     }
@@ -331,9 +331,9 @@ mod tests {
     #[test]
     fn test_help_text_sensory_config_none() {
         let err = ScenarioError::SensoryConfigError {
-            message: "test".to_string(),
-            field: "f".to_string(),
-            suggestion: "s".to_string(),
+            message: "test".to_owned(),
+            field: "f".to_owned(),
+            suggestion: "s".to_owned(),
         };
         assert!(err.help_text().is_none());
     }

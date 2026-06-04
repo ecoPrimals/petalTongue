@@ -46,32 +46,29 @@ impl VisualizationDataProvider for DemoVisualizationProvider {
 
         // Create primals using modern properties approach (capability-domain identifiers)
         let mut security_props = Properties::new();
-        security_props.insert("trust_level".to_string(), PropertyValue::Number(3.0));
+        security_props.insert("trust_level".to_owned(), PropertyValue::Number(3.0));
         security_props.insert(
-            "family_id".to_string(),
-            PropertyValue::String("demo-family".to_string()),
+            "family_id".to_owned(),
+            PropertyValue::String("demo-family".to_owned()),
         );
 
         let mut discovery_props = Properties::new();
-        discovery_props.insert("trust_level".to_string(), PropertyValue::Number(2.0));
+        discovery_props.insert("trust_level".to_owned(), PropertyValue::Number(2.0));
         discovery_props.insert(
-            "family_id".to_string(),
-            PropertyValue::String("demo-family".to_string()),
+            "family_id".to_owned(),
+            PropertyValue::String("demo-family".to_owned()),
         );
 
         let mut compute_props = Properties::new();
-        compute_props.insert("trust_level".to_string(), PropertyValue::Number(1.0));
+        compute_props.insert("trust_level".to_owned(), PropertyValue::Number(1.0));
 
         Ok(vec![
             PrimalInfo {
                 id: "demo-security-1".into(),
-                name: "Security Provider (Demo)".to_string(),
-                primal_type: "Security".to_string(),
-                endpoint: "capability://security.trust:demo".to_string(),
-                capabilities: vec![
-                    "security.trust".to_string(),
-                    "security.identity".to_string(),
-                ],
+                name: "Security Provider (Demo)".to_owned(),
+                primal_type: "Security".to_owned(),
+                endpoint: "capability://security.trust:demo".to_owned(),
+                capabilities: vec!["security.trust".to_owned(), "security.identity".to_owned()],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: now,
                 endpoints: None,
@@ -80,12 +77,12 @@ impl VisualizationDataProvider for DemoVisualizationProvider {
             },
             PrimalInfo {
                 id: "demo-discovery-1".into(),
-                name: "Discovery Provider (Demo)".to_string(),
-                primal_type: "Discovery".to_string(),
-                endpoint: "capability://discovery.primals:demo".to_string(),
+                name: "Discovery Provider (Demo)".to_owned(),
+                primal_type: "Discovery".to_owned(),
+                endpoint: "capability://discovery.primals:demo".to_owned(),
                 capabilities: vec![
-                    "discovery.primals".to_string(),
-                    "orchestration.federation".to_string(),
+                    "discovery.primals".to_owned(),
+                    "orchestration.federation".to_owned(),
                 ],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: now,
@@ -95,12 +92,12 @@ impl VisualizationDataProvider for DemoVisualizationProvider {
             },
             PrimalInfo {
                 id: "demo-compute-1".into(),
-                name: "Compute Provider (Demo)".to_string(),
-                primal_type: "Compute".to_string(),
-                endpoint: "capability://compute.container:demo".to_string(),
+                name: "Compute Provider (Demo)".to_owned(),
+                primal_type: "Compute".to_owned(),
+                endpoint: "capability://compute.container:demo".to_owned(),
                 capabilities: vec![
-                    "compute.container".to_string(),
-                    "compute.workload".to_string(),
+                    "compute.container".to_owned(),
+                    "compute.workload".to_owned(),
                 ],
                 health: PrimalHealthStatus::Warning,
                 last_seen: now,
@@ -116,15 +113,15 @@ impl VisualizationDataProvider for DemoVisualizationProvider {
             TopologyEdge {
                 from: "demo-security-1".into(),
                 to: "demo-discovery-1".into(),
-                edge_type: "trust".to_string(),
+                edge_type: "trust".to_owned(),
                 capability: None,
                 metrics: None,
-                label: Some("Trusted".to_string()),
+                label: Some("Trusted".to_owned()),
             },
             TopologyEdge {
                 from: "demo-discovery-1".into(),
                 to: "demo-compute-1".into(),
-                edge_type: "orchestrates".to_string(),
+                edge_type: "orchestrates".to_owned(),
                 label: None,
                 capability: None,
                 metrics: None,
@@ -134,15 +131,15 @@ impl VisualizationDataProvider for DemoVisualizationProvider {
 
     fn get_metadata(&self) -> ProviderMetadata {
         ProviderMetadata {
-            name: "Demo Provider".to_string(),
-            endpoint: "demo://local".to_string(),
-            protocol: "demo".to_string(),
+            name: "Demo Provider".to_owned(),
+            endpoint: "demo://local".to_owned(),
+            protocol: "demo".to_owned(),
             capabilities: vec![],
         }
     }
 
     async fn health_check(&self) -> DiscoveryResult<String> {
-        Ok("Demo provider is always healthy".to_string())
+        Ok("Demo provider is always healthy".to_owned())
     }
 }
 
@@ -210,7 +207,7 @@ mod tests {
         assert_eq!(topology[0].from, "demo-security-1");
         assert_eq!(topology[0].to, "demo-discovery-1");
         assert_eq!(topology[0].edge_type, "trust");
-        assert_eq!(topology[0].label, Some("Trusted".to_string()));
+        assert_eq!(topology[0].label, Some("Trusted".to_owned()));
         assert_eq!(topology[1].label, None);
     }
 

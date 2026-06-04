@@ -137,7 +137,7 @@ impl NetworkBackend {
 impl AudioBackend for NetworkBackend {
     fn metadata(&self) -> BackendMetadata {
         BackendMetadata {
-            name: "Ecosystem Audio (capability discovery)".to_string(),
+            name: "Ecosystem Audio (capability discovery)".to_owned(),
             backend_type: BackendType::Network,
             description: "Audio playback via ecosystem primal (audio.play over JSON-RPC/UDS)"
                 .to_string(),
@@ -238,7 +238,7 @@ mod tests {
     #[test]
     fn test_network_backend_capabilities_with_provider() {
         let backend = NetworkBackend {
-            socket_path: Some("/tmp/test-audio.sock".to_string()),
+            socket_path: Some("/tmp/test-audio.sock".to_owned()),
         };
         let caps = backend.capabilities();
         assert!(caps.can_play);

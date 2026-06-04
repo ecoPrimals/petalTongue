@@ -86,7 +86,7 @@ impl SrvRecord {
     pub fn parse(data: &[u8], offset: usize, rdata: &[u8]) -> DiscoveryResult<Self> {
         if rdata.len() < 6 {
             return Err(DiscoveryError::DnsParseError {
-                message: "SRV rdata too short".to_string(),
+                message: "SRV rdata too short".to_owned(),
             });
         }
 
@@ -157,7 +157,7 @@ impl ARecord {
     pub fn parse(rdata: &[u8]) -> DiscoveryResult<Self> {
         if rdata.len() != 4 {
             return Err(DiscoveryError::DnsParseError {
-                message: "A record must be 4 bytes".to_string(),
+                message: "A record must be 4 bytes".to_owned(),
             });
         }
 
@@ -177,7 +177,7 @@ impl AaaaRecord {
     pub fn parse(rdata: &[u8]) -> DiscoveryResult<Self> {
         if rdata.len() != 16 {
             return Err(DiscoveryError::DnsParseError {
-                message: "AAAA record must be 16 bytes".to_string(),
+                message: "AAAA record must be 16 bytes".to_owned(),
             });
         }
 
@@ -214,7 +214,7 @@ impl ResourceRecord {
 
         if pos + 10 > data.len() {
             return Err(DiscoveryError::DnsParseError {
-                message: "Resource record truncated".to_string(),
+                message: "Resource record truncated".to_owned(),
             });
         }
 
@@ -227,7 +227,7 @@ impl ResourceRecord {
 
         if pos + rdlength > data.len() {
             return Err(DiscoveryError::DnsParseError {
-                message: "Resource record data truncated".to_string(),
+                message: "Resource record data truncated".to_owned(),
             });
         }
 
@@ -464,13 +464,13 @@ mod tests {
             priority: 10,
             weight: 100,
             port: 1,
-            target: "a".to_string(),
+            target: "a".to_owned(),
         };
         let low = SrvRecord {
             priority: 0,
             weight: 1,
             port: 2,
-            target: "b".to_string(),
+            target: "b".to_owned(),
         };
         assert_eq!(
             SrvRecord::select_by_priority(&[high, low])
@@ -491,7 +491,7 @@ mod tests {
             priority: 0,
             weight: 0,
             port: 80,
-            target: "only".to_string(),
+            target: "only".to_owned(),
         };
         assert_eq!(
             SrvRecord::select_by_priority(std::slice::from_ref(&a))
@@ -506,13 +506,13 @@ mod tests {
                         priority: 0,
                         weight: 0,
                         port: 1,
-                        target: "x".to_string(),
+                        target: "x".to_owned(),
                     },
                     SrvRecord {
                         priority: 0,
                         weight: 0,
                         port: 2,
-                        target: "y".to_string(),
+                        target: "y".to_owned(),
                     },
                 ])
                 .map(|r| r.target.clone())

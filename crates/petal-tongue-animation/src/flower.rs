@@ -435,7 +435,7 @@ mod tests {
     #[test]
     fn test_flower_frame_debug() {
         let frame = FlowerFrame {
-            ascii: "test".to_string(),
+            ascii: "test".to_owned(),
             duration: std::time::Duration::from_secs(1),
             state: FlowerState::Closed,
         };

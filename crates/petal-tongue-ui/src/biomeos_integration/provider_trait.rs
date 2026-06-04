@@ -28,7 +28,7 @@ impl VisualizationDataProvider for BiomeOSProvider {
             .map(|p| PrimalInfo {
                 id: p.id.clone().into(),
                 name: p.name.clone(),
-                primal_type: "device-managed".to_string(),
+                primal_type: "device-managed".to_owned(),
                 endpoint: format!(
                     "unix:///run/user/{}/{}.sock",
                     petal_tongue_core::system_info::get_current_uid(),
@@ -62,7 +62,7 @@ impl VisualizationDataProvider for BiomeOSProvider {
         match result {
             Ok(Ok(status)) => Ok(status),
             Ok(Err(e)) => Err(DiscoveryError::HealthCheckFailed {
-                name: "biomeOS-device-provider".to_string(),
+                name: "biomeOS-device-provider".to_owned(),
                 endpoint: self.endpoint().to_string(),
                 source: e.into(),
             }),
@@ -74,14 +74,14 @@ impl VisualizationDataProvider for BiomeOSProvider {
 
     fn get_metadata(&self) -> ProviderMetadata {
         ProviderMetadata {
-            name: "Device Management Provider".to_string(),
+            name: "Device Management Provider".to_owned(),
             endpoint: self.endpoint().to_string(),
-            protocol: "json-rpc+websocket".to_string(),
+            protocol: "json-rpc+websocket".to_owned(),
             capabilities: vec![
-                "device.discovery".to_string(),
-                "device.assignment".to_string(),
-                "niche.deployment".to_string(),
-                "real-time.events".to_string(),
+                "device.discovery".to_owned(),
+                "device.assignment".to_owned(),
+                "niche.deployment".to_owned(),
+                "real-time.events".to_owned(),
             ],
         }
     }

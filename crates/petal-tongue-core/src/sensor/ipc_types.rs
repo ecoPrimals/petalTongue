@@ -144,7 +144,7 @@ mod tests {
 
     #[test]
     fn batch_new_is_empty() {
-        let batch = SensorEventBatch::new("sub-1".to_string());
+        let batch = SensorEventBatch::new("sub-1".to_owned());
         assert!(batch.is_empty());
         assert_eq!(batch.len(), 0);
         assert_eq!(batch.subscription_id, "sub-1");
@@ -152,7 +152,7 @@ mod tests {
 
     #[test]
     fn batch_with_events() {
-        let mut batch = SensorEventBatch::new("sub-2".to_string());
+        let mut batch = SensorEventBatch::new("sub-2".to_owned());
         batch.events.push(SensorEventIpc::PointerMove {
             x: 100.0,
             y: 200.0,
@@ -179,7 +179,7 @@ mod tests {
         let event = SensorEventIpc::Click {
             x: 5.0,
             y: 6.0,
-            button: "left".to_string(),
+            button: "left".to_owned(),
             timestamp_ms: 100,
         };
         let json = serde_json::to_string(&event).expect("serialize");
@@ -190,7 +190,7 @@ mod tests {
     #[test]
     fn serialize_key_press() {
         let event = SensorEventIpc::KeyPress {
-            key: "A".to_string(),
+            key: "A".to_owned(),
             modifiers: KeyModifiersIpc {
                 ctrl: true,
                 ..Default::default()
@@ -205,7 +205,7 @@ mod tests {
     #[test]
     fn serialize_key_release() {
         let event = SensorEventIpc::KeyRelease {
-            key: "B".to_string(),
+            key: "B".to_owned(),
             timestamp_ms: 300,
         };
         let json = serde_json::to_string(&event).expect("serialize");
@@ -225,7 +225,7 @@ mod tests {
 
     #[test]
     fn roundtrip_batch() {
-        let mut batch = SensorEventBatch::new("sub-rt".to_string());
+        let mut batch = SensorEventBatch::new("sub-rt".to_owned());
         batch.events.push(SensorEventIpc::PointerMove {
             x: 1.0,
             y: 2.0,
@@ -234,7 +234,7 @@ mod tests {
         batch.events.push(SensorEventIpc::Click {
             x: 1.0,
             y: 2.0,
-            button: "left".to_string(),
+            button: "left".to_owned(),
             timestamp_ms: 20,
         });
         let json = serde_json::to_string(&batch).expect("serialize");
@@ -278,7 +278,7 @@ mod tests {
     #[test]
     fn serialize_text_input() {
         let event = SensorEventIpc::TextInput {
-            text: "hello".to_string(),
+            text: "hello".to_owned(),
             timestamp_ms: 800,
         };
         let json = serde_json::to_string(&event).expect("serialize");
@@ -297,7 +297,7 @@ mod tests {
                 timestamp_ms: 3,
             },
             SensorEventIpc::TextInput {
-                text: "a".to_string(),
+                text: "a".to_owned(),
                 timestamp_ms: 4,
             },
         ];

@@ -311,7 +311,7 @@ mod tests {
             g.add_edge(TopologyEdge {
                 from: "a".into(),
                 to: "b".into(),
-                edge_type: "connects".to_string(),
+                edge_type: "connects".to_owned(),
                 label: None,
                 capability: None,
                 metrics: None,
@@ -319,7 +319,7 @@ mod tests {
             g.add_edge(TopologyEdge {
                 from: "orphan".into(),
                 to: "b".into(),
-                edge_type: "ghost".to_string(),
+                edge_type: "ghost".to_owned(),
                 label: None,
                 capability: None,
                 metrics: None,

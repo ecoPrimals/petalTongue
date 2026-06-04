@@ -357,7 +357,7 @@ mod tests {
             radius: 5.0,
             fill: Some(Color::WHITE),
             stroke: None,
-            data_id: Some("d1".to_string()),
+            data_id: Some("d1".to_owned()),
         }));
         let out = GpuCompiler::new(800.0, 600.0).compile(&graph);
         let ModalityOutput::GpuCommands(bytes) = &out else {
@@ -393,7 +393,7 @@ mod tests {
                 },
             ],
             indices: vec![0, 1, 2],
-            data_id: Some("mesh1".to_string()),
+            data_id: Some("mesh1".to_owned()),
         }));
         let out = GpuCompiler::new(800.0, 600.0).compile(&graph);
         let ModalityOutput::GpuCommands(bytes) = &out else {
@@ -431,7 +431,7 @@ mod tests {
             radius: 5.0,
             fill: Some(Color::WHITE),
             stroke: None,
-            data_id: Some("d1".to_string()),
+            data_id: Some("d1".to_owned()),
         }));
         let (commands, provenance) = GpuCompiler::new(800.0, 600.0).compile_with_provenance(&graph);
         assert_eq!(commands.len(), 3);
@@ -566,13 +566,13 @@ mod tests {
         assert!(map.is_empty());
         map.register(GpuProvenanceEntry {
             command_index: 2,
-            node_id: "n1".to_string(),
-            data_id: Some("d1".to_string()),
+            node_id: "n1".to_owned(),
+            data_id: Some("d1".to_owned()),
             primitive_index: 0,
         });
         map.register(GpuProvenanceEntry {
             command_index: 3,
-            node_id: "n2".to_string(),
+            node_id: "n2".to_owned(),
             data_id: None,
             primitive_index: 1,
         });

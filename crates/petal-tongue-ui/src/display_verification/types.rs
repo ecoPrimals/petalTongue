@@ -93,7 +93,7 @@ impl DisplayVerification {
             viewer_location: ViewerLocation::Unknown,
             output_reaches_viewer: false,
             topology_evidence: vec![],
-            status_message: "Display verification not yet performed".to_string(),
+            status_message: "Display verification not yet performed".to_owned(),
             suggested_action: None,
         }
     }
@@ -111,7 +111,7 @@ impl DisplayVerification {
             display_topology: DisplayTopology::DirectLocal,
             viewer_location: ViewerLocation::SameMachine,
             output_reaches_viewer: true,
-            topology_evidence: vec!["User interaction confirms visibility".to_string()],
+            topology_evidence: vec!["User interaction confirms visibility".to_owned()],
             status_message: "Output confirmed reaching viewer - user actively interacting"
                 .to_string(),
             suggested_action: None,
@@ -132,8 +132,8 @@ impl DisplayVerification {
             viewer_location: ViewerLocation::Unknown,
             output_reaches_viewer: false,
             topology_evidence: evidence,
-            status_message: "Display server available, output path uncertain".to_string(),
-            suggested_action: Some("Interact with the window to confirm visibility".to_string()),
+            status_message: "Display server available, output path uncertain".to_owned(),
+            suggested_action: Some("Interact with the window to confirm visibility".to_owned()),
         }
     }
 
@@ -153,7 +153,7 @@ impl DisplayVerification {
             topology_evidence: vec![reason.to_string()],
             status_message: format!("Display verification failed: {reason}"),
             suggested_action: Some(
-                "Check DISPLAY environment variable and display server".to_string(),
+                "Check DISPLAY environment variable and display server".to_owned(),
             ),
         }
     }

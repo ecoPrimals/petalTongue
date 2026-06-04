@@ -81,8 +81,8 @@ fn game_channel_to_binding(
             Ok(DataBinding::TimeSeries {
                 id,
                 label,
-                x_label: extract_string(data, "x_label").unwrap_or_else(|| "Time".to_string()),
-                y_label: extract_string(data, "y_label").unwrap_or_else(|| "Value".to_string()),
+                x_label: extract_string(data, "x_label").unwrap_or_else(|| "Time".to_owned()),
+                y_label: extract_string(data, "y_label").unwrap_or_else(|| "Value".to_owned()),
                 unit,
                 x_values,
                 y_values,

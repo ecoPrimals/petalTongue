@@ -56,7 +56,7 @@ impl VisualizationState {
         VisualizationRenderResponse {
             session_id: req.session_id,
             bindings_accepted: count,
-            status: "rendering".to_string(),
+            status: "rendering".to_owned(),
         }
     }
 

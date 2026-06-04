@@ -288,10 +288,10 @@ mod tests {
     #[test]
     fn threshold_range_round_trip() {
         let tr = ThresholdRange {
-            label: "Critical".to_string(),
+            label: "Critical".to_owned(),
             min: 0.0,
             max: 1.0,
-            status: "critical".to_string(),
+            status: "critical".to_owned(),
         };
         let json = serde_json::to_string(&tr).expect("serialize");
         let restored: ThresholdRange = serde_json::from_str(&json).expect("deserialize");

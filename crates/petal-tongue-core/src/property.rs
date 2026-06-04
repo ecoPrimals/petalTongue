@@ -107,7 +107,7 @@ mod tests {
 
     #[test]
     fn test_property_value_string() {
-        let val = PropertyValue::String("test".to_string());
+        let val = PropertyValue::String("test".to_owned());
         assert_eq!(val.as_string(), Some("test"));
         assert_eq!(val.as_number(), None);
     }
@@ -137,10 +137,7 @@ mod tests {
     #[test]
     fn test_property_value_object() {
         let mut obj = HashMap::new();
-        obj.insert(
-            "key".to_string(),
-            PropertyValue::String("value".to_string()),
-        );
+        obj.insert("key".to_owned(), PropertyValue::String("value".to_owned()));
         let val = PropertyValue::Object(obj.clone());
         assert_eq!(val.as_object(), Some(&obj));
     }
@@ -154,12 +151,9 @@ mod tests {
     #[test]
     fn test_serialization() {
         let mut props = HashMap::new();
-        props.insert(
-            "name".to_string(),
-            PropertyValue::String("test".to_string()),
-        );
-        props.insert("count".to_string(), PropertyValue::Number(42.0));
-        props.insert("active".to_string(), PropertyValue::Boolean(true));
+        props.insert("name".to_owned(), PropertyValue::String("test".to_owned()));
+        props.insert("count".to_owned(), PropertyValue::Number(42.0));
+        props.insert("active".to_owned(), PropertyValue::Boolean(true));
 
         let json = serde_json::to_string(&props).unwrap();
         let deserialized: HashMap<String, PropertyValue> = serde_json::from_str(&json).unwrap();

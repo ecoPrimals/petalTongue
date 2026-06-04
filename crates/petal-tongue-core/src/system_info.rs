@@ -105,8 +105,8 @@ impl SystemInfo {
         #[cfg(target_os = "linux")]
         {
             let hostname = std::fs::read_to_string("/proc/sys/kernel/hostname")
-                .map_or_else(|_| "unknown".to_string(), |s| s.trim().to_string());
-            let os = "Linux".to_string();
+                .map_or_else(|_| "unknown".to_owned(), |s| s.trim().to_string());
+            let os = "Linux".to_owned();
             let kernel_version = std::fs::read_to_string("/proc/version")
                 .ok()
                 .map(|s| {
@@ -130,7 +130,7 @@ impl SystemInfo {
         {
             let hostname = std::env::var("HOSTNAME")
                 .or_else(|_| std::env::var("COMPUTERNAME"))
-                .unwrap_or_else(|_| "unknown".to_string());
+                .unwrap_or_else(|_| "unknown".to_owned());
             let os = std::env::consts::OS.to_string();
             Self {
                 hostname,

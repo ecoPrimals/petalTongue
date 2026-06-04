@@ -32,7 +32,7 @@ fn topology_edges_from_shared_capabilities(primals: &[PrimalInfo]) -> Vec<Topolo
                 edges.push(TopologyEdge {
                     from: primals[i].id.clone(),
                     to: primals[j].id.clone(),
-                    edge_type: "capability".to_string(),
+                    edge_type: "capability".to_owned(),
                     label: None,
                     capability: Some((*cap).to_string()),
                     metrics: None,
@@ -72,13 +72,13 @@ impl DiscoveryServiceProvider {
         Ok(Self {
             client: Arc::new(RwLock::new(client)),
             metadata: ProviderMetadata {
-                name: "Discovery Service Registry".to_string(),
+                name: "Discovery Service Registry".to_owned(),
                 endpoint: socket_path,
-                protocol: "unix+jsonrpc".to_string(),
+                protocol: "unix+jsonrpc".to_owned(),
                 capabilities: vec![
-                    "primal-discovery".to_string(),
-                    "capability-query".to_string(),
-                    "registry".to_string(),
+                    "primal-discovery".to_owned(),
+                    "capability-query".to_owned(),
+                    "registry".to_owned(),
                 ],
             },
         })
@@ -92,13 +92,13 @@ impl DiscoveryServiceProvider {
         Self {
             client: Arc::new(RwLock::new(client)),
             metadata: ProviderMetadata {
-                name: "Discovery Service Registry".to_string(),
+                name: "Discovery Service Registry".to_owned(),
                 endpoint: socket_path,
-                protocol: "unix+jsonrpc".to_string(),
+                protocol: "unix+jsonrpc".to_owned(),
                 capabilities: vec![
-                    "primal-discovery".to_string(),
-                    "capability-query".to_string(),
-                    "registry".to_string(),
+                    "primal-discovery".to_owned(),
+                    "capability-query".to_owned(),
+                    "registry".to_owned(),
                 ],
             },
         }
@@ -211,7 +211,7 @@ mod tests {
     #[test]
     fn topology_edges_dedupes_duplicate_caps_per_primal() {
         let mut a = sample_primal("a", &["shared"]);
-        a.capabilities.push("shared".to_string());
+        a.capabilities.push("shared".to_owned());
         let b = sample_primal("b", &["shared"]);
         let edges = topology_edges_from_shared_capabilities(&[a, b]);
         assert_eq!(edges.len(), 1);
@@ -230,7 +230,7 @@ mod tests {
         assert!(
             metadata
                 .capabilities
-                .contains(&"primal-discovery".to_string())
+                .contains(&"primal-discovery".to_owned())
         );
     }
 
@@ -243,13 +243,13 @@ mod tests {
         assert!(
             metadata
                 .capabilities
-                .contains(&"primal-discovery".to_string())
+                .contains(&"primal-discovery".to_owned())
         );
         assert!(
             metadata
                 .capabilities
-                .contains(&"capability-query".to_string())
+                .contains(&"capability-query".to_owned())
         );
-        assert!(metadata.capabilities.contains(&"registry".to_string()));
+        assert!(metadata.capabilities.contains(&"registry".to_owned()));
     }
 }

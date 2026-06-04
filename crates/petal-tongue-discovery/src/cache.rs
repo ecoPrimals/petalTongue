@@ -270,7 +270,7 @@ mod tests {
     #[tokio::test]
     async fn test_cache_put_get() {
         let cache = ProviderCache::new(10);
-        let data = vec!["test".to_string()];
+        let data = vec!["test".to_owned()];
 
         cache.put_primals(data.clone()).await;
         let retrieved = cache.get_primals().await;
@@ -292,7 +292,7 @@ mod tests {
     #[tokio::test]
     async fn test_cache_hit() {
         let cache = ProviderCache::new(10);
-        cache.put_primals(vec!["test".to_string()]).await;
+        cache.put_primals(vec!["test".to_owned()]).await;
 
         let _ = cache.get_primals().await;
         let stats = cache.stats().await;
@@ -308,7 +308,7 @@ mod tests {
             Duration::from_secs(10),
         );
 
-        cache.put_primals(vec!["test".to_string()]).await;
+        cache.put_primals(vec!["test".to_owned()]).await;
 
         // Should hit immediately
         assert!(cache.get_primals().await.is_some());
@@ -323,7 +323,7 @@ mod tests {
     #[tokio::test]
     async fn test_cache_invalidation() {
         let cache = ProviderCache::new(10);
-        cache.put_primals(vec!["test".to_string()]).await;
+        cache.put_primals(vec!["test".to_owned()]).await;
 
         assert!(cache.get_primals().await.is_some());
 
@@ -335,7 +335,7 @@ mod tests {
     #[tokio::test]
     async fn test_cache_invalidate_topology() {
         let cache = ProviderCache::new(10);
-        cache.put_topology(vec!["edge".to_string()]).await;
+        cache.put_topology(vec!["edge".to_owned()]).await;
         assert!(cache.get_topology().await.is_some());
         cache.invalidate_topology().await;
         assert!(cache.get_topology().await.is_none());
@@ -344,7 +344,7 @@ mod tests {
     #[tokio::test]
     async fn test_cache_invalidate_health() {
         let cache = ProviderCache::new(10);
-        cache.put_health(vec!["ok".to_string()]).await;
+        cache.put_health(vec!["ok".to_owned()]).await;
         assert!(cache.get_health().await.is_some());
         cache.invalidate_health().await;
         assert!(cache.get_health().await.is_none());
@@ -361,7 +361,7 @@ mod tests {
     #[tokio::test]
     async fn test_cache_statistics() {
         let cache = ProviderCache::new(10);
-        cache.put_primals(vec!["test".to_string()]).await;
+        cache.put_primals(vec!["test".to_owned()]).await;
 
         let _ = cache.get_primals().await; // Hit
         let _ = cache.get_topology().await; // Miss
@@ -377,7 +377,7 @@ mod tests {
     #[tokio::test]
     async fn test_cache_reset_stats() {
         let cache = ProviderCache::new(10);
-        cache.put_primals(vec!["test".to_string()]).await;
+        cache.put_primals(vec!["test".to_owned()]).await;
 
         let _ = cache.get_primals().await;
         assert_eq!(cache.stats().await.hits, 1);
@@ -390,9 +390,9 @@ mod tests {
     async fn test_multiple_key_types() {
         let cache = ProviderCache::new(10);
 
-        cache.put_primals(vec!["primals".to_string()]).await;
-        cache.put_topology(vec!["topology".to_string()]).await;
-        cache.put_health(vec!["health".to_string()]).await;
+        cache.put_primals(vec!["primals".to_owned()]).await;
+        cache.put_topology(vec!["topology".to_owned()]).await;
+        cache.put_health(vec!["health".to_owned()]).await;
 
         assert_eq!(cache.get_primals().await.unwrap()[0], "primals");
         assert_eq!(cache.get_topology().await.unwrap()[0], "topology");
@@ -406,21 +406,21 @@ mod tests {
         cache
             .put(
                 CacheKey::Primals,
-                vec!["1".to_string()],
+                vec!["1".to_owned()],
                 Duration::from_mins(1),
             )
             .await;
         cache
             .put(
                 CacheKey::Topology,
-                vec!["2".to_string()],
+                vec!["2".to_owned()],
                 Duration::from_mins(1),
             )
             .await;
         cache
             .put(
                 CacheKey::Health,
-                vec!["3".to_string()],
+                vec!["3".to_owned()],
                 Duration::from_mins(1),
             )
             .await;
@@ -445,9 +445,9 @@ mod tests {
     #[tokio::test]
     async fn test_invalidate_all() {
         let cache = ProviderCache::new(10);
-        cache.put_primals(vec!["a".to_string()]).await;
-        cache.put_topology(vec!["b".to_string()]).await;
-        cache.put_health(vec!["c".to_string()]).await;
+        cache.put_primals(vec!["a".to_owned()]).await;
+        cache.put_topology(vec!["b".to_owned()]).await;
+        cache.put_health(vec!["c".to_owned()]).await;
         cache.invalidate_all().await;
         assert!(cache.get_primals().await.is_none());
         assert!(cache.get_topology().await.is_none());
@@ -481,14 +481,14 @@ mod tests {
             Duration::from_secs(10),
             Duration::from_secs(15),
         );
-        cache.put_primals(vec!["x".to_string()]).await;
+        cache.put_primals(vec!["x".to_owned()]).await;
         assert!(cache.get_primals().await.is_some());
     }
 
     #[tokio::test]
     async fn test_zero_capacity_uses_minimum() {
         let cache: ProviderCache<Vec<String>> = ProviderCache::new(0);
-        cache.put_primals(vec!["min".to_string()]).await;
+        cache.put_primals(vec!["min".to_owned()]).await;
         assert!(cache.get_primals().await.is_some());
     }
 

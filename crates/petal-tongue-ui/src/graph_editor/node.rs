@@ -184,7 +184,7 @@ mod tests {
 
     #[test]
     fn test_create_node() {
-        let node = GraphNode::new("node-1".to_string(), "test-type".to_string());
+        let node = GraphNode::new("node-1".to_owned(), "test-type".to_owned());
         assert_eq!(node.id, "node-1");
         assert_eq!(node.node_type, "test-type");
         assert_eq!(node.state, NodeState::Pending);
@@ -192,10 +192,10 @@ mod tests {
 
     #[test]
     fn test_node_builder() {
-        let node = GraphNode::new("node-1".to_string(), "test-type".to_string())
+        let node = GraphNode::new("node-1".to_owned(), "test-type".to_owned())
             .with_position(100.0, 200.0)
-            .with_description("Test description".to_string())
-            .with_tags(vec!["tag1".to_string(), "tag2".to_string()]);
+            .with_description("Test description".to_owned())
+            .with_tags(vec!["tag1".to_owned(), "tag2".to_owned()]);
 
         assert_eq!(node.position, (100.0, 200.0));
         assert_eq!(node.description, "Test description");
@@ -204,7 +204,7 @@ mod tests {
 
     #[test]
     fn test_node_state() {
-        let mut node = GraphNode::new("node-1".to_string(), "test-type".to_string());
+        let mut node = GraphNode::new("node-1".to_owned(), "test-type".to_owned());
 
         assert!(!node.is_running());
         assert!(!node.is_completed());
@@ -219,14 +219,14 @@ mod tests {
         assert_eq!(node.progress(), 1.0);
 
         node.set_state(NodeState::Failed {
-            error: "Test error".to_string(),
+            error: "Test error".to_owned(),
         });
         assert!(node.is_failed());
     }
 
     #[test]
     fn test_display_color() {
-        let mut node = GraphNode::new("node-1".to_string(), "test-type".to_string());
+        let mut node = GraphNode::new("node-1".to_owned(), "test-type".to_owned());
 
         assert_eq!(node.display_color(), [128, 128, 128]); // Pending = Gray
 
@@ -237,7 +237,7 @@ mod tests {
         assert_eq!(node.display_color(), [0, 255, 0]); // Completed = Green
 
         node.set_state(NodeState::Failed {
-            error: "Test".to_string(),
+            error: "Test".to_owned(),
         });
         assert_eq!(node.display_color(), [255, 0, 0]); // Failed = Red
     }

@@ -85,7 +85,7 @@ fn render_log_list(
 
                 let source = log
                     .source
-                    .as_ref().map_or_else(|| "[system]".to_string(), |s| format!("[{s}]"));
+                    .as_ref().map_or_else(|| "[system]".to_owned(), |s| format!("[{s}]"));
 
                 let is_selected = idx == logs.len() - 1 - selected;
 

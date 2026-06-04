@@ -273,8 +273,8 @@ mod tests {
         let handler = UIEventHandler::new();
 
         let device = Device {
-            id: "test-device".to_string(),
-            name: "Test Device".to_string(),
+            id: "test-device".to_owned(),
+            name: "Test Device".to_owned(),
             device_type: DeviceType::GPU,
             status: DeviceStatus::Online,
             resource_usage: 0.5,
@@ -297,9 +297,9 @@ mod tests {
         let handler = UIEventHandler::new();
 
         let primal = Primal {
-            id: "test-primal".to_string(),
-            name: "Test Primal".to_string(),
-            capabilities: vec!["test".to_string()],
+            id: "test-primal".to_owned(),
+            name: "Test Primal".to_owned(),
+            capabilities: vec!["test".to_owned()],
             health: Health::Healthy,
             load: 0.3,
             assigned_devices: vec![],
@@ -322,8 +322,8 @@ mod tests {
 
         handler
             .handle_event(UIEvent::DeviceAssigned(
-                "device-1".to_string(),
-                "primal-1".to_string(),
+                "device-1".to_owned(),
+                "primal-1".to_owned(),
             ))
             .await;
 

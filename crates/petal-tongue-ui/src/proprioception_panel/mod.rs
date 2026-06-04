@@ -63,7 +63,7 @@ impl ProprioceptionPanel {
                 .unwrap_or_else(Instant::now),
             fetching: false,
             motor_history: Vec::new(),
-            current_mode: "default".to_string(),
+            current_mode: "default".to_owned(),
             session_domain: None,
         }
     }

@@ -159,7 +159,7 @@ mod tests {
     fn test_node_decoration_default_with_props() {
         let adapter = TestAdapter;
         let mut props = Properties::new();
-        props.insert("key".to_string(), PropertyValue::String("val".to_string()));
+        props.insert("key".to_owned(), PropertyValue::String("val".to_owned()));
         assert!(adapter.node_decoration(&props).is_none());
     }
 }

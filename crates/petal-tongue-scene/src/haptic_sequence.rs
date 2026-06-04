@@ -101,7 +101,7 @@ mod tests {
             cmd(0.5, 0.1, [0.2, 0.3], HapticPattern::Pulse),
             cmd(0.8, 0.2, [0.5, 0.5], HapticPattern::Sustained),
         ];
-        let data_ids = vec![Some("d1".to_string()), None];
+        let data_ids = vec![Some("d1".to_owned()), None];
         let seq = HapticSequence::from_commands(&commands, &data_ids);
 
         assert_eq!(seq.len(), 2);

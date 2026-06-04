@@ -228,9 +228,9 @@ mod tests {
     #[test]
     fn ecosystem_event_primal_discovered_roundtrip() {
         let event = EcosystemEvent::PrimalDiscovered {
-            primal_id: "air-1".to_string(),
-            name: "airSpring".to_string(),
-            capabilities: vec!["science.et0".to_string()],
+            primal_id: "air-1".to_owned(),
+            name: "airSpring".to_owned(),
+            capabilities: vec!["science.et0".to_owned()],
         };
         let json = serde_json::to_string(&event).unwrap();
         let parsed: EcosystemEvent = serde_json::from_str(&json).unwrap();
@@ -245,9 +245,9 @@ mod tests {
     #[test]
     fn ecosystem_event_health_changed_roundtrip() {
         let event = EcosystemEvent::HealthChanged {
-            primal_id: "health-1".to_string(),
-            previous: "healthy".to_string(),
-            current: "degraded".to_string(),
+            primal_id: "health-1".to_owned(),
+            previous: "healthy".to_owned(),
+            current: "degraded".to_owned(),
         };
         let json = serde_json::to_string(&event).unwrap();
         let parsed: EcosystemEvent = serde_json::from_str(&json).unwrap();
@@ -265,8 +265,8 @@ mod tests {
     #[test]
     fn ecosystem_event_topology_changed_roundtrip() {
         let event = EcosystemEvent::TopologyChanged {
-            primal_id: "neural-1".to_string(),
-            change: "joined".to_string(),
+            primal_id: "neural-1".to_owned(),
+            change: "joined".to_owned(),
         };
         let json = serde_json::to_string(&event).unwrap();
         let parsed: EcosystemEvent = serde_json::from_str(&json).unwrap();
@@ -281,8 +281,8 @@ mod tests {
     #[test]
     fn ecosystem_event_family_joined_roundtrip() {
         let event = EcosystemEvent::FamilyJoined {
-            primal_id: "ground-1".to_string(),
-            family: "groundSpring".to_string(),
+            primal_id: "ground-1".to_owned(),
+            family: "groundSpring".to_owned(),
         };
         let json = serde_json::to_string(&event).unwrap();
         let parsed: EcosystemEvent = serde_json::from_str(&json).unwrap();
@@ -297,8 +297,8 @@ mod tests {
     #[test]
     fn ecosystem_event_trust_updated_roundtrip() {
         let event = EcosystemEvent::TrustUpdated {
-            from: "a".to_string(),
-            to: "b".to_string(),
+            from: "a".to_owned(),
+            to: "b".to_owned(),
             trust_level: 0.95,
         };
         let json = serde_json::to_string(&event).unwrap();

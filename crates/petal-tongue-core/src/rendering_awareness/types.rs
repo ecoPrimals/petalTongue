@@ -347,7 +347,7 @@ mod tests {
 
     #[test]
     fn panel_id_custom_serialization() {
-        let custom = PanelId::Custom("my-panel".to_string());
+        let custom = PanelId::Custom("my-panel".to_owned());
         let json = serde_json::to_string(&custom).expect("serialize");
         let restored: PanelId = serde_json::from_str(&json).expect("deserialize");
         assert!(matches!(restored, PanelId::Custom(s) if s == "my-panel"));
@@ -376,7 +376,7 @@ mod tests {
     #[test]
     fn motor_command_play_audio() {
         let cmd = MotorCommand::PlayAudio {
-            sound: "success".to_string(),
+            sound: "success".to_owned(),
         };
         let debug = format!("{cmd:?}");
         assert!(debug.contains("PlayAudio"));
@@ -386,7 +386,7 @@ mod tests {
     #[test]
     fn motor_command_play_audio_clone() {
         let cmd = MotorCommand::PlayAudio {
-            sound: "warning".to_string(),
+            sound: "warning".to_owned(),
         };
         let cloned = cmd.clone();
         assert!(format!("{cloned:?}").contains("warning"));

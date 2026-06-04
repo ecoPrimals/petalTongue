@@ -187,7 +187,7 @@ mod tests {
             100,
             AudioProvenance {
                 param_index: 0,
-                data_id: Some("d1".to_string()),
+                data_id: Some("d1".to_owned()),
                 frequency: 440.0,
                 amplitude: 0.5,
             },

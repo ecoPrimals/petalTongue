@@ -77,7 +77,7 @@ impl WadData {
 
         if maps.is_empty() {
             return Err(DoomError::InvalidWad(
-                "No valid maps found in WAD file".to_string(),
+                "No valid maps found in WAD file".to_owned(),
             ));
         }
 

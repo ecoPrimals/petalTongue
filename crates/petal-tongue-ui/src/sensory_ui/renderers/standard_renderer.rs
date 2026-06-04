@@ -108,7 +108,7 @@ mod tests {
                 button_count: 3,
             }],
             keyboard_inputs: vec![KeyboardInputCapability::Physical {
-                layout: "QWERTY".to_string(),
+                layout: "QWERTY".to_owned(),
                 has_numpad: true,
                 modifier_keys: 4,
             }],
@@ -154,7 +154,7 @@ mod tests {
                 button_count: 3,
             }],
             keyboard_inputs: vec![KeyboardInputCapability::Physical {
-                layout: "QWERTY".to_string(),
+                layout: "QWERTY".to_owned(),
                 has_numpad: true,
                 modifier_keys: 4,
             }],
@@ -171,7 +171,7 @@ mod tests {
                 uptime_seconds: 3600,
             },
             neural_api: NeuralApiMetrics {
-                family_id: "t".to_string(),
+                family_id: "t".to_owned(),
                 active_primals: 3,
                 graphs_available: 2,
                 active_executions: 0,

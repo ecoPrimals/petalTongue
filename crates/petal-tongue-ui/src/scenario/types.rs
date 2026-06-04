@@ -62,24 +62,24 @@ impl Scenario {
         // Check required fields
         if self.name.trim().is_empty() {
             return Err(crate::scenario_error::ScenarioError::MissingField {
-                field: "name".to_string(),
-                suggestion: Some("Add a non-empty 'name' field".to_string()),
+                field: "name".to_owned(),
+                suggestion: Some("Add a non-empty 'name' field".to_owned()),
             }
             .into());
         }
 
         if self.mode.trim().is_empty() {
             return Err(crate::scenario_error::ScenarioError::MissingField {
-                field: "mode".to_string(),
-                suggestion: Some("e.g., 'doom-showcase', 'live-ecosystem'".to_string()),
+                field: "mode".to_owned(),
+                suggestion: Some("e.g., 'doom-showcase', 'live-ecosystem'".to_owned()),
             }
             .into());
         }
 
         if self.version.trim().is_empty() {
             return Err(crate::scenario_error::ScenarioError::MissingField {
-                field: "version".to_string(),
-                suggestion: Some("e.g., '2.0.0'".to_string()),
+                field: "version".to_owned(),
+                suggestion: Some("e.g., '2.0.0'".to_owned()),
             }
             .into());
         }
@@ -178,14 +178,14 @@ mod tests {
 
     fn minimal_scenario() -> Scenario {
         let sensory = SensoryConfig {
-            complexity_hint: "auto".to_string(),
+            complexity_hint: "auto".to_owned(),
             ..Default::default()
         };
         Scenario {
-            name: "Test".to_string(),
-            description: "Desc".to_string(),
-            version: "2.0.0".to_string(),
-            mode: "doom-showcase".to_string(),
+            name: "Test".to_owned(),
+            description: "Desc".to_owned(),
+            version: "2.0.0".to_owned(),
+            mode: "doom-showcase".to_owned(),
             ui_config: UiConfig::default(),
             ecosystem: Ecosystem::default(),
             neural_api: NeuralApiConfig::default(),
@@ -199,11 +199,11 @@ mod tests {
         let mut s = minimal_scenario();
         assert_eq!(s.primal_count(), 0);
         s.ecosystem.primals.push(PrimalDefinition {
-            id: "1".to_string(),
-            name: "P1".to_string(),
-            primal_type: "t".to_string(),
-            family: "f".to_string(),
-            status: "ok".to_string(),
+            id: "1".to_owned(),
+            name: "P1".to_owned(),
+            primal_type: "t".to_owned(),
+            family: "f".to_owned(),
+            status: "ok".to_owned(),
             health: 100,
             confidence: 100,
             position: Position { x: 0.0, y: 0.0 },
@@ -223,7 +223,7 @@ mod tests {
         s.edges.push(TopologyEdge {
             from: petal_tongue_core::PrimalId::from("a"),
             to: petal_tongue_core::PrimalId::from("b"),
-            edge_type: "test".to_string(),
+            edge_type: "test".to_owned(),
             label: None,
             capability: None,
             metrics: None,
@@ -255,7 +255,7 @@ mod tests {
     #[test]
     fn scenario_validate_tutorial_allows_empty_primals() {
         let mut s = minimal_scenario();
-        s.mode = "tutorial".to_string();
+        s.mode = "tutorial".to_owned();
         assert!(s.validate().is_ok());
     }
 
@@ -263,11 +263,11 @@ mod tests {
     fn scenario_validate_ok() {
         let mut s = minimal_scenario();
         s.ecosystem.primals.push(PrimalDefinition {
-            id: "1".to_string(),
-            name: "P1".to_string(),
-            primal_type: "t".to_string(),
-            family: "f".to_string(),
-            status: "ok".to_string(),
+            id: "1".to_owned(),
+            name: "P1".to_owned(),
+            primal_type: "t".to_owned(),
+            family: "f".to_owned(),
+            status: "ok".to_owned(),
             health: 100,
             confidence: 100,
             position: Position { x: 0.0, y: 0.0 },

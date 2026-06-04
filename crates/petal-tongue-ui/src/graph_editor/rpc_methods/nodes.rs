@@ -19,10 +19,7 @@ impl GraphEditorService {
         let (node_id, validation) = {
             let mut graphs = self.graphs.write().await;
             let graph = graphs.entry(req.graph_id.clone()).or_insert_with(|| {
-                crate::graph_editor::graph::Graph::new(
-                    req.graph_id.clone(),
-                    "New Graph".to_string(),
-                )
+                crate::graph_editor::graph::Graph::new(req.graph_id.clone(), "New Graph".to_owned())
             });
 
             let node_id = req.node.id.clone();

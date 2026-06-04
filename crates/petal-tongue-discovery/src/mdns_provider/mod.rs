@@ -175,7 +175,7 @@ impl VisualizationDataProvider for MdnsVisualizationProvider {
         }
 
         let data: PrimalsResponse = response.json().map_err(|e| DiscoveryError::ParseError {
-            data_type: "primals response".to_string(),
+            data_type: "primals response".to_owned(),
             message: e.to_string(),
         })?;
 
@@ -204,7 +204,7 @@ impl VisualizationDataProvider for MdnsVisualizationProvider {
         }
 
         let data: TopologyResponse = response.json().map_err(|e| DiscoveryError::ParseError {
-            data_type: "topology response".to_string(),
+            data_type: "topology response".to_owned(),
             message: e.to_string(),
         })?;
 

@@ -186,14 +186,14 @@ mod tests {
 
     #[test]
     fn test_get_execution_order_linear() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut n1 = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        n1.set_parameter("primal_name".to_string(), "a".to_string());
-        n1.set_parameter("family_id".to_string(), "f1".to_string());
+        n1.set_parameter("primal_name".to_owned(), "a".to_owned());
+        n1.set_parameter("family_id".to_owned(), "f1".to_owned());
         let id1 = n1.id.clone();
         let mut n2 = GraphNode::new(NodeType::Verification, Vec2::zero());
-        n2.set_parameter("primal_name".to_string(), "b".to_string());
-        n2.set_parameter("timeout".to_string(), "30".to_string());
+        n2.set_parameter("primal_name".to_owned(), "b".to_owned());
+        n2.set_parameter("timeout".to_owned(), "30".to_owned());
         let id2 = n2.id.clone();
         graph.add_node(n1);
         graph.add_node(n2);
@@ -208,14 +208,14 @@ mod tests {
 
     #[test]
     fn test_get_execution_order_cycle_returns_none() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut n1 = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        n1.set_parameter("primal_name".to_string(), "a".to_string());
-        n1.set_parameter("family_id".to_string(), "f1".to_string());
+        n1.set_parameter("primal_name".to_owned(), "a".to_owned());
+        n1.set_parameter("family_id".to_owned(), "f1".to_owned());
         let id1 = n1.id.clone();
         let mut n2 = GraphNode::new(NodeType::Verification, Vec2::zero());
-        n2.set_parameter("primal_name".to_string(), "b".to_string());
-        n2.set_parameter("timeout".to_string(), "30".to_string());
+        n2.set_parameter("primal_name".to_owned(), "b".to_owned());
+        n2.set_parameter("timeout".to_owned(), "30".to_owned());
         let id2 = n2.id.clone();
         graph.add_node(n1);
         graph.add_node(n2);
@@ -229,14 +229,14 @@ mod tests {
 
     #[test]
     fn test_check_cycles_detects_cycle() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut n1 = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        n1.set_parameter("primal_name".to_string(), "a".to_string());
-        n1.set_parameter("family_id".to_string(), "f1".to_string());
+        n1.set_parameter("primal_name".to_owned(), "a".to_owned());
+        n1.set_parameter("family_id".to_owned(), "f1".to_owned());
         let id1 = n1.id.clone();
         let mut n2 = GraphNode::new(NodeType::Verification, Vec2::zero());
-        n2.set_parameter("primal_name".to_string(), "b".to_string());
-        n2.set_parameter("timeout".to_string(), "30".to_string());
+        n2.set_parameter("primal_name".to_owned(), "b".to_owned());
+        n2.set_parameter("timeout".to_owned(), "30".to_owned());
         let id2 = n2.id.clone();
         graph.add_node(n1);
         graph.add_node(n2);
@@ -252,18 +252,18 @@ mod tests {
 
     #[test]
     fn test_check_unreachable_nodes() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut n1 = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        n1.set_parameter("primal_name".to_string(), "a".to_string());
-        n1.set_parameter("family_id".to_string(), "f1".to_string());
+        n1.set_parameter("primal_name".to_owned(), "a".to_owned());
+        n1.set_parameter("family_id".to_owned(), "f1".to_owned());
         let id1 = n1.id.clone();
         let mut n2 = GraphNode::new(NodeType::Verification, Vec2::zero());
-        n2.set_parameter("primal_name".to_string(), "b".to_string());
-        n2.set_parameter("timeout".to_string(), "30".to_string());
+        n2.set_parameter("primal_name".to_owned(), "b".to_owned());
+        n2.set_parameter("timeout".to_owned(), "30".to_owned());
         let id2 = n2.id.clone();
         let mut n3 = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        n3.set_parameter("primal_name".to_string(), "orphan".to_string());
-        n3.set_parameter("family_id".to_string(), "f1".to_string());
+        n3.set_parameter("primal_name".to_owned(), "orphan".to_owned());
+        n3.set_parameter("family_id".to_owned(), "f1".to_owned());
         let id3 = n3.id.clone();
         graph.add_node(n1);
         graph.add_node(n2);
@@ -279,7 +279,7 @@ mod tests {
 
     #[test]
     fn test_check_unreachable_nodes_empty_graph_returns_early() {
-        let graph = VisualGraph::new("g".to_string());
+        let graph = VisualGraph::new("g".to_owned());
         let mut result = crate::graph_validation::types::ValidationResult::new();
         check_unreachable_nodes(&graph, &mut result);
         assert!(!result.has_errors());
@@ -288,14 +288,14 @@ mod tests {
 
     #[test]
     fn test_check_unreachable_nodes_all_have_incoming() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut n1 = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        n1.set_parameter("primal_name".to_string(), "a".to_string());
-        n1.set_parameter("family_id".to_string(), "f1".to_string());
+        n1.set_parameter("primal_name".to_owned(), "a".to_owned());
+        n1.set_parameter("family_id".to_owned(), "f1".to_owned());
         let id1 = n1.id.clone();
         let mut n2 = GraphNode::new(NodeType::Verification, Vec2::zero());
-        n2.set_parameter("primal_name".to_string(), "b".to_string());
-        n2.set_parameter("timeout".to_string(), "30".to_string());
+        n2.set_parameter("primal_name".to_owned(), "b".to_owned());
+        n2.set_parameter("timeout".to_owned(), "30".to_owned());
         let id2 = n2.id.clone();
         graph.add_node(n1);
         graph.add_node(n2);
@@ -312,10 +312,10 @@ mod tests {
 
     #[test]
     fn test_get_execution_order_single_node() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut n = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        n.set_parameter("primal_name".to_string(), "x".to_string());
-        n.set_parameter("family_id".to_string(), "f1".to_string());
+        n.set_parameter("primal_name".to_owned(), "x".to_owned());
+        n.set_parameter("family_id".to_owned(), "f1".to_owned());
         let id = n.id.clone();
         graph.add_node(n);
         let order = get_execution_order(&graph).expect("single node has no cycle");
@@ -325,29 +325,29 @@ mod tests {
 
     #[test]
     fn test_get_execution_order_empty_graph() {
-        let graph = VisualGraph::new("g".to_string());
+        let graph = VisualGraph::new("g".to_owned());
         let order = get_execution_order(&graph);
         assert_eq!(order, Some(vec![]));
     }
 
     #[test]
     fn test_get_execution_order_diamond() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut n1 = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        n1.set_parameter("primal_name".to_string(), "a".to_string());
-        n1.set_parameter("family_id".to_string(), "f1".to_string());
+        n1.set_parameter("primal_name".to_owned(), "a".to_owned());
+        n1.set_parameter("family_id".to_owned(), "f1".to_owned());
         let id1 = n1.id.clone();
         let mut n2 = GraphNode::new(NodeType::Verification, Vec2::zero());
-        n2.set_parameter("primal_name".to_string(), "b".to_string());
-        n2.set_parameter("timeout".to_string(), "30".to_string());
+        n2.set_parameter("primal_name".to_owned(), "b".to_owned());
+        n2.set_parameter("timeout".to_owned(), "30".to_owned());
         let id2 = n2.id.clone();
         let mut n3 = GraphNode::new(NodeType::Verification, Vec2::zero());
-        n3.set_parameter("primal_name".to_string(), "c".to_string());
-        n3.set_parameter("timeout".to_string(), "30".to_string());
+        n3.set_parameter("primal_name".to_owned(), "c".to_owned());
+        n3.set_parameter("timeout".to_owned(), "30".to_owned());
         let id3 = n3.id.clone();
         let mut n4 = GraphNode::new(NodeType::Verification, Vec2::zero());
-        n4.set_parameter("primal_name".to_string(), "d".to_string());
-        n4.set_parameter("timeout".to_string(), "30".to_string());
+        n4.set_parameter("primal_name".to_owned(), "d".to_owned());
+        n4.set_parameter("timeout".to_owned(), "30".to_owned());
         let id4 = n4.id.clone();
         graph.add_node(n1);
         graph.add_node(n2);
@@ -372,14 +372,14 @@ mod tests {
 
     #[test]
     fn test_check_cycles_no_cycle() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut n1 = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        n1.set_parameter("primal_name".to_string(), "a".to_string());
-        n1.set_parameter("family_id".to_string(), "f1".to_string());
+        n1.set_parameter("primal_name".to_owned(), "a".to_owned());
+        n1.set_parameter("family_id".to_owned(), "f1".to_owned());
         let id1 = n1.id.clone();
         let mut n2 = GraphNode::new(NodeType::Verification, Vec2::zero());
-        n2.set_parameter("primal_name".to_string(), "b".to_string());
-        n2.set_parameter("timeout".to_string(), "30".to_string());
+        n2.set_parameter("primal_name".to_owned(), "b".to_owned());
+        n2.set_parameter("timeout".to_owned(), "30".to_owned());
         let id2 = n2.id.clone();
         graph.add_node(n1);
         graph.add_node(n2);
@@ -393,10 +393,10 @@ mod tests {
 
     #[test]
     fn test_validate_execution_order_invoked() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut n = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        n.set_parameter("primal_name".to_string(), "x".to_string());
-        n.set_parameter("family_id".to_string(), "f1".to_string());
+        n.set_parameter("primal_name".to_owned(), "x".to_owned());
+        n.set_parameter("family_id".to_owned(), "f1".to_owned());
         graph.add_node(n);
         let mut result = crate::graph_validation::types::ValidationResult::new();
         validate_execution_order(&graph, &mut result);

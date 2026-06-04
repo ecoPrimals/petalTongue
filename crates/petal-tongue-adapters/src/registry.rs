@@ -188,12 +188,12 @@ mod tests {
         assert_eq!(registry.adapter_count(), 0);
 
         registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
-            name: "test1".to_string(),
+            name: "test1".to_owned(),
         }));
         assert_eq!(registry.adapter_count(), 1);
 
         registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
-            name: "test2".to_string(),
+            name: "test2".to_owned(),
         }));
         assert_eq!(registry.adapter_count(), 2);
     }
@@ -202,16 +202,16 @@ mod tests {
     fn test_registry_adapter_names() {
         let registry = AdapterRegistry::new();
         registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
-            name: "alpha".to_string(),
+            name: "alpha".to_owned(),
         }));
         registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
-            name: "beta".to_string(),
+            name: "beta".to_owned(),
         }));
 
         let names = registry.adapter_names();
         assert_eq!(names.len(), 2);
-        assert!(names.contains(&"alpha".to_string()));
-        assert!(names.contains(&"beta".to_string()));
+        assert!(names.contains(&"alpha".to_owned()));
+        assert!(names.contains(&"beta".to_owned()));
     }
 
     #[test]
@@ -235,7 +235,7 @@ mod tests {
     fn test_registry_lookup_by_handles() {
         let registry = AdapterRegistry::new();
         registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
-            name: "test".to_string(),
+            name: "test".to_owned(),
         }));
         assert!(registry.adapter_count() > 0);
         let names = registry.adapter_names();
@@ -246,7 +246,7 @@ mod tests {
     fn test_registry_clone_shared_adapters() {
         let registry = AdapterRegistry::new();
         registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
-            name: "shared".to_string(),
+            name: "shared".to_owned(),
         }));
         let registry2 = registry.clone();
         assert_eq!(registry.adapter_count(), registry2.adapter_count());
@@ -260,11 +260,11 @@ mod tests {
 
         let mut props = Properties::new();
         props.insert(
-            "badge".to_string(),
+            "badge".to_owned(),
             petal_tongue_core::property::PropertyValue::Null,
         );
         props.insert(
-            "color".to_string(),
+            "color".to_owned(),
             petal_tongue_core::property::PropertyValue::Null,
         );
 
@@ -284,10 +284,10 @@ mod tests {
     fn test_registry_duplicate_registration() {
         let registry = AdapterRegistry::new();
         registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
-            name: "dup".to_string(),
+            name: "dup".to_owned(),
         }));
         registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
-            name: "dup".to_string(),
+            name: "dup".to_owned(),
         }));
         assert_eq!(registry.adapter_count(), 2);
         let names = registry.adapter_names();
@@ -304,7 +304,7 @@ mod tests {
             egui::CentralPanel::default().show(ctx, |ui| {
                 registry.render_property(
                     "unknown_key",
-                    &PropertyValue::String("val".to_string()),
+                    &PropertyValue::String("val".to_owned()),
                     ui,
                 );
             });
@@ -317,12 +317,12 @@ mod tests {
 
         let registry = AdapterRegistry::new();
         registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
-            name: "test".to_string(),
+            name: "test".to_owned(),
         }));
         let ctx = egui::Context::default();
         let _ = ctx.run(egui::RawInput::default(), |ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
-                registry.render_property("test", &PropertyValue::String("x".to_string()), ui);
+                registry.render_property("test", &PropertyValue::String("x".to_owned()), ui);
             });
         });
     }
@@ -335,7 +335,7 @@ mod tests {
         let ctx = egui::Context::default();
         let _ = ctx.run(egui::RawInput::default(), |ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
-                registry.render_property("s", &PropertyValue::String("hello".to_string()), ui);
+                registry.render_property("s", &PropertyValue::String("hello".to_owned()), ui);
                 registry.render_property("n", &PropertyValue::Number(42.5), ui);
                 registry.render_property("b", &PropertyValue::Boolean(true), ui);
                 registry.render_property("b2", &PropertyValue::Boolean(false), ui);
@@ -352,7 +352,7 @@ mod tests {
 
         let registry = AdapterRegistry::new();
         registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
-            name: "test".to_string(),
+            name: "test".to_owned(),
         }));
         let ctx = egui::Context::default();
         let _ = ctx.run(egui::RawInput::default(), |ctx| {

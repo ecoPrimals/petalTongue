@@ -31,7 +31,7 @@ impl GraphValidator {
         // Check for empty graph
         if graph.nodes.is_empty() {
             result.add_issue(ValidationIssue::warning(
-                "Graph is empty - add nodes to execute".to_string(),
+                "Graph is empty - add nodes to execute".to_owned(),
             ));
             return result;
         }

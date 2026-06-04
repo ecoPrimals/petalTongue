@@ -80,15 +80,15 @@ mod tests {
     fn ecosystem_with_primals() {
         let eco = Ecosystem {
             primals: vec![PrimalDefinition {
-                id: "p1".to_string(),
-                name: "Test".to_string(),
-                primal_type: "test".to_string(),
-                family: "fam".to_string(),
-                status: "healthy".to_string(),
+                id: "p1".to_owned(),
+                name: "Test".to_owned(),
+                primal_type: "test".to_owned(),
+                family: "fam".to_owned(),
+                status: "healthy".to_owned(),
                 health: 100,
                 confidence: 90,
                 position: Position { x: 1.0, y: 2.0 },
-                capabilities: vec!["cap".to_string()],
+                capabilities: vec!["cap".to_owned()],
                 metrics: PrimalMetrics::default(),
                 proprioception: None,
                 data_bindings: vec![],

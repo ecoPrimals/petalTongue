@@ -85,7 +85,7 @@ impl BiomeOsBackend {
         }
 
         Err(DiscoveryError::BackendUnavailable(
-            "biomeOS Neural API socket not found. Set BIOMEOS_NEURAL_API_SOCKET env var or start biomeOS.".to_string(),
+            "biomeOS Neural API socket not found. Set BIOMEOS_NEURAL_API_SOCKET env var or start biomeOS.".to_owned(),
         ))
     }
 
@@ -190,8 +190,8 @@ impl DiscoveryBackend for BiomeOsBackend {
         let query = query.clone();
         let client = self.client.clone();
         let request = JsonRpcRequest {
-            jsonrpc: "2.0".to_string(),
-            method: "discovery.query_capability".to_string(),
+            jsonrpc: "2.0".to_owned(),
+            method: "discovery.query_capability".to_owned(),
             params: serde_json::json!({
                 "domain": query.domain,
                 "operation": query.operation,
@@ -215,7 +215,7 @@ impl DiscoveryBackend for BiomeOsBackend {
         }
 
         let result = response.result.ok_or_else(|| {
-            DiscoveryError::CommunicationError("No result in response".to_string())
+            DiscoveryError::CommunicationError("No result in response".to_owned())
         })?;
 
         let primals: Vec<BiomeOsPrimal> = serde_json::from_value(result)

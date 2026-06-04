@@ -340,7 +340,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_audio_error_beep_task_panicked() {
-        let err = crate::error::AudioError::BeepTaskPanicked("test panic".to_string());
+        let err = crate::error::AudioError::BeepTaskPanicked("test panic".to_owned());
         let msg = err.to_string();
         assert!(msg.contains("Beep task panicked"));
         assert!(msg.contains("test panic"));

@@ -55,15 +55,15 @@ pub(super) fn create_node_at(renderer: &mut Visual2DRenderer, world_pos: Positio
 
     let mut properties = Properties::new();
     properties.insert(
-        "created_by".to_string(),
-        PropertyValue::String("interactive-paint".to_string()),
+        "created_by".to_owned(),
+        PropertyValue::String("interactive-paint".to_owned()),
     );
     let new_primal = PrimalInfo {
         id: PrimalId::from(new_id.clone()),
         name: interactive_node_name(node_count),
-        primal_type: "custom".to_string(),
+        primal_type: "custom".to_owned(),
         endpoint: format!("interactive://{new_id}"),
-        capabilities: vec!["interactive".to_string()],
+        capabilities: vec!["interactive".to_owned()],
         health: PrimalHealthStatus::Healthy,
         last_seen: std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -132,7 +132,7 @@ pub(super) fn create_edge(renderer: &Visual2DRenderer, from: PrimalId, to: Prima
     graph.add_edge(TopologyEdge {
         from,
         to,
-        edge_type: "interactive".to_string(),
+        edge_type: "interactive".to_owned(),
         label: None,
         capability: None,
         metrics: None,

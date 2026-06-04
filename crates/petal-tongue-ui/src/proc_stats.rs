@@ -366,7 +366,7 @@ mod tests {
     fn process_info_fields() {
         let p = ProcessInfo {
             pid: 1,
-            name: "init".to_string(),
+            name: "init".to_owned(),
             cpu_usage: 0.5,
             memory: 1024 * 4096,
         };
@@ -420,7 +420,7 @@ mod tests {
         let ps = page_size();
         let p = ProcessInfo {
             pid: 1,
-            name: "test".to_string(),
+            name: "test".to_owned(),
             cpu_usage: 0.0,
             memory: 100 * ps,
         };
@@ -431,7 +431,7 @@ mod tests {
     fn process_info_cpu_usage_bounds() {
         let p = ProcessInfo {
             pid: 1,
-            name: "test".to_string(),
+            name: "test".to_owned(),
             cpu_usage: 50.5,
             memory: 0,
         };

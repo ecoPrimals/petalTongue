@@ -547,7 +547,7 @@ fn inline_to_text(inline: &Inline) -> String {
         Inline::Link { text, .. } => text.iter().map(inline_to_text).collect(),
         Inline::Image { alt, .. } => alt.clone(),
         Inline::Entity(e) => format!("{} {}", e.emoji, e.display),
-        Inline::LineBreak => " ".to_string(),
+        Inline::LineBreak => " ".to_owned(),
     }
 }
 
@@ -641,7 +641,7 @@ mod tests {
     fn shortcode_expansion() {
         let mut registry = HashMap::new();
         registry.insert(
-            "beardog".to_string(),
+            "beardog".to_owned(),
             petal_tongue_scene::document::EntityRegistryEntry {
                 display: "BearDog".into(),
                 emoji: "🐻🐕".into(),

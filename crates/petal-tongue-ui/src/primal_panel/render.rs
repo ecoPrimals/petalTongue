@@ -198,7 +198,7 @@ mod tests {
             id: id.to_string(),
             name: id.to_string(),
             health,
-            capabilities: vec!["compute".to_string()],
+            capabilities: vec!["compute".to_owned()],
             load,
             assigned_devices: devices,
             metadata: serde_json::json!({}),
@@ -271,7 +271,7 @@ mod tests {
     #[test]
     fn render_primal_card_with_assigned_devices() {
         let mut panel = make_panel();
-        let primal = make_primal("p1", Health::Healthy, 0.5, vec!["dev-1".to_string()]);
+        let primal = make_primal("p1", Health::Healthy, 0.5, vec!["dev-1".to_owned()]);
         let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
         let ctx = egui::Context::default();
         let _ = ctx.run(egui::RawInput::default(), |ctx| {
@@ -284,7 +284,7 @@ mod tests {
     #[test]
     fn render_primal_card_selected() {
         let mut panel = make_panel();
-        panel.selected = Some("p1".to_string());
+        panel.selected = Some("p1".to_owned());
         let primal = make_primal("p1", Health::Healthy, 0.5, vec![]);
         let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
         let ctx = egui::Context::default();

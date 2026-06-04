@@ -228,16 +228,16 @@ mod tests {
     #[test]
     fn sprite_serde_round_trip() {
         let sprite = Sprite {
-            id: "player".to_string(),
+            id: "player".to_owned(),
             position: [10.0, 20.0],
             size: [32.0, 32.0],
             rotation: 0.0,
             tint: [255, 255, 255, 255],
             uv_rect: Some([0.0, 0.0, 0.25, 0.25]),
-            texture_id: Some("characters".to_string()),
+            texture_id: Some("characters".to_owned()),
             z_order: 10,
             visible: true,
-            label: Some("Player 1".to_string()),
+            label: Some("Player 1".to_owned()),
         };
         let json = serde_json::to_string(&sprite).unwrap();
         let back: Sprite = serde_json::from_str(&json).unwrap();
@@ -328,7 +328,7 @@ mod tests {
                 palette: vec![[0, 0, 0, 255], [255, 255, 255, 255]],
             }),
             sprites: vec![Sprite {
-                id: "s1".to_string(),
+                id: "s1".to_owned(),
                 position: [0.0, 0.0],
                 size: [16.0, 16.0],
                 rotation: 0.0,
@@ -340,14 +340,14 @@ mod tests {
                 label: None,
             }],
             entities: vec![GameEntity {
-                id: "player".to_string(),
-                entity_type: "player".to_string(),
+                id: "player".to_owned(),
+                entity_type: "player".to_owned(),
                 position: [8.0, 8.0],
                 velocity: [1.0, 0.0],
                 health: Some(0.75),
                 color: [0, 128, 255, 255],
                 size: [1.0, 1.0],
-                label: Some("Hero".to_string()),
+                label: Some("Hero".to_owned()),
             }],
             camera_center: [8.0, 8.0],
             camera_zoom: 2.0,
@@ -363,16 +363,16 @@ mod tests {
     #[test]
     fn sprite_to_scene_node_basic() {
         let sprite = Sprite {
-            id: "hero".to_string(),
+            id: "hero".to_owned(),
             position: [10.0, 20.0],
             size: [64.0, 64.0],
             rotation: 0.0,
             tint: [255, 128, 0, 200],
             uv_rect: Some([0.0, 0.0, 0.5, 0.5]),
-            texture_id: Some("hero-sheet".to_string()),
+            texture_id: Some("hero-sheet".to_owned()),
             z_order: 5,
             visible: true,
-            label: Some("Hero".to_string()),
+            label: Some("Hero".to_owned()),
         };
         let node: SceneNode = sprite.into();
         assert_eq!(node.id, "hero");
@@ -410,7 +410,7 @@ mod tests {
     #[test]
     fn sprite_to_scene_node_no_texture_id() {
         let sprite = Sprite {
-            id: "bare".to_string(),
+            id: "bare".to_owned(),
             position: [0.0, 0.0],
             size: [16.0, 16.0],
             rotation: 0.0,

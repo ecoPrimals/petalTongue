@@ -101,7 +101,7 @@ pub fn socket_filename(posture: &BtspPosture) -> String {
 #[must_use]
 pub fn domain_symlink_filename(posture: &BtspPosture) -> String {
     match posture {
-        BtspPosture::Development => "visualization.sock".to_string(),
+        BtspPosture::Development => "visualization.sock".to_owned(),
         BtspPosture::Production { family_id } => {
             format!("visualization-{}.sock", sanitize_family_segment(family_id))
         }

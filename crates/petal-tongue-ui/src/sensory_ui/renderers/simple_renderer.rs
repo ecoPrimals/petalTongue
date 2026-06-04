@@ -157,7 +157,7 @@ mod tests {
                 uptime_seconds: 10,
             },
             neural_api: NeuralApiMetrics {
-                family_id: "fam".to_string(),
+                family_id: "fam".to_owned(),
                 active_primals: 1,
                 graphs_available: 0,
                 active_executions: 0,
@@ -273,7 +273,7 @@ mod tests {
                 uptime_seconds: 500,
             },
             neural_api: NeuralApiMetrics {
-                family_id: "t".to_string(),
+                family_id: "t".to_owned(),
                 active_primals: 2,
                 graphs_available: 1,
                 active_executions: 1,

@@ -191,8 +191,8 @@ mod tests {
 
         handler
             .send_node_status(
-                "test-graph".to_string(),
-                "node-1".to_string(),
+                "test-graph".to_owned(),
+                "node-1".to_owned(),
                 NodeStatus::Running { progress: 50 },
             )
             .await
@@ -214,27 +214,27 @@ mod tests {
         let _rx = handler.subscribe();
 
         handler
-            .start_execution("test-graph".to_string())
+            .start_execution("test-graph".to_owned())
             .await
             .unwrap();
 
         handler
             .send_node_status(
-                "test-graph".to_string(),
-                "node-1".to_string(),
+                "test-graph".to_owned(),
+                "node-1".to_owned(),
                 NodeStatus::Running { progress: 50 },
             )
             .await
             .unwrap();
 
         let state = handler.get_execution_state("test-graph").await.unwrap();
-        assert_eq!(state.current_node, Some("node-1".to_string()));
+        assert_eq!(state.current_node, Some("node-1".to_owned()));
         assert_eq!(state.completed_nodes.len(), 0);
 
         handler
             .send_node_status(
-                "test-graph".to_string(),
-                "node-1".to_string(),
+                "test-graph".to_owned(),
+                "node-1".to_owned(),
                 NodeStatus::Completed,
             )
             .await
@@ -252,10 +252,10 @@ mod tests {
 
         handler
             .send_progress(
-                "test-graph".to_string(),
-                "node-1".to_string(),
+                "test-graph".to_owned(),
+                "node-1".to_owned(),
                 0.75,
-                "Processing...".to_string(),
+                "Processing...".to_owned(),
             )
             .await
             .unwrap();
@@ -283,27 +283,27 @@ mod tests {
         let mut rx = handler.subscribe();
 
         let reasoning = AIReasoning {
-            decision: "Execute node A next".to_string(),
+            decision: "Execute node A next".to_owned(),
             confidence: 0.87,
             rationale: vec![
-                "Highest priority".to_string(),
-                "Resources available".to_string(),
+                "Highest priority".to_owned(),
+                "Resources available".to_owned(),
             ],
             alternatives: vec![Alternative {
-                description: "Execute node B".to_string(),
+                description: "Execute node B".to_owned(),
                 confidence: 0.73,
-                reason_not_chosen: "Lower priority".to_string(),
+                reason_not_chosen: "Lower priority".to_owned(),
             }],
-            data_sources: vec!["user_history".to_string()],
+            data_sources: vec!["user_history".to_owned()],
             patterns: vec![Pattern {
-                description: "User prefers A before B".to_string(),
-                source: "user_history".to_string(),
+                description: "User prefers A before B".to_owned(),
+                source: "user_history".to_owned(),
                 relevance: 0.9,
             }],
         };
 
         handler
-            .send_reasoning("test-graph".to_string(), reasoning.clone())
+            .send_reasoning("test-graph".to_owned(), reasoning.clone())
             .await
             .unwrap();
 
@@ -327,17 +327,17 @@ mod tests {
         let mut rx = handler.subscribe();
 
         let error = ErrorInfo {
-            error_type: "ExecutionError".to_string(),
-            message: "Node failed".to_string(),
-            details: Some("Out of memory".to_string()),
+            error_type: "ExecutionError".to_owned(),
+            message: "Node failed".to_owned(),
+            details: Some("Out of memory".to_owned()),
             recoverable: true,
-            suggested_action: Some("Increase memory limit".to_string()),
+            suggested_action: Some("Increase memory limit".to_owned()),
         };
 
         handler
             .send_error(
-                "test-graph".to_string(),
-                Some("node-1".to_string()),
+                "test-graph".to_owned(),
+                Some("node-1".to_owned()),
                 error.clone(),
             )
             .await
@@ -367,8 +367,8 @@ mod tests {
 
         handler
             .send_node_status(
-                "test-graph".to_string(),
-                "node-1".to_string(),
+                "test-graph".to_owned(),
+                "node-1".to_owned(),
                 NodeStatus::Running { progress: 50 },
             )
             .await
@@ -401,7 +401,7 @@ mod tests {
         let _rx = handler.subscribe();
 
         handler
-            .start_execution("test-graph".to_string())
+            .start_execution("test-graph".to_owned())
             .await
             .unwrap();
         assert!(handler.get_execution_state("test-graph").await.is_some());
@@ -417,10 +417,10 @@ mod tests {
 
         handler
             .send_progress(
-                "test-graph".to_string(),
-                "node-1".to_string(),
+                "test-graph".to_owned(),
+                "node-1".to_owned(),
                 1.5,
-                "Over 100%".to_string(),
+                "Over 100%".to_owned(),
             )
             .await
             .unwrap();
@@ -451,10 +451,10 @@ mod tests {
 
         handler
             .send_progress(
-                "test-graph".to_string(),
-                "node-1".to_string(),
+                "test-graph".to_owned(),
+                "node-1".to_owned(),
                 -0.5,
-                "Negative".to_string(),
+                "Negative".to_owned(),
             )
             .await
             .unwrap();

@@ -255,7 +255,7 @@ mod tests {
 
         let payload = BinaryPayload {
             data: bytes::Bytes::from_static(b"hello binary"),
-            content_type: "application/octet-stream".to_string(),
+            content_type: "application/octet-stream".to_owned(),
         };
         let json = serde_json::to_string(&payload).expect("payload serialization");
         assert!(json.contains("content_type"));

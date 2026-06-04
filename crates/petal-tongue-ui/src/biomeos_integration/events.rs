@@ -162,8 +162,8 @@ mod tests {
 
     fn make_device() -> Device {
         Device {
-            id: "dev-1".to_string(),
-            name: "Test Device".to_string(),
+            id: "dev-1".to_owned(),
+            name: "Test Device".to_owned(),
             device_type: DeviceType::GPU,
             status: DeviceStatus::Online,
             resource_usage: 0.5,
@@ -189,7 +189,7 @@ mod tests {
     #[test]
     fn biomeos_event_device_removed_roundtrip() {
         let event = BiomeOSEvent::DeviceRemoved {
-            device_id: "dev-99".to_string(),
+            device_id: "dev-99".to_owned(),
         };
         let json = serde_json::to_string(&event).unwrap();
         let parsed: BiomeOSEvent = serde_json::from_str(&json).unwrap();
@@ -202,7 +202,7 @@ mod tests {
     #[test]
     fn biomeos_event_primal_status_roundtrip() {
         let event = BiomeOSEvent::PrimalStatus {
-            primal_id: "p1".to_string(),
+            primal_id: "p1".to_owned(),
             health: Health::Degraded,
         };
         let json = serde_json::to_string(&event).unwrap();
@@ -219,8 +219,8 @@ mod tests {
     #[test]
     fn biomeos_event_niche_deployed_roundtrip() {
         let event = BiomeOSEvent::NicheDeployed {
-            niche_id: "niche-1".to_string(),
-            name: "My Niche".to_string(),
+            niche_id: "niche-1".to_owned(),
+            name: "My Niche".to_owned(),
         };
         let json = serde_json::to_string(&event).unwrap();
         let parsed: BiomeOSEvent = serde_json::from_str(&json).unwrap();

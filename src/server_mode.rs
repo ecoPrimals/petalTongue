@@ -186,7 +186,7 @@ mod tests {
             data_service,
             None,
             std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST),
-            Some("/".to_string()),
+            Some("/".to_owned()),
         )
         .await;
 

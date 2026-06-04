@@ -162,12 +162,12 @@ impl AudioSonificationRenderer {
     #[must_use]
     pub fn describe_soundscape(&self) -> String {
         let Ok(graph) = self.graph.read() else {
-            return "Graph unavailable.".to_string();
+            return "Graph unavailable.".to_owned();
         };
         let stats = graph.stats();
 
         if stats.node_count == 0 {
-            return "Ecosystem is silent. No primals detected.".to_string();
+            return "Ecosystem is silent. No primals detected.".to_owned();
         }
 
         let mut description = format!("Ecosystem soundscape with {} primals. ", stats.node_count);

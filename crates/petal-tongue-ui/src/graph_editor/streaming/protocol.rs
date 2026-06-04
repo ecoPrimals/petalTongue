@@ -146,7 +146,7 @@ mod tests {
         assert_eq!(status, parsed);
 
         let status = NodeStatus::Failed {
-            error: "oops".to_string(),
+            error: "oops".to_owned(),
         };
         let json = serde_json::to_string(&status).unwrap();
         let parsed: NodeStatus = serde_json::from_str(&json).unwrap();
@@ -156,8 +156,8 @@ mod tests {
     #[test]
     fn stream_message_node_status_roundtrip() {
         let msg = StreamMessage::NodeStatus {
-            graph_id: "g1".to_string(),
-            node_id: "n1".to_string(),
+            graph_id: "g1".to_owned(),
+            node_id: "n1".to_owned(),
             status: NodeStatus::Completed,
             timestamp: utc_now(),
         };
@@ -199,10 +199,10 @@ mod tests {
     #[test]
     fn stream_message_progress_roundtrip() {
         let msg = StreamMessage::Progress {
-            graph_id: "g1".to_string(),
-            node_id: "n1".to_string(),
+            graph_id: "g1".to_owned(),
+            node_id: "n1".to_owned(),
             progress: 0.75,
-            message: "processing".to_string(),
+            message: "processing".to_owned(),
             timestamp: utc_now(),
         };
         let json = serde_json::to_string(&msg).unwrap();
@@ -242,7 +242,7 @@ mod tests {
     #[test]
     fn graph_modification_remove_edge_roundtrip() {
         let modif = GraphModification::RemoveEdge {
-            edge_id: "e1".to_string(),
+            edge_id: "e1".to_owned(),
         };
         let json = serde_json::to_string(&modif).unwrap();
         let parsed: GraphModification = serde_json::from_str(&json).unwrap();

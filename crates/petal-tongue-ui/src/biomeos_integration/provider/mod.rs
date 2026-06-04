@@ -434,7 +434,7 @@ impl BiomeOSProvider {
             self.call_jsonrpc("health.ping", serde_json::json!({}))
                 .await?;
         }
-        Ok("healthy".to_string())
+        Ok("healthy".to_owned())
     }
 
     /// Expose endpoint for `VisualizationDataProvider` trait impl

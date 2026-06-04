@@ -159,7 +159,7 @@ mod tests {
 
     #[test]
     fn test_scenario_to_path_some() {
-        let path = scenario_to_path(Some("scenario.json".to_string()));
+        let path = scenario_to_path(Some("scenario.json".to_owned()));
         assert!(path.is_some());
         assert_eq!(path.as_ref().unwrap().as_os_str(), "scenario.json");
     }
@@ -195,7 +195,7 @@ mod tests {
 
     #[test]
     fn test_scenario_to_path_with_path_separators() {
-        let path = scenario_to_path(Some("/tmp/scenarios/demo.json".to_string()));
+        let path = scenario_to_path(Some("/tmp/scenarios/demo.json".to_owned()));
         assert!(path.is_some());
         let p = path.unwrap();
         assert!(p.to_string_lossy().contains("demo.json"));
@@ -203,28 +203,28 @@ mod tests {
 
     #[test]
     fn test_scenario_to_path_with_relative_path() {
-        let path = scenario_to_path(Some("./relative/path.json".to_string()));
+        let path = scenario_to_path(Some("./relative/path.json".to_owned()));
         assert!(path.is_some());
         assert_eq!(path.as_ref().unwrap().as_os_str(), "./relative/path.json");
     }
 
     #[test]
     fn test_scenario_to_path_parent_dir() {
-        let path = scenario_to_path(Some("..".to_string()));
+        let path = scenario_to_path(Some("..".to_owned()));
         assert!(path.is_some());
         assert_eq!(path.as_ref().unwrap().as_os_str(), "..");
     }
 
     #[test]
     fn test_scenario_to_path_current_dir() {
-        let path = scenario_to_path(Some(".".to_string()));
+        let path = scenario_to_path(Some(".".to_owned()));
         assert!(path.is_some());
         assert_eq!(path.as_ref().unwrap().as_os_str(), ".");
     }
 
     #[test]
     fn test_scenario_to_path_whitespace() {
-        let path = scenario_to_path(Some("  path.json  ".to_string()));
+        let path = scenario_to_path(Some("  path.json  ".to_owned()));
         assert!(path.is_some());
         assert_eq!(path.as_ref().unwrap().as_os_str(), "  path.json  ");
     }
@@ -258,7 +258,7 @@ mod tests {
     /// Same map_err pattern as run_ui_blocking line 97.
     #[test]
     fn test_eframe_error_creation() {
-        let err = AppError::Eframe("display failed".to_string());
+        let err = AppError::Eframe("display failed".to_owned());
         assert!(matches!(err, AppError::Eframe(_)));
         let msg = err.to_string();
         assert!(msg.contains("eframe error"));
@@ -267,14 +267,14 @@ mod tests {
 
     #[test]
     fn test_scenario_to_path_unicode() {
-        let path = scenario_to_path(Some("scenario_日本語.json".to_string()));
+        let path = scenario_to_path(Some("scenario_日本語.json".to_owned()));
         assert!(path.is_some());
         assert!(path.as_ref().unwrap().to_string_lossy().contains("日本語"));
     }
 
     #[test]
     fn test_scenario_to_path_special_chars() {
-        let path = scenario_to_path(Some("path with spaces.json".to_string()));
+        let path = scenario_to_path(Some("path with spaces.json".to_owned()));
         assert!(path.is_some());
         assert_eq!(path.as_ref().unwrap().as_os_str(), "path with spaces.json");
     }
@@ -324,7 +324,7 @@ mod tests {
     #[cfg(not(feature = "ui"))]
     async fn test_ui_mode_with_scenario_still_fails() {
         let data_service = Arc::new(crate::data_service::DataService::new());
-        let result = run(Some("scenario.json".to_string()), true, data_service).await;
+        let result = run(Some("scenario.json".to_owned()), true, data_service).await;
         assert!(result.is_err());
     }
 
@@ -364,7 +364,7 @@ mod tests {
     async fn test_ui_mode_invalid_path_scenario_still_fails() {
         let data_service = Arc::new(crate::data_service::DataService::new());
         let result = run(
-            Some("/nonexistent/path/to/scenario.json".to_string()),
+            Some("/nonexistent/path/to/scenario.json".to_owned()),
             false,
             data_service,
         )
@@ -410,7 +410,7 @@ mod tests {
 
     #[test]
     fn test_scenario_to_path_with_null_bytes() {
-        let path = scenario_to_path(Some("path\x00null.json".to_string()));
+        let path = scenario_to_path(Some("path\x00null.json".to_owned()));
         assert!(path.is_some());
         assert!(
             path.as_ref()
@@ -431,21 +431,21 @@ mod tests {
 
     #[test]
     fn test_eframe_error_debug_display() {
-        let err = AppError::Eframe("test".to_string());
+        let err = AppError::Eframe("test".to_owned());
         let debug_str = format!("{err:?}");
         assert!(debug_str.contains("Eframe"));
     }
 
     #[test]
     fn test_task_panic_error_display() {
-        let err = AppError::TaskPanic("worker died".to_string());
+        let err = AppError::TaskPanic("worker died".to_owned());
         assert!(err.to_string().contains("Task panicked"));
         assert!(err.to_string().contains("worker died"));
     }
 
     #[test]
     fn test_app_error_other_display() {
-        let err = AppError::Other("config load failed".to_string());
+        let err = AppError::Other("config load failed".to_owned());
         assert_eq!(err.to_string(), "config load failed");
     }
 }

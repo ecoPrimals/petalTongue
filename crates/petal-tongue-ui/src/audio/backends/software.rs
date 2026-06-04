@@ -34,7 +34,7 @@ impl Default for SoftwareBackend {
 impl AudioBackend for SoftwareBackend {
     fn metadata(&self) -> BackendMetadata {
         BackendMetadata {
-            name: "Pure Rust Software Synthesis".to_string(),
+            name: "Pure Rust Software Synthesis".to_owned(),
             backend_type: BackendType::Software,
             description: "Programmatic audio generation (100% pure Rust, always available)"
                 .to_string(),

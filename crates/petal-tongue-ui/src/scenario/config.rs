@@ -180,7 +180,7 @@ impl CustomPanelConfig {
         // Check panel type
         if self.panel_type.trim().is_empty() {
             return Err(ScenarioError::PanelConfig {
-                message: "Panel type cannot be empty (e.g., 'doom_game', 'web_view')".to_string(),
+                message: "Panel type cannot be empty (e.g., 'doom_game', 'web_view')".to_owned(),
                 panel_index: None,
                 panel_type: None,
             }
@@ -311,7 +311,7 @@ mod tests {
     fn custom_panel_validate_empty_type_fails() {
         let p = CustomPanelConfig {
             panel_type: String::new(),
-            title: "T".to_string(),
+            title: "T".to_owned(),
             width: None,
             height: None,
             fullscreen: false,
@@ -323,7 +323,7 @@ mod tests {
     #[test]
     fn custom_panel_validate_empty_title_fails() {
         let p = CustomPanelConfig {
-            panel_type: "doom".to_string(),
+            panel_type: "doom".to_owned(),
             title: String::new(),
             width: None,
             height: None,
@@ -336,8 +336,8 @@ mod tests {
     #[test]
     fn custom_panel_validate_zero_width_fails() {
         let p = CustomPanelConfig {
-            panel_type: "doom".to_string(),
-            title: "Doom".to_string(),
+            panel_type: "doom".to_owned(),
+            title: "Doom".to_owned(),
             width: Some(0),
             height: None,
             fullscreen: false,
@@ -349,8 +349,8 @@ mod tests {
     #[test]
     fn custom_panel_validate_ok() {
         let p = CustomPanelConfig {
-            panel_type: "doom_game".to_string(),
-            title: "Doom".to_string(),
+            panel_type: "doom_game".to_owned(),
+            title: "Doom".to_owned(),
             width: Some(320),
             height: Some(200),
             fullscreen: false,

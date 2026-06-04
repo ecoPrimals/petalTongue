@@ -131,10 +131,10 @@ pub fn build_nucleus_scene() -> SceneGraph {
     scene.add_to_root(tls_group);
 
     let tls_steps = [
-        "1. ClientHello (Songbird)",
-        "2. ServerHello + Certificate (BearDog X.509)",
-        "3. Key Exchange (BearDog X25519)",
-        "4. Finished (BearDog HMAC)",
+        "1. ClientHello (TLS provider)",
+        "2. ServerHello + Certificate (X.509)",
+        "3. Key Exchange (X25519)",
+        "4. Finished (HMAC verify)",
         "5. Application Data (encrypted channel)",
     ];
 

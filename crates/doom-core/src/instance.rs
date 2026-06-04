@@ -147,7 +147,7 @@ impl DoomInstance {
         }
 
         Err(DoomError::WadNotFound(
-            "No WAD file found. Please provide doom1.wad or freedoom1.wad".to_string(),
+            "No WAD file found. Please provide doom1.wad or freedoom1.wad".to_owned(),
         ))
     }
 
@@ -348,7 +348,7 @@ impl DoomInstance {
                 Err(DoomError::EngineError(format!("Map {map_name} not found")))
             }
         } else {
-            Err(DoomError::EngineError("No WAD loaded".to_string()))
+            Err(DoomError::EngineError("No WAD loaded".to_owned()))
         }
     }
 

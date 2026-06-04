@@ -152,7 +152,7 @@ mod tests {
                 button_count: 3,
             }],
             keyboard_inputs: vec![KeyboardInputCapability::Physical {
-                layout: "QWERTY".to_string(),
+                layout: "QWERTY".to_owned(),
                 has_numpad: true,
                 modifier_keys: 4,
             }],
@@ -165,9 +165,9 @@ mod tests {
             "Compute",
             "http://localhost:8080",
             vec![
-                "compute".to_string(),
-                "storage".to_string(),
-                "network".to_string(),
+                "compute".to_owned(),
+                "storage".to_owned(),
+                "network".to_owned(),
             ],
             PrimalHealthStatus::Healthy,
             0,
@@ -200,7 +200,7 @@ mod tests {
                 button_count: 3,
             }],
             keyboard_inputs: vec![KeyboardInputCapability::Physical {
-                layout: "QWERTY".to_string(),
+                layout: "QWERTY".to_owned(),
                 has_numpad: true,
                 modifier_keys: 4,
             }],
@@ -217,7 +217,7 @@ mod tests {
                 uptime_seconds: 86400,
             },
             neural_api: NeuralApiMetrics {
-                family_id: "t".to_string(),
+                family_id: "t".to_owned(),
                 active_primals: 5,
                 graphs_available: 3,
                 active_executions: 2,
@@ -257,7 +257,7 @@ mod tests {
                 button_count: 3,
             }],
             keyboard_inputs: vec![KeyboardInputCapability::Physical {
-                layout: "QWERTY".to_string(),
+                layout: "QWERTY".to_owned(),
                 has_numpad: true,
                 modifier_keys: 4,
             }],

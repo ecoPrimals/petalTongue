@@ -145,7 +145,7 @@ pub fn telemetry_to_bindings(data: &TelemetryData) -> Vec<DataBinding> {
                 label: format!("{section} — {field_name}"),
                 x_values: ts.timestamps.clone(),
                 y_values: ts.values.clone(),
-                x_label: "time (s)".to_string(),
+                x_label: "time (s)".to_owned(),
                 y_label: field_name.clone(),
                 unit: String::new(),
             });
@@ -207,13 +207,13 @@ mod tests {
         let mut data = TelemetryData::default();
         let mut fields = HashMap::new();
         fields.insert(
-            "energy".to_string(),
+            "energy".to_owned(),
             TimeSeries {
                 timestamps: vec![0.0, 1.0, 2.0],
                 values: vec![-42.5, -42.3, -42.1],
             },
         );
-        data.sections.insert("md".to_string(), fields);
+        data.sections.insert("md".to_owned(), fields);
 
         let bindings = telemetry_to_bindings(&data);
         assert_eq!(bindings.len(), 1);

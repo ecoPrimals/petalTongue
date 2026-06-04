@@ -63,10 +63,10 @@ mod tests {
     #[test]
     fn provider_metadata_creation() {
         let meta = ProviderMetadata {
-            name: "Test Provider".to_string(),
-            endpoint: "http://localhost:8080".to_string(),
-            protocol: "http".to_string(),
-            capabilities: vec!["primals".to_string(), "topology".to_string()],
+            name: "Test Provider".to_owned(),
+            endpoint: "http://localhost:8080".to_owned(),
+            protocol: "http".to_owned(),
+            capabilities: vec!["primals".to_owned(), "topology".to_owned()],
         };
         assert_eq!(meta.name, "Test Provider");
         assert_eq!(meta.endpoint, "http://localhost:8080");
@@ -76,9 +76,9 @@ mod tests {
     #[test]
     fn provider_metadata_clone() {
         let meta = ProviderMetadata {
-            name: "A".to_string(),
-            endpoint: "e".to_string(),
-            protocol: "p".to_string(),
+            name: "A".to_owned(),
+            endpoint: "e".to_owned(),
+            protocol: "p".to_owned(),
             capabilities: vec![],
         };
         let cloned = meta.clone();
@@ -111,9 +111,9 @@ mod tests {
     async fn mock_provider_trait_impl() {
         let provider = MockProvider {
             metadata: ProviderMetadata {
-                name: "Mock".to_string(),
-                endpoint: "mock://".to_string(),
-                protocol: "mock".to_string(),
+                name: "Mock".to_owned(),
+                endpoint: "mock://".to_owned(),
+                protocol: "mock".to_owned(),
                 capabilities: vec![],
             },
         };

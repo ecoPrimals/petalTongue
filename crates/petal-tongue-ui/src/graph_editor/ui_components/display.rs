@@ -7,11 +7,11 @@ use crate::graph_editor::streaming::{Alternative, ErrorInfo, NodeStatus, Pattern
 #[must_use]
 pub fn node_status_display(status: &NodeStatus) -> (&'static str, [u8; 3], String) {
     match status {
-        NodeStatus::Pending => ("⚪", [128, 128, 128], "Pending".to_string()),
+        NodeStatus::Pending => ("⚪", [128, 128, 128], "Pending".to_owned()),
         NodeStatus::Running { progress } => ("🔵", [0, 128, 255], format!("Running ({progress}%)")),
-        NodeStatus::Completed => ("✅", [0, 255, 0], "Completed".to_string()),
-        NodeStatus::Failed { .. } => ("❌", [255, 0, 0], "Failed".to_string()),
-        NodeStatus::Paused => ("⏸️", [255, 255, 0], "Paused".to_string()),
+        NodeStatus::Completed => ("✅", [0, 255, 0], "Completed".to_owned()),
+        NodeStatus::Failed { .. } => ("❌", [255, 0, 0], "Failed".to_owned()),
+        NodeStatus::Paused => ("⏸️", [255, 255, 0], "Paused".to_owned()),
     }
 }
 
@@ -76,9 +76,9 @@ pub fn error_header_text(error: &ErrorInfo) -> String {
 pub fn error_recoverable_display(error: &ErrorInfo) -> (String, Option<String>) {
     (
         if error.recoverable {
-            "⚠️ Recoverable error".to_string()
+            "⚠️ Recoverable error".to_owned()
         } else {
-            "❌ Non-recoverable error".to_string()
+            "❌ Non-recoverable error".to_owned()
         },
         error
             .suggested_action

@@ -155,7 +155,7 @@ pub(super) fn create_app(
         neural_metrics_dashboard: MetricsDashboard::new(),
         show_neural_metrics: false,
         tokio_runtime: runtime,
-        graph_canvas: GraphCanvas::new("New Graph".to_string()),
+        graph_canvas: GraphCanvas::new("New Graph".to_owned()),
         show_graph_builder: false,
         tick_clock: TickClock::new(TickConfig::default()),
         continuous_mode: false,
@@ -206,7 +206,7 @@ fn create_status_reporter(capabilities: &CapabilityDetector) -> Arc<StatusReport
         let available = capabilities.is_available(*modality);
         let reason_string = capabilities
             .get_status(*modality)
-            .map_or_else(|| "Not tested".to_string(), |c| c.reason);
+            .map_or_else(|| "Not tested".to_owned(), |c| c.reason);
         let modality_name = match modality {
             Modality::Visual2D => "visual2d",
             Modality::Audio => "audio",
@@ -373,10 +373,10 @@ mod tests {
         use crate::scenario::types::{NeuralApiConfig, Scenario};
 
         let scenario = Scenario {
-            name: "Test".to_string(),
-            description: "Test scenario".to_string(),
-            version: "2.0.0".to_string(),
-            mode: "test".to_string(),
+            name: "Test".to_owned(),
+            description: "Test scenario".to_owned(),
+            version: "2.0.0".to_owned(),
+            mode: "test".to_owned(),
             ui_config: UiConfig {
                 custom_panels: vec![],
                 ..Default::default()
@@ -399,14 +399,14 @@ mod tests {
         use crate::scenario::types::{NeuralApiConfig, Scenario};
 
         let scenario = Scenario {
-            name: "Test".to_string(),
-            description: "Test".to_string(),
-            version: "2.0.0".to_string(),
-            mode: "test".to_string(),
+            name: "Test".to_owned(),
+            description: "Test".to_owned(),
+            version: "2.0.0".to_owned(),
+            mode: "test".to_owned(),
             ui_config: UiConfig {
                 custom_panels: vec![CustomPanelConfig {
-                    panel_type: "metrics".to_string(),
-                    title: "Metrics".to_string(),
+                    panel_type: "metrics".to_owned(),
+                    title: "Metrics".to_owned(),
                     width: Some(400),
                     height: Some(300),
                     fullscreen: false,
@@ -432,12 +432,12 @@ mod tests {
         use crate::scenario::types::{NeuralApiConfig, Scenario};
 
         let scenario = Scenario {
-            name: "Paint".to_string(),
-            description: "Paint mode".to_string(),
-            version: "2.0.0".to_string(),
-            mode: "paint".to_string(),
+            name: "Paint".to_owned(),
+            description: "Paint mode".to_owned(),
+            version: "2.0.0".to_owned(),
+            mode: "paint".to_owned(),
             ui_config: UiConfig {
-                layout: "canvas-only".to_string(),
+                layout: "canvas-only".to_owned(),
                 ..Default::default()
             },
             ecosystem: Ecosystem::default(),
@@ -458,10 +458,10 @@ mod tests {
         use crate::scenario::types::{NeuralApiConfig, Scenario};
 
         let scenario = Scenario {
-            name: "Stats".to_string(),
-            description: "Stats scenario".to_string(),
-            version: "2.0.0".to_string(),
-            mode: "test".to_string(),
+            name: "Stats".to_owned(),
+            description: "Stats scenario".to_owned(),
+            version: "2.0.0".to_owned(),
+            mode: "test".to_owned(),
             ui_config: UiConfig {
                 show_panels: PanelVisibility {
                     graph_stats: true,
@@ -487,14 +487,14 @@ mod tests {
         use crate::scenario::types::{NeuralApiConfig, Scenario};
 
         let scenario = Scenario {
-            name: "Proprio".to_string(),
-            description: "Proprioception".to_string(),
-            version: "2.0.0".to_string(),
-            mode: "test".to_string(),
+            name: "Proprio".to_owned(),
+            description: "Proprioception".to_owned(),
+            version: "2.0.0".to_owned(),
+            mode: "test".to_owned(),
             ui_config: UiConfig {
                 custom_panels: vec![CustomPanelConfig {
-                    panel_type: "proprioception".to_string(),
-                    title: "Proprio".to_string(),
+                    panel_type: "proprioception".to_owned(),
+                    title: "Proprio".to_owned(),
                     width: Some(400),
                     height: Some(300),
                     fullscreen: false,

@@ -324,7 +324,7 @@ mod tests {
         let generator = AudioFileGenerator::new();
         let soundscape = vec![
             (
-                "primal1".to_string(),
+                "primal1".to_owned(),
                 AudioAttributes {
                     instrument: Instrument::Bass,
                     pitch: 0.3,
@@ -333,7 +333,7 @@ mod tests {
                 },
             ),
             (
-                "primal2".to_string(),
+                "primal2".to_owned(),
                 AudioAttributes {
                     instrument: Instrument::Chimes,
                     pitch: 0.8,

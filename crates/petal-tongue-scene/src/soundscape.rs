@@ -313,7 +313,7 @@ mod tests {
     #[test]
     fn synthesize_empty_soundscape() {
         let scape = Soundscape {
-            name: "silence".to_string(),
+            name: "silence".to_owned(),
             duration_secs: 0.1,
             layers: vec![],
             master_amplitude: 0.8,
@@ -327,10 +327,10 @@ mod tests {
     #[test]
     fn synthesize_single_layer() {
         let scape = Soundscape {
-            name: "tone".to_string(),
+            name: "tone".to_owned(),
             duration_secs: 0.01,
             layers: vec![SoundLayer {
-                id: "tone".to_string(),
+                id: "tone".to_owned(),
                 waveform: Waveform::Sine,
                 frequency: 440.0,
                 amplitude: 0.5,
@@ -352,10 +352,10 @@ mod tests {
     #[test]
     fn stereo_panning() {
         let scape = Soundscape {
-            name: "left".to_string(),
+            name: "left".to_owned(),
             duration_secs: 0.01,
             layers: vec![SoundLayer {
-                id: "l".to_string(),
+                id: "l".to_owned(),
                 waveform: Waveform::Sine,
                 frequency: 440.0,
                 amplitude: 1.0,
@@ -380,10 +380,10 @@ mod tests {
     #[test]
     fn fade_in_out() {
         let scape = Soundscape {
-            name: "fade".to_string(),
+            name: "fade".to_owned(),
             duration_secs: 0.1,
             layers: vec![SoundLayer {
-                id: "f".to_string(),
+                id: "f".to_owned(),
                 waveform: Waveform::Square,
                 frequency: 100.0,
                 amplitude: 1.0,
@@ -433,10 +433,10 @@ mod tests {
     #[test]
     fn deterministic_output() {
         let scape = Soundscape {
-            name: "det".to_string(),
+            name: "det".to_owned(),
             duration_secs: 0.01,
             layers: vec![SoundLayer {
-                id: "a".to_string(),
+                id: "a".to_owned(),
                 waveform: Waveform::Sawtooth,
                 frequency: 220.0,
                 amplitude: 0.5,
@@ -458,10 +458,10 @@ mod tests {
     #[test]
     fn soundscape_serde_round_trip() {
         let scape = Soundscape {
-            name: "test".to_string(),
+            name: "test".to_owned(),
             duration_secs: 1.0,
             layers: vec![SoundLayer {
-                id: "bg".to_string(),
+                id: "bg".to_owned(),
                 waveform: Waveform::WhiteNoise,
                 frequency: 0.0,
                 amplitude: 0.1,

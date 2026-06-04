@@ -165,7 +165,7 @@ mod tests {
         assert!(healthy.is_healthy());
 
         let unhealthy = HealthStatus::Unhealthy {
-            reason: "test".to_string(),
+            reason: "test".to_owned(),
         };
         assert!(!unhealthy.is_healthy());
     }

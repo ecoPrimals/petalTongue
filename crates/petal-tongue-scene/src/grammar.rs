@@ -153,7 +153,7 @@ impl GrammarExpr {
     #[must_use]
     pub fn with_x(mut self, field: impl Into<String>) -> Self {
         self.variables.push(VariableBinding {
-            name: "x".to_string(),
+            name: "x".to_owned(),
             field: field.into(),
             role: VariableRole::X,
         });
@@ -164,7 +164,7 @@ impl GrammarExpr {
     #[must_use]
     pub fn with_y(mut self, field: impl Into<String>) -> Self {
         self.variables.push(VariableBinding {
-            name: "y".to_string(),
+            name: "y".to_owned(),
             field: field.into(),
             role: VariableRole::Y,
         });

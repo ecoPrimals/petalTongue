@@ -196,7 +196,7 @@ pub(crate) mod test_support {
         fn node_decoration(&self, properties: &Properties) -> Option<NodeDecoration> {
             if properties.contains_key("badge") {
                 Some(NodeDecoration {
-                    badge: Some("B".to_string()),
+                    badge: Some("B".to_owned()),
                     fill_color: None,
                     ring_color: None,
                     tooltip: None,

@@ -104,8 +104,8 @@ fn map_engagement_curve(v: &Value) -> Option<DataBinding> {
     Some(DataBinding::TimeSeries {
         id: extract_str_or(v, "id", "engagement-curve"),
         label: extract_str_or(v, "label", "Engagement Curve"),
-        x_label: "Time (s)".to_string(),
-        y_label: "Engagement".to_string(),
+        x_label: "Time (s)".to_owned(),
+        y_label: "Engagement".to_owned(),
         unit: extract_str_or(v, "unit", "score"),
         x_values: x,
         y_values: y,
@@ -121,8 +121,8 @@ fn map_difficulty_profile(v: &Value) -> Option<DataBinding> {
     Some(DataBinding::TimeSeries {
         id: extract_str_or(v, "id", "difficulty-profile"),
         label: extract_str_or(v, "label", "Difficulty Profile"),
-        x_label: "Progress".to_string(),
-        y_label: "Difficulty".to_string(),
+        x_label: "Progress".to_owned(),
+        y_label: "Difficulty".to_owned(),
         unit: extract_str_or(v, "unit", "level"),
         x_values: x,
         y_values: y,

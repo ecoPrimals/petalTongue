@@ -275,7 +275,7 @@ mod tests {
     async fn test_socket_backend_capabilities_can_play_false() {
         let socket = DiscoveredSocket {
             path: PathBuf::from("/dev/null"),
-            detected_name: "Test".to_string(),
+            detected_name: "Test".to_owned(),
         };
         let backend = SocketBackend::new(socket);
         let caps = backend.capabilities();
@@ -293,7 +293,7 @@ mod tests {
     async fn test_socket_backend_is_available_returns_false() {
         let socket = DiscoveredSocket {
             path: PathBuf::from("/dev/null"),
-            detected_name: "Test".to_string(),
+            detected_name: "Test".to_owned(),
         };
         let backend = SocketBackend::new(socket);
         assert!(
@@ -307,7 +307,7 @@ mod tests {
     async fn test_socket_initialize_returns_typed_error() {
         let socket = DiscoveredSocket {
             path: PathBuf::from("/dev/null"),
-            detected_name: "Test".to_string(),
+            detected_name: "Test".to_owned(),
         };
         let mut backend = SocketBackend::new(socket);
         let err = backend.initialize().await.unwrap_err();

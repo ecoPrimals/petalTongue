@@ -99,7 +99,7 @@ async fn connect_https(endpoint: &str) -> TarpcResult<PrimalConnection> {
     }
 
     Err(TarpcClientError::Connection(
-        "HTTPS and HTTP fallback both failed".to_string(),
+        "HTTPS and HTTP fallback both failed".to_owned(),
     ))
 }
 

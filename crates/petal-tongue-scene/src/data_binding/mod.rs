@@ -235,8 +235,8 @@ impl DataBindingCompiler {
                     .with_title(label.as_str());
                 expr.coordinate = CoordinateSystem::Perspective3D;
                 expr.variables.push(VariableBinding {
-                    name: "z".to_string(),
-                    field: "z".to_string(),
+                    name: "z".to_owned(),
+                    field: "z".to_owned(),
                     role: VariableRole::Z,
                 });
                 let expr = if let Some(d) = domain {
@@ -436,7 +436,7 @@ impl DataBindingCompiler {
                 if let Some(val) = row.get("value").and_then(Value::as_f64) {
                     let status = utils::resolve_threshold_status(val, thresholds);
                     if let Value::Object(ref mut map) = row {
-                        map.insert("status".to_string(), Value::String(status.to_string()));
+                        map.insert("status".to_owned(), Value::String(status.to_string()));
                     }
                 }
                 row

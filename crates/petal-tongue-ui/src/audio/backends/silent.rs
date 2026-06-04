@@ -28,9 +28,9 @@ impl Default for SilentBackend {
 impl AudioBackend for SilentBackend {
     fn metadata(&self) -> BackendMetadata {
         BackendMetadata {
-            name: "Silent Mode".to_string(),
+            name: "Silent Mode".to_owned(),
             backend_type: BackendType::Silent,
-            description: "No audio output (visual-only mode)".to_string(),
+            description: "No audio output (visual-only mode)".to_owned(),
         }
     }
 

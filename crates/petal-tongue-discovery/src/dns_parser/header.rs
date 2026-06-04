@@ -18,7 +18,7 @@ impl DnsHeader {
     pub fn parse(data: &[u8]) -> DiscoveryResult<Self> {
         if data.len() < 12 {
             return Err(DiscoveryError::DnsParseError {
-                message: "DNS header too short".to_string(),
+                message: "DNS header too short".to_owned(),
             });
         }
 

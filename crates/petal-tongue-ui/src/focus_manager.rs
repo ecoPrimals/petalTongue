@@ -209,7 +209,7 @@ mod tests {
             priority: 5,
         };
 
-        manager.register_panel("doom".to_string(), prefs);
+        manager.register_panel("doom".to_owned(), prefs);
 
         let panels = manager.keyboard_interested_panels();
         assert_eq!(panels.len(), 1);
@@ -222,7 +222,7 @@ mod tests {
 
         // Register panels with different priorities
         manager.register_panel(
-            "low".to_string(),
+            "low".to_owned(),
             PanelInputPreferences {
                 wants_keyboard: true,
                 priority: 3,
@@ -231,7 +231,7 @@ mod tests {
         );
 
         manager.register_panel(
-            "high".to_string(),
+            "high".to_owned(),
             PanelInputPreferences {
                 wants_keyboard: true,
                 priority: 8,
@@ -240,7 +240,7 @@ mod tests {
         );
 
         manager.register_panel(
-            "medium".to_string(),
+            "medium".to_owned(),
             PanelInputPreferences {
                 wants_keyboard: true,
                 priority: 5,
@@ -260,7 +260,7 @@ mod tests {
         let mut manager = FocusManager::new();
 
         manager.register_panel(
-            "doom".to_string(),
+            "doom".to_owned(),
             PanelInputPreferences {
                 wants_keyboard: true,
                 wants_exclusive: true,
@@ -270,7 +270,7 @@ mod tests {
         );
 
         manager.register_panel(
-            "graph".to_string(),
+            "graph".to_owned(),
             PanelInputPreferences {
                 wants_keyboard: true,
                 wants_exclusive: false,
@@ -288,14 +288,14 @@ mod tests {
         let mut manager = FocusManager::new();
 
         manager.register_panel(
-            "doom".to_string(),
+            "doom".to_owned(),
             PanelInputPreferences {
                 wants_keyboard: true,
                 ..Default::default()
             },
         );
 
-        manager.set_focus(Some("doom".to_string()));
+        manager.set_focus(Some("doom".to_owned()));
         assert_eq!(manager.focused_panel(), Some("doom"));
 
         manager.unregister_panel("doom");
@@ -308,7 +308,7 @@ mod tests {
         let mut manager = FocusManager::new();
 
         manager.register_panel(
-            "doom".to_string(),
+            "doom".to_owned(),
             PanelInputPreferences {
                 wants_keyboard: false,
                 priority: 5,
@@ -335,9 +335,9 @@ mod tests {
     fn test_focus_set_and_get() {
         let mut manager = FocusManager::new();
 
-        manager.register_panel("doom".to_string(), PanelInputPreferences::default());
+        manager.register_panel("doom".to_owned(), PanelInputPreferences::default());
 
-        manager.set_focus(Some("doom".to_string()));
+        manager.set_focus(Some("doom".to_owned()));
         assert_eq!(manager.focused_panel(), Some("doom"));
 
         manager.set_focus(None);
@@ -349,7 +349,7 @@ mod tests {
         let mut manager = FocusManager::new();
 
         manager.register_panel(
-            "graph".to_string(),
+            "graph".to_owned(),
             PanelInputPreferences {
                 wants_mouse: true,
                 wants_keyboard: false,
@@ -357,7 +357,7 @@ mod tests {
             },
         );
         manager.register_panel(
-            "sidebar".to_string(),
+            "sidebar".to_owned(),
             PanelInputPreferences {
                 wants_mouse: false,
                 ..Default::default()
@@ -372,7 +372,7 @@ mod tests {
     #[test]
     fn test_update_preferences_nonexistent_id() {
         let mut manager = FocusManager::new();
-        manager.register_panel("a".to_string(), PanelInputPreferences::default());
+        manager.register_panel("a".to_owned(), PanelInputPreferences::default());
 
         manager.update_preferences(
             "nonexistent",

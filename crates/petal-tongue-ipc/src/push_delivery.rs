@@ -131,12 +131,12 @@ mod tests {
         let listener = tokio::net::UnixListener::bind(&sock_path).expect("bind");
 
         let dispatch = CallbackDispatch {
-            subscriber_id: "spring-1".to_string(),
-            method: "spring.on_interaction".to_string(),
+            subscriber_id: "spring-1".to_owned(),
+            method: "spring.on_interaction".to_owned(),
             events: vec![Arc::new(InteractionEventNotification {
-                event_type: "select".to_string(),
-                targets: vec!["node-1".to_string()],
-                timestamp: "2026-04-02T00:00:00Z".to_string(),
+                event_type: "select".to_owned(),
+                targets: vec!["node-1".to_owned()],
+                timestamp: "2026-04-02T00:00:00Z".to_owned(),
                 perspective_id: None,
             })],
             callback_socket: Some(sock_path.to_string_lossy().into_owned()),
@@ -165,8 +165,8 @@ mod tests {
     #[tokio::test]
     async fn push_delivery_skips_no_socket() {
         let dispatch = CallbackDispatch {
-            subscriber_id: "poll-only".to_string(),
-            method: "cb".to_string(),
+            subscriber_id: "poll-only".to_owned(),
+            method: "cb".to_owned(),
             events: vec![],
             callback_socket: None,
         };
@@ -182,10 +182,10 @@ mod tests {
     #[tokio::test]
     async fn push_delivery_handles_unreachable_socket() {
         let dispatch = CallbackDispatch {
-            subscriber_id: "gone".to_string(),
-            method: "cb".to_string(),
+            subscriber_id: "gone".to_owned(),
+            method: "cb".to_owned(),
             events: vec![],
-            callback_socket: Some("/tmp/nonexistent-push-test.sock".to_string()),
+            callback_socket: Some("/tmp/nonexistent-push-test.sock".to_owned()),
         };
 
         let (tx, handle) = spawn_push_delivery();
@@ -204,12 +204,12 @@ mod tests {
         let addr = listener.local_addr().expect("local_addr").to_string();
 
         let dispatch = CallbackDispatch {
-            subscriber_id: "tcp-sub".to_string(),
-            method: "spring.on_event".to_string(),
+            subscriber_id: "tcp-sub".to_owned(),
+            method: "spring.on_event".to_owned(),
             events: vec![Arc::new(InteractionEventNotification {
-                event_type: "hover".to_string(),
+                event_type: "hover".to_owned(),
                 targets: vec![],
-                timestamp: "2026-04-02T00:00:00Z".to_string(),
+                timestamp: "2026-04-02T00:00:00Z".to_owned(),
                 perspective_id: Some(1),
             })],
             callback_socket: Some(addr),

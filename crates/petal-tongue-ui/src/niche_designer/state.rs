@@ -195,9 +195,9 @@ mod tests {
 
     fn make_template(required: Vec<&str>) -> NicheTemplate {
         NicheTemplate {
-            id: "t1".to_string(),
-            name: "Test".to_string(),
-            description: "Desc".to_string(),
+            id: "t1".to_owned(),
+            name: "Test".to_owned(),
+            description: "Desc".to_owned(),
             required_primals: required.into_iter().map(String::from).collect(),
             optional_primals: vec![],
             metadata: serde_json::json!({}),
@@ -227,7 +227,7 @@ mod tests {
 
         designer.select_template(make_template(vec!["compute"]));
         match designer.validation_result() {
-            ValidationResult::MissingRequirements(m) => assert_eq!(m, &["compute".to_string()]),
+            ValidationResult::MissingRequirements(m) => assert_eq!(m, &["compute".to_owned()]),
             _ => panic!("expected MissingRequirements"),
         }
     }
@@ -243,10 +243,10 @@ mod tests {
             )
             .await;
         designer.select_template(make_template(vec!["compute"]));
-        designer.assign_primal("compute".to_string(), "p1".to_string());
+        designer.assign_primal("compute".to_owned(), "p1".to_owned());
 
         let assigned = designer.assigned_primals();
-        assert_eq!(assigned.get("compute"), Some(&"p1".to_string()));
+        assert_eq!(assigned.get("compute"), Some(&"p1".to_owned()));
     }
 
     #[tokio::test]
@@ -276,7 +276,7 @@ mod tests {
             )
             .await;
         designer.select_template(make_template(vec!["compute"]));
-        designer.assign_primal("compute".to_string(), "p1".to_string());
+        designer.assign_primal("compute".to_owned(), "p1".to_owned());
         assert_eq!(designer.assigned_primals().len(), 1);
 
         designer.select_template(make_template(vec!["storage"]));

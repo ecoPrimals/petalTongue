@@ -91,8 +91,8 @@ mod tests {
 
     fn config_with_show_debug(show_debug: bool) -> CustomPanelConfig {
         CustomPanelConfig {
-            panel_type: "doom_game".to_string(),
-            title: "Test Doom".to_string(),
+            panel_type: "doom_game".to_owned(),
+            title: "Test Doom".to_owned(),
             width: Some(320),
             height: Some(240),
             fullscreen: false,
@@ -139,8 +139,8 @@ mod tests {
     fn factory_create_uses_width_height_defaults() {
         let factory = DoomPanelFactory;
         let config = CustomPanelConfig {
-            panel_type: "doom_game".to_string(),
-            title: "Minimal".to_string(),
+            panel_type: "doom_game".to_owned(),
+            title: "Minimal".to_owned(),
             width: None,
             height: None,
             fullscreen: false,

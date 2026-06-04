@@ -104,10 +104,10 @@ pub(crate) mod tool_panel_test_support {
             Self {
                 metadata: ToolMetadata {
                     name: name.to_string(),
-                    description: "Mock tool".to_string(),
-                    version: "0.1.0".to_string(),
+                    description: "Mock tool".to_owned(),
+                    version: "0.1.0".to_owned(),
                     capabilities: vec![ToolCapability::Visual],
-                    icon: "🔧".to_string(),
+                    icon: "🔧".to_owned(),
                     source: None,
                 },
                 visible: false,
@@ -444,19 +444,19 @@ mod tests {
     #[test]
     fn test_tool_capability_custom() {
         assert_eq!(
-            ToolCapability::Custom("x".to_string()),
-            ToolCapability::Custom("x".to_string())
+            ToolCapability::Custom("x".to_owned()),
+            ToolCapability::Custom("x".to_owned())
         );
         assert_ne!(
-            ToolCapability::Custom("a".to_string()),
-            ToolCapability::Custom("b".to_string())
+            ToolCapability::Custom("a".to_owned()),
+            ToolCapability::Custom("b".to_owned())
         );
     }
 
     #[test]
     fn test_tool_metadata_source() {
         let mut tool = MockTool::new("WithSource");
-        tool.metadata.source = Some("https://example.com".to_string());
+        tool.metadata.source = Some("https://example.com".to_owned());
         assert_eq!(tool.metadata.source.as_deref(), Some("https://example.com"));
     }
 

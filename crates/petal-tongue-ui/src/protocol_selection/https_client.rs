@@ -58,7 +58,7 @@ impl HttpsClient {
             }
         }
         Err(TarpcClientError::Configuration(
-            "No capabilities endpoint responded".to_string(),
+            "No capabilities endpoint responded".to_owned(),
         ))
     }
 }

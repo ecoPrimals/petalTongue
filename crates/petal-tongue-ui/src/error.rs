@@ -422,14 +422,14 @@ mod tests {
 
     #[test]
     fn ui_error_display_generic() {
-        let e = UiError::Generic("test message".to_string());
+        let e = UiError::Generic("test message".to_owned());
         let s = format!("{e}");
         assert!(s.contains("test message"));
     }
 
     #[test]
     fn ui_error_display_symphonia() {
-        let e = UiError::Symphonia("decode failed".to_string());
+        let e = UiError::Symphonia("decode failed".to_owned());
         let s = format!("{e}");
         assert!(s.contains("decode"));
         assert!(s.contains("decode failed"));
@@ -462,7 +462,7 @@ mod tests {
 
     #[test]
     fn graph_editor_error_display() {
-        let e = GraphEditorError::NodeNotFound("n1".to_string());
+        let e = GraphEditorError::NodeNotFound("n1".to_owned());
         let s = format!("{e}");
         assert!(s.contains("n1"));
     }
@@ -484,7 +484,7 @@ mod tests {
 
     #[test]
     fn ui_error_debug() {
-        let e = UiError::Generic("debug".to_string());
+        let e = UiError::Generic("debug".to_owned());
         let s = format!("{:?}", e);
         assert!(s.contains("Generic"));
     }

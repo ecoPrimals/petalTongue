@@ -120,7 +120,7 @@ impl InputVerification {
             evidence: vec![],
             last_input: None,
             interactivity: InteractivityState::Unconfirmed,
-            status_message: "Input not yet verified".to_string(),
+            status_message: "Input not yet verified".to_owned(),
             suggested_action: None,
         }
     }
@@ -288,7 +288,7 @@ pub fn detect_keyboard_topology() -> (InputTopology, Vec<String>) {
 
     // Check for SSH
     if std::env::var("SSH_CONNECTION").is_ok() {
-        evidence.push("SSH connection detected - keyboard input forwarded".to_string());
+        evidence.push("SSH connection detected - keyboard input forwarded".to_owned());
         return (InputTopology::Forwarded, evidence);
     }
 
@@ -305,7 +305,7 @@ pub fn detect_keyboard_topology() -> (InputTopology, Vec<String>) {
     }
 
     if evidence.is_empty() {
-        evidence.push("No keyboard input detected".to_string());
+        evidence.push("No keyboard input detected".to_owned());
         (InputTopology::Unknown, evidence)
     } else {
         (InputTopology::Direct, evidence)
@@ -319,17 +319,17 @@ pub fn detect_pointer_topology() -> (InputTopology, Vec<String>) {
 
     // Check for SSH with X11 forwarding
     if std::env::var("SSH_CONNECTION").is_ok() && std::env::var("DISPLAY").is_ok() {
-        evidence.push("SSH with X11 forwarding - pointer input forwarded".to_string());
+        evidence.push("SSH with X11 forwarding - pointer input forwarded".to_owned());
         return (InputTopology::Forwarded, evidence);
     }
 
     // Check for pointer devices
     if std::path::Path::new("/dev/input/mice").exists() {
-        evidence.push("Mouse device detected".to_string());
+        evidence.push("Mouse device detected".to_owned());
     }
 
     if evidence.is_empty() {
-        evidence.push("No pointer input detected".to_string());
+        evidence.push("No pointer input detected".to_owned());
         (InputTopology::Unknown, evidence)
     } else {
         (InputTopology::Direct, evidence)
@@ -435,11 +435,11 @@ mod tests {
     #[test]
     fn test_input_verification_system_record_auto_register() {
         let mut sys = InputVerificationSystem::new();
-        sys.record_input(&InputModality::Generic("custom".to_string()));
+        sys.record_input(&InputModality::Generic("custom".to_owned()));
 
         assert_eq!(sys.get_all_verifications().len(), 1);
         let v = sys
-            .get_verification(&InputModality::Generic("custom".to_string()))
+            .get_verification(&InputModality::Generic("custom".to_owned()))
             .expect("auto-registered");
         assert!(v.input_active);
     }
@@ -481,7 +481,7 @@ mod tests {
         assert_eq!(InputModality::Visual, InputModality::Visual);
         assert_ne!(InputModality::Visual, InputModality::Audio);
         assert!(matches!(
-            InputModality::Generic("x".to_string()),
+            InputModality::Generic("x".to_owned()),
             InputModality::Generic(_)
         ));
     }

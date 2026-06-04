@@ -80,7 +80,7 @@ pub fn domain_color_rgb(domain: Option<&str>) -> (u8, u8, u8) {
 #[must_use]
 pub fn format_session_age(age_secs: f32) -> String {
     if age_secs < 1.0 {
-        "just now".to_string()
+        "just now".to_owned()
     } else if age_secs < 60.0 {
         format!("{age_secs:.0}s ago")
     } else {
@@ -200,11 +200,11 @@ mod tests {
         {
             let mut s = state.write().expect("lock");
             s.handle_render(VisualizationRenderRequest {
-                session_id: "s1".to_string(),
-                title: "Test Session".to_string(),
+                session_id: "s1".to_owned(),
+                title: "Test Session".to_owned(),
                 bindings: vec![],
                 thresholds: vec![],
-                domain: Some("health".to_string()),
+                domain: Some("health".to_owned()),
                 ui_config: None,
             });
         }
@@ -224,8 +224,8 @@ mod tests {
         {
             let mut s = state.write().expect("lock");
             s.handle_render(VisualizationRenderRequest {
-                session_id: "s1".to_string(),
-                title: "T".to_string(),
+                session_id: "s1".to_owned(),
+                title: "T".to_owned(),
                 bindings: vec![],
                 thresholds: vec![],
                 domain: None,

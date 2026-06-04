@@ -92,7 +92,7 @@ impl DiscoveryServiceClient {
         let primals = result
             .as_array()
             .ok_or_else(|| DiscoveryError::ExpectedArray {
-                context: " of primals".to_string(),
+                context: " of primals".to_owned(),
             })?;
 
         Ok(primals
@@ -133,7 +133,7 @@ impl DiscoveryServiceClient {
         let id = value["id"]
             .as_str()
             .ok_or_else(|| DiscoveryError::MissingField {
-                field: "id".to_string(),
+                field: "id".to_owned(),
                 context: String::new(),
             })?
             .to_string();
@@ -141,7 +141,7 @@ impl DiscoveryServiceClient {
         let name = value["name"]
             .as_str()
             .ok_or_else(|| DiscoveryError::MissingField {
-                field: "name".to_string(),
+                field: "name".to_owned(),
                 context: String::new(),
             })?
             .to_string();
@@ -155,7 +155,7 @@ impl DiscoveryServiceClient {
         let endpoint = value["endpoint"]
             .as_str()
             .ok_or_else(|| DiscoveryError::MissingField {
-                field: "endpoint".to_string(),
+                field: "endpoint".to_owned(),
                 context: String::new(),
             })?
             .to_string();

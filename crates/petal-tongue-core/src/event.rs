@@ -266,7 +266,7 @@ mod tests {
         let mut rx = bus.subscribe().await;
 
         let mut selected = HashSet::new();
-        selected.insert("node1".to_string());
+        selected.insert("node1".to_owned());
 
         let event = EngineEvent::SelectionChanged {
             selected: selected.clone(),

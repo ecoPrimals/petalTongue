@@ -69,7 +69,7 @@ impl DiscoveryServiceClient {
             Ok(Err(e)) => return Err(DiscoveryError::Io(e)),
             Err(_) => {
                 return Err(DiscoveryError::WriteTimeout {
-                    endpoint: "discovery service".to_string(),
+                    endpoint: "discovery service".to_owned(),
                 });
             }
         }
@@ -82,7 +82,7 @@ impl DiscoveryServiceClient {
             Ok(Err(e)) => return Err(DiscoveryError::Io(e)),
             Err(_) => {
                 return Err(DiscoveryError::ReadTimeout {
-                    endpoint: "discovery service".to_string(),
+                    endpoint: "discovery service".to_owned(),
                 });
             }
         }
@@ -100,7 +100,7 @@ impl DiscoveryServiceClient {
         response
             .result
             .ok_or_else(|| DiscoveryError::NoResultInResponse {
-                context: " (discovery service)".to_string(),
+                context: " (discovery service)".to_owned(),
             })
     }
 }

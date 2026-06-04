@@ -137,7 +137,7 @@ mod tests {
                 button_count: 3,
             }],
             keyboard_inputs: vec![KeyboardInputCapability::Physical {
-                layout: "QWERTY".to_string(),
+                layout: "QWERTY".to_owned(),
                 has_numpad: false,
                 modifier_keys: 3,
             }],
@@ -155,7 +155,7 @@ mod tests {
                 bit_depth: 16,
             }],
             keyboard_inputs: vec![KeyboardInputCapability::Physical {
-                layout: "QWERTY".to_string(),
+                layout: "QWERTY".to_owned(),
                 has_numpad: false,
                 modifier_keys: 3,
             }],
@@ -252,7 +252,7 @@ mod tests {
                 button_count: 3,
             }],
             keyboard_inputs: vec![KeyboardInputCapability::Physical {
-                layout: "QWERTY".to_string(),
+                layout: "QWERTY".to_owned(),
                 has_numpad: true,
                 modifier_keys: 4,
             }],
@@ -271,7 +271,7 @@ mod tests {
                 size_mm: Some((35, 35)),
             }],
             keyboard_inputs: vec![KeyboardInputCapability::Physical {
-                layout: "QWERTY".to_string(),
+                layout: "QWERTY".to_owned(),
                 has_numpad: false,
                 modifier_keys: 3,
             }],

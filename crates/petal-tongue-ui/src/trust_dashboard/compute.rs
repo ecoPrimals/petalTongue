@@ -80,10 +80,10 @@ pub fn prepare_trust_display(summary: &TrustSummary, elapsed_secs: u64) -> Trust
 #[must_use]
 pub fn trust_level_number_to_label(n: i32) -> String {
     match n {
-        0 => "None (0)".to_string(),
-        1 => "Limited (1)".to_string(),
-        2 => "Elevated (2)".to_string(),
-        3 => "Full (3)".to_string(),
+        0 => "None (0)".to_owned(),
+        1 => "Limited (1)".to_owned(),
+        2 => "Elevated (2)".to_owned(),
+        3 => "Full (3)".to_owned(),
         _ => format!("Unknown ({n})"),
     }
 }

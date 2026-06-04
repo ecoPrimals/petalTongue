@@ -150,8 +150,8 @@ mod tests {
         let adapter = EcoPrimalFamilyAdapter::new();
         let mut props = Properties::new();
         props.insert(
-            "family_id".to_string(),
-            PropertyValue::String("family-abc".to_string()),
+            "family_id".to_owned(),
+            PropertyValue::String("family-abc".to_owned()),
         );
 
         let decoration = adapter.node_decoration(&props).unwrap();
@@ -188,7 +188,7 @@ mod tests {
     fn test_node_decoration_family_id_as_number() {
         let adapter = EcoPrimalFamilyAdapter::new();
         let mut props = Properties::new();
-        props.insert("family_id".to_string(), PropertyValue::Number(42.0));
+        props.insert("family_id".to_owned(), PropertyValue::Number(42.0));
         assert!(adapter.node_decoration(&props).is_none());
     }
 
@@ -197,8 +197,8 @@ mod tests {
         let adapter = EcoPrimalFamilyAdapter::new();
         let mut props = Properties::new();
         props.insert(
-            "other_key".to_string(),
-            PropertyValue::String("val".to_string()),
+            "other_key".to_owned(),
+            PropertyValue::String("val".to_owned()),
         );
         assert!(adapter.node_decoration(&props).is_none());
     }
@@ -207,10 +207,7 @@ mod tests {
     fn test_node_decoration_empty_family_id() {
         let adapter = EcoPrimalFamilyAdapter::new();
         let mut props = Properties::new();
-        props.insert(
-            "family_id".to_string(),
-            PropertyValue::String(String::new()),
-        );
+        props.insert("family_id".to_owned(), PropertyValue::String(String::new()));
         let decoration = adapter.node_decoration(&props).unwrap();
         assert!(decoration.ring_color.is_some());
     }
@@ -258,7 +255,7 @@ mod tests {
         let ctx = egui::Context::default();
         let _ = ctx.run(egui::RawInput::default(), |ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
-                adapter.render("other", &PropertyValue::String("x".to_string()), ui);
+                adapter.render("other", &PropertyValue::String("x".to_owned()), ui);
             });
         });
     }
@@ -271,7 +268,7 @@ mod tests {
             egui::CentralPanel::default().show(ctx, |ui| {
                 adapter.render(
                     "family_id",
-                    &PropertyValue::String("fam-xyz".to_string()),
+                    &PropertyValue::String("fam-xyz".to_owned()),
                     ui,
                 );
             });
@@ -284,7 +281,7 @@ mod tests {
         let ctx = egui::Context::default();
         let _ = ctx.run(egui::RawInput::default(), |ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
-                adapter.render("dna", &PropertyValue::String("ACTG".to_string()), ui);
+                adapter.render("dna", &PropertyValue::String("ACTG".to_owned()), ui);
             });
         });
     }

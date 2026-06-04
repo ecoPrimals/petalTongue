@@ -15,7 +15,7 @@ pub fn format_stats_lines(stats: &GraphStats, zoom: f32, selected_id: Option<&st
         format!("Zoom: {:.2}x", zoom),
     ];
     if let Some(id) = selected_id {
-        lines.push("Selected:".to_string());
+        lines.push("Selected:".to_owned());
         lines.push(id.to_string());
     }
     lines

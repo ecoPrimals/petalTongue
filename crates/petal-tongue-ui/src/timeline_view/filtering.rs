@@ -107,7 +107,7 @@ mod tests {
             mock_event("1", "a", "b", "discover", now),
             mock_event("2", "b", "c", "invoke", now),
         ];
-        let result = filtered_events(&events, Some(&"discover".to_string()), None, None, None);
+        let result = filtered_events(&events, Some(&"discover".to_owned()), None, None, None);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].event_type, "discover");
     }
@@ -119,7 +119,7 @@ mod tests {
             mock_event("1", "alice", "bob", "test", now),
             mock_event("2", "bob", "charlie", "test", now),
         ];
-        let result = filtered_events(&events, None, Some(&"alice".to_string()), None, None);
+        let result = filtered_events(&events, None, Some(&"alice".to_owned()), None, None);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].from, "alice");
     }

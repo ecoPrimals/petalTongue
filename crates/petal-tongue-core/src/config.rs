@@ -147,7 +147,7 @@ mod tests {
     #[test]
     fn test_biomeos_url_from_config() {
         let config = PetalTongueConfig {
-            biomeos_url: Some("http://localhost:9999".to_string()),
+            biomeos_url: Some("http://localhost:9999".to_owned()),
             ..PetalTongueConfig::default()
         };
         let url = config.biomeos_url();

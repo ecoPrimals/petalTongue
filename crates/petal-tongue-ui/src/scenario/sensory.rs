@@ -26,7 +26,7 @@ pub struct SensoryConfig {
 }
 
 fn default_complexity_hint() -> String {
-    "auto".to_string()
+    "auto".to_owned()
 }
 
 impl SensoryConfig {
@@ -40,7 +40,7 @@ impl SensoryConfig {
         let valid_hints = ["auto", "minimal", "simple", "standard", "rich", "immersive"];
         if !valid_hints.contains(&self.complexity_hint.as_str()) {
             return Err(ScenarioError::InvalidValue {
-                field: "complexity_hint".to_string(),
+                field: "complexity_hint".to_owned(),
                 value: self.complexity_hint.clone(),
                 expected: valid_hints.join(", "),
             }
@@ -70,7 +70,7 @@ mod tests {
         let c = SensoryConfig {
             required_capabilities: CapabilityRequirements::default(),
             optional_capabilities: CapabilityRequirements::default(),
-            complexity_hint: "invalid".to_string(),
+            complexity_hint: "invalid".to_owned(),
         };
         assert!(c.validate().is_err());
     }
@@ -90,7 +90,7 @@ mod tests {
     #[test]
     fn capability_requirements_invalid_output_fails() {
         let r = CapabilityRequirements {
-            outputs: vec!["invalid".to_string()],
+            outputs: vec!["invalid".to_owned()],
             inputs: vec![],
         };
         assert!(r.validate("required").is_err());
@@ -100,7 +100,7 @@ mod tests {
     fn capability_requirements_invalid_input_fails() {
         let r = CapabilityRequirements {
             outputs: vec![],
-            inputs: vec!["invalid".to_string()],
+            inputs: vec!["invalid".to_owned()],
         };
         assert!(r.validate("optional").is_err());
     }
@@ -108,8 +108,8 @@ mod tests {
     #[test]
     fn capability_requirements_valid() {
         let r = CapabilityRequirements {
-            outputs: vec!["visual".to_string(), "audio".to_string()],
-            inputs: vec!["pointer".to_string(), "keyboard".to_string()],
+            outputs: vec!["visual".to_owned(), "audio".to_owned()],
+            inputs: vec!["pointer".to_owned(), "keyboard".to_owned()],
         };
         assert!(r.validate("required").is_ok());
     }
@@ -118,11 +118,11 @@ mod tests {
     fn sensory_config_serialization() {
         let c = SensoryConfig {
             required_capabilities: CapabilityRequirements {
-                outputs: vec!["visual".to_string()],
+                outputs: vec!["visual".to_owned()],
                 inputs: vec![],
             },
             optional_capabilities: CapabilityRequirements::default(),
-            complexity_hint: "simple".to_string(),
+            complexity_hint: "simple".to_owned(),
         };
         let json = serde_json::to_string(&c).unwrap();
         let parsed: SensoryConfig = serde_json::from_str(&json).unwrap();
@@ -156,7 +156,7 @@ impl CapabilityRequirements {
             if !valid_outputs.contains(&output.as_str()) {
                 return Err(ScenarioError::CapabilityError {
                     message: format!("Invalid {} output capability", context),
-                    capability_type: "output".to_string(),
+                    capability_type: "output".to_owned(),
                     invalid_value: output.clone(),
                     valid_options: valid_outputs.iter().map(|s| (*s).to_string()).collect(),
                 }
@@ -170,7 +170,7 @@ impl CapabilityRequirements {
             if !valid_inputs.contains(&input.as_str()) {
                 return Err(ScenarioError::CapabilityError {
                     message: format!("Invalid {} input capability", context),
-                    capability_type: "input".to_string(),
+                    capability_type: "input".to_owned(),
                     invalid_value: input.clone(),
                     valid_options: valid_inputs.iter().map(|s| (*s).to_string()).collect(),
                 }

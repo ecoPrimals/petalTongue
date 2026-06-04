@@ -59,7 +59,7 @@ impl Capability {
         Self {
             domain: domain.into(),
             operation: None,
-            version: "1.0.0".to_string(),
+            version: "1.0.0".to_owned(),
         }
     }
 
@@ -357,10 +357,10 @@ mod tests {
     #[tokio::test]
     async fn test_discover_one_with_mock_backend() {
         let endpoint = PrimalEndpoint {
-            id: "test-primal".to_string(),
+            id: "test-primal".to_owned(),
             capabilities: vec![Capability::new("display")],
             endpoints: PrimalEndpoints {
-                tarpc: Some("tarpc://test".to_string()),
+                tarpc: Some("tarpc://test".to_owned()),
                 jsonrpc: None,
                 https: None,
             },
@@ -394,7 +394,7 @@ mod tests {
     async fn test_discover_all_with_mock_backend() {
         let endpoints = vec![
             PrimalEndpoint {
-                id: "primal-1".to_string(),
+                id: "primal-1".to_owned(),
                 capabilities: vec![Capability::new("storage")],
                 endpoints: PrimalEndpoints {
                     tarpc: None,
@@ -404,7 +404,7 @@ mod tests {
                 health: PrimalHealth::Healthy,
             },
             PrimalEndpoint {
-                id: "primal-2".to_string(),
+                id: "primal-2".to_owned(),
                 capabilities: vec![Capability::new("storage")],
                 endpoints: PrimalEndpoints {
                     tarpc: None,
@@ -460,7 +460,7 @@ mod tests {
     fn test_capability_query_builder() {
         let query = CapabilityQuery::new("display").with_operation("render");
         assert_eq!(query.domain, "display");
-        assert_eq!(query.operation, Some("render".to_string()));
+        assert_eq!(query.operation, Some("render".to_owned()));
     }
 
     #[test]

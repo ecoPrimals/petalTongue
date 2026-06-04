@@ -14,14 +14,14 @@ use super::types::ValidationResult;
 #[must_use]
 pub fn validation_display_info(result: &ValidationResult) -> (&'static str, String, [u8; 3]) {
     match result {
-        ValidationResult::Valid => ("✓", "All requirements met".to_string(), [0, 255, 0]),
+        ValidationResult::Valid => ("✓", "All requirements met".to_owned(), [0, 255, 0]),
         ValidationResult::MissingRequirements(missing) => (
             "✖",
             format!("Missing required capabilities: {}", missing.join(", ")),
             [255, 0, 0],
         ),
         ValidationResult::InsufficientResources(msg) => ("⚠", msg.clone(), [255, 255, 0]),
-        ValidationResult::Conflicts(_) => ("✖", "Conflicts detected:".to_string(), [255, 0, 0]),
+        ValidationResult::Conflicts(_) => ("✖", "Conflicts detected:".to_owned(), [255, 0, 0]),
     }
 }
 
@@ -90,7 +90,7 @@ impl NicheDesigner {
             let selected_name = self
                 .selected_template
                 .as_ref()
-                .map_or_else(|| "Select a template...".to_string(), |t| t.name.clone());
+                .map_or_else(|| "Select a template...".to_owned(), |t| t.name.clone());
 
             egui::ComboBox::from_id_salt("template_selector")
                 .selected_text(selected_name)
@@ -270,8 +270,8 @@ mod tests {
     fn validation_display_info_missing() {
         let (icon, text, rgb) =
             validation_display_info(&ValidationResult::MissingRequirements(vec![
-                "cap1".to_string(),
-                "cap2".to_string(),
+                "cap1".to_owned(),
+                "cap2".to_owned(),
             ]));
         assert_eq!(icon, "✖");
         assert!(text.contains("Missing required capabilities"));
@@ -283,7 +283,7 @@ mod tests {
     #[test]
     fn validation_display_info_insufficient() {
         let (icon, text, rgb) = validation_display_info(&ValidationResult::InsufficientResources(
-            "low memory".to_string(),
+            "low memory".to_owned(),
         ));
         assert_eq!(icon, "⚠");
         assert_eq!(text, "low memory");
@@ -293,7 +293,7 @@ mod tests {
     #[test]
     fn validation_display_info_conflicts() {
         let (icon, text, rgb) =
-            validation_display_info(&ValidationResult::Conflicts(vec!["conflict1".to_string()]));
+            validation_display_info(&ValidationResult::Conflicts(vec!["conflict1".to_owned()]));
         assert_eq!(icon, "✖");
         assert_eq!(text, "Conflicts detected:");
         assert_eq!(rgb, [255, 0, 0]);
@@ -307,13 +307,13 @@ mod tests {
     #[test]
     fn can_deploy_invalid() {
         assert!(!can_deploy(&ValidationResult::MissingRequirements(vec![
-            "x".to_string()
+            "x".to_owned()
         ])));
         assert!(!can_deploy(&ValidationResult::InsufficientResources(
-            "msg".to_string()
+            "msg".to_owned()
         )));
         assert!(!can_deploy(&ValidationResult::Conflicts(vec![
-            "c".to_string()
+            "c".to_owned()
         ])));
     }
 
@@ -343,7 +343,7 @@ mod tests {
 
     #[test]
     fn format_conflict_items_output() {
-        let items = format_conflict_items(&["c1".to_string(), "c2".to_string()]);
+        let items = format_conflict_items(&["c1".to_owned(), "c2".to_owned()]);
         assert_eq!(items.len(), 2);
         assert!(items[0].contains("c1"));
         assert!(items[1].contains("c2"));
@@ -352,8 +352,8 @@ mod tests {
     #[test]
     fn validation_display_info_conflicts_multiple() {
         let (icon, text, rgb) = validation_display_info(&ValidationResult::Conflicts(vec![
-            "c1".to_string(),
-            "c2".to_string(),
+            "c1".to_owned(),
+            "c2".to_owned(),
         ]));
         assert_eq!(icon, "✖");
         assert_eq!(text, "Conflicts detected:");
@@ -383,18 +383,18 @@ mod tests {
         let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
         let mut designer = NicheDesigner::new(event_handler);
         designer.templates = vec![NicheTemplate {
-            id: "t1".to_string(),
-            name: "Test Niche".to_string(),
-            description: "A test".to_string(),
-            required_primals: vec!["compute".to_string()],
-            optional_primals: vec!["storage".to_string()],
+            id: "t1".to_owned(),
+            name: "Test Niche".to_owned(),
+            description: "A test".to_owned(),
+            required_primals: vec!["compute".to_owned()],
+            optional_primals: vec!["storage".to_owned()],
             metadata: serde_json::json!({}),
         }];
         designer.available_primals = vec![Primal {
-            id: "p1".to_string(),
-            name: "Primal 1".to_string(),
+            id: "p1".to_owned(),
+            name: "Primal 1".to_owned(),
             health: Health::Healthy,
-            capabilities: vec!["compute".to_string(), "storage".to_string()],
+            capabilities: vec!["compute".to_owned(), "storage".to_owned()],
             load: 0.0,
             assigned_devices: vec![],
             metadata: serde_json::json!({}),
@@ -414,11 +414,11 @@ mod tests {
         let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
         let mut designer = NicheDesigner::new(event_handler);
         designer.templates = vec![NicheTemplate {
-            id: "t1".to_string(),
-            name: "Test".to_string(),
-            description: "Desc".to_string(),
-            required_primals: vec!["compute".to_string()],
-            optional_primals: vec!["storage".to_string(), "auth".to_string()],
+            id: "t1".to_owned(),
+            name: "Test".to_owned(),
+            description: "Desc".to_owned(),
+            required_primals: vec!["compute".to_owned()],
+            optional_primals: vec!["storage".to_owned(), "auth".to_owned()],
             metadata: serde_json::json!({}),
         }];
         let template = designer.templates[0].clone();

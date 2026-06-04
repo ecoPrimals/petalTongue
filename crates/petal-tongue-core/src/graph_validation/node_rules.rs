@@ -22,7 +22,7 @@ pub(super) fn validate_nodes(graph: &VisualGraph, result: &mut ValidationResult)
                     ),
                 )
                 .with_suggestion(
-                    "Fill in all required parameters in the Property Panel".to_string(),
+                    "Fill in all required parameters in the Property Panel".to_owned(),
                 ),
             );
         }
@@ -34,7 +34,7 @@ pub(super) fn validate_nodes(graph: &VisualGraph, result: &mut ValidationResult)
                 if node.get_parameter("primal_name").is_none() {
                     result.add_issue(ValidationIssue::node_error(
                         node_id.clone(),
-                        "PrimalStart node requires 'primal_name' parameter".to_string(),
+                        "PrimalStart node requires 'primal_name' parameter".to_owned(),
                     ));
                 }
             }
@@ -43,7 +43,7 @@ pub(super) fn validate_nodes(graph: &VisualGraph, result: &mut ValidationResult)
                 if node.get_parameter("primal_name").is_none() {
                     result.add_issue(ValidationIssue::node_error(
                         node_id.clone(),
-                        "Verification node requires 'primal_name' parameter".to_string(),
+                        "Verification node requires 'primal_name' parameter".to_owned(),
                     ));
                 }
             }
@@ -52,7 +52,7 @@ pub(super) fn validate_nodes(graph: &VisualGraph, result: &mut ValidationResult)
                 if node.get_parameter("condition").is_none() {
                     result.add_issue(ValidationIssue::node_error(
                         node_id.clone(),
-                        "WaitFor node requires 'condition' parameter".to_string(),
+                        "WaitFor node requires 'condition' parameter".to_owned(),
                     ));
                 }
             }
@@ -61,7 +61,7 @@ pub(super) fn validate_nodes(graph: &VisualGraph, result: &mut ValidationResult)
                 if node.get_parameter("condition").is_none() {
                     result.add_issue(ValidationIssue::node_error(
                         node_id.clone(),
-                        "Conditional node requires 'condition' parameter".to_string(),
+                        "Conditional node requires 'condition' parameter".to_owned(),
                     ));
                 }
             }
@@ -77,10 +77,10 @@ mod tests {
 
     #[test]
     fn test_valid_primal_start() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        node.set_parameter("primal_name".to_string(), "x".to_string());
-        node.set_parameter("family_id".to_string(), "f1".to_string());
+        node.set_parameter("primal_name".to_owned(), "x".to_owned());
+        node.set_parameter("family_id".to_owned(), "f1".to_owned());
         graph.add_node(node);
         let mut result = ValidationResult::new();
         validate_nodes(&graph, &mut result);
@@ -89,7 +89,7 @@ mod tests {
 
     #[test]
     fn test_invalid_primal_start_missing_params() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         graph.add_node(GraphNode::new(NodeType::PrimalStart, Vec2::zero()));
         let mut result = ValidationResult::new();
         validate_nodes(&graph, &mut result);
@@ -98,9 +98,9 @@ mod tests {
 
     #[test]
     fn test_verification_requires_primal_name() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut node = GraphNode::new(NodeType::Verification, Vec2::zero());
-        node.set_parameter("timeout".to_string(), "30".to_string());
+        node.set_parameter("timeout".to_owned(), "30".to_owned());
         graph.add_node(node);
         let mut result = ValidationResult::new();
         validate_nodes(&graph, &mut result);
@@ -109,9 +109,9 @@ mod tests {
 
     #[test]
     fn test_waitfor_requires_condition() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut node = GraphNode::new(NodeType::WaitFor, Vec2::zero());
-        node.set_parameter("timeout".to_string(), "30".to_string());
+        node.set_parameter("timeout".to_owned(), "30".to_owned());
         graph.add_node(node);
         let mut result = ValidationResult::new();
         validate_nodes(&graph, &mut result);
@@ -120,7 +120,7 @@ mod tests {
 
     #[test]
     fn test_conditional_requires_condition() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         graph.add_node(GraphNode::new(NodeType::Conditional, Vec2::zero()));
         let mut result = ValidationResult::new();
         validate_nodes(&graph, &mut result);
@@ -129,9 +129,9 @@ mod tests {
 
     #[test]
     fn test_primal_start_missing_primal_name_only() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        node.set_parameter("family_id".to_string(), "f1".to_string());
+        node.set_parameter("family_id".to_owned(), "f1".to_owned());
         graph.add_node(node);
         let mut result = ValidationResult::new();
         validate_nodes(&graph, &mut result);
@@ -146,10 +146,10 @@ mod tests {
 
     #[test]
     fn test_verification_valid() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut node = GraphNode::new(NodeType::Verification, Vec2::zero());
-        node.set_parameter("primal_name".to_string(), "x".to_string());
-        node.set_parameter("timeout".to_string(), "30".to_string());
+        node.set_parameter("primal_name".to_owned(), "x".to_owned());
+        node.set_parameter("timeout".to_owned(), "30".to_owned());
         graph.add_node(node);
         let mut result = ValidationResult::new();
         validate_nodes(&graph, &mut result);
@@ -158,10 +158,10 @@ mod tests {
 
     #[test]
     fn test_waitfor_valid() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut node = GraphNode::new(NodeType::WaitFor, Vec2::zero());
-        node.set_parameter("condition".to_string(), "healthy".to_string());
-        node.set_parameter("timeout".to_string(), "30".to_string());
+        node.set_parameter("condition".to_owned(), "healthy".to_owned());
+        node.set_parameter("timeout".to_owned(), "30".to_owned());
         graph.add_node(node);
         let mut result = ValidationResult::new();
         validate_nodes(&graph, &mut result);
@@ -170,9 +170,9 @@ mod tests {
 
     #[test]
     fn test_conditional_valid() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut node = GraphNode::new(NodeType::Conditional, Vec2::zero());
-        node.set_parameter("condition".to_string(), "cpu > 80".to_string());
+        node.set_parameter("condition".to_owned(), "cpu > 80".to_owned());
         graph.add_node(node);
         let mut result = ValidationResult::new();
         validate_nodes(&graph, &mut result);
@@ -181,7 +181,7 @@ mod tests {
 
     #[test]
     fn test_node_error_contains_suggestion() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         graph.add_node(GraphNode::new(NodeType::PrimalStart, Vec2::zero()));
         let mut result = ValidationResult::new();
         validate_nodes(&graph, &mut result);
@@ -192,10 +192,10 @@ mod tests {
 
     #[test]
     fn test_multiple_nodes_mixed_valid_invalid() {
-        let mut graph = VisualGraph::new("g".to_string());
+        let mut graph = VisualGraph::new("g".to_owned());
         let mut valid = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        valid.set_parameter("primal_name".to_string(), "x".to_string());
-        valid.set_parameter("family_id".to_string(), "f1".to_string());
+        valid.set_parameter("primal_name".to_owned(), "x".to_owned());
+        valid.set_parameter("family_id".to_owned(), "f1".to_owned());
         graph.add_node(valid);
         graph.add_node(GraphNode::new(NodeType::Conditional, Vec2::zero()));
         let mut result = ValidationResult::new();
@@ -206,7 +206,7 @@ mod tests {
 
     #[test]
     fn test_empty_graph_valid() {
-        let graph = VisualGraph::new("g".to_string());
+        let graph = VisualGraph::new("g".to_owned());
         let mut result = ValidationResult::new();
         validate_nodes(&graph, &mut result);
         assert!(result.is_valid());
@@ -215,7 +215,7 @@ mod tests {
     #[test]
     fn test_primal_start_requires_family_id_implied_by_has_all_required() {
         let mut node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        node.set_parameter("primal_name".to_string(), "p".to_string());
+        node.set_parameter("primal_name".to_owned(), "p".to_owned());
         assert!(!node.has_all_required_parameters());
     }
 }

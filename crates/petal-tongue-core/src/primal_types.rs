@@ -126,9 +126,9 @@ mod tests {
     fn test_primal(capabilities: Vec<String>) -> PrimalInfo {
         PrimalInfo {
             id: PrimalId::from("test"),
-            name: "Test Primal".to_string(),
-            primal_type: "TestType".to_string(),
-            endpoint: "http://test:8000".to_string(),
+            name: "Test Primal".to_owned(),
+            primal_type: "TestType".to_owned(),
+            endpoint: "http://test:8000".to_owned(),
             health: PrimalHealthStatus::Healthy,
             endpoints: None,
             metadata: None,
@@ -140,21 +140,21 @@ mod tests {
 
     #[test]
     fn test_compute_detection() {
-        let primal = test_primal(vec!["compute.container".to_string()]);
+        let primal = test_primal(vec!["compute.container".to_owned()]);
         assert!(primal.is_compute_provider());
         assert!(!primal.is_storage_provider());
     }
 
     #[test]
     fn test_discovery_detection() {
-        let primal = test_primal(vec!["discovery.primals".to_string()]);
+        let primal = test_primal(vec!["discovery.primals".to_owned()]);
         assert!(primal.is_discovery_provider());
         assert!(!primal.is_compute_provider());
     }
 
     #[test]
     fn test_storage_detection() {
-        let primal = test_primal(vec!["storage.filesystem".to_string()]);
+        let primal = test_primal(vec!["storage.filesystem".to_owned()]);
         assert!(primal.is_storage_provider());
         assert!(!primal.is_discovery_provider());
     }
@@ -162,8 +162,8 @@ mod tests {
     #[test]
     fn test_multiple_capabilities() {
         let primal = test_primal(vec![
-            "compute.container".to_string(),
-            "storage.cache".to_string(),
+            "compute.container".to_owned(),
+            "storage.cache".to_owned(),
         ]);
         assert!(primal.is_compute_provider());
         assert!(primal.is_storage_provider());

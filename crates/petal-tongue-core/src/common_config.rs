@@ -27,7 +27,7 @@ pub struct CommonConfig {
 impl Default for CommonConfig {
     fn default() -> Self {
         Self {
-            name: "primal".to_string(),
+            name: "primal".to_owned(),
             host: default_host(),
             port: default_port(),
             log_level: default_log_level(),
@@ -44,7 +44,7 @@ const fn default_port() -> u16 {
 }
 
 fn default_log_level() -> String {
-    "info".to_string()
+    "info".to_owned()
 }
 
 #[cfg(test)]
@@ -63,10 +63,10 @@ mod tests {
     #[test]
     fn test_config_serialization_roundtrip() {
         let config = CommonConfig {
-            name: "test-primal".to_string(),
-            host: "0.0.0.0".to_string(),
+            name: "test-primal".to_owned(),
+            host: "0.0.0.0".to_owned(),
             port: 9000,
-            log_level: "debug".to_string(),
+            log_level: "debug".to_owned(),
         };
         let json = serde_json::to_string(&config).expect("serialize");
         let restored: CommonConfig = serde_json::from_str(&json).expect("deserialize");

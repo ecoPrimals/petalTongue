@@ -202,7 +202,7 @@ mod tests {
         let p = Primitive::Text {
             x: 42.0,
             y: 84.0,
-            content: "Hi".to_string(),
+            content: "Hi".to_owned(),
             font_size: 12.0,
             color: Color::BLACK,
             anchor: AnchorPoint::Center,
@@ -482,7 +482,7 @@ mod tests {
                 },
             ],
             indices: vec![0, 1, 2],
-            data_id: Some("mesh-1".to_string()),
+            data_id: Some("mesh-1".to_owned()),
         };
         let transform = Transform2D::IDENTITY;
         with_egui_painter(Vec2::new(200.0, 200.0), |painter, offset| {
@@ -519,7 +519,7 @@ mod tests {
             radius: 5.0,
             fill: Some(Color::BLACK),
             stroke: None,
-            data_id: Some("pt-1".to_string()),
+            data_id: Some("pt-1".to_owned()),
         }));
         let grammar = GrammarExpr::new("data", GeometryType::Point);
         let plan = RenderPlan::new(graph, grammar);
