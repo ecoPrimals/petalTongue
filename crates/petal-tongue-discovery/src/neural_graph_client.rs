@@ -110,7 +110,7 @@ impl<'a> NeuralGraphClient<'a> {
             .call_method("neural_api.save_graph", Some(params))
             .await
             .map_err(|e| DiscoveryError::InvalidData {
-                name: "Neural API".to_string(),
+                name: "Neural API".to_owned(),
                 reason: format!("Failed to save graph: {e}"),
             })?;
 
@@ -118,8 +118,8 @@ impl<'a> NeuralGraphClient<'a> {
             .get("graph_id")
             .and_then(|v| v.as_str())
             .ok_or_else(|| DiscoveryError::MissingField {
-                field: "graph_id".to_string(),
-                context: " (Neural API)".to_string(),
+                field: "graph_id".to_owned(),
+                context: " (Neural API)".to_owned(),
             })?
             .to_string();
 
@@ -147,15 +147,15 @@ impl<'a> NeuralGraphClient<'a> {
             .call_method("neural_api.load_graph", Some(params))
             .await
             .map_err(|e| DiscoveryError::InvalidData {
-                name: "Neural API".to_string(),
+                name: "Neural API".to_owned(),
                 reason: format!("Failed to load graph: {e}"),
             })?;
 
         let graph = result
             .get("graph")
             .ok_or_else(|| DiscoveryError::MissingField {
-                field: "graph".to_string(),
-                context: " (Neural API)".to_string(),
+                field: "graph".to_owned(),
+                context: " (Neural API)".to_owned(),
             })?
             .clone();
 
@@ -173,7 +173,7 @@ impl<'a> NeuralGraphClient<'a> {
             .call_method("neural_api.list_graphs", None)
             .await
             .map_err(|e| DiscoveryError::InvalidData {
-                name: "Neural API".to_string(),
+                name: "Neural API".to_owned(),
                 reason: format!("Failed to list graphs: {e}"),
             })?;
 
@@ -181,7 +181,7 @@ impl<'a> NeuralGraphClient<'a> {
             .get("graphs")
             .and_then(|v| v.as_array())
             .ok_or_else(|| DiscoveryError::ExpectedArray {
-                context: " (Neural API graphs)".to_string(),
+                context: " (Neural API graphs)".to_owned(),
             })?;
 
         let metadata: Vec<GraphMetadata> = graphs
@@ -219,7 +219,7 @@ impl<'a> NeuralGraphClient<'a> {
             .call_method("neural_api.execute_graph", Some(params))
             .await
             .map_err(|e| DiscoveryError::InvalidData {
-                name: "Neural API".to_string(),
+                name: "Neural API".to_owned(),
                 reason: format!("Failed to execute graph: {e}"),
             })?;
 
@@ -227,8 +227,8 @@ impl<'a> NeuralGraphClient<'a> {
             .get("execution_id")
             .and_then(|v| v.as_str())
             .ok_or_else(|| DiscoveryError::MissingField {
-                field: "execution_id".to_string(),
-                context: " (Neural API)".to_string(),
+                field: "execution_id".to_owned(),
+                context: " (Neural API)".to_owned(),
             })?
             .to_string();
 
@@ -256,13 +256,13 @@ impl<'a> NeuralGraphClient<'a> {
             .call_method("neural_api.get_execution_status", Some(params))
             .await
             .map_err(|e| DiscoveryError::InvalidData {
-                name: "Neural API".to_string(),
+                name: "Neural API".to_owned(),
                 reason: format!("Failed to get execution status: {e}"),
             })?;
 
         let execution: ExecutionResult =
             serde_json::from_value(result).map_err(|e| DiscoveryError::ParseError {
-                data_type: "execution status".to_string(),
+                data_type: "execution status".to_owned(),
                 message: e.to_string(),
             })?;
 
@@ -285,7 +285,7 @@ impl<'a> NeuralGraphClient<'a> {
             .call_method("neural_api.cancel_execution", Some(params))
             .await
             .map_err(|e| DiscoveryError::InvalidData {
-                name: "Neural API".to_string(),
+                name: "Neural API".to_owned(),
                 reason: format!("Failed to cancel execution: {e}"),
             })?;
 
@@ -309,7 +309,7 @@ impl<'a> NeuralGraphClient<'a> {
             .call_method("neural_api.delete_graph", Some(params))
             .await
             .map_err(|e| DiscoveryError::InvalidData {
-                name: "Neural API".to_string(),
+                name: "Neural API".to_owned(),
                 reason: format!("Failed to delete graph: {e}"),
             })?;
 
@@ -347,7 +347,7 @@ impl<'a> NeuralGraphClient<'a> {
             .call_method("neural_api.update_graph_metadata", Some(params))
             .await
             .map_err(|e| DiscoveryError::InvalidData {
-                name: "Neural API".to_string(),
+                name: "Neural API".to_owned(),
                 reason: format!("Failed to update graph metadata: {e}"),
             })?;
 

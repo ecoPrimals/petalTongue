@@ -120,7 +120,7 @@ impl OutputVerification {
             evidence: vec![],
             state: VisibilityState::Unknown,
             last_confirmed: None,
-            status_message: "Output not yet verified".to_string(),
+            status_message: "Output not yet verified".to_owned(),
             suggested_action: None,
         }
     }
@@ -137,7 +137,7 @@ impl OutputVerification {
         );
         self.suggested_action = None;
         self.evidence
-            .push("User interaction confirms perception".to_string());
+            .push("User interaction confirms perception".to_owned());
     }
 
     /// Update with device acknowledgment
@@ -327,7 +327,7 @@ pub fn detect_audio_topology() -> (OutputTopology, Vec<String>) {
     // Check /dev/snd for audio devices (Linux)
     if let Ok(devices) = crate::audio_canvas::AudioCanvas::discover() {
         if devices.is_empty() {
-            evidence.push("No audio devices found in /dev/snd".to_string());
+            evidence.push("No audio devices found in /dev/snd".to_owned());
         } else {
             evidence.push(format!(
                 "Audio Canvas: {} device(s) found in /dev/snd (100% pure Rust!)",
@@ -342,7 +342,7 @@ pub fn detect_audio_topology() -> (OutputTopology, Vec<String>) {
                         || device_lower.contains("tunnel")
                         || device_lower.contains("remote")
                     {
-                        evidence.push("Network audio device detected".to_string());
+                        evidence.push("Network audio device detected".to_owned());
                         return (OutputTopology::Forwarded, evidence);
                     }
                 }
@@ -351,17 +351,17 @@ pub fn detect_audio_topology() -> (OutputTopology, Vec<String>) {
             return (OutputTopology::Direct, evidence);
         }
     } else {
-        evidence.push("Failed to scan /dev/snd for audio devices".to_string());
+        evidence.push("Failed to scan /dev/snd for audio devices".to_owned());
     }
 
     // Check for ALSA as fallback indicator
     if std::path::Path::new("/proc/asound/cards").exists() {
-        evidence.push("ALSA audio devices present (but using Audio Canvas!)".to_string());
+        evidence.push("ALSA audio devices present (but using Audio Canvas!)".to_owned());
     }
 
     // Default: unknown if no devices found
     if evidence.is_empty() {
-        evidence.push("No audio output detected".to_string());
+        evidence.push("No audio output detected".to_owned());
     }
 
     (OutputTopology::Unknown, evidence)
@@ -389,11 +389,11 @@ pub fn detect_haptic_topology() -> (OutputTopology, Vec<String>) {
 
     // Gamepad rumble support?
     if std::path::Path::new("/sys/class/input").exists() {
-        evidence.push("Input subsystem available".to_string());
+        evidence.push("Input subsystem available".to_owned());
     }
 
     if evidence.is_empty() {
-        evidence.push("No haptic output detected".to_string());
+        evidence.push("No haptic output detected".to_owned());
         (OutputTopology::Unknown, evidence)
     } else {
         (OutputTopology::Direct, evidence)

@@ -39,7 +39,7 @@ pub enum ValidationResult {
 pub fn validate_connection(from: &PrimalInfo, to: &PrimalInfo) -> ValidationResult {
     // Allow self-loops for testing/debugging
     if from.id == to.id {
-        return ValidationResult::Warning("Self-connection detected".to_string());
+        return ValidationResult::Warning("Self-connection detected".to_owned());
     }
 
     // Discover what capabilities the source provides
@@ -142,7 +142,7 @@ mod tests {
         PrimalInfo {
             id: id.to_string().into(),
             name: name.to_string(),
-            primal_type: "test".to_string(),
+            primal_type: "test".to_owned(),
             endpoint: format!("test://{id}"),
             capabilities: capabilities
                 .iter()
@@ -222,17 +222,17 @@ mod tests {
 
         let provided = discover_provided_capabilities(&primal);
         assert!(
-            provided.contains(&"security-provider".to_string()),
+            provided.contains(&"security-provider".to_owned()),
             "Should discover security provider"
         );
         assert!(
-            provided.contains(&"compute".to_string()),
+            provided.contains(&"compute".to_owned()),
             "Should discover compute capability"
         );
 
         let required = discover_required_capabilities(&primal);
         assert!(
-            required.contains(&"api-consumer".to_string()),
+            required.contains(&"api-consumer".to_owned()),
             "Should discover consumer capability"
         );
     }
@@ -253,11 +253,11 @@ mod tests {
     fn test_validation_result_variants() {
         assert!(matches!(ValidationResult::Valid, ValidationResult::Valid));
         assert!(matches!(
-            ValidationResult::Warning("w".to_string()),
+            ValidationResult::Warning("w".to_owned()),
             ValidationResult::Warning(_)
         ));
         assert!(matches!(
-            ValidationResult::Invalid("e".to_string()),
+            ValidationResult::Invalid("e".to_owned()),
             ValidationResult::Invalid(_)
         ));
     }
@@ -290,30 +290,30 @@ mod tests {
     fn test_discover_provided_storage() {
         let primal = create_test_primal("p1", "Storage", &["storage-provider", "auth"]);
         let provided = discover_provided_capabilities(&primal);
-        assert!(provided.contains(&"storage-provider".to_string()));
-        assert!(provided.contains(&"auth".to_string()));
+        assert!(provided.contains(&"storage-provider".to_owned()));
+        assert!(provided.contains(&"auth".to_owned()));
     }
 
     #[test]
     fn test_discover_provided_provider() {
         let primal = create_test_primal("p1", "Provider", &["api-provider", "compute"]);
         let provided = discover_provided_capabilities(&primal);
-        assert!(provided.contains(&"api-provider".to_string()));
+        assert!(provided.contains(&"api-provider".to_owned()));
     }
 
     #[test]
     fn test_discover_required_client() {
         let primal = create_test_primal("p1", "Client", &["api-client", "require-auth"]);
         let required = discover_required_capabilities(&primal);
-        assert!(required.contains(&"api-client".to_string()));
-        assert!(required.contains(&"require-auth".to_string()));
+        assert!(required.contains(&"api-client".to_owned()));
+        assert!(required.contains(&"require-auth".to_owned()));
     }
 
     #[test]
     fn test_discover_required_require() {
         let primal = create_test_primal("p1", "Service", &["require-storage", "compute"]);
         let required = discover_required_capabilities(&primal);
-        assert!(required.contains(&"require-storage".to_string()));
+        assert!(required.contains(&"require-storage".to_owned()));
     }
 
     #[test]

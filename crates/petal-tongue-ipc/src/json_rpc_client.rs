@@ -116,7 +116,7 @@ impl JsonRpcClient {
         let path = socket_path.as_ref().to_path_buf();
         if path.as_os_str().is_empty() {
             return Err(JsonRpcClientError::Connection(
-                "Socket path cannot be empty".to_string(),
+                "Socket path cannot be empty".to_owned(),
             ));
         }
         Ok(Self {
@@ -294,19 +294,19 @@ impl JsonRpcClient {
         let wire_bytes: Bytes = Bytes::from(request_bytes);
         timeout(self.timeout, writer.write_all(&wire_bytes))
             .await
-            .map_err(|_| JsonRpcClientError::Timeout("Write timeout".to_string()))??;
+            .map_err(|_| JsonRpcClientError::Timeout("Write timeout".to_owned()))??;
         timeout(self.timeout, writer.flush())
             .await
-            .map_err(|_| JsonRpcClientError::Timeout("Flush timeout".to_string()))??;
+            .map_err(|_| JsonRpcClientError::Timeout("Flush timeout".to_owned()))??;
 
         let mut line = Vec::new();
         timeout(self.timeout, reader.read_until(b'\n', &mut line))
             .await
-            .map_err(|_| JsonRpcClientError::Timeout("Read timeout".to_string()))??;
+            .map_err(|_| JsonRpcClientError::Timeout("Read timeout".to_owned()))??;
 
         if line.is_empty() {
             return Err(JsonRpcClientError::InvalidResponse(
-                "Empty response from server".to_string(),
+                "Empty response from server".to_owned(),
             ));
         }
 
@@ -351,10 +351,10 @@ impl JsonRpcClient {
         let wire_bytes: Bytes = Bytes::from(request_bytes);
         timeout(self.timeout, writer.write_all(&wire_bytes))
             .await
-            .map_err(|_| JsonRpcClientError::Timeout("Write timeout".to_string()))??;
+            .map_err(|_| JsonRpcClientError::Timeout("Write timeout".to_owned()))??;
         timeout(self.timeout, writer.flush())
             .await
-            .map_err(|_| JsonRpcClientError::Timeout("Flush timeout".to_string()))??;
+            .map_err(|_| JsonRpcClientError::Timeout("Flush timeout".to_owned()))??;
         Ok(())
     }
 
@@ -364,7 +364,7 @@ impl JsonRpcClient {
     )]
     fn extract_result(&self, response: JsonRpcResponse, _expected_id: u64) -> JsonRpcResult<Value> {
         response.result.ok_or_else(|| {
-            JsonRpcClientError::InvalidResponse("Response has no result field".to_string())
+            JsonRpcClientError::InvalidResponse("Response has no result field".to_owned())
         })
     }
 }

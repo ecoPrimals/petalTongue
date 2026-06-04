@@ -38,15 +38,24 @@ impl DiscoveryServiceClient {
     /// # Errors
     /// Returns `DiscoveryError::DiscoveryServiceNotFound` if no socket found in search paths.
     pub fn discover(family_id: Option<&str>) -> DiscoveryResult<Self> {
+        // DISCOVERY_SOCKET env var: highest-priority override (NUCLEUS pattern)
+        if let Ok(explicit) = std::env::var("DISCOVERY_SOCKET") {
+            let path = PathBuf::from(&explicit);
+            if path.exists() {
+                info!("🔍 Using explicit DISCOVERY_SOCKET: {}", path.display());
+                return Ok(Self { socket_path: path });
+            }
+            warn!("DISCOVERY_SOCKET set but not found: {explicit}");
+        }
+
         let family = family_id
             .map(String::from)
             .or_else(|| std::env::var("FAMILY_ID").ok())
-            .unwrap_or_else(|| "nat0".to_string());
+            .unwrap_or_else(|| "nat0".to_owned());
 
         let socket_base = petal_tongue_core::constants::discovery_service_socket_name();
         let socket_name = format!("{socket_base}-{family}.sock");
 
-        // Try XDG_RUNTIME_DIR first
         let search_paths = Self::get_search_paths();
 
         for base_path in search_paths {

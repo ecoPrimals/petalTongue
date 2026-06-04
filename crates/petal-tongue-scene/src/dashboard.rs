@@ -184,7 +184,7 @@ fn setup_dashboard_root(
 ) -> SceneGraph {
     let mut scene = SceneGraph::new();
     if let Some(root) = scene.get_mut("root") {
-        root.label = Some("dashboard".to_string());
+        root.label = Some("dashboard".to_owned());
         root.primitives.push(Primitive::Rect {
             x: 0.0,
             y: 0.0,
@@ -291,37 +291,37 @@ mod tests {
     fn sample_bindings() -> Vec<DataBinding> {
         vec![
             DataBinding::TimeSeries {
-                id: "ts".to_string(),
-                label: "Glucose".to_string(),
-                x_label: "Time".to_string(),
-                y_label: "mg/dL".to_string(),
-                unit: "mg/dL".to_string(),
+                id: "ts".to_owned(),
+                label: "Glucose".to_owned(),
+                x_label: "Time".to_owned(),
+                y_label: "mg/dL".to_owned(),
+                unit: "mg/dL".to_owned(),
                 x_values: vec![0.0, 1.0, 2.0],
                 y_values: vec![90.0, 95.0, 88.0],
             },
             DataBinding::Gauge {
-                id: "hr".to_string(),
-                label: "Heart Rate".to_string(),
+                id: "hr".to_owned(),
+                label: "Heart Rate".to_owned(),
                 value: 72.0,
                 min: 40.0,
                 max: 140.0,
-                unit: "bpm".to_string(),
+                unit: "bpm".to_owned(),
                 normal_range: [60.0, 100.0],
                 warning_range: [40.0, 60.0],
             },
             DataBinding::Bar {
-                id: "bar".to_string(),
-                label: "Labs".to_string(),
-                categories: vec!["WBC".to_string(), "RBC".to_string()],
+                id: "bar".to_owned(),
+                label: "Labs".to_owned(),
+                categories: vec!["WBC".to_owned(), "RBC".to_owned()],
                 values: vec![6.5, 4.2],
-                unit: "k/uL".to_string(),
+                unit: "k/uL".to_owned(),
             },
             DataBinding::Spectrum {
-                id: "hrv".to_string(),
-                label: "HRV Spectrum".to_string(),
+                id: "hrv".to_owned(),
+                label: "HRV Spectrum".to_owned(),
                 frequencies: vec![0.0, 0.04, 0.15, 0.4],
                 amplitudes: vec![100.0, 500.0, 300.0, 50.0],
-                unit: "ms\u{b2}/Hz".to_string(),
+                unit: "ms\u{b2}/Hz".to_owned(),
             },
         ]
     }
@@ -374,8 +374,8 @@ mod tests {
     #[test]
     fn build_dashboard_single_panel() {
         let bindings = vec![DataBinding::TimeSeries {
-            id: "single".to_string(),
-            label: "One Panel".to_string(),
+            id: "single".to_owned(),
+            label: "One Panel".to_owned(),
             x_label: String::new(),
             y_label: String::new(),
             unit: String::new(),
@@ -442,7 +442,7 @@ mod tests {
         s1.add_to_root(SceneNode::new("c1"));
         let mut s2 = SceneGraph::new();
         s2.add_to_root(SceneNode::new("c2"));
-        let panels = vec![("Panel A".to_string(), s1), ("Panel B".to_string(), s2)];
+        let panels = vec![("Panel A".to_owned(), s1), ("Panel B".to_owned(), s2)];
         let config = DashboardConfig::default()
             .with_title("Multi")
             .with_panel_size(200.0, 150.0)

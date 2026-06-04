@@ -2,7 +2,7 @@
 
 //! Capability-based content backend for petalTongue web mode (PT-13).
 //!
-//! JSON-RPC client for any primal exposing `content.resolve` / `content.get`.
+//! JSON-RPC client for any primal exposing `content.resolve`.
 //!
 //! Endpoint resolution follows a capability-first, mesh-aware tier chain:
 //!
@@ -96,7 +96,7 @@ impl ContentBackendClient {
             .unwrap_or_else(|_| "content-provider".to_owned());
         let family = std::env::var(petal_tongue_core::constants::FAMILY_ID)
             .or_else(|_| std::env::var(petal_tongue_core::constants::PETALTONGUE_FAMILY_ID))
-            .unwrap_or_else(|_| "default".to_owned());
+            .unwrap_or_else(|_| "nat0".to_owned());
         let dir = petal_tongue_core::constants::resolve_biomeos_socket_dir();
         let convention_sock = dir.join(format!("{provider}-{family}.sock"));
         if convention_sock.exists() {
@@ -183,7 +183,6 @@ impl ContentBackendClient {
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
     }
 
-    /// Call `content.resolve` — returns `(content_bytes, mime_type)` or `None`.
     /// Call `content.resolve` — returns `(content_bytes, mime_type)` or `None`.
     pub async fn resolve(
         &self,

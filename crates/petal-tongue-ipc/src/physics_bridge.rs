@@ -257,7 +257,7 @@ fn discover_compute_socket() -> Result<String, ComputeBridgeError> {
     let runtime_dir = std::env::var(petal_tongue_core::constants::XDG_RUNTIME_DIR)
         .unwrap_or_else(|_| petal_tongue_core::constants::LEGACY_TMP_PREFIX.to_string());
     let socket_name = std::env::var(petal_tongue_core::constants::PHYSICS_COMPUTE_SOCKET_NAME)
-        .unwrap_or_else(|_| "physics-compute".to_string());
+        .unwrap_or_else(|_| "physics-compute".to_owned());
 
     let candidates = [
         format!("{runtime_dir}/ecoPrimals/{socket_name}.sock"),
@@ -475,7 +475,7 @@ mod tests {
     fn compute_dispatch_result_structure() {
         let r = ComputeDispatchResult {
             gpu_accelerated: false,
-            operation: "math.stat.kde".to_string(),
+            operation: "math.stat.kde".to_owned(),
             result: json!(null),
             duration_secs: 0.001,
         };

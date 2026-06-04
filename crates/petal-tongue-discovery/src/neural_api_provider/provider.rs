@@ -48,7 +48,7 @@ impl NeuralApiProvider {
         let family = family_id
             .map(String::from)
             .or_else(|| std::env::var("FAMILY_ID").ok())
-            .unwrap_or_else(|| "nat0".to_string());
+            .unwrap_or_else(|| "nat0".to_owned());
 
         let socket_name = format!("{}-{}.sock", socket_roles::NEURAL_API, family);
 
@@ -105,7 +105,7 @@ impl NeuralApiProvider {
         // Connect to socket
         let mut stream = UnixStream::connect(&self.socket_path).await.map_err(|e| {
             DiscoveryError::HealthCheckFailed {
-                name: "Neural API".to_string(),
+                name: "Neural API".to_owned(),
                 endpoint: self.socket_path.display().to_string(),
                 source: e.into(),
             }
@@ -131,7 +131,7 @@ impl NeuralApiProvider {
         // Parse response
         let response: Value =
             serde_json::from_str(&response_line).map_err(|e| DiscoveryError::ParseError {
-                data_type: "Neural API response".to_string(),
+                data_type: "Neural API response".to_owned(),
                 message: e.to_string(),
             })?;
 
@@ -159,7 +159,7 @@ impl NeuralApiProvider {
             .get("result")
             .cloned()
             .ok_or_else(|| DiscoveryError::NoResultInResponse {
-                context: " (Neural API)".to_string(),
+                context: " (Neural API)".to_owned(),
             })
     }
 
@@ -180,7 +180,7 @@ impl NeuralApiProvider {
             .call_method("neural_api.get_proprioception", None)
             .await?;
         serde_json::from_value(result).map_err(|e| DiscoveryError::ParseError {
-            data_type: "proprioception data".to_string(),
+            data_type: "proprioception data".to_owned(),
             message: e.to_string(),
         })
     }
@@ -205,7 +205,7 @@ impl VisualizationDataProvider for NeuralApiProvider {
             .as_array()
             .or_else(|| result.as_array())
             .ok_or_else(|| DiscoveryError::ExpectedArray {
-                context: " of primals".to_string(),
+                context: " of primals".to_owned(),
             })?;
 
         let mut primals = Vec::new();
@@ -241,15 +241,15 @@ impl VisualizationDataProvider for NeuralApiProvider {
 
     fn get_metadata(&self) -> ProviderMetadata {
         ProviderMetadata {
-            name: "Neural API (Central Coordinator)".to_string(),
+            name: "Neural API (Central Coordinator)".to_owned(),
             endpoint: self.socket_path.display().to_string(),
-            protocol: "unix+jsonrpc".to_string(),
+            protocol: "unix+jsonrpc".to_owned(),
             capabilities: vec![
-                "primal-discovery".to_string(),
-                "proprioception".to_string(),
-                "metrics".to_string(),
-                "topology".to_string(),
-                "coordination".to_string(),
+                "primal-discovery".to_owned(),
+                "proprioception".to_owned(),
+                "metrics".to_owned(),
+                "topology".to_owned(),
+                "coordination".to_owned(),
             ],
         }
     }

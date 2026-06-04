@@ -98,7 +98,7 @@ pub fn compile_geometry(
                     points: screen_points,
                     stroke: *stroke,
                     closed: false,
-                    data_id: Some("line-0".to_string()),
+                    data_id: Some("line-0".to_owned()),
                 }]
             }
         }
@@ -128,7 +128,7 @@ pub fn compile_geometry(
                     fill: fill_color,
                     stroke: None,
                     fill_rule: crate::primitive::FillRule::NonZero,
-                    data_id: Some("area-fill".to_string()),
+                    data_id: Some("area-fill".to_owned()),
                 }];
 
                 let line_points: Vec<[f64; 2]> = points
@@ -140,7 +140,7 @@ pub fn compile_geometry(
                     points: line_points,
                     stroke: *stroke,
                     closed: false,
-                    data_id: Some("area-line".to_string()),
+                    data_id: Some("area-line".to_owned()),
                 });
                 prims
             }
@@ -151,7 +151,7 @@ pub fn compile_geometry(
             vec![Primitive::Text {
                 x: axes.origin.0 + axes.width / 2.0,
                 y: axes.origin.1 - axes.height / 2.0,
-                content: "Ribbon (requires ymin/ymax roles)".to_string(),
+                content: "Ribbon (requires ymin/ymax roles)".to_owned(),
                 font_size: 12.0,
                 color: fill_color,
                 anchor: AnchorPoint::Center,
@@ -290,7 +290,7 @@ pub fn compile_geometry(
                         cap: LineCap::Butt,
                         join: LineJoin::Miter,
                     }),
-                    data_id: Some("backbone".to_string()),
+                    data_id: Some("backbone".to_owned()),
                 }];
 
                 for (i, (&[mid_angle_deg, ring_idx], row)) in
@@ -394,7 +394,7 @@ pub fn compile_geometry(
                     end_angle: 2.0 * std::f64::consts::PI,
                     fill: Some(bg_color),
                     stroke: None,
-                    data_id: Some("gauge-bg".to_string()),
+                    data_id: Some("gauge-bg".to_owned()),
                 }];
 
                 let normalized = value.clamp(0.0, 1.0);
@@ -407,7 +407,7 @@ pub fn compile_geometry(
                     end_angle: std::f64::consts::PI + sweep,
                     fill: Some(primary),
                     stroke: None,
-                    data_id: Some("gauge-fill".to_string()),
+                    data_id: Some("gauge-fill".to_owned()),
                 });
 
                 prims.push(Primitive::Text {

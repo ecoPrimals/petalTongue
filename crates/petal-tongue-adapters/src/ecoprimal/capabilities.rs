@@ -24,21 +24,21 @@ impl Default for CapabilityIconConfig {
         let mut icon_map = HashMap::new();
 
         // ecoPrimals default mappings
-        icon_map.insert("security".to_string(), "🔒".to_string());
-        icon_map.insert("storage".to_string(), "💾".to_string());
-        icon_map.insert("ai".to_string(), "🧠".to_string());
-        icon_map.insert("compute".to_string(), "⚡".to_string());
-        icon_map.insert("network".to_string(), "🌐".to_string());
-        icon_map.insert("database".to_string(), "🗄️".to_string());
-        icon_map.insert("visualization".to_string(), "📊".to_string());
-        icon_map.insert("audio".to_string(), "🔊".to_string());
-        icon_map.insert("discovery".to_string(), "🔍".to_string());
-        icon_map.insert("trust".to_string(), "🤝".to_string());
-        icon_map.insert("entropy".to_string(), "🎲".to_string());
+        icon_map.insert("security".to_owned(), "🔒".to_owned());
+        icon_map.insert("storage".to_owned(), "💾".to_owned());
+        icon_map.insert("ai".to_owned(), "🧠".to_owned());
+        icon_map.insert("compute".to_owned(), "⚡".to_owned());
+        icon_map.insert("network".to_owned(), "🌐".to_owned());
+        icon_map.insert("database".to_owned(), "🗄️".to_owned());
+        icon_map.insert("visualization".to_owned(), "📊".to_owned());
+        icon_map.insert("audio".to_owned(), "🔊".to_owned());
+        icon_map.insert("discovery".to_owned(), "🔍".to_owned());
+        icon_map.insert("trust".to_owned(), "🤝".to_owned());
+        icon_map.insert("entropy".to_owned(), "🎲".to_owned());
 
         Self {
             icon_map,
-            default_icon: "⚙️".to_string(),
+            default_icon: "⚙️".to_owned(),
         }
     }
 }
@@ -170,9 +170,7 @@ mod tests {
     #[test]
     fn test_custom_config() {
         let mut config = CapabilityIconConfig::default();
-        config
-            .icon_map
-            .insert("custom".to_string(), "🎯".to_string());
+        config.icon_map.insert("custom".to_owned(), "🎯".to_owned());
 
         let adapter = EcoPrimalCapabilityAdapter::from_config(config);
         assert_eq!(adapter.get_icon("custom"), "🎯");
@@ -186,7 +184,7 @@ mod tests {
             egui::CentralPanel::default().show(ctx, |ui| {
                 adapter.render(
                     "capabilities",
-                    &PropertyValue::String("not-array".to_string()),
+                    &PropertyValue::String("not-array".to_owned()),
                     ui,
                 );
             });
@@ -213,9 +211,9 @@ mod tests {
                 adapter.render(
                     "capabilities",
                     &PropertyValue::Array(vec![
-                        PropertyValue::String("security".to_string()),
+                        PropertyValue::String("security".to_owned()),
                         PropertyValue::Number(1.0),
-                        PropertyValue::String("ai/model".to_string()),
+                        PropertyValue::String("ai/model".to_owned()),
                     ]),
                     ui,
                 );
@@ -228,8 +226,8 @@ mod tests {
         let adapter = EcoPrimalCapabilityAdapter::new();
         let mut props = Properties::new();
         props.insert(
-            "capabilities".to_string(),
-            PropertyValue::Array(vec![PropertyValue::String("security".to_string())]),
+            "capabilities".to_owned(),
+            PropertyValue::Array(vec![PropertyValue::String("security".to_owned())]),
         );
         assert!(adapter.node_decoration(&props).is_none());
     }
@@ -244,7 +242,7 @@ mod tests {
     #[test]
     fn test_default_config_icons() {
         let config = CapabilityIconConfig::default();
-        assert_eq!(config.icon_map.get("security"), Some(&"🔒".to_string()));
+        assert_eq!(config.icon_map.get("security"), Some(&"🔒".to_owned()));
         assert_eq!(config.default_icon, "⚙️");
     }
 

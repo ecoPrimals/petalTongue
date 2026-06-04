@@ -25,7 +25,7 @@ impl ScenarioBuilder for GroundSpringSeismicScenario {
     }
 
     fn available_scenes(&self) -> Vec<String> {
-        vec!["wave_field".to_string(), "arrival_times".to_string()]
+        vec!["wave_field".to_owned(), "arrival_times".to_owned()]
     }
 
     fn build_scene(&self, scene_name: &str) -> Option<VisualizationScene> {
@@ -39,10 +39,10 @@ impl ScenarioBuilder for GroundSpringSeismicScenario {
 
 fn build_seismic_field() -> VisualizationScene {
     let meta = ScenarioMetadata {
-        title: "Seismic Wave Field".to_string(),
-        description: "2D P-wave amplitude field snapshot".to_string(),
-        version: "1.0.0".to_string(),
-        domain: "measurement".to_string(),
+        title: "Seismic Wave Field".to_owned(),
+        description: "2D P-wave amplitude field snapshot".to_owned(),
+        version: "1.0.0".to_owned(),
+        domain: "measurement".to_owned(),
     };
     let nx = 12;
     let ny = 10;
@@ -61,21 +61,21 @@ fn build_seismic_field() -> VisualizationScene {
         })
         .collect();
     VisualizationScene::new(meta).with_binding(DataBinding::FieldMap {
-        id: "seismic_field".to_string(),
-        label: "P-Wave Amplitude".to_string(),
+        id: "seismic_field".to_owned(),
+        label: "P-Wave Amplitude".to_owned(),
         grid_x,
         grid_y,
         values,
-        unit: "m/s²".to_string(),
+        unit: "m/s²".to_owned(),
     })
 }
 
 fn build_arrival_times() -> VisualizationScene {
     let meta = ScenarioMetadata {
-        title: "Seismic Arrival Times".to_string(),
-        description: "P-wave arrival times across sensor array".to_string(),
-        version: "1.0.0".to_string(),
-        domain: "measurement".to_string(),
+        title: "Seismic Arrival Times".to_owned(),
+        description: "P-wave arrival times across sensor array".to_owned(),
+        version: "1.0.0".to_owned(),
+        domain: "measurement".to_owned(),
     };
     let sensors: Vec<f64> = (0..16).map(f64::from).collect();
     let times: Vec<f64> = sensors
@@ -83,11 +83,11 @@ fn build_arrival_times() -> VisualizationScene {
         .map(|s| 0.02f64.mul_add((s * 0.5).sin(), 0.5 + 0.1 * s))
         .collect();
     VisualizationScene::new(meta).with_binding(DataBinding::TimeSeries {
-        id: "arrival_times".to_string(),
-        label: "P-Wave Arrival".to_string(),
-        x_label: "Sensor Index".to_string(),
-        y_label: "Time (s)".to_string(),
-        unit: "s".to_string(),
+        id: "arrival_times".to_owned(),
+        label: "P-Wave Arrival".to_owned(),
+        x_label: "Sensor Index".to_owned(),
+        y_label: "Time (s)".to_owned(),
+        unit: "s".to_owned(),
         x_values: sensors,
         y_values: times,
     })
@@ -110,7 +110,7 @@ impl ScenarioBuilder for GroundSpringSensorDriftScenario {
     }
 
     fn available_scenes(&self) -> Vec<String> {
-        vec!["drift_timeseries".to_string()]
+        vec!["drift_timeseries".to_owned()]
     }
 
     fn build_scene(&self, scene_name: &str) -> Option<VisualizationScene> {
@@ -123,10 +123,10 @@ impl ScenarioBuilder for GroundSpringSensorDriftScenario {
 
 fn build_sensor_drift() -> VisualizationScene {
     let meta = ScenarioMetadata {
-        title: "Sensor Drift Analysis".to_string(),
-        description: "Accelerometer calibration drift over 90 days".to_string(),
-        version: "1.0.0".to_string(),
-        domain: "measurement".to_string(),
+        title: "Sensor Drift Analysis".to_owned(),
+        description: "Accelerometer calibration drift over 90 days".to_owned(),
+        version: "1.0.0".to_owned(),
+        domain: "measurement".to_owned(),
     };
     let days: Vec<f64> = (0..90).map(f64::from).collect();
     let drift: Vec<f64> = days
@@ -135,25 +135,25 @@ fn build_sensor_drift() -> VisualizationScene {
         .collect();
     VisualizationScene::new(meta)
         .with_binding(DataBinding::TimeSeries {
-            id: "drift".to_string(),
-            label: "Sensor Drift".to_string(),
-            x_label: "Day".to_string(),
-            y_label: "Offset (g)".to_string(),
-            unit: "g".to_string(),
+            id: "drift".to_owned(),
+            label: "Sensor Drift".to_owned(),
+            x_label: "Day".to_owned(),
+            y_label: "Offset (g)".to_owned(),
+            unit: "g".to_owned(),
             x_values: days,
             y_values: drift,
         })
         .with_threshold(ThresholdRange {
-            label: "Acceptable drift".to_string(),
+            label: "Acceptable drift".to_owned(),
             min: -0.05,
             max: 0.05,
-            status: "normal".to_string(),
+            status: "normal".to_owned(),
         })
         .with_threshold(ThresholdRange {
-            label: "Recalibration needed".to_string(),
+            label: "Recalibration needed".to_owned(),
             min: 0.05,
             max: 0.1,
-            status: "warning".to_string(),
+            status: "warning".to_owned(),
         })
 }
 
@@ -174,7 +174,7 @@ impl ScenarioBuilder for GroundSpringSpectralReconstructionScenario {
     }
 
     fn available_scenes(&self) -> Vec<String> {
-        vec!["power_spectrum".to_string()]
+        vec!["power_spectrum".to_owned()]
     }
 
     fn build_scene(&self, scene_name: &str) -> Option<VisualizationScene> {
@@ -187,10 +187,10 @@ impl ScenarioBuilder for GroundSpringSpectralReconstructionScenario {
 
 fn build_power_spectrum() -> VisualizationScene {
     let meta = ScenarioMetadata {
-        title: "Reconstructed Power Spectrum".to_string(),
-        description: "Ground vibration spectrum from sparse sensor data".to_string(),
-        version: "1.0.0".to_string(),
-        domain: "measurement".to_string(),
+        title: "Reconstructed Power Spectrum".to_owned(),
+        description: "Ground vibration spectrum from sparse sensor data".to_owned(),
+        version: "1.0.0".to_owned(),
+        domain: "measurement".to_owned(),
     };
     let n_bins = 64;
     let frequencies: Vec<f64> = (0..n_bins).map(|i| f64::from(i) * 0.5).collect();
@@ -204,11 +204,11 @@ fn build_power_spectrum() -> VisualizationScene {
         })
         .collect();
     VisualizationScene::new(meta).with_binding(DataBinding::Spectrum {
-        id: "ground_spectrum".to_string(),
-        label: "Ground Vibration".to_string(),
+        id: "ground_spectrum".to_owned(),
+        label: "Ground Vibration".to_owned(),
         frequencies,
         amplitudes,
-        unit: "dB".to_string(),
+        unit: "dB".to_owned(),
     })
 }
 
@@ -229,7 +229,7 @@ impl ScenarioBuilder for GroundSpringAndersonLocalizationScenario {
     }
 
     fn available_scenes(&self) -> Vec<String> {
-        vec!["localization_heatmap".to_string()]
+        vec!["localization_heatmap".to_owned()]
     }
 
     fn build_scene(&self, scene_name: &str) -> Option<VisualizationScene> {
@@ -242,10 +242,10 @@ impl ScenarioBuilder for GroundSpringAndersonLocalizationScenario {
 
 fn build_anderson_heatmap() -> VisualizationScene {
     let meta = ScenarioMetadata {
-        title: "Anderson Localization".to_string(),
-        description: "Wave function amplitude in a disordered lattice".to_string(),
-        version: "1.0.0".to_string(),
-        domain: "measurement".to_string(),
+        title: "Anderson Localization".to_owned(),
+        description: "Wave function amplitude in a disordered lattice".to_owned(),
+        version: "1.0.0".to_owned(),
+        domain: "measurement".to_owned(),
     };
     let size = 8;
     let x_labels: Vec<String> = (0..size).map(|i| format!("x{i}")).collect();
@@ -262,12 +262,12 @@ fn build_anderson_heatmap() -> VisualizationScene {
         })
         .collect();
     VisualizationScene::new(meta).with_binding(DataBinding::Heatmap {
-        id: "anderson_loc".to_string(),
-        label: "|ψ|²".to_string(),
+        id: "anderson_loc".to_owned(),
+        label: "|ψ|²".to_owned(),
         x_labels,
         y_labels,
         values,
-        unit: "a.u.".to_string(),
+        unit: "a.u.".to_owned(),
     })
 }
 
