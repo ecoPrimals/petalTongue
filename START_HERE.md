@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: June 3, 2026 (Wave 74+ deep debt — typed AppError, async-safe I/O, TRUE PRIMAL, idiom sweep)
+**Updated**: June 3, 2026 (Wave 76 consolidation — S3 cutover readiness, complete idiom sweep, zero production debt)
 
 ---
 

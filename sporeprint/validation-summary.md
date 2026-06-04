@@ -21,10 +21,10 @@ springs = []
 - **BTSP Phase 3** encrypted transport (ChaCha20-Poly1305 + HKDF-SHA256)
 - **MethodGate** (JH-0): public/protected method classification with auth enforcement
 - **DH-1 /tmp cleanup**: All socket paths through `BIOMEOS_SOCKET_DIR` tier chain
-- **Stadial gate**: READY (post-primordial, Wave 74+ clean)
+- **Stadial gate**: READY (post-primordial, Wave 76 clean)
 - **Content pipeline**: `content_render` + `viz_data` + `content_direct` wired and compiled
-- **flockGate W67/W68 review**: document.rs types, VizRegistry pattern, TRUE PRIMAL fixes applied
-- **Wave 74+ deep debt**: typed `AppError` (#[from] chains), `ContentBackendError`, async-safe I/O, 440+ idiom fixes, TRUE PRIMAL viz labels
+- **S3 cutover**: 4-tier content backend audited; FAMILY_ID aligned; DISCOVERY_SOCKET wired
+- **Wave 76 consolidation**: typed `AppError` (TracingInit + 5 #[from] chains), `ContentBackendError`, zero `"literal".to_string()` in production, NESTGATE_SOCKET removed, zero hardcoded primal names
 
 ## Key Capabilities
 
