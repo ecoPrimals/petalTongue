@@ -25,7 +25,7 @@ impl<'a> NameParser<'a> {
         loop {
             if offset >= self.data.len() {
                 return Err(DiscoveryError::DnsParseError {
-                    message: "Name parsing exceeded packet bounds".to_string(),
+                    message: "Name parsing exceeded packet bounds".to_owned(),
                 });
             }
 
@@ -35,7 +35,7 @@ impl<'a> NameParser<'a> {
             if (len & 0xC0) == 0xC0 {
                 if offset + 1 >= self.data.len() {
                     return Err(DiscoveryError::DnsParseError {
-                        message: "Compression pointer incomplete".to_string(),
+                        message: "Compression pointer incomplete".to_owned(),
                     });
                 }
 
@@ -60,7 +60,7 @@ impl<'a> NameParser<'a> {
             // Label
             if offset + 1 + len as usize > self.data.len() {
                 return Err(DiscoveryError::DnsParseError {
-                    message: "Label length exceeds packet bounds".to_string(),
+                    message: "Label length exceeds packet bounds".to_owned(),
                 });
             }
 

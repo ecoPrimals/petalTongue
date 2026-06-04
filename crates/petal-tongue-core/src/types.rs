@@ -231,7 +231,7 @@ impl From<PrimalInfoWire> for PrimalInfo {
         if let Some(ref metadata) = wire.metadata {
             if let Some(ref version) = metadata.version {
                 properties
-                    .entry("version".to_string())
+                    .entry("version".to_owned())
                     .or_insert_with(|| PropertyValue::String(version.clone()));
             }
             if let Some(ref family) = metadata.family_id {
@@ -241,7 +241,7 @@ impl From<PrimalInfoWire> for PrimalInfo {
             }
             if let Some(ref node_id) = metadata.node_id {
                 properties
-                    .entry("node_id".to_string())
+                    .entry("node_id".to_owned())
                     .or_insert_with(|| PropertyValue::String(node_id.clone()));
             }
         }
@@ -363,7 +363,7 @@ impl PrimalInfo {
         if let Some(ref metadata) = self.metadata {
             if let Some(ref version) = metadata.version {
                 self.properties
-                    .entry("version".to_string())
+                    .entry("version".to_owned())
                     .or_insert_with(|| PropertyValue::String(version.clone()));
             }
             if let Some(ref family) = metadata.family_id {
@@ -373,7 +373,7 @@ impl PrimalInfo {
             }
             if let Some(ref node_id) = metadata.node_id {
                 self.properties
-                    .entry("node_id".to_string())
+                    .entry("node_id".to_owned())
                     .or_insert_with(|| PropertyValue::String(node_id.clone()));
             }
         }
@@ -490,7 +490,7 @@ pub struct TopologyEdge {
 }
 
 fn default_edge_type() -> String {
-    "connection".to_string()
+    "connection".to_owned()
 }
 
 /// Real-time flow event showing message between primals

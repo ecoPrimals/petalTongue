@@ -55,7 +55,7 @@ impl PanelInstance for ProprioceptionPanel {
             tracing::info!("✅ Neural API discovered for proprioception panel");
         } else {
             tracing::warn!("⚠️  Neural API not available - proprioception will not update");
-            self.error_message = Some("Neural API not available".to_string());
+            self.error_message = Some("Neural API not available".to_owned());
         }
 
         self.provider = provider;
@@ -210,8 +210,8 @@ mod tests {
         );
 
         let config = CustomPanelConfig {
-            panel_type: "proprioception".to_string(),
-            title: "Test Proprio".to_string(),
+            panel_type: "proprioception".to_owned(),
+            title: "Test Proprio".to_owned(),
             width: None,
             height: None,
             fullscreen: false,

@@ -237,7 +237,7 @@ mod tests {
         let mut palette = NodePalette::new();
 
         // Search for "start"
-        palette.search = "start".to_string();
+        palette.search = "start".to_owned();
         let filtered: Vec<_> = palette
             .node_types
             .iter()
@@ -321,7 +321,7 @@ mod tests {
     #[test]
     fn test_search_filter_nonexistent_returns_empty() {
         let mut palette = NodePalette::new();
-        palette.search = "xyznonexistent123".to_string();
+        palette.search = "xyznonexistent123".to_owned();
         let filtered: Vec<_> = palette
             .node_types
             .iter()

@@ -117,7 +117,7 @@ mod tests {
                 uptime_seconds: 100,
             },
             neural_api: NeuralApiMetrics {
-                family_id: "t".to_string(),
+                family_id: "t".to_owned(),
                 active_primals: 1,
                 graphs_available: 1,
                 active_executions: 0,
@@ -164,7 +164,7 @@ mod tests {
                 "Primal Two",
                 "Storage",
                 "http://localhost:8081",
-                vec!["store".to_string()],
+                vec!["store".to_owned()],
                 PrimalHealthStatus::Warning,
                 1,
             ),

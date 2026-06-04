@@ -45,7 +45,7 @@ pub(super) fn adapt_eco_timeseries(
             id: entry.id,
             label: entry.label,
             x_label: if entry.x_label.is_empty() {
-                "Time".to_string()
+                "Time".to_owned()
             } else {
                 entry.x_label
             },

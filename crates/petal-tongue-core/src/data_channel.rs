@@ -27,10 +27,10 @@ mod tests {
         assert!(matches!(binding, DataBinding::TimeSeries { .. }));
 
         let tr = ThresholdRange {
-            label: "Normal".to_string(),
+            label: "Normal".to_owned(),
             min: 0.0,
             max: 1.0,
-            status: "normal".to_string(),
+            status: "normal".to_owned(),
         };
         let serialized = serde_json::to_string(&tr).expect("serialize");
         assert!(serialized.contains("Normal"));

@@ -310,21 +310,21 @@ mod tests {
     fn pipeline_submit_and_update() {
         let mut reg = PipelineRegistry::new();
         let resp = reg.submit(PipelineSubmitRequest {
-            pipeline_id: "p1".to_string(),
-            title: "Test".to_string(),
+            pipeline_id: "p1".to_owned(),
+            title: "Test".to_owned(),
             stages: vec![make_stage("a", &[]), make_stage("b", &["a"])],
-            domain: Some("neural".to_string()),
+            domain: Some("neural".to_owned()),
         });
         assert_eq!(resp.stage_count, 2);
         assert_eq!(resp.execution_order, vec!["a", "b"]);
 
         let update = reg.update_stage(PipelineStageUpdateRequest {
-            pipeline_id: "p1".to_string(),
-            stage_id: "a".to_string(),
+            pipeline_id: "p1".to_owned(),
+            stage_id: "a".to_owned(),
             status: StageStatus::Complete,
             bindings: vec![DataBinding::Gauge {
-                id: "g1".to_string(),
-                label: "G".to_string(),
+                id: "g1".to_owned(),
+                label: "G".to_owned(),
                 value: 1.0,
                 min: 0.0,
                 max: 2.0,
@@ -341,15 +341,15 @@ mod tests {
         assert_eq!(reg.domain("p1"), Some("neural"));
         assert_eq!(reg.title("p1"), Some("Test"));
         let order = reg.execution_order("p1").expect("execution order");
-        assert_eq!(order, ["a".to_string(), "b".to_string()].as_slice());
+        assert_eq!(order, ["a".to_owned(), "b".to_owned()].as_slice());
     }
 
     #[test]
     fn pipeline_update_nonexistent() {
         let mut reg = PipelineRegistry::new();
         let resp = reg.update_stage(PipelineStageUpdateRequest {
-            pipeline_id: "missing".to_string(),
-            stage_id: "a".to_string(),
+            pipeline_id: "missing".to_owned(),
+            stage_id: "a".to_owned(),
             status: StageStatus::Complete,
             bindings: vec![],
         });
@@ -360,8 +360,8 @@ mod tests {
     fn empty_pipeline_progress_is_one() {
         let mut reg = PipelineRegistry::new();
         reg.submit(PipelineSubmitRequest {
-            pipeline_id: "empty".to_string(),
-            title: "Empty".to_string(),
+            pipeline_id: "empty".to_owned(),
+            title: "Empty".to_owned(),
             stages: vec![],
             domain: None,
         });

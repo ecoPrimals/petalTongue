@@ -202,7 +202,7 @@ mod tests {
     fn test_render_empty_map() {
         let mut renderer = MapRenderer::new(64, 64);
         let map = MapData {
-            name: "EMPTY".to_string(),
+            name: "EMPTY".to_owned(),
             vertices: vec![],
             linedefs: vec![],
             sectors: vec![],
@@ -219,7 +219,7 @@ mod tests {
         use crate::wad_loader::Thing;
         let mut renderer = MapRenderer::new(64, 64);
         let map = MapData {
-            name: "THINGS".to_string(),
+            name: "THINGS".to_owned(),
             vertices: vec![Vertex { x: 0, y: 0 }, Vertex { x: 100, y: 0 }],
             linedefs: vec![],
             sectors: vec![],
@@ -249,7 +249,7 @@ mod tests {
         let mut renderer = MapRenderer::new(320, 240);
 
         let map = MapData {
-            name: "TEST".to_string(),
+            name: "TEST".to_owned(),
             vertices: vec![
                 Vertex { x: 0, y: 0 },
                 Vertex { x: 100, y: 0 },

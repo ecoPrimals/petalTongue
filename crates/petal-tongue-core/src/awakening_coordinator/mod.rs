@@ -149,7 +149,7 @@ impl AwakeningCoordinator {
                 self.engine
                     .events()
                     .broadcast(EngineEvent::StateUpdate {
-                        key: "awakening_stage".to_string(),
+                        key: "awakening_stage".to_owned(),
                         value: serde_json::json!({
                             "stage": format!("{:?}", stage),
                             "time": event.time,
@@ -166,7 +166,7 @@ impl AwakeningCoordinator {
                 self.engine
                     .events()
                     .broadcast(EngineEvent::StateUpdate {
-                        key: "awakening_visual_frame".to_string(),
+                        key: "awakening_visual_frame".to_owned(),
                         value: serde_json::json!({
                             "frame": frame,
                             "time": event.time,
@@ -183,7 +183,7 @@ impl AwakeningCoordinator {
                 self.engine
                     .events()
                     .broadcast(EngineEvent::StateUpdate {
-                        key: "awakening_audio".to_string(),
+                        key: "awakening_audio".to_owned(),
                         value: serde_json::json!({
                             "action": "start",
                             "layer": layer,
@@ -201,7 +201,7 @@ impl AwakeningCoordinator {
                 self.engine
                     .events()
                     .broadcast(EngineEvent::StateUpdate {
-                        key: "awakening_audio".to_string(),
+                        key: "awakening_audio".to_owned(),
                         value: serde_json::json!({
                             "action": "stop",
                             "layer": layer,
@@ -219,7 +219,7 @@ impl AwakeningCoordinator {
                 self.engine
                     .events()
                     .broadcast(EngineEvent::StateUpdate {
-                        key: "awakening_text".to_string(),
+                        key: "awakening_text".to_owned(),
                         value: serde_json::json!({
                             "message": message,
                             "stage": format!("{:?}", event.stage),
@@ -237,7 +237,7 @@ impl AwakeningCoordinator {
                 self.engine
                     .events()
                     .broadcast(EngineEvent::StateUpdate {
-                        key: "awakening_discovery".to_string(),
+                        key: "awakening_discovery".to_owned(),
                         value: serde_json::json!({
                             "primal": primal,
                             "index": index,

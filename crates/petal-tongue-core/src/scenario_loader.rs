@@ -444,15 +444,15 @@ mod tests {
     #[test]
     fn scenario_node_construction() {
         let node = ScenarioNode {
-            id: "n1".to_string(),
-            name: "Node 1".to_string(),
-            node_type: "healthspring".to_string(),
-            family: "healthSpring".to_string(),
-            status: "healthy".to_string(),
+            id: "n1".to_owned(),
+            name: "Node 1".to_owned(),
+            node_type: "healthspring".to_owned(),
+            family: "healthSpring".to_owned(),
+            status: "healthy".to_owned(),
             health: 95,
             data_channels: vec![],
             clinical_ranges: vec![],
-            capabilities: vec!["viz".to_string()],
+            capabilities: vec!["viz".to_owned()],
         };
         assert_eq!(node.id, "n1");
         assert_eq!(node.health, 95);
@@ -462,10 +462,10 @@ mod tests {
     #[test]
     fn scenario_edge_construction() {
         let edge = ScenarioEdge {
-            from: "src".to_string(),
-            to: "dst".to_string(),
-            edge_type: "renders".to_string(),
-            label: "renders".to_string(),
+            from: "src".to_owned(),
+            to: "dst".to_owned(),
+            edge_type: "renders".to_owned(),
+            label: "renders".to_owned(),
         };
         assert_eq!(edge.from, "src");
         assert_eq!(edge.to, "dst");
@@ -475,8 +475,8 @@ mod tests {
     fn scenario_ecosystem_construction() {
         let eco = ScenarioEcosystem {
             primals: vec![ScenarioNode {
-                id: "p1".to_string(),
-                name: "P1".to_string(),
+                id: "p1".to_owned(),
+                name: "P1".to_owned(),
                 node_type: String::new(),
                 family: String::new(),
                 status: String::new(),

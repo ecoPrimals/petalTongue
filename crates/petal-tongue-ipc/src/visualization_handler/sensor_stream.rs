@@ -129,7 +129,7 @@ mod tests {
             SensorEventIpc::Click {
                 x: 10.0,
                 y: 20.0,
-                button: "left".to_string(),
+                button: "left".to_owned(),
                 timestamp_ms: 150,
             },
         ];
@@ -169,7 +169,7 @@ mod tests {
         let id1 = reg.subscribe();
         let id2 = reg.subscribe();
         reg.broadcast(&[SensorEventIpc::KeyPress {
-            key: "A".to_string(),
+            key: "A".to_owned(),
             modifiers: petal_tongue_core::KeyModifiersIpc::default(),
             timestamp_ms: 300,
         }]);

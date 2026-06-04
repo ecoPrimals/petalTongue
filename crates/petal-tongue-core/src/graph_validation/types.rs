@@ -166,7 +166,7 @@ mod tests {
 
     #[test]
     fn test_validation_issue_error() {
-        let issue = ValidationIssue::error("msg".to_string());
+        let issue = ValidationIssue::error("msg".to_owned());
         assert_eq!(issue.severity, ValidationSeverity::Error);
         assert!(issue.node_id.is_none());
         assert_eq!(issue.message, "msg");
@@ -174,7 +174,7 @@ mod tests {
 
     #[test]
     fn test_validation_issue_node_error() {
-        let issue = ValidationIssue::node_error("n1".to_string(), "err".to_string());
+        let issue = ValidationIssue::node_error("n1".to_owned(), "err".to_owned());
         assert_eq!(issue.severity, ValidationSeverity::Error);
         assert_eq!(issue.node_id.as_deref(), Some("n1"));
         assert_eq!(issue.message, "err");
@@ -182,13 +182,13 @@ mod tests {
 
     #[test]
     fn test_validation_issue_warning() {
-        let issue = ValidationIssue::warning("warn".to_string());
+        let issue = ValidationIssue::warning("warn".to_owned());
         assert_eq!(issue.severity, ValidationSeverity::Warning);
     }
 
     #[test]
     fn test_validation_issue_with_suggestion() {
-        let issue = ValidationIssue::error("e".to_string()).with_suggestion("fix".to_string());
+        let issue = ValidationIssue::error("e".to_owned()).with_suggestion("fix".to_owned());
         assert_eq!(issue.suggestion.as_deref(), Some("fix"));
     }
 
@@ -204,7 +204,7 @@ mod tests {
     #[test]
     fn test_validation_result_has_errors() {
         let mut r = ValidationResult::new();
-        r.add_issue(ValidationIssue::error("e".to_string()));
+        r.add_issue(ValidationIssue::error("e".to_owned()));
         assert!(r.has_errors());
         assert!(!r.is_valid());
     }
@@ -212,7 +212,7 @@ mod tests {
     #[test]
     fn test_validation_result_has_warnings() {
         let mut r = ValidationResult::new();
-        r.add_issue(ValidationIssue::warning("w".to_string()));
+        r.add_issue(ValidationIssue::warning("w".to_owned()));
         assert!(r.has_warnings());
         assert!(r.is_valid());
     }
@@ -220,15 +220,15 @@ mod tests {
     #[test]
     fn test_validation_result_errors_warnings() {
         let mut r = ValidationResult::new();
-        r.add_issue(ValidationIssue::error("e1".to_string()));
-        r.add_issue(ValidationIssue::warning("w1".to_string()));
+        r.add_issue(ValidationIssue::error("e1".to_owned()));
+        r.add_issue(ValidationIssue::warning("w1".to_owned()));
         assert_eq!(r.errors().len(), 1);
         assert_eq!(r.warnings().len(), 1);
     }
 
     #[test]
     fn test_validation_issue_node_warning() {
-        let issue = ValidationIssue::node_warning("n1".to_string(), "warn".to_string());
+        let issue = ValidationIssue::node_warning("n1".to_owned(), "warn".to_owned());
         assert_eq!(issue.severity, ValidationSeverity::Warning);
         assert_eq!(issue.node_id.as_deref(), Some("n1"));
     }
@@ -254,7 +254,7 @@ mod tests {
             severity: ValidationSeverity::Info,
             node_id: None,
             edge_index: None,
-            message: "info".to_string(),
+            message: "info".to_owned(),
             suggestion: None,
         });
         assert!(r.is_valid());
@@ -268,7 +268,7 @@ mod tests {
             severity: ValidationSeverity::Error,
             node_id: None,
             edge_index: Some(3),
-            message: "edge err".to_string(),
+            message: "edge err".to_owned(),
             suggestion: None,
         };
         assert_eq!(issue.edge_index, Some(3));
@@ -276,16 +276,16 @@ mod tests {
 
     #[test]
     fn test_validation_issue_node_warning_with_suggestion() {
-        let issue = ValidationIssue::node_warning("n1".to_string(), "warn".to_string())
-            .with_suggestion("fix it".to_string());
+        let issue = ValidationIssue::node_warning("n1".to_owned(), "warn".to_owned())
+            .with_suggestion("fix it".to_owned());
         assert_eq!(issue.suggestion.as_deref(), Some("fix it"));
     }
 
     #[test]
     fn test_validation_result_multiple_errors() {
         let mut r = ValidationResult::new();
-        r.add_issue(ValidationIssue::error("e1".to_string()));
-        r.add_issue(ValidationIssue::error("e2".to_string()));
+        r.add_issue(ValidationIssue::error("e1".to_owned()));
+        r.add_issue(ValidationIssue::error("e2".to_owned()));
         assert_eq!(r.errors().len(), 2);
         assert!(!r.is_valid());
     }

@@ -218,7 +218,7 @@ mod tests {
     fn test_no_providers_found_error() {
         let err = DiscoveryError::NoProvidersFound {
             attempted: 3,
-            sources: "mDNS, HTTP, env".to_string(),
+            sources: "mDNS, HTTP, env".to_owned(),
         };
         let msg = err.to_string();
         assert!(msg.contains("No providers found"));
@@ -229,8 +229,8 @@ mod tests {
     #[test]
     fn test_health_check_failed_error() {
         let err = DiscoveryError::HealthCheckFailed {
-            name: "biomeOS".to_string(),
-            endpoint: "http://localhost:3000".to_string(),
+            name: "biomeOS".to_owned(),
+            endpoint: "http://localhost:3000".to_owned(),
             source: std::io::Error::new(
                 std::io::ErrorKind::ConnectionRefused,
                 "Connection refused",
@@ -264,7 +264,7 @@ mod tests {
 
     #[test]
     fn test_mdns_error() {
-        let err = DiscoveryError::MdnsError("Network unreachable".to_string());
+        let err = DiscoveryError::MdnsError("Network unreachable".to_owned());
         let msg = err.to_string();
         assert!(msg.contains("mDNS"));
         assert!(msg.contains("Network unreachable"));
@@ -272,7 +272,7 @@ mod tests {
 
     #[test]
     fn test_config_error() {
-        let err = DiscoveryError::ConfigError("Invalid timeout value".to_string());
+        let err = DiscoveryError::ConfigError("Invalid timeout value".to_owned());
         let msg = err.to_string();
         assert!(msg.contains("Configuration error"));
         assert!(msg.contains("Invalid timeout value"));
@@ -281,7 +281,7 @@ mod tests {
     #[test]
     fn test_invalid_url_error() {
         let err = DiscoveryError::InvalidUrl {
-            url: "not a valid url".to_string(),
+            url: "not a valid url".to_owned(),
         };
         let msg = err.to_string();
         assert!(msg.contains("Invalid URL"));
@@ -291,8 +291,8 @@ mod tests {
     #[test]
     fn test_invalid_data_error() {
         let err = DiscoveryError::InvalidData {
-            name: "TestProvider".to_string(),
-            reason: "Missing required field 'endpoint'".to_string(),
+            name: "TestProvider".to_owned(),
+            reason: "Missing required field 'endpoint'".to_owned(),
         };
         let msg = err.to_string();
         assert!(msg.contains("TestProvider"));
@@ -303,7 +303,7 @@ mod tests {
     #[test]
     fn test_pool_exhausted_error() {
         let err = DiscoveryError::PoolExhausted {
-            endpoint: "http://busy-server:8080".to_string(),
+            endpoint: "http://busy-server:8080".to_owned(),
         };
         let msg = err.to_string();
         assert!(msg.contains("Connection pool exhausted"));
@@ -332,7 +332,7 @@ mod tests {
     fn test_error_debug_format() {
         let err = DiscoveryError::NoProvidersFound {
             attempted: 2,
-            sources: "test".to_string(),
+            sources: "test".to_owned(),
         };
         let debug_str = format!("{err:?}");
         assert!(debug_str.contains("NoProvidersFound"));
@@ -348,7 +348,7 @@ mod tests {
 
     #[test]
     fn test_discovery_failure_with_string_into() {
-        let failure = DiscoveryFailure::new("mDNS".to_string(), "timeout".to_string());
+        let failure = DiscoveryFailure::new("mDNS".to_owned(), "timeout".to_owned());
         assert_eq!(failure.source, "mDNS");
         assert_eq!(failure.error, "timeout");
     }
@@ -363,14 +363,14 @@ mod tests {
         assert_eq!(val, 42);
 
         let err_result: DiscoveryResult<i32> =
-            Err(DiscoveryError::ConfigError("bad config".to_string()));
+            Err(DiscoveryError::ConfigError("bad config".to_owned()));
         assert!(err_result.is_err());
     }
 
     #[test]
     fn test_error_display_format() {
         let err = DiscoveryError::InvalidUrl {
-            url: "bad://url".to_string(),
+            url: "bad://url".to_owned(),
         };
         let display = err.to_string();
         assert!(display.contains("Invalid URL"));
@@ -381,8 +381,8 @@ mod tests {
     fn test_error_source_chain() {
         let inner = std::io::Error::other("inner error");
         let err = DiscoveryError::HealthCheckFailed {
-            name: "test".to_string(),
-            endpoint: "http://localhost".to_string(),
+            name: "test".to_owned(),
+            endpoint: "http://localhost".to_owned(),
             source: inner.into(),
         };
         let display = err.to_string();

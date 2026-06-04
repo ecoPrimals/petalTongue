@@ -331,7 +331,7 @@ mod tests {
             .update_topology(vec![petal_tongue_core::TopologyEdge {
                 from: petal_tongue_core::PrimalId::from("a"),
                 to: petal_tongue_core::PrimalId::from("b"),
-                edge_type: "conn".to_string(),
+                edge_type: "conn".to_owned(),
                 label: None,
                 capability: None,
                 metrics: None,
@@ -421,7 +421,7 @@ mod tests {
                 petal_tongue_core::TopologyEdge {
                     from: petal_tongue_core::PrimalId::from("a"),
                     to: petal_tongue_core::PrimalId::from("b"),
-                    edge_type: "e1".to_string(),
+                    edge_type: "e1".to_owned(),
                     label: None,
                     capability: None,
                     metrics: None,
@@ -429,7 +429,7 @@ mod tests {
                 petal_tongue_core::TopologyEdge {
                     from: petal_tongue_core::PrimalId::from("b"),
                     to: petal_tongue_core::PrimalId::from("a"),
-                    edge_type: "e2".to_string(),
+                    edge_type: "e2".to_owned(),
                     label: None,
                     capability: None,
                     metrics: None,
@@ -437,7 +437,7 @@ mod tests {
                 petal_tongue_core::TopologyEdge {
                     from: petal_tongue_core::PrimalId::from("a"),
                     to: petal_tongue_core::PrimalId::from("b"),
-                    edge_type: "e3".to_string(),
+                    edge_type: "e3".to_owned(),
                     label: None,
                     capability: None,
                     metrics: None,
@@ -445,7 +445,7 @@ mod tests {
                 petal_tongue_core::TopologyEdge {
                     from: petal_tongue_core::PrimalId::from("b"),
                     to: petal_tongue_core::PrimalId::from("a"),
-                    edge_type: "e4".to_string(),
+                    edge_type: "e4".to_owned(),
                     label: None,
                     capability: None,
                     metrics: None,
@@ -453,7 +453,7 @@ mod tests {
                 petal_tongue_core::TopologyEdge {
                     from: petal_tongue_core::PrimalId::from("a"),
                     to: petal_tongue_core::PrimalId::from("b"),
-                    edge_type: "e5".to_string(),
+                    edge_type: "e5".to_owned(),
                     label: None,
                     capability: None,
                     metrics: None,
@@ -461,7 +461,7 @@ mod tests {
                 petal_tongue_core::TopologyEdge {
                     from: petal_tongue_core::PrimalId::from("b"),
                     to: petal_tongue_core::PrimalId::from("a"),
-                    edge_type: "e6".to_string(),
+                    edge_type: "e6".to_owned(),
                     label: None,
                     capability: None,
                     metrics: None,

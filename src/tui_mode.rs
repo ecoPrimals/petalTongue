@@ -151,7 +151,7 @@ mod tests {
         let data_service = Arc::new(DataService::new());
         let result = tokio::time::timeout(
             Duration::from_secs(3),
-            run(Some("scenario.json".to_string()), 30, data_service),
+            run(Some("scenario.json".to_owned()), 30, data_service),
         )
         .await;
         if let Ok(inner) = result {

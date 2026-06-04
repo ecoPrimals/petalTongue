@@ -94,7 +94,7 @@ mod tests {
     fn test_handlers() -> RpcHandlers {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
         let viz_state = Arc::new(RwLock::new(VisualizationState::new()));
-        RpcHandlers::new(graph, "test".to_string(), viz_state)
+        RpcHandlers::new(graph, "test".to_owned(), viz_state)
     }
 
     #[tokio::test]

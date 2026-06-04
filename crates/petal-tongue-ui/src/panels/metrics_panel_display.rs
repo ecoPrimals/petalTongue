@@ -27,7 +27,7 @@ pub fn format_uptime(duration: Duration) -> String {
 #[must_use]
 pub fn format_update_age(age_secs: u64) -> String {
     if age_secs >= 30 {
-        "Stale (>30s)".to_string()
+        "Stale (>30s)".to_owned()
     } else {
         format!("Updated {age_secs}s ago")
     }
@@ -115,7 +115,7 @@ mod tests {
     #[test]
     fn test_prepare_metrics_panel_display_with_metrics() {
         let metrics = SystemMetrics {
-            timestamp: "2026-01-15T22:00:00Z".to_string(),
+            timestamp: "2026-01-15T22:00:00Z".to_owned(),
             system: SystemStats {
                 cpu_percent: 16.5,
                 memory_used_mb: 32768,
@@ -124,7 +124,7 @@ mod tests {
                 uptime_seconds: 86400,
             },
             neural_api: NeuralApiStats {
-                family_id: "nat0".to_string(),
+                family_id: "nat0".to_owned(),
                 active_primals: 3,
                 graphs_available: 5,
                 active_executions: 0,
@@ -165,7 +165,7 @@ mod tests {
     #[test]
     fn test_prepare_metrics_panel_display_with_metrics_stale() {
         let metrics = SystemMetrics {
-            timestamp: "2026-01-15T22:00:00Z".to_string(),
+            timestamp: "2026-01-15T22:00:00Z".to_owned(),
             system: SystemStats {
                 cpu_percent: 10.0,
                 memory_used_mb: 1000,
@@ -174,7 +174,7 @@ mod tests {
                 uptime_seconds: 3600,
             },
             neural_api: NeuralApiStats {
-                family_id: "test".to_string(),
+                family_id: "test".to_owned(),
                 active_primals: 1,
                 graphs_available: 2,
                 active_executions: 0,

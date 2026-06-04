@@ -208,7 +208,7 @@ mod tests {
         let mut registry = ComputeRegistry::new();
 
         registry.register(ComputeProviderImpl::Mock(MockComputeProvider {
-            name: "gpu-compute".to_string(),
+            name: "gpu-compute".to_owned(),
             caps: vec![ComputeCapability::LayoutComputation],
             available: true,
         }));
@@ -233,7 +233,7 @@ mod tests {
         let mut registry = ComputeRegistry::new();
         assert!(registry.is_empty());
         registry.register(ComputeProviderImpl::Mock(MockComputeProvider {
-            name: "test".to_string(),
+            name: "test".to_owned(),
             caps: vec![],
             available: true,
         }));
@@ -245,13 +245,13 @@ mod tests {
         let mut registry = ComputeRegistry::new();
         assert_eq!(registry.len(), 0);
         registry.register(ComputeProviderImpl::Mock(MockComputeProvider {
-            name: "a".to_string(),
+            name: "a".to_owned(),
             caps: vec![],
             available: true,
         }));
         assert_eq!(registry.len(), 1);
         registry.register(ComputeProviderImpl::Mock(MockComputeProvider {
-            name: "b".to_string(),
+            name: "b".to_owned(),
             caps: vec![],
             available: true,
         }));
@@ -262,7 +262,7 @@ mod tests {
     fn test_compute_registry_get_mut() {
         let mut registry = ComputeRegistry::new();
         registry.register(ComputeProviderImpl::Mock(MockComputeProvider {
-            name: "test".to_string(),
+            name: "test".to_owned(),
             caps: vec![ComputeCapability::PhysicsSimulation],
             available: true,
         }));
@@ -275,7 +275,7 @@ mod tests {
     async fn test_compute_registry_get_with_capability_unavailable() {
         let mut registry = ComputeRegistry::new();
         registry.register(ComputeProviderImpl::Mock(MockComputeProvider {
-            name: "unavail".to_string(),
+            name: "unavail".to_owned(),
             caps: vec![ComputeCapability::LayoutComputation],
             available: false,
         }));
@@ -289,7 +289,7 @@ mod tests {
     async fn test_compute_registry_get_with_capability_missing() {
         let mut registry = ComputeRegistry::new();
         registry.register(ComputeProviderImpl::Mock(MockComputeProvider {
-            name: "other".to_string(),
+            name: "other".to_owned(),
             caps: vec![ComputeCapability::ImageProcessing],
             available: true,
         }));

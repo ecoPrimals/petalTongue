@@ -137,7 +137,7 @@ pub async fn discover_first_available(
     if providers.is_empty() {
         return Err(DiscoveryError::NoProvidersFound {
             attempted: 0,
-            sources: "none".to_string(),
+            sources: "none".to_owned(),
         });
     }
 
@@ -344,11 +344,11 @@ mod tests {
     #[tokio::test]
     async fn test_health_status_variants() {
         let healthy = HealthStatus::Healthy {
-            message: "OK".to_string(),
+            message: "OK".to_owned(),
             response_time: Duration::from_millis(50),
         };
         let unhealthy = HealthStatus::Unhealthy {
-            error: "Service unavailable".to_string(),
+            error: "Service unavailable".to_owned(),
         };
         let timeout = HealthStatus::Timeout {
             duration: Duration::from_secs(5),
@@ -362,20 +362,20 @@ mod tests {
     #[tokio::test]
     async fn test_provider_health_is_healthy() {
         let healthy = ProviderHealth {
-            name: "test".to_string(),
-            endpoint: "http://test:8080".to_string(),
+            name: "test".to_owned(),
+            endpoint: "http://test:8080".to_owned(),
             status: HealthStatus::Healthy {
-                message: "OK".to_string(),
+                message: "OK".to_owned(),
                 response_time: Duration::from_millis(10),
             },
             checked_at: std::time::Instant::now(),
         };
 
         let unhealthy = ProviderHealth {
-            name: "test2".to_string(),
-            endpoint: "http://test2:8080".to_string(),
+            name: "test2".to_owned(),
+            endpoint: "http://test2:8080".to_owned(),
             status: HealthStatus::Unhealthy {
-                error: "Error".to_string(),
+                error: "Error".to_owned(),
             },
             checked_at: std::time::Instant::now(),
         };
@@ -423,7 +423,7 @@ mod tests {
         let result = discover_concurrent(
             vec![("fail", || async {
                 Err(DiscoveryError::ConfigError(
-                    "Intentional failure".to_string(),
+                    "Intentional failure".to_owned(),
                 ))
             })],
             Duration::from_secs(2),
@@ -454,8 +454,8 @@ mod tests {
     #[tokio::test]
     async fn test_provider_health_timeout_variant() {
         let ph = ProviderHealth {
-            name: "t".to_string(),
-            endpoint: "e".to_string(),
+            name: "t".to_owned(),
+            endpoint: "e".to_owned(),
             status: HealthStatus::Timeout {
                 duration: Duration::from_secs(5),
             },

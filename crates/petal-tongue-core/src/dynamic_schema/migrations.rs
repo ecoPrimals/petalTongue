@@ -33,7 +33,7 @@ impl SchemaMigration for V1ToV2Migration {
         _from: SchemaVersion,
         _to: SchemaVersion,
     ) -> Result<()> {
-        data.set("migrated".to_string(), DynamicValue::Boolean(true));
+        data.set("migrated".to_owned(), DynamicValue::Boolean(true));
         Ok(())
     }
 }

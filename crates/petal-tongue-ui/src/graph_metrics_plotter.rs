@@ -151,15 +151,15 @@ impl ToolPanel for GraphMetricsPlotter {
     fn metadata(&self) -> &ToolMetadata {
         static METADATA: std::sync::OnceLock<ToolMetadata> = std::sync::OnceLock::new();
         METADATA.get_or_init(|| ToolMetadata {
-            name: "Graph Metrics".to_string(),
-            description: "Visualize graph topology metrics over time".to_string(),
-            version: "0.1.0".to_string(),
+            name: "Graph Metrics".to_owned(),
+            description: "Visualize graph topology metrics over time".to_owned(),
+            version: "0.1.0".to_owned(),
             capabilities: vec![
                 ToolCapability::Visual,
-                ToolCapability::Custom("Plotting".to_string()),
-                ToolCapability::Custom("Metrics".to_string()),
+                ToolCapability::Custom("Plotting".to_owned()),
+                ToolCapability::Custom("Metrics".to_owned()),
             ],
-            icon: "📈".to_string(),
+            icon: "📈".to_owned(),
             source: None, // Built-in tool
         })
     }
@@ -204,7 +204,7 @@ impl ToolPanel for GraphMetricsPlotter {
 
     fn status_message(&self) -> Option<String> {
         self.history.back().map_or_else(
-            || Some("No data".to_string()),
+            || Some("No data".to_owned()),
             |last| Some(format!("N:{} E:{}", last.node_count, last.edge_count)),
         )
     }
@@ -218,18 +218,18 @@ mod tests {
     fn default_creation() {
         let p = GraphMetricsPlotter::default();
         assert!(!p.show_panel);
-        assert_eq!(p.status_message(), Some("No data".to_string()));
+        assert_eq!(p.status_message(), Some("No data".to_owned()));
     }
 
     #[test]
     fn add_snapshot_accumulates() {
         let mut p = GraphMetricsPlotter::default();
         p.add_snapshot(5, 3);
-        assert_eq!(p.status_message(), Some("N:5 E:3".to_string()));
+        assert_eq!(p.status_message(), Some("N:5 E:3".to_owned()));
         p.add_snapshot(10, 8);
-        assert_eq!(p.status_message(), Some("N:10 E:8".to_string()));
+        assert_eq!(p.status_message(), Some("N:10 E:8".to_owned()));
         p.add_snapshot(7, 12);
-        assert_eq!(p.status_message(), Some("N:7 E:12".to_string()));
+        assert_eq!(p.status_message(), Some("N:7 E:12".to_owned()));
     }
 
     #[test]
@@ -238,7 +238,7 @@ mod tests {
         for i in 0..101 {
             p.add_snapshot(i, i * 2);
         }
-        assert_eq!(p.status_message(), Some("N:100 E:200".to_string()));
+        assert_eq!(p.status_message(), Some("N:100 E:200".to_owned()));
     }
 
     #[test]
@@ -341,7 +341,7 @@ mod tests {
         for i in 0..150 {
             p.add_snapshot(i, i);
         }
-        assert_eq!(p.status_message(), Some("N:149 E:149".to_string()));
+        assert_eq!(p.status_message(), Some("N:149 E:149".to_owned()));
     }
 
     #[test]
@@ -350,7 +350,7 @@ mod tests {
         for i in 0..100 {
             p.add_snapshot(i, i * 2);
         }
-        assert_eq!(p.status_message(), Some("N:99 E:198".to_string()));
+        assert_eq!(p.status_message(), Some("N:99 E:198".to_owned()));
     }
 
     #[test]
@@ -385,14 +385,14 @@ mod tests {
     fn add_snapshot_zero_counts() {
         let mut p = GraphMetricsPlotter::default();
         p.add_snapshot(0, 0);
-        assert_eq!(p.status_message(), Some("N:0 E:0".to_string()));
+        assert_eq!(p.status_message(), Some("N:0 E:0".to_owned()));
     }
 
     #[test]
     fn add_snapshot_single_sample() {
         let mut p = GraphMetricsPlotter::default();
         p.add_snapshot(1, 0);
-        assert_eq!(p.status_message(), Some("N:1 E:0".to_string()));
+        assert_eq!(p.status_message(), Some("N:1 E:0".to_owned()));
     }
 
     #[test]

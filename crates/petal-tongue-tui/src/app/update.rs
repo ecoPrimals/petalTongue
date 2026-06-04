@@ -125,7 +125,7 @@ pub(super) async fn discover_primals(tui: &mut RichTUI) -> Result<(), TuiError> 
                 tui.state_mut().set_standalone_mode(true).await;
                 add_log(
                     tui,
-                    "Running in standalone mode (no primals discovered)".to_string(),
+                    "Running in standalone mode (no primals discovered)".to_owned(),
                 )
                 .await;
             } else {
@@ -229,7 +229,7 @@ mod tests {
     #[tokio::test]
     async fn handle_event_external_primal_discovered_format() {
         let _evt = ExternalEvent::PrimalDiscovered {
-            name: "test-primal".to_string(),
+            name: "test-primal".to_owned(),
         };
         let formatted = format!("Discovered primal: {}", "test-primal");
         assert_eq!(formatted, "Discovered primal: test-primal");
@@ -315,7 +315,7 @@ mod tests {
     #[tokio::test]
     async fn external_event_primal_discovered_name() {
         let evt = ExternalEvent::PrimalDiscovered {
-            name: "toadstool".to_string(),
+            name: "toadstool".to_owned(),
         };
         if let ExternalEvent::PrimalDiscovered { name } = evt {
             assert_eq!(name, "toadstool");
@@ -325,7 +325,7 @@ mod tests {
     #[tokio::test]
     async fn external_event_primal_status_healthy() {
         let evt = ExternalEvent::PrimalStatusChanged {
-            name: "songbird".to_string(),
+            name: "songbird".to_owned(),
             healthy: true,
         };
         if let ExternalEvent::PrimalStatusChanged { name, healthy } = evt {
@@ -337,7 +337,7 @@ mod tests {
     #[tokio::test]
     async fn external_event_primal_status_unhealthy() {
         let evt = ExternalEvent::PrimalStatusChanged {
-            name: "beardog".to_string(),
+            name: "beardog".to_owned(),
             healthy: false,
         };
         if let ExternalEvent::PrimalStatusChanged { name, healthy } = evt {
@@ -349,8 +349,8 @@ mod tests {
     #[tokio::test]
     async fn external_event_log_message_format() {
         let evt = ExternalEvent::LogMessage {
-            source: "discovery".to_string(),
-            message: "Found 3 primals".to_string(),
+            source: "discovery".to_owned(),
+            message: "Found 3 primals".to_owned(),
         };
         if let ExternalEvent::LogMessage { source, message } = evt {
             let formatted = format!("[{source}] {message}");
@@ -403,7 +403,7 @@ mod tests {
 
     #[tokio::test]
     async fn discover_primals_standalone_log_message() {
-        let msg = "Running in standalone mode (no primals discovered)".to_string();
+        let msg = "Running in standalone mode (no primals discovered)".to_owned();
         assert!(msg.contains("standalone"));
     }
 
@@ -448,9 +448,9 @@ mod tests {
     async fn log_message_timestamp_source_level() {
         let msg = LogMessage {
             timestamp: chrono::Utc::now(),
-            source: Some("test".to_string()),
+            source: Some("test".to_owned()),
             level: LogLevel::Info,
-            message: "test message".to_string(),
+            message: "test message".to_owned(),
         };
         assert_eq!(msg.source.as_deref(), Some("test"));
         assert!(matches!(msg.level, LogLevel::Info));

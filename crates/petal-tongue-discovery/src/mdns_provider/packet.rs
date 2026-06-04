@@ -177,8 +177,8 @@ pub fn parse_mdns_response(data: &[u8], addr: SocketAddr) -> DiscoveryResult<Pro
     let endpoint = format!("http://{ip}:{port}");
 
     let mut capabilities = vec![
-        "visualization.primal-provider".to_string(),
-        "visualization.topology-provider".to_string(),
+        "visualization.primal-provider".to_owned(),
+        "visualization.topology-provider".to_owned(),
     ];
 
     for txt in &records.txt {
@@ -199,7 +199,7 @@ pub fn parse_mdns_response(data: &[u8], addr: SocketAddr) -> DiscoveryResult<Pro
     let metadata = ProviderMetadata {
         name,
         endpoint: endpoint.clone(),
-        protocol: "http".to_string(),
+        protocol: "http".to_owned(),
         capabilities,
     };
 

@@ -432,7 +432,7 @@ mod tests {
         frame.possible_interactions.push(InteractionCapability {
             panel_id: PanelId::GraphStats,
             intent: InteractionKind::Select,
-            target: Some("node-1".to_string()),
+            target: Some("node-1".to_owned()),
         });
         frame.active_modalities.push(OutputModality::Gui);
         assert_eq!(frame.possible_interactions.len(), 1);
@@ -454,8 +454,8 @@ mod tests {
 
     #[test]
     fn test_panel_kind_custom() {
-        let kind = PanelKind::Custom("my_panel".to_string());
-        assert_eq!(kind, PanelKind::Custom("my_panel".to_string()));
+        let kind = PanelKind::Custom("my_panel".to_owned());
+        assert_eq!(kind, PanelKind::Custom("my_panel".to_owned()));
     }
 
     #[test]

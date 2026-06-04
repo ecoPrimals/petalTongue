@@ -42,7 +42,7 @@ pub fn get_trust_level(info: &PrimalInfo) -> String {
     if let Some(trust) = info.trust_level() {
         return format!("{trust}");
     }
-    "unknown".to_string()
+    "unknown".to_owned()
 }
 
 /// Get family lineage from primal info (via properties accessor).
@@ -51,7 +51,7 @@ pub fn get_family_lineage(info: &PrimalInfo) -> String {
     if let Some(family) = info.family_id() {
         return family.to_string();
     }
-    "unknown".to_string()
+    "unknown".to_owned()
 }
 
 #[cfg(test)]

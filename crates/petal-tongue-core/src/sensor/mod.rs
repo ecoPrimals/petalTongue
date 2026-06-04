@@ -87,7 +87,7 @@ mod tests {
         assert_eq!(click.timestamp(), ts);
 
         let generic = SensorEvent::Generic {
-            data: "test".to_string(),
+            data: "test".to_owned(),
             timestamp: ts,
         };
         assert_eq!(generic.timestamp(), ts);
@@ -234,8 +234,8 @@ mod tests {
     fn test_key_variants() {
         assert_eq!(Key::Char('x'), Key::Char('x'));
         assert_eq!(
-            Key::Named("Enter".to_string()),
-            Key::Named("Enter".to_string())
+            Key::Named("Enter".to_owned()),
+            Key::Named("Enter".to_owned())
         );
         assert_eq!(Key::Escape, Key::Escape);
         assert_eq!(Key::F(1), Key::F(1));
@@ -345,7 +345,7 @@ mod tests {
 
     #[test]
     fn test_sensor_event_batch_construction() {
-        let batch = SensorEventBatch::new("sub-123".to_string());
+        let batch = SensorEventBatch::new("sub-123".to_owned());
         assert_eq!(batch.subscription_id, "sub-123");
         assert!(batch.is_empty());
         assert_eq!(batch.len(), 0);
@@ -353,7 +353,7 @@ mod tests {
 
     #[test]
     fn test_sensor_event_batch_with_events() {
-        let mut batch = SensorEventBatch::new("sub".to_string());
+        let mut batch = SensorEventBatch::new("sub".to_owned());
         batch.events.push(SensorEventIpc::PointerMove {
             x: 1.0,
             y: 2.0,
@@ -385,7 +385,7 @@ mod tests {
         let event = SensorEventIpc::Click {
             x: 10.0,
             y: 20.0,
-            button: "right".to_string(),
+            button: "right".to_owned(),
             timestamp_ms: 5000,
         };
         let json = serde_json::to_string(&event).expect("serialize");

@@ -22,7 +22,7 @@ impl GraphEditorService {
             graphs
                 .get(&req.graph_id)
                 .cloned()
-                .unwrap_or_else(|| Graph::new(req.graph_id.clone(), "New Graph".to_string()))
+                .unwrap_or_else(|| Graph::new(req.graph_id.clone(), "New Graph".to_owned()))
         };
 
         let template_info = if let Some(template_id) = &graph.metadata.template_id {
@@ -63,7 +63,7 @@ impl GraphEditorService {
         let mut warnings = Vec::new();
         if execution_order.len() > 100 {
             warnings
-                .push("Large graph (>100 nodes) may take significant time to execute".to_string());
+                .push("Large graph (>100 nodes) may take significant time to execute".to_owned());
         }
 
         Ok(GetPreviewResponse {

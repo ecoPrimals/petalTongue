@@ -48,7 +48,7 @@ pub(super) fn parse_topology_edges(result: &Value) -> DiscoveryResult<Vec<Topolo
         result["connections"]
             .as_array()
             .ok_or_else(|| DiscoveryError::ExpectedArray {
-                context: " of connections".to_string(),
+                context: " of connections".to_owned(),
             })?;
 
     let mut edges = Vec::new();

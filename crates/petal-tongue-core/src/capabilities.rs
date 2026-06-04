@@ -91,7 +91,7 @@ impl CapabilityDetector {
         let visual_cap = ModalityCapability {
             modality: Modality::Visual2D,
             status: ModalityStatus::Available,
-            reason: "egui window rendering available".to_string(),
+            reason: "egui window rendering available".to_owned(),
             tested: true,
         };
         caps.push(visual_cap.clone());
@@ -106,7 +106,7 @@ impl CapabilityDetector {
         caps.push(ModalityCapability {
             modality: Modality::Animation,
             status: ModalityStatus::Available,
-            reason: "Animation system available (requires visual)".to_string(),
+            reason: "Animation system available (requires visual)".to_owned(),
             tested: animation_tested,
         });
 
@@ -114,7 +114,7 @@ impl CapabilityDetector {
         caps.push(ModalityCapability {
             modality: Modality::TextDescription,
             status: ModalityStatus::Available,
-            reason: "Text rendering available".to_string(),
+            reason: "Text rendering available".to_owned(),
             tested: true,
         });
 
@@ -122,7 +122,7 @@ impl CapabilityDetector {
         caps.push(ModalityCapability {
             modality: Modality::Haptic,
             status: ModalityStatus::Unavailable,
-            reason: "Haptic feedback not yet implemented".to_string(),
+            reason: "Haptic feedback not yet implemented".to_owned(),
             tested: false,
         });
 
@@ -130,7 +130,7 @@ impl CapabilityDetector {
         caps.push(ModalityCapability {
             modality: Modality::VR3D,
             status: ModalityStatus::Unavailable,
-            reason: "VR/AR rendering not yet implemented".to_string(),
+            reason: "VR/AR rendering not yet implemented".to_owned(),
             tested: false,
         });
     }
@@ -143,7 +143,7 @@ impl CapabilityDetector {
         ModalityCapability {
             modality: Modality::Audio,
             status: ModalityStatus::Available,
-            reason: "Audio via AudioCanvas (pure Rust /dev/snd access)".to_string(),
+            reason: "Audio via AudioCanvas (pure Rust /dev/snd access)".to_owned(),
             tested: true,
         }
     }

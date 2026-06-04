@@ -85,7 +85,7 @@ mod tests {
 
     #[test]
     fn test_graph_lock_poisoned_constructor() {
-        let err = AppError::GraphLockPoisoned("lock poisoned".to_string());
+        let err = AppError::GraphLockPoisoned("lock poisoned".to_owned());
         assert!(matches!(err, AppError::GraphLockPoisoned(_)));
         assert!(err.to_string().contains("Graph lock poisoned"));
         assert!(err.to_string().contains("lock poisoned"));
@@ -93,7 +93,7 @@ mod tests {
 
     #[test]
     fn test_refresh_lock_poisoned_constructor() {
-        let err = AppError::RefreshLockPoisoned("refresh failed".to_string());
+        let err = AppError::RefreshLockPoisoned("refresh failed".to_owned());
         assert!(matches!(err, AppError::RefreshLockPoisoned(_)));
         assert!(err.to_string().contains("Refresh time lock poisoned"));
         assert!(err.to_string().contains("refresh failed"));
@@ -101,7 +101,7 @@ mod tests {
 
     #[test]
     fn test_neural_api_constructor() {
-        let err = AppError::NeuralApi("connection refused".to_string());
+        let err = AppError::NeuralApi("connection refused".to_owned());
         assert!(matches!(err, AppError::NeuralApi(_)));
         assert!(err.to_string().contains("Neural API error"));
         assert!(err.to_string().contains("connection refused"));
@@ -110,7 +110,7 @@ mod tests {
     #[test]
     #[cfg(feature = "ui")]
     fn test_eframe_constructor() {
-        let err = AppError::Eframe("window creation failed".to_string());
+        let err = AppError::Eframe("window creation failed".to_owned());
         assert!(matches!(err, AppError::Eframe(_)));
         assert!(err.to_string().contains("eframe error"));
         assert!(err.to_string().contains("window creation failed"));
@@ -129,7 +129,7 @@ mod tests {
 
     #[test]
     fn test_tui_constructor() {
-        let err = AppError::Tui("terminal init failed".to_string());
+        let err = AppError::Tui("terminal init failed".to_owned());
         assert!(matches!(err, AppError::Tui(_)));
         assert!(err.to_string().contains("TUI error"));
         assert!(err.to_string().contains("terminal init failed"));
@@ -137,7 +137,7 @@ mod tests {
 
     #[test]
     fn test_task_panic_constructor() {
-        let err = AppError::TaskPanic("worker panicked".to_string());
+        let err = AppError::TaskPanic("worker panicked".to_owned());
         assert!(matches!(err, AppError::TaskPanic(_)));
         assert!(err.to_string().contains("Task panicked"));
         assert!(err.to_string().contains("worker panicked"));
@@ -145,7 +145,7 @@ mod tests {
 
     #[test]
     fn test_other_constructor() {
-        let err = AppError::Other("generic error".to_string());
+        let err = AppError::Other("generic error".to_owned());
         assert!(matches!(err, AppError::Other(_)));
         assert_eq!(err.to_string(), "generic error");
     }

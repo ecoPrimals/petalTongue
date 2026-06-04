@@ -175,7 +175,7 @@ mod tests {
         let id = InstanceId::new();
         let mut state = SessionState::new(id);
         state.add_metadata("key", "value");
-        assert_eq!(state.metadata.get("key"), Some(&"value".to_string()));
+        assert_eq!(state.metadata.get("key"), Some(&"value".to_owned()));
     }
 
     #[test]
@@ -384,7 +384,7 @@ mod tests {
 
     #[test]
     fn test_session_error_display() {
-        let err = SessionError::NotFound("x".to_string());
+        let err = SessionError::NotFound("x".to_owned());
         assert!(err.to_string().contains('x'));
         let err = SessionError::NoState;
         assert!(!err.to_string().is_empty());

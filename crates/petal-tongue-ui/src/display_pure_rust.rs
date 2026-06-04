@@ -122,7 +122,7 @@ pub fn get_all_monitors() -> Vec<MonitorInfo> {
     if let Some((width, height)) = get_display_dimensions_pure_rust() {
         info!("📊 Detected 1 monitor (pure Rust)");
         vec![MonitorInfo {
-            name: "Primary Display".to_string(),
+            name: "Primary Display".to_owned(),
             width,
             height,
             scale_factor: 1.0,

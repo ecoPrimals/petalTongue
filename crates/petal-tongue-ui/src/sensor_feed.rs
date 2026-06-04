@@ -186,7 +186,7 @@ mod tests {
     fn text_input_event_produced() {
         let ctx = egui::Context::default();
         let mut raw = egui::RawInput::default();
-        raw.events.push(egui::Event::Text("abc".to_string()));
+        raw.events.push(egui::Event::Text("abc".to_owned()));
         let _ = ctx.run(raw, |_ctx| {});
         let events = collect_sensor_events(&ctx);
         assert!(

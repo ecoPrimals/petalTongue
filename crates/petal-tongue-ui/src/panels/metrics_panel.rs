@@ -95,7 +95,7 @@ impl PanelInstance for MetricsPanel {
             tracing::info!("✅ Neural API discovered for metrics panel");
         } else {
             tracing::warn!("⚠️  Neural API not available - metrics will not update");
-            self.error_message = Some("Neural API not available".to_string());
+            self.error_message = Some("Neural API not available".to_owned());
         }
 
         self.provider = provider;
@@ -314,8 +314,8 @@ mod tests {
         );
 
         let config = CustomPanelConfig {
-            panel_type: "metrics".to_string(),
-            title: "Test Metrics".to_string(),
+            panel_type: "metrics".to_owned(),
+            title: "Test Metrics".to_owned(),
             width: None,
             height: None,
             fullscreen: false,
@@ -367,7 +367,7 @@ mod tests {
         use crate::panels::metrics_panel_display::prepare_metrics_panel_display;
 
         let metrics = SystemMetrics {
-            timestamp: "2026-01-15T22:00:00Z".to_string(),
+            timestamp: "2026-01-15T22:00:00Z".to_owned(),
             system: SystemStats {
                 cpu_percent: 25.0,
                 memory_used_mb: 4096,
@@ -376,7 +376,7 @@ mod tests {
                 uptime_seconds: 7200,
             },
             neural_api: NeuralApiStats {
-                family_id: "test".to_string(),
+                family_id: "test".to_owned(),
                 active_primals: 2,
                 graphs_available: 4,
                 active_executions: 1,

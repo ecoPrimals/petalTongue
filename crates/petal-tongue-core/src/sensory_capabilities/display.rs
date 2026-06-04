@@ -52,7 +52,7 @@ pub fn describe(caps: &SensoryCapabilities) -> String {
     }
 
     if parts.is_empty() {
-        "no capabilities detected".to_string()
+        "no capabilities detected".to_owned()
     } else {
         parts.join(" + ")
     }
@@ -134,7 +134,7 @@ mod tests {
                 button_count: 3,
             }],
             keyboard_inputs: vec![KeyboardInputCapability::Physical {
-                layout: "QWERTY".to_string(),
+                layout: "QWERTY".to_owned(),
                 has_numpad: true,
                 modifier_keys: 4,
             }],

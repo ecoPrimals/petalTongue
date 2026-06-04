@@ -32,7 +32,7 @@ pub fn badge_display_state(age_secs: f64, is_stale: bool, is_live: bool) -> Badg
         BadgeDisplayState {
             color_rgb: (128, 128, 128),
             label: "WAITING",
-            tooltip: "Waiting for data".to_string(),
+            tooltip: "Waiting for data".to_owned(),
         }
     } else if is_stale {
         BadgeDisplayState {
@@ -44,7 +44,7 @@ pub fn badge_display_state(age_secs: f64, is_stale: bool, is_live: bool) -> Badg
         BadgeDisplayState {
             color_rgb: (0, 200, 100),
             label: "● LIVE",
-            tooltip: "Just now".to_string(),
+            tooltip: "Just now".to_owned(),
         }
     } else {
         BadgeDisplayState {
@@ -86,7 +86,7 @@ pub const fn connection_status_display(
 #[must_use]
 pub fn format_age_for_display(age_secs: f64) -> String {
     if age_secs < 1.0 {
-        "Just now".to_string()
+        "Just now".to_owned()
     } else if age_secs < 60.0 {
         format!("{age_secs:.1}s ago")
     } else if age_secs < 3600.0 {

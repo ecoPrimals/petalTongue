@@ -59,18 +59,18 @@ mod tests {
     #[test]
     fn running_sets_current_node() {
         let mut executions = std::collections::HashMap::new();
-        executions.insert("g1".to_string(), make_state("g1"));
+        executions.insert("g1".to_owned(), make_state("g1"));
 
         let msg = StreamMessage::NodeStatus {
-            graph_id: "g1".to_string(),
-            node_id: "n1".to_string(),
+            graph_id: "g1".to_owned(),
+            node_id: "n1".to_owned(),
             status: PNodeStatus::Running { progress: 50 },
             timestamp: Utc::now(),
         };
         update_execution_state(&mut executions, &msg);
 
         let state = executions.get("g1").unwrap();
-        assert_eq!(state.current_node, Some("n1".to_string()));
+        assert_eq!(state.current_node, Some("n1".to_owned()));
         assert!(state.completed_nodes.is_empty());
         assert!(state.failed_nodes.is_empty());
     }
@@ -79,12 +79,12 @@ mod tests {
     fn completed_clears_current_adds_to_completed() {
         let mut executions = std::collections::HashMap::new();
         let mut state = make_state("g1");
-        state.current_node = Some("n0".to_string());
-        executions.insert("g1".to_string(), state);
+        state.current_node = Some("n0".to_owned());
+        executions.insert("g1".to_owned(), state);
 
         let msg = StreamMessage::NodeStatus {
-            graph_id: "g1".to_string(),
-            node_id: "n1".to_string(),
+            graph_id: "g1".to_owned(),
+            node_id: "n1".to_owned(),
             status: PNodeStatus::Completed,
             timestamp: Utc::now(),
         };
@@ -99,14 +99,14 @@ mod tests {
     fn failed_clears_current_adds_to_failed() {
         let mut executions = std::collections::HashMap::new();
         let mut state = make_state("g1");
-        state.current_node = Some("n0".to_string());
-        executions.insert("g1".to_string(), state);
+        state.current_node = Some("n0".to_owned());
+        executions.insert("g1".to_owned(), state);
 
         let msg = StreamMessage::NodeStatus {
-            graph_id: "g1".to_string(),
-            node_id: "n1".to_string(),
+            graph_id: "g1".to_owned(),
+            node_id: "n1".to_owned(),
             status: PNodeStatus::Failed {
-                error: "err".to_string(),
+                error: "err".to_owned(),
             },
             timestamp: Utc::now(),
         };
@@ -121,30 +121,30 @@ mod tests {
     fn pending_ignored() {
         let mut executions = std::collections::HashMap::new();
         let mut state = make_state("g1");
-        state.current_node = Some("n0".to_string());
-        executions.insert("g1".to_string(), state);
+        state.current_node = Some("n0".to_owned());
+        executions.insert("g1".to_owned(), state);
 
         let msg = StreamMessage::NodeStatus {
-            graph_id: "g1".to_string(),
-            node_id: "n1".to_string(),
+            graph_id: "g1".to_owned(),
+            node_id: "n1".to_owned(),
             status: PNodeStatus::Pending,
             timestamp: Utc::now(),
         };
         update_execution_state(&mut executions, &msg);
 
         let state = executions.get("g1").unwrap();
-        assert_eq!(state.current_node, Some("n0".to_string()));
+        assert_eq!(state.current_node, Some("n0".to_owned()));
         assert!(state.completed_nodes.is_empty());
     }
 
     #[test]
     fn unknown_graph_id_ignored() {
         let mut executions = std::collections::HashMap::new();
-        executions.insert("g1".to_string(), make_state("g1"));
+        executions.insert("g1".to_owned(), make_state("g1"));
 
         let msg = StreamMessage::NodeStatus {
-            graph_id: "g2".to_string(),
-            node_id: "n1".to_string(),
+            graph_id: "g2".to_owned(),
+            node_id: "n1".to_owned(),
             status: PNodeStatus::Completed,
             timestamp: Utc::now(),
         };
@@ -157,7 +157,7 @@ mod tests {
     #[test]
     fn non_node_status_message_ignored() {
         let mut executions = std::collections::HashMap::new();
-        executions.insert("g1".to_string(), make_state("g1"));
+        executions.insert("g1".to_owned(), make_state("g1"));
 
         let msg = StreamMessage::Heartbeat {
             timestamp: Utc::now(),

@@ -238,10 +238,10 @@ impl InteractionSubscriberRegistry {
     #[must_use]
     pub fn perspectives(&self) -> Vec<Perspective> {
         vec![Perspective {
-            id: "default_egui".to_string(),
-            modalities: vec!["gui".to_string()],
+            id: "default_egui".to_owned(),
+            modalities: vec!["gui".to_owned()],
             selection: Vec::new(),
-            sync_mode: "shared_selection".to_string(),
+            sync_mode: "shared_selection".to_owned(),
         }]
     }
 }

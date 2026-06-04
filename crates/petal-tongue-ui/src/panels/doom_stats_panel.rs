@@ -184,8 +184,8 @@ mod tests {
         );
 
         let config = CustomPanelConfig {
-            panel_type: "doom_stats".to_string(),
-            title: "Test Stats".to_string(),
+            panel_type: "doom_stats".to_owned(),
+            title: "Test Stats".to_owned(),
             width: None,
             height: None,
             fullscreen: false,

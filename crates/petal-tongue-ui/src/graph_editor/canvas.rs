@@ -481,7 +481,7 @@ mod tests {
 
     #[test]
     fn test_graph_canvas_new() {
-        let graph = Graph::new("g1".to_string(), "Test Graph".to_string());
+        let graph = Graph::new("g1".to_owned(), "Test Graph".to_owned());
         let canvas = GraphCanvas::new(graph);
         assert_eq!(canvas.graph().id, "g1");
         assert!(canvas.selected_nodes().is_empty());
@@ -489,7 +489,7 @@ mod tests {
 
     #[test]
     fn test_graph_canvas_show() {
-        let graph = Graph::new("g1".to_string(), "Test".to_string());
+        let graph = Graph::new("g1".to_owned(), "Test".to_owned());
         let mut canvas = GraphCanvas::new(graph);
 
         let ctx = egui::Context::default();
@@ -502,17 +502,15 @@ mod tests {
 
     #[test]
     fn test_graph_canvas_show_with_nodes() {
-        let mut graph = Graph::new("g1".to_string(), "Test".to_string());
-        let node1 =
-            GraphNode::new("n1".to_string(), "start".to_string()).with_position(100.0, 100.0);
-        let node2 =
-            GraphNode::new("n2".to_string(), "task".to_string()).with_position(200.0, 200.0);
+        let mut graph = Graph::new("g1".to_owned(), "Test".to_owned());
+        let node1 = GraphNode::new("n1".to_owned(), "start".to_owned()).with_position(100.0, 100.0);
+        let node2 = GraphNode::new("n2".to_owned(), "task".to_owned()).with_position(200.0, 200.0);
         graph.add_node(node1).expect("add node1");
         graph.add_node(node2).expect("add node2");
         let edge = GraphEdge::new(
-            "e1".to_string(),
-            "n1".to_string(),
-            "n2".to_string(),
+            "e1".to_owned(),
+            "n1".to_owned(),
+            "n2".to_owned(),
             DependencyType::Sequential,
         );
         graph.edges.push(edge);
@@ -528,17 +526,17 @@ mod tests {
 
     #[test]
     fn test_graph_canvas_add_node_at_screen_pos() {
-        let graph = Graph::new("g1".to_string(), "Test".to_string());
+        let graph = Graph::new("g1".to_owned(), "Test".to_owned());
         let mut canvas = GraphCanvas::new(graph);
         let rect = Rect::from_min_size(Pos2::ZERO, Vec2::new(800.0, 600.0));
 
-        canvas.add_node_at_screen_pos(Pos2::new(400.0, 300.0), rect, "start".to_string());
+        canvas.add_node_at_screen_pos(Pos2::new(400.0, 300.0), rect, "start".to_owned());
         assert_eq!(canvas.graph().nodes.len(), 1);
     }
 
     #[test]
     fn test_graph_canvas_clear_selection() {
-        let graph = Graph::new("g1".to_string(), "Test".to_string());
+        let graph = Graph::new("g1".to_owned(), "Test".to_owned());
         let mut canvas = GraphCanvas::new(graph);
         canvas.clear_selection();
         assert!(canvas.selected_nodes().is_empty());
@@ -546,7 +544,7 @@ mod tests {
 
     #[test]
     fn test_graph_canvas_reset_view() {
-        let graph = Graph::new("g1".to_string(), "Test".to_string());
+        let graph = Graph::new("g1".to_owned(), "Test".to_owned());
         let mut canvas = GraphCanvas::new(graph);
         canvas.pan = Vec2::new(100.0, 50.0);
         canvas.zoom = 2.0;

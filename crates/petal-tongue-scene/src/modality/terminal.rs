@@ -311,7 +311,7 @@ mod tests {
         let prim = Primitive::Text {
             x: 0.0,
             y: 0.0,
-            content: "Hi".to_string(),
+            content: "Hi".to_owned(),
             font_size: 12.0,
             color: Color::WHITE,
             anchor: AnchorPoint::TopLeft,

@@ -125,7 +125,7 @@ impl TelemetryAdapter {
                 |((section, obs), (x_values, y_values))| DataBinding::TimeSeries {
                     id: format!("{section}.{obs}"),
                     label: format!("{section} / {obs}"),
-                    x_label: "Time (s)".to_string(),
+                    x_label: "Time (s)".to_owned(),
                     y_label: obs,
                     unit: String::new(),
                     x_values,
@@ -148,7 +148,7 @@ impl TelemetryAdapter {
                 DataBinding::TimeSeries {
                     id: format!("{section}.{obs}"),
                     label: format!("{section} / {obs}"),
-                    x_label: "Time (s)".to_string(),
+                    x_label: "Time (s)".to_owned(),
                     y_label: obs,
                     unit: String::new(),
                     x_values,
@@ -253,8 +253,8 @@ mod tests {
         let adapter = TelemetryAdapter::parse(jsonl);
         assert_eq!(adapter.len(), 2);
         let obs = adapter.observables("bgk");
-        assert!(obs.contains(&"mass_err".to_string()));
-        assert!(obs.contains(&"energy_err".to_string()));
+        assert!(obs.contains(&"mass_err".to_owned()));
+        assert!(obs.contains(&"energy_err".to_owned()));
     }
 
     #[test]

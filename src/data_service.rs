@@ -416,7 +416,7 @@ mod tests {
             guard.add_edge(TopologyEdge {
                 from: "p1".into(),
                 to: "p2".into(),
-                edge_type: "connection".to_string(),
+                edge_type: "connection".to_owned(),
                 label: None,
                 capability: None,
                 metrics: None,
@@ -547,8 +547,8 @@ mod tests {
             edges: vec![TopologyEdge {
                 from: "a".into(),
                 to: "b".into(),
-                edge_type: "api_call".to_string(),
-                label: Some("invoke".to_string()),
+                edge_type: "api_call".to_owned(),
+                label: Some("invoke".to_owned()),
                 capability: None,
                 metrics: None,
             }],

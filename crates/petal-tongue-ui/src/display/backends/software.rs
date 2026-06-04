@@ -187,7 +187,7 @@ impl SoftwareDisplay {
 
         // Write frame to file for WebSocket server integration
         if let Ok(ws_output) = std::env::var("WEBSOCKET_FRAME_OUTPUT") {
-            let json_str = serde_json::to_string(&message).unwrap_or_else(|_| "{}".to_string());
+            let json_str = serde_json::to_string(&message).unwrap_or_else(|_| "{}".to_owned());
 
             match std::fs::write(&ws_output, json_str) {
                 Ok(()) => {

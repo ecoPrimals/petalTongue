@@ -137,7 +137,7 @@ impl CpuStream {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            label: "CPU Usage".to_string(),
+            label: "CPU Usage".to_owned(),
             history: Vec::new(),
             max_history: 120, // 2 minutes at 1Hz
             last_update: None,
@@ -185,7 +185,7 @@ impl MemoryStream {
     #[must_use]
     pub fn new(total_bytes: u64) -> Self {
         Self {
-            label: "Memory Usage".to_string(),
+            label: "Memory Usage".to_owned(),
             history: Vec::new(),
             max_history: 120,
             total_bytes,
@@ -239,7 +239,7 @@ impl NetworkStream {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            label: "Network Traffic".to_string(),
+            label: "Network Traffic".to_owned(),
             history: Vec::new(),
             max_history: 120,
             max_bps: 1_000_000.0, // Start with 1 Mbps, will adjust

@@ -287,13 +287,13 @@ mod tests {
     fn test_commands_enum_exhaustive() {
         let _ = Commands::List;
         let _ = Commands::Show {
-            instance_id: "x".to_string(),
+            instance_id: "x".to_owned(),
         };
         let _ = Commands::Raise {
-            instance_id: "x".to_string(),
+            instance_id: "x".to_owned(),
         };
         let _ = Commands::Ping {
-            instance_id: "x".to_string(),
+            instance_id: "x".to_owned(),
         };
         let _ = Commands::Gc { force: false };
         let _ = Commands::Status;

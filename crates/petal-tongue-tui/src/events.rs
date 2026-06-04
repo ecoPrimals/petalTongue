@@ -330,7 +330,7 @@ mod tests {
         // Send external event
         handler
             .send_external(ExternalEvent::PrimalDiscovered {
-                name: "songbird".to_string(),
+                name: "songbird".to_owned(),
             })
             .unwrap();
 

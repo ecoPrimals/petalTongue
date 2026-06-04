@@ -158,7 +158,7 @@ mod tests {
         let edges = vec![TopologyEdge {
             from: PrimalId::from("p1"),
             to: PrimalId::from("p1"),
-            edge_type: "loop".to_string(),
+            edge_type: "loop".to_owned(),
             label: None,
             capability: None,
             metrics: None,

@@ -275,7 +275,7 @@ mod tests {
             g.add_edge(TopologyEdge {
                 from: PrimalId::from("n1"),
                 to: PrimalId::from("n2"),
-                edge_type: "test".to_string(),
+                edge_type: "test".to_owned(),
                 label: None,
                 capability: None,
                 metrics: None,

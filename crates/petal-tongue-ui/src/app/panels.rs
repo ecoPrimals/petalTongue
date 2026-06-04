@@ -375,7 +375,7 @@ fn format_json_leaf(v: &serde_json::Value) -> String {
         serde_json::Value::String(s) => s.clone(),
         serde_json::Value::Number(n) => n.to_string(),
         serde_json::Value::Bool(b) => b.to_string(),
-        serde_json::Value::Null => "null".to_string(),
+        serde_json::Value::Null => "null".to_owned(),
         other => other.to_string(),
     }
 }

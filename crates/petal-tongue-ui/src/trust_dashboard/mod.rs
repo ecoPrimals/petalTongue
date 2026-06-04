@@ -94,7 +94,7 @@ impl TrustDashboard {
                         trust_level_number_to_label(n.round() as i32)
                     }
                     PropertyValue::String(s) => s.clone(),
-                    _ => "Unknown".to_string(),
+                    _ => "Unknown".to_owned(),
                 };
                 *summary.trust_distribution.entry(trust_label).or_insert(0) += 1;
             }

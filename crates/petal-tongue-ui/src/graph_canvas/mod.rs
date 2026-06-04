@@ -308,7 +308,7 @@ mod tests {
 
     #[test]
     fn test_canvas_creation() {
-        let canvas = GraphCanvas::new("test-graph".to_string());
+        let canvas = GraphCanvas::new("test-graph".to_owned());
         assert_eq!(canvas.graph().name, "test-graph");
         assert_eq!(canvas.camera.zoom, 1.0);
         assert!(canvas.show_grid);
@@ -316,7 +316,7 @@ mod tests {
 
     #[test]
     fn test_camera_zoom() {
-        let mut canvas = GraphCanvas::new("test".to_string());
+        let mut canvas = GraphCanvas::new("test".to_owned());
         canvas.camera.zoom = 2.0;
         assert_eq!(canvas.camera.zoom, 2.0);
 
@@ -328,7 +328,7 @@ mod tests {
 
     #[test]
     fn test_add_node() {
-        let mut canvas = GraphCanvas::new("test".to_string());
+        let mut canvas = GraphCanvas::new("test".to_owned());
         let canvas_rect = Rect::from_min_size(Pos2::ZERO, EguiVec2::new(800.0, 600.0));
 
         canvas.add_node_at_screen(NodeType::PrimalStart, Pos2::new(400.0, 300.0), canvas_rect);
@@ -337,8 +337,8 @@ mod tests {
 
     #[test]
     fn test_selection() {
-        let mut canvas = GraphCanvas::new("test".to_string());
-        let node_id = "test-node".to_string();
+        let mut canvas = GraphCanvas::new("test".to_owned());
+        let node_id = "test-node".to_owned();
 
         canvas.select_node(node_id.clone());
         assert!(canvas.selected_nodes.contains(&node_id));
@@ -349,7 +349,7 @@ mod tests {
 
     #[test]
     fn test_coordinate_conversion() {
-        let canvas = GraphCanvas::new("test".to_string());
+        let canvas = GraphCanvas::new("test".to_owned());
         let canvas_rect = Rect::from_min_size(Pos2::ZERO, EguiVec2::new(800.0, 600.0));
 
         let world_pos = Vec2::new(100.0, 100.0);
@@ -367,7 +367,7 @@ mod tests {
 
     #[test]
     fn test_node_dragging() {
-        let mut canvas = GraphCanvas::new("test".to_string());
+        let mut canvas = GraphCanvas::new("test".to_owned());
         let canvas_rect = Rect::from_min_size(Pos2::ZERO, EguiVec2::new(800.0, 600.0));
 
         // Add a node
@@ -393,7 +393,7 @@ mod tests {
 
     #[test]
     fn test_multi_select() {
-        let mut canvas = GraphCanvas::new("test".to_string());
+        let mut canvas = GraphCanvas::new("test".to_owned());
         let canvas_rect = Rect::from_min_size(Pos2::ZERO, EguiVec2::new(800.0, 600.0));
 
         // Add multiple nodes
@@ -419,7 +419,7 @@ mod tests {
 
     #[test]
     fn test_delete_selected() {
-        let mut canvas = GraphCanvas::new("test".to_string());
+        let mut canvas = GraphCanvas::new("test".to_owned());
         let canvas_rect = Rect::from_min_size(Pos2::ZERO, EguiVec2::new(800.0, 600.0));
 
         // Add nodes
@@ -439,7 +439,7 @@ mod tests {
 
     #[test]
     fn test_edge_creation() {
-        let mut canvas = GraphCanvas::new("test".to_string());
+        let mut canvas = GraphCanvas::new("test".to_owned());
         let canvas_rect = Rect::from_min_size(Pos2::ZERO, EguiVec2::new(800.0, 600.0));
 
         // Add two nodes
@@ -466,7 +466,7 @@ mod tests {
 
     #[test]
     fn test_snap_to_grid() {
-        let mut canvas = GraphCanvas::new("test".to_string());
+        let mut canvas = GraphCanvas::new("test".to_owned());
         canvas.snap_to_grid = true;
         canvas.grid_size = 50.0;
 
@@ -485,14 +485,14 @@ mod tests {
 
     #[test]
     fn test_toggle_node_selection_add() {
-        let mut canvas = GraphCanvas::new("test".to_string());
+        let mut canvas = GraphCanvas::new("test".to_owned());
         canvas.toggle_node_selection("n1");
         assert!(canvas.selected_nodes.contains("n1"));
     }
 
     #[test]
     fn test_toggle_node_selection_remove() {
-        let mut canvas = GraphCanvas::new("test".to_string());
+        let mut canvas = GraphCanvas::new("test".to_owned());
         canvas.select_node("n1");
         canvas.toggle_node_selection("n1");
         assert!(!canvas.selected_nodes.contains("n1"));
@@ -500,7 +500,7 @@ mod tests {
 
     #[test]
     fn test_reset_camera() {
-        let mut canvas = GraphCanvas::new("test".to_string());
+        let mut canvas = GraphCanvas::new("test".to_owned());
         canvas.camera.position = Vec2::new(100.0, 200.0);
         canvas.camera.zoom = 2.5;
         canvas.reset_camera();
@@ -511,7 +511,7 @@ mod tests {
 
     #[test]
     fn test_to_scene_edge_data_id() {
-        let mut canvas = GraphCanvas::new("test".to_string());
+        let mut canvas = GraphCanvas::new("test".to_owned());
         let canvas_rect = Rect::from_min_size(Pos2::ZERO, EguiVec2::new(800.0, 600.0));
         canvas.add_node_at_screen(NodeType::PrimalStart, Pos2::new(100.0, 100.0), canvas_rect);
         canvas.add_node_at_screen(NodeType::Verification, Pos2::new(200.0, 200.0), canvas_rect);

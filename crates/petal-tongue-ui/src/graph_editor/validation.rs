@@ -81,35 +81,35 @@ mod tests {
 
     #[test]
     fn test_validate_valid_node() {
-        let node = GraphNode::new("node-1".to_string(), "test-type".to_string());
+        let node = GraphNode::new("node-1".to_owned(), "test-type".to_owned());
         assert!(GraphValidator::validate_node(&node).is_ok());
     }
 
     #[test]
     fn test_validate_empty_id() {
-        let node = GraphNode::new(String::new(), "test-type".to_string());
+        let node = GraphNode::new(String::new(), "test-type".to_owned());
         assert!(GraphValidator::validate_node(&node).is_err());
     }
 
     #[test]
     fn test_validate_empty_type() {
-        let node = GraphNode::new("node-1".to_string(), String::new());
+        let node = GraphNode::new("node-1".to_owned(), String::new());
         assert!(GraphValidator::validate_node(&node).is_err());
     }
 
     #[test]
     fn test_validate_valid_graph() {
-        let mut graph = Graph::new("test-1".to_string(), "Test Graph".to_string());
-        let node1 = GraphNode::new("node-1".to_string(), "test-type".to_string());
-        let node2 = GraphNode::new("node-2".to_string(), "test-type".to_string());
+        let mut graph = Graph::new("test-1".to_owned(), "Test Graph".to_owned());
+        let node1 = GraphNode::new("node-1".to_owned(), "test-type".to_owned());
+        let node2 = GraphNode::new("node-2".to_owned(), "test-type".to_owned());
 
         graph.add_node(node1).unwrap();
         graph.add_node(node2).unwrap();
 
         let edge = GraphEdge::new(
-            "edge-1".to_string(),
-            "node-1".to_string(),
-            "node-2".to_string(),
+            "edge-1".to_owned(),
+            "node-1".to_owned(),
+            "node-2".to_owned(),
             DependencyType::Sequential,
         );
         graph.add_edge(edge).unwrap();
@@ -119,16 +119,16 @@ mod tests {
 
     #[test]
     fn test_validate_graph_with_missing_node() {
-        let mut graph = Graph::new("test-1".to_string(), "Test Graph".to_string());
-        let node1 = GraphNode::new("node-1".to_string(), "test-type".to_string());
+        let mut graph = Graph::new("test-1".to_owned(), "Test Graph".to_owned());
+        let node1 = GraphNode::new("node-1".to_owned(), "test-type".to_owned());
 
         graph.add_node(node1).unwrap();
 
         // Manually add edge (bypassing validation) to test validator
         let edge = GraphEdge::new(
-            "edge-1".to_string(),
-            "node-1".to_string(),
-            "node-2".to_string(), // This node doesn't exist
+            "edge-1".to_owned(),
+            "node-1".to_owned(),
+            "node-2".to_owned(), // This node doesn't exist
             DependencyType::Sequential,
         );
         graph.edges.push(edge);

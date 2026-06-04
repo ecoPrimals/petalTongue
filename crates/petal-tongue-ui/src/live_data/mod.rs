@@ -157,7 +157,7 @@ impl LiveMetric {
     pub fn new(label: String, source: String, update_interval: f64) -> Self {
         Self {
             label,
-            value: "0".to_string(),
+            value: "0".to_owned(),
             unit: None,
             badge: LiveBadge::new(source, update_interval),
         }

@@ -359,7 +359,7 @@ impl LiveIndicator {
     pub fn age_string(&self) -> String {
         let age = self.age_seconds();
         if age < 1.0 {
-            "Just now".to_string()
+            "Just now".to_owned()
         } else if age < 60.0 {
             format!("{age:.1}s ago")
         } else if age < 3600.0 {

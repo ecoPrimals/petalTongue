@@ -57,9 +57,9 @@ pub fn run_update(app: &mut PetalTongueApp, ctx: &egui::Context) {
         if current != app.last_broadcast_selection {
             let event = petal_tongue_ipc::InteractionEventNotification {
                 event_type: if current.is_some() {
-                    "select".to_string()
+                    "select".to_owned()
                 } else {
-                    "deselect".to_string()
+                    "deselect".to_owned()
                 },
                 targets: current.clone().into_iter().collect(),
                 timestamp: chrono::Utc::now().to_rfc3339(),

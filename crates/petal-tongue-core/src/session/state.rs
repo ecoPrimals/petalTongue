@@ -69,7 +69,7 @@ pub struct AccessibilitySettings {
 impl Default for AccessibilitySettings {
     fn default() -> Self {
         Self {
-            color_scheme: "standard".to_string(),
+            color_scheme: "standard".to_owned(),
             font_size: 1.0,
             audio_enabled: false,
             audio_volume: 0.7,
@@ -306,7 +306,7 @@ mod tests {
         state1.edges.push(TopologyEdge {
             from: PrimalId::from("a"),
             to: PrimalId::from("b"),
-            edge_type: "conn".to_string(),
+            edge_type: "conn".to_owned(),
             label: None,
             capability: None,
             metrics: None,
@@ -314,7 +314,7 @@ mod tests {
         state2.edges.push(TopologyEdge {
             from: PrimalId::from("a"),
             to: PrimalId::from("b"),
-            edge_type: "conn".to_string(),
+            edge_type: "conn".to_owned(),
             label: None,
             capability: None,
             metrics: None,
@@ -329,7 +329,7 @@ mod tests {
         let id2 = InstanceId::new();
         let mut state1 = SessionState::new(id1);
         let mut state2 = SessionState::new(id2);
-        state2.node_positions.insert("n1".to_string(), (10.0, 20.0));
+        state2.node_positions.insert("n1".to_owned(), (10.0, 20.0));
         state1.merge_graph(&state2);
         assert_eq!(state1.node_positions.get("n1"), Some(&(10.0, 20.0)));
     }
@@ -380,7 +380,7 @@ mod tests {
         let mut state = SessionState::new(id);
         state.add_metadata("k", "v1");
         state.add_metadata("k", "v2");
-        assert_eq!(state.metadata.get("k"), Some(&"v2".to_string()));
+        assert_eq!(state.metadata.get("k"), Some(&"v2".to_owned()));
     }
 
     #[test]

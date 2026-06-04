@@ -114,7 +114,7 @@ mod tests {
             radius: 5.0,
             fill: Some(Color::BLACK),
             stroke: None,
-            data_id: Some("d1".to_string()),
+            data_id: Some("d1".to_owned()),
         };
         graph.add_to_root(SceneNode::new("p").with_primitive(prim));
         let out = HapticCompiler::new().compile(&graph);

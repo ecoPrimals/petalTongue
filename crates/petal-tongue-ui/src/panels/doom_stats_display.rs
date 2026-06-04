@@ -54,7 +54,7 @@ pub fn prepare_doom_stats_display(stats: &GameStats) -> DoomStatsDisplayState {
     let map_name = stats
         .current_map
         .as_ref()
-        .map_or_else(|| "None".to_string(), |m| format!("{m} (Hangar)"));
+        .map_or_else(|| "None".to_owned(), |m| format!("{m} (Hangar)"));
     let view_mode = format_view_mode(&stats.view_mode);
     let position = match (stats.player_x, stats.player_y, stats.player_angle) {
         (Some(x), Some(y), Some(angle)) => Some(format_player_position(x, y, angle)),
@@ -111,7 +111,7 @@ mod tests {
             state: DoomState::Playing,
             frame_count: 42,
             dimensions: (640, 480),
-            current_map: Some("E1M1".to_string()),
+            current_map: Some("E1M1".to_owned()),
             view_mode: ViewMode::FirstPerson,
             player_x: Some(100.0),
             player_y: Some(200.0),

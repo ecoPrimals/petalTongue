@@ -183,7 +183,7 @@ pub async fn discover_visualization_providers() -> DiscoveryResult<Vec<KnownVisu
 
     // Priority 3: Try mDNS auto-discovery
     let enable_mdns = std::env::var("PETALTONGUE_ENABLE_MDNS")
-        .unwrap_or_else(|_| "true".to_string())
+        .unwrap_or_else(|_| "true".to_owned())
         .to_lowercase()
         == "true";
 

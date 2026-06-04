@@ -264,10 +264,10 @@ mod tests {
     #[test]
     fn test_stream_confirmation_serde_roundtrip() {
         let conf = StreamConfirmation {
-            receipt_id: "r-123".to_string(),
+            receipt_id: "r-123".to_owned(),
             timestamp: 12345,
             quality: 0.85,
-            message: "Accepted".to_string(),
+            message: "Accepted".to_owned(),
         };
         let json = serde_json::to_value(&conf).unwrap();
         let restored: StreamConfirmation = serde_json::from_value(json).unwrap();

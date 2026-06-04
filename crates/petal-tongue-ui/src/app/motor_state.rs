@@ -122,7 +122,7 @@ mod tests {
         let mut store = PanelContentStore::default();
         store.update(
             PanelId::SystemDashboard,
-            Some("Health".to_string()),
+            Some("Health".to_owned()),
             serde_json::json!({"cpu": 42}),
         );
         assert_eq!(store.len(), 1);

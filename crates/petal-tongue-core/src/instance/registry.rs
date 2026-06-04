@@ -251,7 +251,7 @@ mod tests {
             &[("XDG_DATA_HOME", Some(dir.path().to_str().unwrap()))],
             || {
                 let id = InstanceId::new();
-                let instance = Instance::new(id.clone(), Some("roundtrip".to_string())).unwrap();
+                let instance = Instance::new(id.clone(), Some("roundtrip".to_owned())).unwrap();
                 let mut registry = InstanceRegistry::new();
                 registry.instances.insert(id.clone(), instance);
                 registry.save_to(&path).unwrap();

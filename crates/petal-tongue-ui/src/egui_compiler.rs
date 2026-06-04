@@ -240,7 +240,7 @@ mod tests {
             radius: 5.0,
             fill: Some(Color::BLACK),
             stroke: None,
-            data_id: Some("d1".to_string()),
+            data_id: Some("d1".to_owned()),
         }));
         let shapes = EguiCompiler::compile_primitives(&scene);
         assert_eq!(shapes.len(), 1);
@@ -267,7 +267,7 @@ mod tests {
         scene.add_to_root(SceneNode::new("txt").with_primitive(Primitive::Text {
             x: 0.0,
             y: 0.0,
-            content: "Hello".to_string(),
+            content: "Hello".to_owned(),
             font_size: 14.0,
             color: Color::WHITE,
             anchor: petal_tongue_scene::primitive::AnchorPoint::TopLeft,
@@ -462,7 +462,7 @@ mod tests {
         scene.add_to_root(SceneNode::new("txt").with_primitive(Primitive::Text {
             x: 0.0,
             y: 0.0,
-            content: "Bold".to_string(),
+            content: "Bold".to_owned(),
             font_size: 16.0,
             color: Color::WHITE,
             anchor: petal_tongue_scene::primitive::AnchorPoint::TopLeft,

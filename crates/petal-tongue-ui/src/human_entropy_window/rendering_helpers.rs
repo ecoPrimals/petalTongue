@@ -50,7 +50,7 @@ pub fn quality_to_percent_display(quality: f64) -> String {
 #[must_use]
 pub fn stopped_state_message(quality: Option<f64>) -> String {
     quality.map_or_else(
-        || "Capture complete!".to_string(),
+        || "Capture complete!".to_owned(),
         |q| format!("Capture complete! Quality: {:.1}%", q * 100.0),
     )
 }

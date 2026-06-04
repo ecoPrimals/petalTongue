@@ -74,12 +74,12 @@ mod tests {
             instance_id: InstanceId::parse("550e8400-e29b-41d4-a716-446655440000").unwrap(),
             pid: 12345,
             window_id: Some(0x123),
-            name: Some("Test Instance".to_string()),
+            name: Some("Test Instance".to_owned()),
             uptime_seconds: 3600,
             node_count: 5,
             edge_count: 10,
             window_visible: true,
-            metadata: std::iter::once(("key".to_string(), "value".to_string())).collect(),
+            metadata: std::iter::once(("key".to_owned(), "value".to_owned())).collect(),
         };
         let out = format_show_output(&status);
         assert!(out.contains("550e8400-e29b-41d4-a716-446655440000"));
@@ -173,7 +173,7 @@ mod tests {
     #[test]
     fn test_format_show_output_with_metadata() {
         let mut metadata = std::collections::HashMap::new();
-        metadata.insert("version".to_string(), "1.0".to_string());
+        metadata.insert("version".to_owned(), "1.0".to_owned());
         let status = InstanceStatus {
             instance_id: InstanceId::parse("550e8400-e29b-41d4-a716-446655440000").unwrap(),
             pid: 1,

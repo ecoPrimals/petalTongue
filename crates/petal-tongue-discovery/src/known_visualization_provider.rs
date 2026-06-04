@@ -58,9 +58,9 @@ impl VisualizationDataProvider for HangHealthCheckProvider {
 
     fn get_metadata(&self) -> ProviderMetadata {
         ProviderMetadata {
-            name: "hang".to_string(),
-            endpoint: "hang://".to_string(),
-            protocol: "test".to_string(),
+            name: "hang".to_owned(),
+            endpoint: "hang://".to_owned(),
+            protocol: "test".to_owned(),
             capabilities: vec![],
         }
     }
@@ -74,15 +74,15 @@ impl VisualizationDataProvider for FailingHealthCheckProvider {
 
     async fn health_check(&self) -> DiscoveryResult<String> {
         Err(crate::errors::DiscoveryError::ConfigError(
-            "Intentional failure".to_string(),
+            "Intentional failure".to_owned(),
         ))
     }
 
     fn get_metadata(&self) -> ProviderMetadata {
         ProviderMetadata {
-            name: "Failing".to_string(),
-            endpoint: "fail://".to_string(),
-            protocol: "fail".to_string(),
+            name: "Failing".to_owned(),
+            endpoint: "fail://".to_owned(),
+            protocol: "fail".to_owned(),
             capabilities: vec![],
         }
     }

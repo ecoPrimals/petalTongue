@@ -178,7 +178,7 @@ impl UnixSocketProvider {
                             context: path.display().to_string(),
                         })?
                         .map_err(|e| DiscoveryError::InvalidData {
-                            name: "Unix socket".to_string(),
+                            name: "Unix socket".to_owned(),
                             reason: format!("Legacy get_capabilities failed: {e}"),
                         })?
                 } else {
@@ -315,33 +315,33 @@ impl UnixSocketProvider {
                 .iter()
                 .any(|c| c.starts_with("ui.") || c.starts_with("visualization."))
             {
-                return "ui-provider".to_string();
+                return "ui-provider".to_owned();
             } else if capabilities.iter().any(|c| {
                 c.starts_with("encryption.")
                     || c.starts_with("identity.")
                     || c.starts_with("security.")
             }) {
-                return "security-provider".to_string();
+                return "security-provider".to_owned();
             } else if capabilities
                 .iter()
                 .any(|c| c.starts_with("discovery.") || c.starts_with("registry."))
             {
-                return "discovery-provider".to_string();
+                return "discovery-provider".to_owned();
             } else if capabilities
                 .iter()
                 .any(|c| c.starts_with("storage.") || c.starts_with("persistence."))
             {
-                return "storage-provider".to_string();
+                return "storage-provider".to_owned();
             } else if capabilities
                 .iter()
                 .any(|c| c.starts_with("compute.") || c.starts_with("execution."))
             {
-                return "compute-provider".to_string();
+                return "compute-provider".to_owned();
             } else if capabilities
                 .iter()
                 .any(|c| c.starts_with("ai.") || c.starts_with("inference."))
             {
-                return "ai-provider".to_string();
+                return "ai-provider".to_owned();
             }
         }
 
@@ -398,27 +398,27 @@ mod tests {
         // When socket name is unknown, infer from capabilities
         let path = PathBuf::from("/tmp/unknown.sock");
 
-        let capabilities = vec!["ui.render".to_string(), "ui.graph".to_string()];
+        let capabilities = vec!["ui.render".to_owned(), "ui.graph".to_owned()];
         let primal_type = provider.infer_primal_type(&path, &capabilities);
         assert_eq!(primal_type, "ui-provider");
 
-        let capabilities = vec!["encryption.aes".to_string(), "identity.keys".to_string()];
+        let capabilities = vec!["encryption.aes".to_owned(), "identity.keys".to_owned()];
         let primal_type = provider.infer_primal_type(&path, &capabilities);
         assert_eq!(primal_type, "security-provider");
 
-        let capabilities = vec!["discovery.mdns".to_string(), "registry.primals".to_string()];
+        let capabilities = vec!["discovery.mdns".to_owned(), "registry.primals".to_owned()];
         let primal_type = provider.infer_primal_type(&path, &capabilities);
         assert_eq!(primal_type, "discovery-provider");
 
-        let capabilities = vec!["storage.kv".to_string(), "persistence.files".to_string()];
+        let capabilities = vec!["storage.kv".to_owned(), "persistence.files".to_owned()];
         let primal_type = provider.infer_primal_type(&path, &capabilities);
         assert_eq!(primal_type, "storage-provider");
 
-        let capabilities = vec!["compute.wasm".to_string(), "execution.native".to_string()];
+        let capabilities = vec!["compute.wasm".to_owned(), "execution.native".to_owned()];
         let primal_type = provider.infer_primal_type(&path, &capabilities);
         assert_eq!(primal_type, "compute-provider");
 
-        let capabilities = vec!["ai.llm".to_string(), "inference.local".to_string()];
+        let capabilities = vec!["ai.llm".to_owned(), "inference.local".to_owned()];
         let primal_type = provider.infer_primal_type(&path, &capabilities);
         assert_eq!(primal_type, "ai-provider");
     }
@@ -429,7 +429,7 @@ mod tests {
 
         // Socket name is self-knowledge (preferred over capability inference)
         let path = PathBuf::from("/tmp/my-custom-primal-nat0.sock");
-        let capabilities = vec!["ui.render".to_string()]; // UI capability
+        let capabilities = vec!["ui.render".to_owned()]; // UI capability
 
         // Should use socket name, not capability
         let primal_type = provider.infer_primal_type(&path, &capabilities);
@@ -447,7 +447,7 @@ mod tests {
     fn test_infer_primal_type_visualization_capability() {
         let provider = UnixSocketProvider::new();
         let path = PathBuf::from("/tmp/unknown.sock");
-        let capabilities = vec!["visualization.graph".to_string()];
+        let capabilities = vec!["visualization.graph".to_owned()];
         let primal_type = provider.infer_primal_type(&path, &capabilities);
         assert_eq!(primal_type, "ui-provider");
     }

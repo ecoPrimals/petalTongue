@@ -14,13 +14,13 @@ fn build_properties_from_info(info: &PrimalInfo) -> Properties {
     let mut props = Properties::new();
     if let Some(trust_level) = info.trust_level() {
         props.insert(
-            "trust_level".to_string(),
+            "trust_level".to_owned(),
             PropertyValue::Number(f64::from(trust_level)),
         );
     }
     if let Some(family_id) = info.family_id() {
         props.insert(
-            "family_id".to_string(),
+            "family_id".to_owned(),
             PropertyValue::String(family_id.to_string()),
         );
     }
@@ -29,7 +29,7 @@ fn build_properties_from_info(info: &PrimalInfo) -> Properties {
         .iter()
         .map(|c| PropertyValue::String(c.clone()))
         .collect();
-    props.insert("capabilities".to_string(), PropertyValue::Array(cap_array));
+    props.insert("capabilities".to_owned(), PropertyValue::Array(cap_array));
     props
 }
 

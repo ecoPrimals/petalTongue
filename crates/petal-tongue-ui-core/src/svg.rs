@@ -49,7 +49,7 @@ impl SvgUI {
             graph,
             width,
             height,
-            background_color: "#141822".to_string(), // Dark mode
+            background_color: "#141822".to_owned(), // Dark mode
             node_radius: 20.0,
         }
     }

@@ -58,9 +58,9 @@ pub struct TextureAttachResponse {
 }
 
 fn default_rgba8() -> String {
-    "rgba8".to_string()
+    "rgba8".to_owned()
 }
 
 fn default_on_change() -> String {
-    "on_change".to_string()
+    "on_change".to_owned()
 }

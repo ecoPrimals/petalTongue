@@ -236,18 +236,16 @@ impl ToolPanel for ProcessViewerTool {
     fn metadata(&self) -> &ToolMetadata {
         static METADATA: std::sync::OnceLock<ToolMetadata> = std::sync::OnceLock::new();
         METADATA.get_or_init(|| ToolMetadata {
-            name: "Process Viewer".to_string(),
-            description: "View and monitor running processes".to_string(),
-            version: "0.1.0".to_string(),
+            name: "Process Viewer".to_owned(),
+            description: "View and monitor running processes".to_owned(),
+            version: "0.1.0".to_owned(),
             capabilities: vec![
                 ToolCapability::Visual,
-                ToolCapability::Custom("RealTime".to_string()),
-                ToolCapability::Custom("Filtering".to_string()),
+                ToolCapability::Custom("RealTime".to_owned()),
+                ToolCapability::Custom("Filtering".to_owned()),
             ],
-            icon: "📋".to_string(),
-            source: Some(
-                "https://www.kernel.org/doc/html/latest/filesystems/proc.html".to_string(),
-            ),
+            icon: "📋".to_owned(),
+            source: Some("https://www.kernel.org/doc/html/latest/filesystems/proc.html".to_owned()),
         })
     }
 
@@ -444,7 +442,7 @@ mod tests {
         use crate::proc_stats::ProcessInfo as ProcProcessInfo;
         let proc_info = ProcProcessInfo {
             pid: 999,
-            name: "test_proc".to_string(),
+            name: "test_proc".to_owned(),
             cpu_usage: 12.5,
             memory: 2_097_152,
         };

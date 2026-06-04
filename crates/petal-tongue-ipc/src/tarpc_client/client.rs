@@ -141,7 +141,7 @@ impl TarpcClient {
                     .and_then(|v| v.get("capability"))
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| {
-                        TarpcClientError::Configuration("Missing capability parameter".to_string())
+                        TarpcClientError::Configuration("Missing capability parameter".to_owned())
                     })?
                     .to_string();
 
@@ -170,7 +170,7 @@ impl TarpcClient {
             }
             "visualization.render.graph" | "render_graph" => {
                 let request: RenderRequest = serde_json::from_value(params.ok_or_else(|| {
-                    TarpcClientError::Configuration("Missing request parameter".to_string())
+                    TarpcClientError::Configuration("Missing request parameter".to_owned())
                 })?)
                 .map_err(|e| TarpcClientError::Serialization(format!("Invalid request: {e}")))?;
 

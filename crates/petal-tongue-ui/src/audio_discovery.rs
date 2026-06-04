@@ -241,16 +241,16 @@ impl AudioDiscovery {
     pub fn status_message(&self) -> String {
         match self.preferred {
             AudioBackendType::PipeWire => {
-                "Audio available via PipeWire (modern, no permissions needed)".to_string()
+                "Audio available via PipeWire (modern, no permissions needed)".to_owned()
             }
             AudioBackendType::PulseAudio => {
-                "Audio available via PulseAudio (legacy, no permissions needed)".to_string()
+                "Audio available via PulseAudio (legacy, no permissions needed)".to_owned()
             }
             AudioBackendType::DirectALSA => {
-                "Audio available via direct ALSA (requires audio group)".to_string()
+                "Audio available via direct ALSA (requires audio group)".to_owned()
             }
             AudioBackendType::Silent => {
-                "No audio available - running in silent mode (visual-only)".to_string()
+                "No audio available - running in silent mode (visual-only)".to_owned()
             }
         }
     }

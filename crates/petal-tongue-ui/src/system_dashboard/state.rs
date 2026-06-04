@@ -43,8 +43,8 @@ impl Default for SystemDashboard {
             stats,
             last_refresh: Instant::now(),
             refresh_interval: Duration::from_secs(1),
-            cpu_metric: LiveMetric::new("CPU".to_string(), SOURCE_ID.to_string(), 1.0),
-            memory_metric: LiveMetric::new("Memory".to_string(), SOURCE_ID.to_string(), 1.0),
+            cpu_metric: LiveMetric::new("CPU".to_owned(), SOURCE_ID.to_string(), 1.0),
+            memory_metric: LiveMetric::new("Memory".to_owned(), SOURCE_ID.to_string(), 1.0),
             cpu_history: VecDeque::new(),
             mem_history: VecDeque::new(),
             max_history: 30, // 30 seconds for mini view
@@ -114,9 +114,9 @@ impl SystemDashboard {
 
             // Update live metrics
             self.cpu_metric
-                .update(format!("{cpu_usage:.1}"), Some("%".to_string()));
+                .update(format!("{cpu_usage:.1}"), Some("%".to_owned()));
             self.memory_metric
-                .update(format!("{mem_percent:.1}"), Some("%".to_string()));
+                .update(format!("{mem_percent:.1}"), Some("%".to_owned()));
         }
 
         // Generate audio if enabled and interval passed

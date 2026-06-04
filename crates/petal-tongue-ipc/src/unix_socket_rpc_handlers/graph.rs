@@ -200,7 +200,7 @@ mod tests {
         let viz_state = Arc::new(RwLock::new(
             crate::visualization_handler::VisualizationState::new(),
         ));
-        RpcHandlers::new(graph, "test".to_string(), viz_state)
+        RpcHandlers::new(graph, "test".to_owned(), viz_state)
     }
 
     #[tokio::test]
@@ -265,7 +265,7 @@ mod tests {
         graph.add_edge(TopologyEdge {
             from: "n1".into(),
             to: "n2".into(),
-            edge_type: "test".to_string(),
+            edge_type: "test".to_owned(),
             label: None,
             capability: None,
             metrics: None,
@@ -275,7 +275,7 @@ mod tests {
 
         let h = RpcHandlers::new(
             Arc::new(RwLock::new(graph)),
-            "test".to_string(),
+            "test".to_owned(),
             Arc::new(RwLock::new(
                 crate::visualization_handler::VisualizationState::new(),
             )),

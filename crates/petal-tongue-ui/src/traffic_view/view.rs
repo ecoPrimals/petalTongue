@@ -222,8 +222,8 @@ mod view_tests {
     fn test_render_with_metrics_and_selected_flow() {
         let mut view = TrafficView::new();
         view.add_flow(TrafficFlow {
-            from: "a".to_string(),
-            to: "b".to_string(),
+            from: "a".to_owned(),
+            to: "b".to_owned(),
             metrics: TrafficMetrics {
                 bytes_per_second: 5000,
                 requests_per_second: 10.0,
@@ -233,8 +233,8 @@ mod view_tests {
             color: [0, 255, 0, 255],
         });
         view.apply_intents(&[TrafficIntent::SelectFlow {
-            from: "a".to_string(),
-            to: "b".to_string(),
+            from: "a".to_owned(),
+            to: "b".to_owned(),
         }]);
         assert!(view.show_metrics());
         assert!(view.selected_flow().is_some());
@@ -252,8 +252,8 @@ mod view_tests {
     fn test_render_with_flows_no_primals_derives_ids() {
         let mut view = TrafficView::new();
         view.add_flow(TrafficFlow {
-            from: "primal_x".to_string(),
-            to: "primal_y".to_string(),
+            from: "primal_x".to_owned(),
+            to: "primal_y".to_owned(),
             metrics: TrafficMetrics::default(),
             color: [0, 255, 0, 255],
         });
@@ -285,14 +285,14 @@ mod view_tests {
     fn test_apply_intent_close_details() {
         let mut view = TrafficView::new();
         view.add_flow(TrafficFlow {
-            from: "a".to_string(),
-            to: "b".to_string(),
+            from: "a".to_owned(),
+            to: "b".to_owned(),
             metrics: TrafficMetrics::default(),
             color: [0, 255, 0, 255],
         });
         view.apply_intents(&[TrafficIntent::SelectFlow {
-            from: "a".to_string(),
-            to: "b".to_string(),
+            from: "a".to_owned(),
+            to: "b".to_owned(),
         }]);
         view.apply_intents(&[TrafficIntent::CloseDetails]);
         assert!(view.selected_flow().is_none());
@@ -302,8 +302,8 @@ mod view_tests {
     fn test_render_toggle_metrics_intent() {
         let mut view = TrafficView::new();
         view.add_flow(TrafficFlow {
-            from: "a".to_string(),
-            to: "b".to_string(),
+            from: "a".to_owned(),
+            to: "b".to_owned(),
             metrics: TrafficMetrics::default(),
             color: [0, 255, 0, 255],
         });
@@ -342,8 +342,8 @@ mod view_tests {
             ),
         ]);
         view.add_flow(TrafficFlow {
-            from: "alpha".to_string(),
-            to: "beta".to_string(),
+            from: "alpha".to_owned(),
+            to: "beta".to_owned(),
             metrics: TrafficMetrics {
                 bytes_per_second: 10000,
                 ..Default::default()
@@ -364,8 +364,8 @@ mod view_tests {
     fn test_max_volume_single_flow() {
         let mut view = TrafficView::new();
         view.add_flow(TrafficFlow {
-            from: "a".to_string(),
-            to: "b".to_string(),
+            from: "a".to_owned(),
+            to: "b".to_owned(),
             metrics: TrafficMetrics {
                 bytes_per_second: 42,
                 ..Default::default()

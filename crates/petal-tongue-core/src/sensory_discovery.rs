@@ -218,7 +218,7 @@ impl SensoryCapabilities {
         {
             // Web: virtual keyboard likely
             vec![KeyboardInputCapability::Virtual {
-                layout: "QWERTY".to_string(),
+                layout: "QWERTY".to_owned(),
                 supports_autocomplete: true,
                 supports_swipe: false,
             }]
@@ -228,7 +228,7 @@ impl SensoryCapabilities {
         {
             // Native: physical keyboard likely
             vec![KeyboardInputCapability::Physical {
-                layout: "QWERTY".to_string(),
+                layout: "QWERTY".to_owned(),
                 has_numpad: true,
                 modifier_keys: 4, // Ctrl, Alt, Shift, Super/Win/Cmd
             }]
@@ -338,7 +338,7 @@ pub fn mock_capabilities(
 
     if has_keyboard {
         caps.keyboard_inputs = vec![KeyboardInputCapability::Physical {
-            layout: "QWERTY".to_string(),
+            layout: "QWERTY".to_owned(),
             has_numpad: true,
             modifier_keys: 4,
         }];

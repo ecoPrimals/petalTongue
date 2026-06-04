@@ -193,7 +193,7 @@ impl UniversalDiscovery {
                 id: format!("env-{capability}"),
                 capabilities: vec![capability.to_string()],
                 endpoint,
-                protocol: "auto".to_string(), // Auto-detect
+                protocol: "auto".to_owned(), // Auto-detect
                 metadata: HashMap::new(),
             });
         }

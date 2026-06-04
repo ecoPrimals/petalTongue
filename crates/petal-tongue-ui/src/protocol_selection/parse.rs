@@ -50,7 +50,7 @@ pub fn parse_capabilities_from_json(
         .get("capabilities")
         .and_then(|c| c.as_array())
         .ok_or_else(|| {
-            TarpcClientError::Configuration("Response missing 'capabilities' array".to_string())
+            TarpcClientError::Configuration("Response missing 'capabilities' array".to_owned())
         })
         .map(|arr| {
             arr.iter()

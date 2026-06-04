@@ -27,9 +27,9 @@ pub fn format_proprioception_summary(
     confidence: f32,
 ) -> Vec<(String, String)> {
     vec![
-        ("Health".to_string(), format!("{health_percentage:.0}%")),
-        ("Status".to_string(), status.to_string()),
-        ("Confidence".to_string(), format!("{confidence:.1}")),
+        ("Health".to_owned(), format!("{health_percentage:.0}%")),
+        ("Status".to_owned(), status.to_string()),
+        ("Confidence".to_owned(), format!("{confidence:.1}")),
     ]
 }
 
@@ -99,9 +99,9 @@ mod tests {
     fn test_format_proprioception_summary() {
         let pairs = format_proprioception_summary(85.0, "Healthy", 92.5);
         assert_eq!(pairs.len(), 3);
-        assert_eq!(pairs[0], ("Health".to_string(), "85%".to_string()));
-        assert_eq!(pairs[1], ("Status".to_string(), "Healthy".to_string()));
-        assert_eq!(pairs[2], ("Confidence".to_string(), "92.5".to_string()));
+        assert_eq!(pairs[0], ("Health".to_owned(), "85%".to_owned()));
+        assert_eq!(pairs[1], ("Status".to_owned(), "Healthy".to_owned()));
+        assert_eq!(pairs[2], ("Confidence".to_owned(), "92.5".to_owned()));
     }
 
     #[test]

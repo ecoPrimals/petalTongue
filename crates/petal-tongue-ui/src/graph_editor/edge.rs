@@ -117,9 +117,9 @@ mod tests {
     #[test]
     fn test_create_edge() {
         let edge = GraphEdge::new(
-            "edge-1".to_string(),
-            "node-1".to_string(),
-            "node-2".to_string(),
+            "edge-1".to_owned(),
+            "node-1".to_owned(),
+            "node-2".to_owned(),
             DependencyType::Sequential,
         );
 
@@ -132,22 +132,22 @@ mod tests {
     #[test]
     fn test_edge_with_label() {
         let edge = GraphEdge::new(
-            "edge-1".to_string(),
-            "node-1".to_string(),
-            "node-2".to_string(),
+            "edge-1".to_owned(),
+            "node-1".to_owned(),
+            "node-2".to_owned(),
             DependencyType::DataFlow,
         )
-        .with_label("data-output".to_string());
+        .with_label("data-output".to_owned());
 
-        assert_eq!(edge.label, Some("data-output".to_string()));
+        assert_eq!(edge.label, Some("data-output".to_owned()));
     }
 
     #[test]
     fn test_optional_dependency() {
         let edge = GraphEdge::new(
-            "edge-1".to_string(),
-            "node-1".to_string(),
-            "node-2".to_string(),
+            "edge-1".to_owned(),
+            "node-1".to_owned(),
+            "node-2".to_owned(),
             DependencyType::Optional,
         );
 
@@ -158,11 +158,11 @@ mod tests {
     #[test]
     fn test_conditional_dependency() {
         let edge = GraphEdge::new(
-            "edge-1".to_string(),
-            "node-1".to_string(),
-            "node-2".to_string(),
+            "edge-1".to_owned(),
+            "node-1".to_owned(),
+            "node-2".to_owned(),
             DependencyType::Conditional {
-                condition: "status == 'success'".to_string(),
+                condition: "status == 'success'".to_owned(),
             },
         );
 
