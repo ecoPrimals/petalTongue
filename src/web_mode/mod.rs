@@ -13,7 +13,7 @@ mod handlers;
 #[cfg(test)]
 mod tests;
 
-pub use handlers::{build_response, is_ipynb};
+pub use handlers::{build_response, is_ipynb, is_notebook_mime};
 
 use crate::data_service::DataService;
 use crate::error::AppError;
@@ -110,7 +110,7 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         let docroot = cfg.docroot.as_deref().unwrap_or("content");
         let content_dir = std::path::PathBuf::from(docroot);
         if !content_dir.is_dir() {
-            return Err(AppError::Other(format!(
+            return Err(AppError::WebConfig(format!(
                 "content-direct backend requires a valid --docroot: {docroot}"
             )));
         }
@@ -143,7 +143,7 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         if let Some(ref docroot) = cfg.docroot {
             let docroot_path = std::path::Path::new(docroot);
             if !docroot_path.is_dir() {
-                return Err(AppError::Other(format!(
+                return Err(AppError::WebConfig(format!(
                     "--docroot path does not exist or is not a directory: {docroot}"
                 )));
             }
