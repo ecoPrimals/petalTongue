@@ -50,22 +50,14 @@ impl Default for SystemMonitorTool {
             cpu_display: prepare_cpu_display(0.0, 0, 0),
             mem_display: prepare_memory_display(0, 0, 0),
 
-            cpu_header: LiveGraphHeader::new(
-                "💻 CPU Usage".to_string(),
-                SOURCE_ID.to_string(),
-                1.0,
-            ),
+            cpu_header: LiveGraphHeader::new("💻 CPU Usage".to_owned(), SOURCE_ID.to_string(), 1.0),
             memory_header: LiveGraphHeader::new(
-                "🧠 Memory Usage".to_string(),
+                "🧠 Memory Usage".to_owned(),
                 SOURCE_ID.to_string(),
                 1.0,
             ),
-            cpu_metric: LiveMetric::new("Current CPU".to_string(), SOURCE_ID.to_string(), 1.0),
-            memory_metric: LiveMetric::new(
-                "Current Memory".to_string(),
-                SOURCE_ID.to_string(),
-                1.0,
-            ),
+            cpu_metric: LiveMetric::new("Current CPU".to_owned(), SOURCE_ID.to_string(), 1.0),
+            memory_metric: LiveMetric::new("Current Memory".to_owned(), SOURCE_ID.to_string(), 1.0),
         }
     }
 }
@@ -102,9 +94,9 @@ impl SystemMonitorTool {
             self.cpu_header.mark_updated();
             self.memory_header.mark_updated();
             self.cpu_metric
-                .update(format!("{cpu_usage:.1}"), Some("%".to_string()));
+                .update(format!("{cpu_usage:.1}"), Some("%".to_owned()));
             self.memory_metric
-                .update(format!("{mem_percent:.1}"), Some("%".to_string()));
+                .update(format!("{mem_percent:.1}"), Some("%".to_owned()));
 
             self.cpu_display =
                 prepare_cpu_display(cpu_usage, self.stats.cpu_count(), self.cpu_history.len());
@@ -205,17 +197,15 @@ impl ToolPanel for SystemMonitorTool {
     fn metadata(&self) -> &ToolMetadata {
         static METADATA: std::sync::OnceLock<ToolMetadata> = std::sync::OnceLock::new();
         METADATA.get_or_init(|| ToolMetadata {
-            name: "System Monitor".to_string(),
-            description: "Real-time system resource monitoring".to_string(),
-            version: "0.1.0".to_string(),
+            name: "System Monitor".to_owned(),
+            description: "Real-time system resource monitoring".to_owned(),
+            version: "0.1.0".to_owned(),
             capabilities: vec![
                 ToolCapability::Visual,
-                ToolCapability::Custom("RealTime".to_string()),
+                ToolCapability::Custom("RealTime".to_owned()),
             ],
-            icon: "📡".to_string(),
-            source: Some(
-                "https://www.kernel.org/doc/html/latest/filesystems/proc.html".to_string(),
-            ),
+            icon: "📡".to_owned(),
+            source: Some("https://www.kernel.org/doc/html/latest/filesystems/proc.html".to_owned()),
         })
     }
 

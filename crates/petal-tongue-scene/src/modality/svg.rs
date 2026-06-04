@@ -64,9 +64,9 @@ impl SvgCompiler {
                 ..
             } => {
                 let (x, y) = transform.apply(*x, *y);
-                let fill_attr = fill.map_or_else(|| "none".to_string(), Self::color_attr);
+                let fill_attr = fill.map_or_else(|| "none".to_owned(), Self::color_attr);
                 let stroke_attr = stroke.as_ref().map_or_else(
-                    || "stroke=\"none\"".to_string(),
+                    || "stroke=\"none\"".to_owned(),
                     |s| {
                         format!(
                             r#"stroke="{}" stroke-width="{}""#,
@@ -107,9 +107,9 @@ impl SvgCompiler {
                 ..
             } => {
                 let (x, y) = transform.apply(*x, *y);
-                let fill_attr = fill.map_or_else(|| "none".to_string(), Self::color_attr);
+                let fill_attr = fill.map_or_else(|| "none".to_owned(), Self::color_attr);
                 let stroke_attr = stroke.as_ref().map_or_else(
-                    || "stroke=\"none\"".to_string(),
+                    || "stroke=\"none\"".to_owned(),
                     |s| {
                         format!(
                             r#"stroke="{}" stroke-width="{}""#,
@@ -173,7 +173,7 @@ impl SvgCompiler {
                     FillRule::NonZero => "nonzero",
                 };
                 let stroke_attr = stroke.as_ref().map_or_else(
-                    || "stroke=\"none\"".to_string(),
+                    || "stroke=\"none\"".to_owned(),
                     |s| {
                         format!(
                             r#"stroke="{}" stroke-width="{}""#,
@@ -210,9 +210,9 @@ impl SvgCompiler {
                     "M {x1} {y1} A {radius} {radius} 0 {} 1 {x2} {y2}",
                     i32::from(large)
                 );
-                let fill_attr = fill.map_or_else(|| "none".to_string(), Self::color_attr);
+                let fill_attr = fill.map_or_else(|| "none".to_owned(), Self::color_attr);
                 let stroke_attr = stroke.as_ref().map_or_else(
-                    || "stroke=\"none\"".to_string(),
+                    || "stroke=\"none\"".to_owned(),
                     |s| {
                         format!(
                             r#"stroke="{}" stroke-width="{}""#,
@@ -239,7 +239,7 @@ impl SvgCompiler {
                     let (ex, ey) = transform.apply(seg.end[0], seg.end[1]);
                     let _ = write!(d, " C {c1x} {c1y}, {c2x} {c2y}, {ex} {ey}");
                 }
-                let fill_attr = fill.map_or_else(|| "none".to_string(), Self::color_attr);
+                let fill_attr = fill.map_or_else(|| "none".to_owned(), Self::color_attr);
                 let fill_rule_str = match fill_rule {
                     FillRule::EvenOdd => "evenodd",
                     FillRule::NonZero => "nonzero",

@@ -43,19 +43,19 @@ pub const fn topology_description(topology: &DisplayTopology) -> &'static str {
 pub fn format_active_interaction_status(topology: &DisplayTopology) -> String {
     match topology {
         DisplayTopology::DirectLocal => {
-            "Direct local display - user actively interacting".to_string()
+            "Direct local display - user actively interacting".to_owned()
         }
         DisplayTopology::Forwarded => {
-            "Forwarded display confirmed - user interaction proves visibility".to_string()
+            "Forwarded display confirmed - user interaction proves visibility".to_owned()
         }
         DisplayTopology::Nested => {
-            "Nested display confirmed - user interaction proves visibility".to_string()
+            "Nested display confirmed - user interaction proves visibility".to_owned()
         }
         DisplayTopology::Virtual => {
-            "Virtual display with active interaction (unusual but confirmed)".to_string()
+            "Virtual display with active interaction (unusual but confirmed)".to_owned()
         }
         DisplayTopology::Unknown => {
-            "Display topology unknown, but user interaction confirms visibility".to_string()
+            "Display topology unknown, but user interaction confirms visibility".to_owned()
         }
     }
 }
@@ -74,7 +74,7 @@ pub fn format_recent_interaction_status(topology: &DisplayTopology, secs: f32) -
 pub fn suggested_action_for_prolonged_idle(secs: f32) -> Option<String> {
     if secs > 300.0 {
         Some(
-            "No interaction for 5+ minutes. If viewing remotely, verify connection and window perceivability.".to_string()
+            "No interaction for 5+ minutes. If viewing remotely, verify connection and window perceivability.".to_owned()
         )
     } else {
         None
@@ -93,28 +93,28 @@ pub fn detect_display_topology() -> (DisplayTopology, Vec<String>) {
         || std::env::var("SSH_TTY").is_ok();
 
     if ssh_connection {
-        evidence.push("SSH environment detected - display likely forwarded".to_string());
+        evidence.push("SSH environment detected - display likely forwarded".to_owned());
     }
 
     if let Ok(display) = std::env::var("DISPLAY") {
         evidence.push(format!("DISPLAY={display}"));
 
         if display.starts_with("localhost:") {
-            evidence.push("Display on localhost - possible forwarding/nesting".to_string());
+            evidence.push("Display on localhost - possible forwarding/nesting".to_owned());
         } else if display.starts_with(":0") {
-            evidence.push("Display :0 - typically primary physical display".to_string());
+            evidence.push("Display :0 - typically primary physical display".to_owned());
         } else if display.starts_with(':') && display.len() > 2 {
-            evidence.push("Display :1+ - may be virtual/nested/headless".to_string());
+            evidence.push("Display :1+ - may be virtual/nested/headless".to_owned());
         }
     }
 
     if display_pure_rust::is_virtual_display() {
-        evidence.push("Virtual display detected (pure Rust detection)".to_string());
+        evidence.push("Virtual display detected (pure Rust detection)".to_owned());
         return (DisplayTopology::Virtual, evidence);
     }
 
     if std::env::var("WAYLAND_DISPLAY").is_ok() && std::env::var("DISPLAY").is_ok() {
-        evidence.push("Both Wayland and X11 detected - possible XWayland nesting".to_string());
+        evidence.push("Both Wayland and X11 detected - possible XWayland nesting".to_owned());
         return (DisplayTopology::Nested, evidence);
     }
 
@@ -158,15 +158,15 @@ pub fn verify_display_substrate(window_title: &str) -> DisplayVerification {
 
     let wm_responsive = check_window_manager();
     if wm_responsive {
-        evidence.push("Window manager responsive".to_string());
+        evidence.push("Window manager responsive".to_owned());
     } else {
         warn!("⚠️  Window manager not responsive (may be OK for forwarded displays)");
-        evidence.push("Window manager tools unavailable".to_string());
+        evidence.push("Window manager tools unavailable".to_owned());
     }
 
     let window_found = find_window_by_title(window_title);
     if window_found {
-        evidence.push("Window found in window list".to_string());
+        evidence.push("Window found in window list".to_owned());
     }
 
     match (window_found, wm_responsive, &topology) {
@@ -175,7 +175,8 @@ pub fn verify_display_substrate(window_title: &str) -> DisplayVerification {
             let mut verif = DisplayVerification::confirmed_visible();
             verif.display_topology = DisplayTopology::DirectLocal;
             verif.topology_evidence = evidence;
-            verif.status_message = "Direct local display - window created and findable".to_string();
+            "Direct local display - window created and findable"
+                .clone_into(&mut verif.status_message);
             verif
         }
         (_, _, DisplayTopology::Forwarded | DisplayTopology::Nested) => {
@@ -194,22 +195,22 @@ pub fn verify_display_substrate(window_title: &str) -> DisplayVerification {
         (_, _, DisplayTopology::Virtual) => {
             info!("ℹ️  Virtual display detected");
             let mut verif = DisplayVerification::probable(topology.clone(), evidence);
-            verif.status_message =
-                "Virtual display detected - no physical viewer expected".to_string();
+            "Virtual display detected - no physical viewer expected"
+                .clone_into(&mut verif.status_message);
             verif
         }
         (true, _, DisplayTopology::Unknown) => {
             warn!("❓ Unknown display topology, but window found");
             let mut verif = DisplayVerification::probable(topology.clone(), evidence);
-            verif.status_message =
-                "Unknown display topology, but window found - probable visibility".to_string();
+            "Unknown display topology, but window found - probable visibility"
+                .clone_into(&mut verif.status_message);
             verif
         }
         _ => {
             warn!("❓ Display topology unclear and window not found");
             let mut verif = DisplayVerification::probable(topology.clone(), evidence);
-            verif.status_message =
-                "Display topology unclear and window not found - uncertain".to_string();
+            "Display topology unclear and window not found - uncertain"
+                .clone_into(&mut verif.status_message);
             verif
         }
     }
@@ -345,8 +346,8 @@ pub fn continuous_verification(
             }
             DisplayTopology::Virtual => {
                 verification.visibility = VisibilityState::Probable;
-                verification.status_message =
-                    "Virtual display - no human interaction expected".to_string();
+                "Virtual display - no human interaction expected"
+                    .clone_into(&mut verification.status_message);
             }
         }
     }

@@ -136,8 +136,8 @@ impl Default for WebServeConfig {
     fn default() -> Self {
         Self {
             docroot: None,
-            backend: "filesystem".to_string(),
-            index_file: "index.html".to_string(),
+            backend: "filesystem".to_owned(),
+            index_file: "index.html".to_owned(),
             cache_ttl_secs: 3600,
             strip_sources: false,
             spa: false,

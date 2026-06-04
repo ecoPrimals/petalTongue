@@ -179,8 +179,8 @@ impl AwakeningExperience {
             .engine
             .events()
             .broadcast(crate::event::EngineEvent::AwakeningStage {
-                stage: "awakening".to_string(),
-                message: "Awakening...".to_string(),
+                stage: "awakening".to_owned(),
+                message: "Awakening...".to_owned(),
             })
             .await
         {
@@ -193,7 +193,7 @@ impl AwakeningExperience {
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningVisual {
-                    frame_type: "flower_opening".to_string(),
+                    frame_type: "flower_opening".to_owned(),
                     frame: 0,
                 })
                 .await
@@ -206,8 +206,8 @@ impl AwakeningExperience {
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningAudio {
-                    layer: "signature-tone".to_string(),
-                    action: "start".to_string(),
+                    layer: "signature-tone".to_owned(),
+                    action: "start".to_owned(),
                 })
                 .await
         {
@@ -219,7 +219,7 @@ impl AwakeningExperience {
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningText {
-                    message: "Awakening...".to_string(),
+                    message: "Awakening...".to_owned(),
                 })
                 .await
         {
@@ -245,8 +245,8 @@ impl AwakeningExperience {
             .engine
             .events()
             .broadcast(crate::event::EngineEvent::AwakeningStage {
-                stage: "self-knowledge".to_string(),
-                message: "I am petalTongue. I know myself.".to_string(),
+                stage: "self-knowledge".to_owned(),
+                message: "I am petalTongue. I know myself.".to_owned(),
             })
             .await
         {
@@ -259,7 +259,7 @@ impl AwakeningExperience {
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningVisual {
-                    frame_type: "flower_glowing".to_string(),
+                    frame_type: "flower_glowing".to_owned(),
                     frame: 0,
                 })
                 .await
@@ -272,8 +272,8 @@ impl AwakeningExperience {
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningAudio {
-                    layer: "heartbeat".to_string(),
-                    action: "start".to_string(),
+                    layer: "heartbeat".to_owned(),
+                    action: "start".to_owned(),
                 })
                 .await
         {
@@ -285,7 +285,7 @@ impl AwakeningExperience {
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningText {
-                    message: "I am petalTongue. I know myself.".to_string(),
+                    message: "I am petalTongue. I know myself.".to_owned(),
                 })
                 .await
         {
@@ -311,8 +311,8 @@ impl AwakeningExperience {
             .engine
             .events()
             .broadcast(crate::event::EngineEvent::AwakeningStage {
-                stage: "discovery".to_string(),
-                message: "Discovering...".to_string(),
+                stage: "discovery".to_owned(),
+                message: "Discovering...".to_owned(),
             })
             .await
         {
@@ -325,7 +325,7 @@ impl AwakeningExperience {
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningVisual {
-                    frame_type: "flower_reaching".to_string(),
+                    frame_type: "flower_reaching".to_owned(),
                     frame: 0,
                 })
                 .await
@@ -338,8 +338,8 @@ impl AwakeningExperience {
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningAudio {
-                    layer: "discovery-chimes".to_string(),
-                    action: "start".to_string(),
+                    layer: "discovery-chimes".to_owned(),
+                    action: "start".to_owned(),
                 })
                 .await
         {
@@ -376,8 +376,8 @@ impl AwakeningExperience {
             .engine
             .events()
             .broadcast(crate::event::EngineEvent::AwakeningStage {
-                stage: "tutorial".to_string(),
-                message: "Ready. Let me show you.".to_string(),
+                stage: "tutorial".to_owned(),
+                message: "Ready. Let me show you.".to_owned(),
             })
             .await
         {
@@ -390,7 +390,7 @@ impl AwakeningExperience {
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningVisual {
-                    frame_type: "tutorial_invitation".to_string(),
+                    frame_type: "tutorial_invitation".to_owned(),
                     frame: 0,
                 })
                 .await
@@ -403,8 +403,8 @@ impl AwakeningExperience {
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningAudio {
-                    layer: "completion-harmony".to_string(),
-                    action: "start".to_string(),
+                    layer: "completion-harmony".to_owned(),
+                    action: "start".to_owned(),
                 })
                 .await
         {
@@ -416,7 +416,7 @@ impl AwakeningExperience {
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningText {
-                    message: "Ready. Let me show you.".to_string(),
+                    message: "Ready. Let me show you.".to_owned(),
                 })
                 .await
         {

@@ -136,7 +136,7 @@ mod tests {
     #[test]
     fn physics_body_creation() {
         let body = PhysicsBody {
-            id: "b1".to_string(),
+            id: "b1".to_owned(),
             mass: 1.0,
             position: [0.0, 0.0, 0.0],
             velocity: [1.0, 0.0, 0.0],
@@ -157,7 +157,7 @@ mod tests {
         world.gravity = [0.0, 0.0, 0.0];
         world.time_step = 1.0;
         world.add_body(PhysicsBody {
-            id: "b1".to_string(),
+            id: "b1".to_owned(),
             mass: 1.0,
             position: [0.0, 0.0, 0.0],
             velocity: [10.0, 0.0, 0.0],
@@ -174,7 +174,7 @@ mod tests {
         world.gravity = [0.0, -10.0, 0.0];
         world.time_step = 1.0;
         world.add_body(PhysicsBody {
-            id: "b1".to_string(),
+            id: "b1".to_owned(),
             mass: 1.0,
             position: [0.0, 0.0, 0.0],
             velocity: [0.0, 0.0, 0.0],
@@ -188,7 +188,7 @@ mod tests {
     fn to_ipc_request_produces_valid_json_with_bodies() {
         let mut world = PhysicsWorld::new();
         world.add_body(PhysicsBody {
-            id: "b1".to_string(),
+            id: "b1".to_owned(),
             mass: 2.0,
             position: [1.0, 2.0, 3.0],
             velocity: [0.0, 0.0, 0.0],
@@ -205,7 +205,7 @@ mod tests {
     fn apply_ipc_response_updates_positions() {
         let mut world = PhysicsWorld::new();
         world.add_body(PhysicsBody {
-            id: "b1".to_string(),
+            id: "b1".to_owned(),
             mass: 1.0,
             position: [0.0, 0.0, 0.0],
             velocity: [0.0, 0.0, 0.0],

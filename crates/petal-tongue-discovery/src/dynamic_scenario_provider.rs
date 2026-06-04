@@ -79,14 +79,14 @@ impl DynamicScenarioProvider {
             .get("ecosystem")
             .and_then(|v| v.as_object())
             .ok_or_else(|| DiscoveryError::ScenarioParseError {
-                message: "Missing 'ecosystem' field in scenario".to_string(),
+                message: "Missing 'ecosystem' field in scenario".to_owned(),
             })?;
 
         let primals_array = ecosystem
             .get("primals")
             .and_then(|v| v.as_array())
             .ok_or_else(|| DiscoveryError::ScenarioParseError {
-                message: "Missing 'primals' array in ecosystem".to_string(),
+                message: "Missing 'primals' array in ecosystem".to_owned(),
             })?;
 
         #[expect(
@@ -109,7 +109,7 @@ impl DynamicScenarioProvider {
             let name = Self::get_string(primal_obj, "name")
                 .unwrap_or_else(|| format!("Unknown Primal {idx}"));
             let primal_type =
-                Self::get_string(primal_obj, "type").unwrap_or_else(|| "Unknown".to_string());
+                Self::get_string(primal_obj, "type").unwrap_or_else(|| "Unknown".to_owned());
 
             // Health status (with fallback)
             let health = Self::get_string(primal_obj, "status")
@@ -147,7 +147,7 @@ impl DynamicScenarioProvider {
                 id: id.into(),
                 name,
                 primal_type,
-                endpoint: "scenario://dynamic".to_string(),
+                endpoint: "scenario://dynamic".to_owned(),
                 capabilities,
                 health,
                 last_seen: now,
@@ -234,8 +234,8 @@ impl VisualizationDataProvider for DynamicScenarioProvider {
                     edges.push(TopologyEdge {
                         from: nucleus.id.clone(),
                         to: primal.id.clone(),
-                        edge_type: "coordination".to_string(),
-                        label: Some("Neural API".to_string()),
+                        edge_type: "coordination".to_owned(),
+                        label: Some("Neural API".to_owned()),
                         capability: None,
                         metrics: None,
                     });
@@ -248,8 +248,8 @@ impl VisualizationDataProvider for DynamicScenarioProvider {
                 edges.push(TopologyEdge {
                     from: primals[i].id.clone(),
                     to: primals[next].id.clone(),
-                    edge_type: "peer".to_string(),
-                    label: Some("Peer connection".to_string()),
+                    edge_type: "peer".to_owned(),
+                    label: Some("Peer connection".to_owned()),
                     capability: None,
                     metrics: None,
                 });
@@ -269,9 +269,9 @@ impl VisualizationDataProvider for DynamicScenarioProvider {
         let name = self.name().unwrap_or("Dynamic Scenario");
         ProviderMetadata {
             name: format!("Dynamic Scenario: {name}"),
-            endpoint: "scenario://dynamic".to_string(),
-            protocol: "dynamic".to_string(),
-            capabilities: vec!["visualization".to_string(), "topology".to_string()],
+            endpoint: "scenario://dynamic".to_owned(),
+            protocol: "dynamic".to_owned(),
+            capabilities: vec!["visualization".to_owned(), "topology".to_owned()],
         }
     }
 }

@@ -84,15 +84,15 @@ impl ScenarioVisualizationProvider {
                 };
 
                 let mut properties = Properties::new();
-                properties.insert("family_id".to_string(), PropertyValue::String(p.family));
+                properties.insert("family_id".to_owned(), PropertyValue::String(p.family));
 
                 if let Some(pos) = p.position {
                     properties.insert(
-                        "position_x".to_string(),
+                        "position_x".to_owned(),
                         PropertyValue::Number(f64::from(pos.x)),
                     );
                     properties.insert(
-                        "position_y".to_string(),
+                        "position_y".to_owned(),
                         PropertyValue::Number(f64::from(pos.y)),
                     );
                 }
@@ -140,8 +140,8 @@ impl VisualizationDataProvider for ScenarioVisualizationProvider {
                     edges.push(TopologyEdge {
                         from: nucleus.id.clone(),
                         to: primal.id.clone(),
-                        edge_type: "coordination".to_string(),
-                        label: Some("Neural API".to_string()),
+                        edge_type: "coordination".to_owned(),
+                        label: Some("Neural API".to_owned()),
                         capability: None,
                         metrics: None,
                     });
@@ -155,8 +155,8 @@ impl VisualizationDataProvider for ScenarioVisualizationProvider {
                 edges.push(TopologyEdge {
                     from: primals[i].id.clone(),
                     to: primals[next].id.clone(),
-                    edge_type: "peer".to_string(),
-                    label: Some("Peer connection".to_string()),
+                    edge_type: "peer".to_owned(),
+                    label: Some("Peer connection".to_owned()),
                     capability: None,
                     metrics: None,
                 });
@@ -173,10 +173,10 @@ impl VisualizationDataProvider for ScenarioVisualizationProvider {
 
     fn get_metadata(&self) -> crate::traits::ProviderMetadata {
         crate::traits::ProviderMetadata {
-            name: "Scenario Provider".to_string(),
-            endpoint: "scenario://local".to_string(),
-            protocol: "scenario".to_string(),
-            capabilities: vec!["visualization".to_string(), "topology".to_string()],
+            name: "Scenario Provider".to_owned(),
+            endpoint: "scenario://local".to_owned(),
+            protocol: "scenario".to_owned(),
+            capabilities: vec!["visualization".to_owned(), "topology".to_owned()],
         }
     }
 }

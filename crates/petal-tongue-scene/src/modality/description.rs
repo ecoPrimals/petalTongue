@@ -266,7 +266,7 @@ mod tests {
         let prim = Primitive::Text {
             x: 0.0,
             y: 0.0,
-            content: "Chart Title".to_string(),
+            content: "Chart Title".to_owned(),
             font_size: 16.0,
             color: Color::BLACK,
             anchor: AnchorPoint::TopLeft,
@@ -346,7 +346,7 @@ mod tests {
             radius: 5.0,
             fill: None,
             stroke: None,
-            data_id: Some("pt-1".to_string()),
+            data_id: Some("pt-1".to_owned()),
         }));
         let out = DescriptionCompiler::new().compile(&graph);
         let ModalityOutput::Description(b) = &out else {
@@ -368,7 +368,7 @@ mod tests {
                     radius: 1.0,
                     fill: None,
                     stroke: None,
-                    data_id: Some("b".to_string()),
+                    data_id: Some("b".to_owned()),
                 })
                 .with_primitive(Primitive::Point {
                     x: 100.0,
@@ -376,7 +376,7 @@ mod tests {
                     radius: 1.0,
                     fill: None,
                     stroke: None,
-                    data_id: Some("a".to_string()),
+                    data_id: Some("a".to_owned()),
                 }),
         );
         let out = DescriptionCompiler::new().compile(&graph);
@@ -419,7 +419,7 @@ mod tests {
             points: vec![[10.0, 20.0], [100.0, 200.0]],
             stroke: StrokeStyle::default(),
             closed: false,
-            data_id: Some("line-1".to_string()),
+            data_id: Some("line-1".to_owned()),
         }));
         let out = DescriptionCompiler::new().compile(&graph);
         let ModalityOutput::Description(b) = &out else {
@@ -436,13 +436,13 @@ mod tests {
         graph.add_to_root(SceneNode::new("t").with_primitive(Primitive::Text {
             x: 50.0,
             y: 75.0,
-            content: "Label".to_string(),
+            content: "Label".to_owned(),
             font_size: 12.0,
             color: Color::BLACK,
             anchor: AnchorPoint::Center,
             bold: false,
             italic: false,
-            data_id: Some("text-1".to_string()),
+            data_id: Some("text-1".to_owned()),
         }));
         let out = DescriptionCompiler::new().compile(&graph);
         let ModalityOutput::Description(b) = &out else {
@@ -464,7 +464,7 @@ mod tests {
             end_angle: std::f64::consts::PI,
             fill: None,
             stroke: None,
-            data_id: Some("arc-1".to_string()),
+            data_id: Some("arc-1".to_owned()),
         }));
         let out = DescriptionCompiler::new().compile(&graph);
         let ModalityOutput::Description(b) = &out else {
@@ -483,7 +483,7 @@ mod tests {
             fill: Color::BLACK,
             stroke: None,
             fill_rule: FillRule::NonZero,
-            data_id: Some("poly-1".to_string()),
+            data_id: Some("poly-1".to_owned()),
         }));
         let out = DescriptionCompiler::new().compile(&graph);
         let ModalityOutput::Description(b) = &out else {

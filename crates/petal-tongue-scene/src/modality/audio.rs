@@ -95,7 +95,7 @@ mod tests {
             points: vec![[100.0, 200.0], [300.0, 400.0]],
             stroke: crate::primitive::StrokeStyle::default(),
             closed: false,
-            data_id: Some("line".to_string()),
+            data_id: Some("line".to_owned()),
         };
         graph.add_to_root(SceneNode::new("line").with_primitive(prim));
         let out = AudioCompiler::new().compile(&graph);
@@ -115,7 +115,7 @@ mod tests {
             radius: 5.0,
             fill: None,
             stroke: None,
-            data_id: Some("a".to_string()),
+            data_id: Some("a".to_owned()),
         }));
         graph.add_to_root(SceneNode::new("p2").with_primitive(Primitive::Point {
             x: 300.0,
@@ -123,7 +123,7 @@ mod tests {
             radius: 5.0,
             fill: None,
             stroke: None,
-            data_id: Some("b".to_string()),
+            data_id: Some("b".to_owned()),
         }));
         graph.add_to_root(SceneNode::new("r").with_primitive(Primitive::Rect {
             x: 200.0,
@@ -133,7 +133,7 @@ mod tests {
             fill: Some(Color::BLACK),
             stroke: None,
             corner_radius: 0.0,
-            data_id: Some("r1".to_string()),
+            data_id: Some("r1".to_owned()),
         }));
         let out = AudioCompiler::new().compile(&graph);
         let ModalityOutput::AudioParams(params) = &out else {
@@ -151,7 +151,7 @@ mod tests {
             radius: 5.0,
             fill: None,
             stroke: None,
-            data_id: Some("d".to_string()),
+            data_id: Some("d".to_owned()),
         }));
         let out = AudioCompiler::new().compile(&graph);
         let ModalityOutput::AudioParams(params) = &out else {
@@ -171,7 +171,7 @@ mod tests {
             radius: 5.0,
             fill: None,
             stroke: None,
-            data_id: Some("d".to_string()),
+            data_id: Some("d".to_owned()),
         }));
         let out = AudioCompiler::new().compile(&graph);
         let ModalityOutput::AudioParams(params) = &out else {
@@ -191,7 +191,7 @@ mod tests {
             radius: 50.0,
             fill: None,
             stroke: None,
-            data_id: Some("d".to_string()),
+            data_id: Some("d".to_owned()),
         }));
         let out = AudioCompiler::new().compile(&graph);
         let ModalityOutput::AudioParams(params) = &out else {
@@ -210,7 +210,7 @@ mod tests {
             radius: 0.0,
             fill: None,
             stroke: None,
-            data_id: Some("d".to_string()),
+            data_id: Some("d".to_owned()),
         }));
         let out = AudioCompiler::new().compile(&graph);
         let ModalityOutput::AudioParams(params) = &out else {
@@ -239,7 +239,7 @@ mod tests {
             radius: 5.0,
             fill: None,
             stroke: None,
-            data_id: Some("d1".to_string()),
+            data_id: Some("d1".to_owned()),
         };
         graph.add_to_root(SceneNode::new("p").with_primitive(prim));
         let out = AudioCompiler::new().compile(&graph);
@@ -262,7 +262,7 @@ mod tests {
             fill: Some(Color::BLACK),
             stroke: None,
             corner_radius: 0.0,
-            data_id: Some("r1".to_string()),
+            data_id: Some("r1".to_owned()),
         };
         graph.add_to_root(SceneNode::new("r").with_primitive(prim));
         let out = AudioCompiler::new().compile(&graph);

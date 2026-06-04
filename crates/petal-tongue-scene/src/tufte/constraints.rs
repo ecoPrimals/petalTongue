@@ -27,7 +27,7 @@ impl TufteConstraint for DataInkRatio {
             return ConstraintResult {
                 passed: true,
                 score: 1.0,
-                message: "No primitives to evaluate".to_string(),
+                message: "No primitives to evaluate".to_owned(),
             };
         }
         let data_count = primitives.iter().filter(|p| p.carries_data()).count();
@@ -75,7 +75,7 @@ impl TufteConstraint for LieFactor {
         ConstraintResult {
             passed: true,
             score: 1.0,
-            message: "Lie factor (basic): no plan context available".to_string(),
+            message: "Lie factor (basic): no plan context available".to_owned(),
         }
     }
 
@@ -98,7 +98,7 @@ impl TufteConstraint for LieFactor {
 
         if plan.has_size_aesthetic() {
             factor = factor.max(std::f64::consts::PI);
-            issues.push("Size aesthetic maps to area (πr²); consider radius scaling".to_string());
+            issues.push("Size aesthetic maps to area (πr²); consider radius scaling".to_owned());
         }
 
         let score = if factor.abs() < f64::EPSILON {
@@ -246,7 +246,7 @@ impl TufteConstraint for ColorAccessibility {
             return ConstraintResult {
                 passed: true,
                 score: 1.0,
-                message: "No data colors to evaluate".to_string(),
+                message: "No data colors to evaluate".to_owned(),
             };
         }
 
@@ -366,7 +366,7 @@ impl TufteConstraint for SmallestEffectiveDifference {
             return ConstraintResult {
                 passed: true,
                 score: 1.0,
-                message: "Fewer than 2 data points; no difference to measure".to_string(),
+                message: "Fewer than 2 data points; no difference to measure".to_owned(),
             };
         }
 
@@ -445,7 +445,7 @@ impl TufteConstraint for SmallMultiplesPreference {
                 passed: true,
                 score: 1.0,
                 message: if already_faceted {
-                    "Already using facets (small multiples)".to_string()
+                    "Already using facets (small multiples)".to_owned()
                 } else {
                     format!("Color categories ({color_count}) within comfortable range")
                 },

@@ -128,7 +128,7 @@ mod tests {
     #[test]
     fn test_telemetry_event_primal_disappeared() {
         let _ = TelemetryEvent::PrimalDisappeared {
-            primal_id: "p1".to_string(),
+            primal_id: "p1".to_owned(),
             timestamp: SystemTime::now(),
         };
     }
@@ -136,8 +136,8 @@ mod tests {
     #[test]
     fn test_telemetry_event_health_update() {
         let _ = TelemetryEvent::HealthUpdate {
-            primal_id: "p1".to_string(),
-            health: "healthy".to_string(),
+            primal_id: "p1".to_owned(),
+            health: "healthy".to_owned(),
             timestamp: SystemTime::now(),
         };
     }
@@ -162,7 +162,7 @@ mod tests {
     fn test_telemetry_metrics_construction() {
         let mut primal_metrics = HashMap::new();
         primal_metrics.insert(
-            "p1".to_string(),
+            "p1".to_owned(),
             PrimalMetrics {
                 calls_made: 1,
                 calls_received: 2,
@@ -203,10 +203,10 @@ mod tests {
     #[test]
     fn test_telemetry_event_debug() {
         let e = TelemetryEvent::PrimalDiscovered {
-            primal_id: "p1".to_string(),
-            primal_type: "compute".to_string(),
-            capabilities: vec!["cap1".to_string()],
-            endpoint: "http://localhost".to_string(),
+            primal_id: "p1".to_owned(),
+            primal_type: "compute".to_owned(),
+            capabilities: vec!["cap1".to_owned()],
+            endpoint: "http://localhost".to_owned(),
             timestamp: SystemTime::UNIX_EPOCH,
         };
         let s = format!("{e:?}");

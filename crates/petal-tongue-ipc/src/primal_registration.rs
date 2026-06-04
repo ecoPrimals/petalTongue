@@ -51,15 +51,15 @@ impl PrimalRegistration {
     pub fn petaltongue() -> Self {
         let mut metadata = serde_json::Map::new();
         metadata.insert(
-            "description".to_string(),
+            "description".to_owned(),
             json!("Universal representation system for ecoPrimals"),
         );
         metadata.insert(
-            "ui_modes".to_string(),
+            "ui_modes".to_owned(),
             json!(["desktop", "tui", "web", "headless"]),
         );
         metadata.insert(
-            "modalities".to_string(),
+            "modalities".to_owned(),
             json!([
                 "visual",
                 "terminal",
@@ -73,7 +73,7 @@ impl PrimalRegistration {
 
         let mut transports = serde_json::Map::new();
         if let Ok(uds_path) = crate::socket_path::get_petaltongue_socket_path() {
-            transports.insert("uds".to_string(), json!(uds_path.to_string_lossy()));
+            transports.insert("uds".to_owned(), json!(uds_path.to_string_lossy()));
         }
 
         Self {
@@ -96,7 +96,7 @@ impl PrimalRegistration {
     #[must_use]
     pub fn with_tcp_endpoint(mut self, host: std::net::IpAddr, port: u16) -> Self {
         let transports = self.transports.get_or_insert_with(serde_json::Map::new);
-        transports.insert("tcp".to_string(), json!(format!("{host}:{port}")));
+        transports.insert("tcp".to_owned(), json!(format!("{host}:{port}")));
         self
     }
 }
@@ -374,19 +374,19 @@ mod tests {
         assert_eq!(reg.name, "petaltongue");
         assert_eq!(reg.endpoint, "/primal/petaltongue");
         assert!(!reg.capabilities.is_empty());
-        assert!(reg.capabilities.contains(&"ui.render".to_string()));
-        assert!(reg.capabilities.contains(&"graph.topology".to_string()));
+        assert!(reg.capabilities.contains(&"ui.render".to_owned()));
+        assert!(reg.capabilities.contains(&"graph.topology".to_owned()));
         assert!(
             reg.capabilities
-                .contains(&"visualization.render".to_string())
+                .contains(&"visualization.render".to_owned())
         );
-        assert!(reg.capabilities.contains(&"modality.visual".to_string()));
+        assert!(reg.capabilities.contains(&"modality.visual".to_owned()));
     }
 
     #[tokio::test]
     async fn test_songbird_unavailable() {
         let client =
-            RegistrationClient::with_socket_path("/tmp/nonexistent-songbird.sock".to_string());
+            RegistrationClient::with_socket_path("/tmp/nonexistent-songbird.sock".to_owned());
         let available = client.is_available().await;
         assert!(!available);
     }
@@ -517,7 +517,7 @@ mod tests {
 
     #[test]
     fn test_songbird_client_clone() {
-        let client = RegistrationClient::with_socket_path("/tmp/test.sock".to_string());
+        let client = RegistrationClient::with_socket_path("/tmp/test.sock".to_owned());
         let cloned = client.clone();
         drop(cloned);
         drop(client);
@@ -592,10 +592,10 @@ mod tests {
     #[test]
     fn test_registration_with_optional_metadata() {
         let reg = PrimalRegistration {
-            name: "custom".to_string(),
-            endpoint: "/primal/custom".to_string(),
-            capabilities: vec!["test.cap".to_string()],
-            version: "0.1.0".to_string(),
+            name: "custom".to_owned(),
+            endpoint: "/primal/custom".to_owned(),
+            capabilities: vec!["test.cap".to_owned()],
+            version: "0.1.0".to_owned(),
             transports: None,
             metadata: None,
         };

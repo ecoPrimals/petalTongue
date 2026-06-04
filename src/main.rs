@@ -556,42 +556,29 @@ fn parse_ipc_bind_host(bind: Option<&str>) -> std::net::IpAddr {
 fn init_tracing(level: &str, format: &str) -> Result<(), AppError> {
     // Parse log level
     let env_filter = tracing_subscriber::EnvFilter::try_new(level)
-        .map_err(|e| AppError::Other(format!("Failed to parse log level: {e}")))?;
+        .map_err(|e| AppError::TracingInit(format!("parse log level: {e}")))?;
 
-    // Build subscriber based on format
-    match format {
-        "json" => {
-            tracing_subscriber::registry()
-                .with(env_filter)
-                .with(tracing_subscriber::fmt::layer().with_target(true))
-                .try_init()
-                .map_err(|e| AppError::Other(format!("Failed to initialize JSON logging: {e}")))?;
-        }
-        "compact" => {
-            tracing_subscriber::registry()
-                .with(env_filter)
-                .with(tracing_subscriber::fmt::layer().compact())
-                .try_init()
-                .map_err(|e| {
-                    AppError::Other(format!("Failed to initialize compact logging: {e}"))
-                })?;
-        }
-        _ => {
-            tracing_subscriber::registry()
-                .with(env_filter)
-                .with(
-                    tracing_subscriber::fmt::layer()
-                        .with_target(true)
-                        .with_thread_ids(true)
-                        .with_file(true)
-                        .with_line_number(true),
-                )
-                .try_init()
-                .map_err(|e| {
-                    AppError::Other(format!("Failed to initialize pretty logging: {e}"))
-                })?;
-        }
-    }
+    let init_result = match format {
+        "json" => tracing_subscriber::registry()
+            .with(env_filter)
+            .with(tracing_subscriber::fmt::layer().with_target(true))
+            .try_init(),
+        "compact" => tracing_subscriber::registry()
+            .with(env_filter)
+            .with(tracing_subscriber::fmt::layer().compact())
+            .try_init(),
+        _ => tracing_subscriber::registry()
+            .with(env_filter)
+            .with(
+                tracing_subscriber::fmt::layer()
+                    .with_target(true)
+                    .with_thread_ids(true)
+                    .with_file(true)
+                    .with_line_number(true),
+            )
+            .try_init(),
+    };
+    init_result.map_err(|e| AppError::TracingInit(format!("{format} subscriber: {e}")))?;
 
     Ok(())
 }
@@ -616,9 +603,9 @@ async fn announce_to_neural_api() {
     use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
     let family = std::env::var(petal_tongue_core::constants::FAMILY_ID)
-        .unwrap_or_else(|_| "default".to_string());
+        .unwrap_or_else(|_| "nat0".to_owned());
     let socket_dir = std::env::var(petal_tongue_core::constants::XDG_RUNTIME_DIR)
-        .unwrap_or_else(|_| "/tmp".to_string());
+        .unwrap_or_else(|_| "/tmp".to_owned());
     let socket = format!("{socket_dir}/biomeos/neural-api-{family}.sock");
 
     let uds_path = petal_tongue_ipc::socket_path::get_petaltongue_socket_path()

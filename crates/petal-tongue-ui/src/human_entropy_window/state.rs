@@ -52,7 +52,7 @@ impl HumanEntropyWindow {
             current_quality: None,
             capture_start: None,
             waveform_buffer: Vec::new(),
-            status_message: "Ready to capture human entropy".to_string(),
+            status_message: "Ready to capture human entropy".to_owned(),
         }
     }
 
@@ -66,11 +66,11 @@ impl HumanEntropyWindow {
                 self.narrative_capturer = Some(capturer);
                 self.state = CaptureWindowState::Recording;
                 self.capture_start = Some(Instant::now());
-                self.status_message = "Type your story...".to_string();
+                "Type your story...".clone_into(&mut self.status_message);
             }
 
             _ => {
-                self.status_message = "Modality not yet implemented".to_string();
+                "Modality not yet implemented".clone_into(&mut self.status_message);
             }
         }
     }
@@ -85,13 +85,13 @@ impl HumanEntropyWindow {
         }
 
         self.state = CaptureWindowState::Stopped;
-        self.status_message = "Capture stopped. Ready to send or discard.".to_string();
+        "Capture stopped. Ready to send or discard.".clone_into(&mut self.status_message);
     }
 
     pub(super) fn finalize_and_stream(&mut self) {
         info!("Finalizing and streaming entropy");
         self.state = CaptureWindowState::Processing;
-        self.status_message = "Streaming to entropy source...".to_string();
+        "Streaming to entropy source...".clone_into(&mut self.status_message);
 
         // Get entropy capture data by moving capturer out of Option
         let entropy_result = match self.modality {
@@ -127,17 +127,18 @@ impl HumanEntropyWindow {
 
                 // Update UI state optimistically
                 self.reset();
-                self.status_message = "✅ Entropy sent to entropy source!".to_string();
+                "✅ Entropy sent to entropy source!".clone_into(&mut self.status_message);
                 info!("Entropy streaming initiated");
             } else {
                 warn!("No entropy source endpoint found - entropy will be zeroized");
                 self.reset();
-                self.status_message = "⚠️ Entropy source not found. Entropy discarded.".to_string();
+                "⚠️ Entropy source not found. Entropy discarded."
+                    .clone_into(&mut self.status_message);
             }
         } else {
             warn!("No entropy data to stream");
             self.reset();
-            self.status_message = "⚠️ No entropy data captured".to_string();
+            "⚠️ No entropy data captured".clone_into(&mut self.status_message);
         }
     }
 
@@ -220,7 +221,7 @@ impl HumanEntropyWindow {
     pub(super) fn discard(&mut self) {
         info!("Discarding captured entropy");
         self.reset();
-        self.status_message = "Entropy discarded and zeroized.".to_string();
+        "Entropy discarded and zeroized.".clone_into(&mut self.status_message);
     }
 
     pub(super) fn reset(&mut self) {

@@ -25,7 +25,7 @@ impl ScenarioBuilder for AirSpringET0Scenario {
     }
 
     fn available_scenes(&self) -> Vec<String> {
-        vec!["daily_et0".to_string(), "monthly_et0".to_string()]
+        vec!["daily_et0".to_owned(), "monthly_et0".to_owned()]
     }
 
     fn build_scene(&self, scene_name: &str) -> Option<VisualizationScene> {
@@ -39,10 +39,10 @@ impl ScenarioBuilder for AirSpringET0Scenario {
 
 fn build_daily_et0() -> VisualizationScene {
     let meta = ScenarioMetadata {
-        title: "Daily ET0 Reference".to_string(),
-        description: "Penman-Monteith ET0 over 30 days".to_string(),
-        version: "1.0.0".to_string(),
-        domain: "agriculture".to_string(),
+        title: "Daily ET0 Reference".to_owned(),
+        description: "Penman-Monteith ET0 over 30 days".to_owned(),
+        version: "1.0.0".to_owned(),
+        domain: "agriculture".to_owned(),
     };
     let days: Vec<f64> = (0..30).map(f64::from).collect();
     let et0_values: Vec<f64> = days
@@ -50,11 +50,11 @@ fn build_daily_et0() -> VisualizationScene {
         .map(|d| 1.5f64.mul_add((d * std::f64::consts::TAU / 30.0).sin(), 3.0))
         .collect();
     VisualizationScene::new(meta).with_binding(DataBinding::TimeSeries {
-        id: "daily_et0".to_string(),
-        label: "ET0".to_string(),
-        x_label: "Day".to_string(),
-        y_label: "ET0 (mm/day)".to_string(),
-        unit: "mm/day".to_string(),
+        id: "daily_et0".to_owned(),
+        label: "ET0".to_owned(),
+        x_label: "Day".to_owned(),
+        y_label: "ET0 (mm/day)".to_owned(),
+        unit: "mm/day".to_owned(),
         x_values: days,
         y_values: et0_values,
     })
@@ -62,14 +62,14 @@ fn build_daily_et0() -> VisualizationScene {
 
 fn build_monthly_et0() -> VisualizationScene {
     let meta = ScenarioMetadata {
-        title: "Monthly ET0 Summary".to_string(),
-        description: "Monthly aggregated ET0 bar chart".to_string(),
-        version: "1.0.0".to_string(),
-        domain: "agriculture".to_string(),
+        title: "Monthly ET0 Summary".to_owned(),
+        description: "Monthly aggregated ET0 bar chart".to_owned(),
+        version: "1.0.0".to_owned(),
+        domain: "agriculture".to_owned(),
     };
     VisualizationScene::new(meta).with_binding(DataBinding::Bar {
-        id: "monthly_et0".to_string(),
-        label: "Monthly ET0".to_string(),
+        id: "monthly_et0".to_owned(),
+        label: "Monthly ET0".to_owned(),
         categories: vec![
             "Jan".into(),
             "Feb".into(),
@@ -87,7 +87,7 @@ fn build_monthly_et0() -> VisualizationScene {
         values: vec![
             45.0, 55.0, 80.0, 105.0, 135.0, 155.0, 165.0, 150.0, 120.0, 90.0, 60.0, 40.0,
         ],
-        unit: "mm/month".to_string(),
+        unit: "mm/month".to_owned(),
     })
 }
 
@@ -108,7 +108,7 @@ impl ScenarioBuilder for AirSpringRichardsPDEScenario {
     }
 
     fn available_scenes(&self) -> Vec<String> {
-        vec!["moisture_field".to_string()]
+        vec!["moisture_field".to_owned()]
     }
 
     fn build_scene(&self, scene_name: &str) -> Option<VisualizationScene> {
@@ -121,10 +121,10 @@ impl ScenarioBuilder for AirSpringRichardsPDEScenario {
 
 fn build_richards_field() -> VisualizationScene {
     let meta = ScenarioMetadata {
-        title: "Richards PDE Soil Moisture".to_string(),
-        description: "2D soil moisture field from Richards equation solution".to_string(),
-        version: "1.0.0".to_string(),
-        domain: "agriculture".to_string(),
+        title: "Richards PDE Soil Moisture".to_owned(),
+        description: "2D soil moisture field from Richards equation solution".to_owned(),
+        version: "1.0.0".to_owned(),
+        domain: "agriculture".to_owned(),
     };
     let nx = 10;
     let ny = 8;
@@ -143,12 +143,12 @@ fn build_richards_field() -> VisualizationScene {
         })
         .collect();
     VisualizationScene::new(meta).with_binding(DataBinding::FieldMap {
-        id: "richards_moisture".to_string(),
-        label: "Soil Moisture (θ)".to_string(),
+        id: "richards_moisture".to_owned(),
+        label: "Soil Moisture (θ)".to_owned(),
         grid_x,
         grid_y,
         values,
-        unit: "m³/m³".to_string(),
+        unit: "m³/m³".to_owned(),
     })
 }
 
@@ -169,7 +169,7 @@ impl ScenarioBuilder for AirSpringCropCoefficientScenario {
     }
 
     fn available_scenes(&self) -> Vec<String> {
-        vec!["kc_gauge".to_string(), "kc_stages".to_string()]
+        vec!["kc_gauge".to_owned(), "kc_stages".to_owned()]
     }
 
     fn build_scene(&self, scene_name: &str) -> Option<VisualizationScene> {
@@ -183,18 +183,18 @@ impl ScenarioBuilder for AirSpringCropCoefficientScenario {
 
 fn build_kc_gauge() -> VisualizationScene {
     let meta = ScenarioMetadata {
-        title: "Crop Coefficient Gauge".to_string(),
-        description: "Current Kc value with growth stage ranges".to_string(),
-        version: "1.0.0".to_string(),
-        domain: "agriculture".to_string(),
+        title: "Crop Coefficient Gauge".to_owned(),
+        description: "Current Kc value with growth stage ranges".to_owned(),
+        version: "1.0.0".to_owned(),
+        domain: "agriculture".to_owned(),
     };
     VisualizationScene::new(meta).with_binding(DataBinding::Gauge {
-        id: "kc_current".to_string(),
-        label: "Kc (Maize)".to_string(),
+        id: "kc_current".to_owned(),
+        label: "Kc (Maize)".to_owned(),
         value: 0.85,
         min: 0.0,
         max: 1.5,
-        unit: "dimensionless".to_string(),
+        unit: "dimensionless".to_owned(),
         normal_range: [0.3, 1.2],
         warning_range: [0.0, 1.5],
     })
@@ -202,14 +202,14 @@ fn build_kc_gauge() -> VisualizationScene {
 
 fn build_kc_stages() -> VisualizationScene {
     let meta = ScenarioMetadata {
-        title: "Crop Coefficient by Growth Stage".to_string(),
-        description: "Kc progression through FAO-56 growth stages".to_string(),
-        version: "1.0.0".to_string(),
-        domain: "agriculture".to_string(),
+        title: "Crop Coefficient by Growth Stage".to_owned(),
+        description: "Kc progression through FAO-56 growth stages".to_owned(),
+        version: "1.0.0".to_owned(),
+        domain: "agriculture".to_owned(),
     };
     VisualizationScene::new(meta).with_binding(DataBinding::Bar {
-        id: "kc_stages".to_string(),
-        label: "Kc by Stage".to_string(),
+        id: "kc_stages".to_owned(),
+        label: "Kc by Stage".to_owned(),
         categories: vec![
             "Initial".into(),
             "Development".into(),
@@ -217,7 +217,7 @@ fn build_kc_stages() -> VisualizationScene {
             "Late".into(),
         ],
         values: vec![0.3, 0.7, 1.15, 0.35],
-        unit: "Kc".to_string(),
+        unit: "Kc".to_owned(),
     })
 }
 
@@ -238,7 +238,7 @@ impl ScenarioBuilder for AirSpringDroughtIndexScenario {
     }
 
     fn available_scenes(&self) -> Vec<String> {
-        vec!["spi_timeseries".to_string()]
+        vec!["spi_timeseries".to_owned()]
     }
 
     fn build_scene(&self, scene_name: &str) -> Option<VisualizationScene> {
@@ -251,10 +251,10 @@ impl ScenarioBuilder for AirSpringDroughtIndexScenario {
 
 fn build_spi_timeseries() -> VisualizationScene {
     let meta = ScenarioMetadata {
-        title: "Standardized Precipitation Index".to_string(),
-        description: "12-month SPI time series".to_string(),
-        version: "1.0.0".to_string(),
-        domain: "agriculture".to_string(),
+        title: "Standardized Precipitation Index".to_owned(),
+        description: "12-month SPI time series".to_owned(),
+        version: "1.0.0".to_owned(),
+        domain: "agriculture".to_owned(),
     };
     let months: Vec<f64> = (0..24).map(f64::from).collect();
     let spi: Vec<f64> = months
@@ -262,11 +262,11 @@ fn build_spi_timeseries() -> VisualizationScene {
         .map(|m| 0.5f64.mul_add((m * std::f64::consts::TAU / 12.0).sin(), -0.3))
         .collect();
     VisualizationScene::new(meta).with_binding(DataBinding::TimeSeries {
-        id: "spi_12".to_string(),
-        label: "SPI-12".to_string(),
-        x_label: "Month".to_string(),
-        y_label: "SPI".to_string(),
-        unit: "σ".to_string(),
+        id: "spi_12".to_owned(),
+        label: "SPI-12".to_owned(),
+        x_label: "Month".to_owned(),
+        y_label: "SPI".to_owned(),
+        unit: "σ".to_owned(),
         x_values: months,
         y_values: spi,
     })

@@ -84,12 +84,12 @@ impl Config {
         if let Ok(port) = std::env::var(crate::constants::PETALTONGUE_WEB_PORT) {
             self.network.web_port = port
                 .parse()
-                .map_err(|_| ConfigError::EnvError("Invalid WEB_PORT".to_string()))?;
+                .map_err(|_| ConfigError::EnvError("Invalid WEB_PORT".to_owned()))?;
         }
         if let Ok(port) = std::env::var(crate::constants::PETALTONGUE_HEADLESS_PORT) {
             self.network.headless_port = port
                 .parse()
-                .map_err(|_| ConfigError::EnvError("Invalid HEADLESS_PORT".to_string()))?;
+                .map_err(|_| ConfigError::EnvError("Invalid HEADLESS_PORT".to_owned()))?;
         }
 
         // Web overrides
@@ -99,7 +99,7 @@ impl Config {
         if let Ok(ttl) = std::env::var(crate::constants::PETALTONGUE_CACHE_TTL) {
             self.web.cache_ttl_secs = ttl
                 .parse()
-                .map_err(|_| ConfigError::EnvError("Invalid CACHE_TTL".to_string()))?;
+                .map_err(|_| ConfigError::EnvError("Invalid CACHE_TTL".to_owned()))?;
         }
         if std::env::var(crate::constants::PETALTONGUE_STRIP_SOURCES)
             .is_ok_and(|v| v == "1" || v.eq_ignore_ascii_case("true"))
@@ -123,7 +123,7 @@ impl Config {
         if let Ok(timeout) = std::env::var(crate::constants::PETALTONGUE_DISCOVERY_TIMEOUT) {
             let ms = timeout
                 .parse()
-                .map_err(|_| ConfigError::EnvError("Invalid DISCOVERY_TIMEOUT".to_string()))?;
+                .map_err(|_| ConfigError::EnvError("Invalid DISCOVERY_TIMEOUT".to_owned()))?;
             self.discovery.timeout = Duration::from_millis(ms);
         }
 
@@ -135,14 +135,14 @@ impl Config {
         // Validate ports are in valid range (u16 already guarantees <= 65535)
         if self.network.web_port == 0 {
             return Err(ConfigError::ValidationError(
-                "Invalid web_port: cannot be 0".to_string(),
+                "Invalid web_port: cannot be 0".to_owned(),
             ));
         }
 
         // Validate thresholds are percentages
         if self.thresholds.health_threshold > 100.0 {
             return Err(ConfigError::ValidationError(
-                "health_threshold must be <= 100".to_string(),
+                "health_threshold must be <= 100".to_owned(),
             ));
         }
 

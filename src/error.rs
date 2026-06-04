@@ -63,6 +63,10 @@ pub enum AppError {
     #[error("Task join error: {0}")]
     Join(#[from] tokio::task::JoinError),
 
+    /// Tracing/logging initialization error.
+    #[error("Tracing init: {0}")]
+    TracingInit(String),
+
     /// Wrapped error from dependencies (catch-all for untyped sources).
     #[error("{0}")]
     Other(String),
