@@ -164,7 +164,7 @@ in the resolution chain.
 TCP endpoint for cross-gate content routing. When set, the content backend
 uses TCP JSON-RPC instead of a local Unix socket. Second priority after
 `CONTENT_BACKEND_SOCKET`. Enables mesh-aware content delivery from remote
-gates (e.g., NestGate on eastGate).
+gates (e.g., a content provider on a remote gate).
 
 ### **CONTENT_BACKEND_PROVIDER**
 **Type**: String  
@@ -784,7 +784,7 @@ Before deploying to production:
 
 ---
 
-**Last Updated**: June 3, 2026 (Wave 74+ deep debt — removed stale `nestgate` alias, typed errors, async-safe I/O)  
+**Last Updated**: June 3, 2026 (Wave 76 consolidation — S3 cutover, NESTGATE_SOCKET removed, complete idiom sweep)  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 

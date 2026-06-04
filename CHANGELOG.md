@@ -6,6 +6,45 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Deep Debt Pass 3: TRUE PRIMAL TLS + NESTGATE Removal + Complete Idiom Sweep (June 3, 2026)
+
+Third and final deep debt pass: sovereignty sweep, dead constant removal,
+complete idiom migration.
+
+#### Changed
+- **TRUE PRIMAL TLS labels**: `viz_data/nucleus.rs` TLS handshake visualization
+  evolved from hardcoded `Songbird`/`BearDog` names to protocol-based labels
+  (`TLS provider`, `X.509`, `X25519`, `HMAC verify`).
+- **NESTGATE_SOCKET removed**: Deprecated constant fully deleted (zero
+  references remained after Wave 69 migration to `CONTENT_BACKEND_SOCKET`).
+- **Complete idiom sweep**: ALL remaining `"literal".to_string()` in production
+  code replaced with `.to_owned()` — 600+ replacements across 195 files.
+  Zero instances remain in non-test code.
+- **Clippy `assigning_clones`**: All `clone_into` patterns fixed.
+
+### Wave 76 Consolidation: S3 Cutover Readiness (June 3, 2026)
+
+Content backend mesh-aware 4-tier resolution audit and fixes for DNS cutover.
+
+#### Changed
+- **FAMILY_ID alignment**: Content backend and `announce_to_neural_api` defaults
+  changed from `"default"` to `"nat0"` (ecosystem standard), matching
+  `DiscoveryServiceClient::discover()` and `socket_path::get_family_id()`.
+- **DISCOVERY_SOCKET wired into Tier 4**: `DiscoveryServiceClient::discover()`
+  now honors `DISCOVERY_SOCKET` env var as highest-priority override, aligning
+  with NUCLEUS composition pattern where both registration and discovery use
+  the same Songbird socket.
+- **AppError::TracingInit**: New typed variant for tracing/logging initialization
+  errors, eliminating 4 `AppError::Other(format!())` sites in `init_tracing()`.
+- **Stale doc cleanup**: Removed duplicate `resolve()` doc comment, stale
+  `content.get` module reference.
+- **Idiom sweep**: 300+ additional `.to_string()` → `.to_owned()` across 27 files.
+
+#### Verified
+- 4-tier content backend resolution chain architecturally complete.
+- Tiers 1–3 have integration tests; Tier 4 structurally sound.
+- **6,217+ tests pass**, zero Clippy warnings, `unsafe_code = "forbid"` enforced.
+
 ### Deep Debt Pass 2: AppError Evolution + Async Safety + Idiom Sweep (June 3, 2026)
 
 Second deep debt pass: evolving error types, fixing async-safety, broad idiom sweep.

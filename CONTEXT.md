@@ -423,17 +423,18 @@ items resolved:
 
 6,217+ tests, 0 Clippy warnings, 0 doc warnings, 0 unsafe blocks.
 
-Wave 74+ deep debt passes (June 3, 2026): Two comprehensive deep debt
-passes executed. (1) TRUE PRIMAL: `capability_registry.toml` evolved from
-hardcoded `nestgate`/`songbird` to `content-provider`/`discovery-service`;
-`nucleus.rs` and `kderm.rs` viz data evolved to capability labels. (2) Typed
-errors: `ContentBackendError` thiserror enum (Connect, Write, Serialize,
-Base64, Protocol); `AppError` gained 5 `#[from]` typed conversions
-(ConfigError, IpcServerError, AddrParseError, serde_json::Error, JoinError),
-eliminating 11 `Other(format!())` sites. (3) Async safety: `content_direct.rs`
-blocking `std::fs` migrated to `tokio::fs`. (4) Idiomatic Rust: 440+
-`.to_string()` → `.to_owned()` across 13 files. (5) Clippy: removed
-unfulfilled lint expectation, `clone_into` in reporter.
+Wave 76 consolidation + deep debt passes 1–3 (June 3, 2026): Five
+passes in one session. (1) TRUE PRIMAL: `capability_registry.toml` evolved
+from hardcoded `nestgate`/`songbird` to `content-provider`/`discovery-service`;
+viz data labels genericized; TLS handshake viz evolved from `Songbird`/`BearDog`
+to protocol-based labels. (2) Typed errors: `ContentBackendError`,
+`AppError::TracingInit`, 5 `#[from]` typed conversions eliminating 15
+`Other(format!())` sites total. (3) Async safety: `content_direct.rs`
+blocking `std::fs` → `tokio::fs`. (4) S3 cutover readiness: FAMILY_ID
+default aligned to `"nat0"` ecosystem-wide; `DISCOVERY_SOCKET` wired into
+Tier 4 discovery; 4-tier content backend chain audited. (5) Complete idiom
+sweep: **zero** `"literal".to_string()` remains in production code (1,000+
+replacements across 195+ files). `NESTGATE_SOCKET` constant removed.
 
 Wave 61 status (May 29, 2026): DH-1 /tmp cleanup complete (all socket paths
 through `resolve_biomeos_socket_dir()` tiered chain). Dep trim: dead `mdns-sd`
@@ -443,8 +444,8 @@ isolated: auto-fallback and headless demo gated behind explicit opt-in. Sensory
 discovery probes Linux audio subsystems.
 
 Wave 69 deep debt + modernization (June 2, 2026): TRUE PRIMAL — removed
-`nestgate` backend alias and env fallback, deprecated `NESTGATE_SOCKET`
-constant. Dep trimming — removed `tarpc/unix`, removed `egui_extras`,
+`nestgate` backend alias and env fallback (constant fully removed in Wave 76).
+Dep trimming — removed `tarpc/unix`, removed `egui_extras`,
 bumped `rustix` 0.38→1.x. IPC evolution — `grammar_placeholder` →
 `identity_grammar`, `handle_texture_attach` to slot registration semantics.
 Modernization pass — `DirError` manual Display/Error → `thiserror` derive,
