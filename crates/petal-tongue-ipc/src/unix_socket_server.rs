@@ -222,7 +222,7 @@ impl UnixSocketServer {
         }
 
         let uds_listener = UnixListener::bind(&self.socket_path)
-            .map_err(|e| IpcServerError::SocketError(format!("{e}")))?;
+            .map_err(|e| IpcServerError::SocketError(e.to_string()))?;
         info!(
             "Unix socket server listening: {}",
             self.socket_path.display()

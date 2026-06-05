@@ -13,20 +13,16 @@ use serde_json::Value;
 )]
 pub(super) fn parse_primal(primal: &Value) -> DiscoveryResult<PrimalInfo> {
     Ok(PrimalInfo {
-        id: primal["id"]
-            .as_str()
-            .unwrap_or("unknown")
-            .to_string()
-            .into(),
+        id: primal["id"].as_str().unwrap_or("unknown").to_owned().into(),
         name: primal["primal_type"]
             .as_str()
             .unwrap_or("unknown")
-            .to_string(),
+            .to_owned(),
         primal_type: primal["primal_type"]
             .as_str()
             .unwrap_or("unknown")
-            .to_string(),
-        endpoint: primal["socket_path"].as_str().unwrap_or("").to_string(),
+            .to_owned(),
+        endpoint: primal["socket_path"].as_str().unwrap_or("").to_owned(),
         capabilities: primal["capabilities"]
             .as_array()
             .map(|v| capability_parse::parse_capabilities(v))
@@ -54,12 +50,12 @@ pub(super) fn parse_topology_edges(result: &Value) -> DiscoveryResult<Vec<Topolo
     let mut edges = Vec::new();
     for conn in connections {
         edges.push(TopologyEdge {
-            from: conn["from"].as_str().unwrap_or("").to_string().into(),
-            to: conn["to"].as_str().unwrap_or("").to_string().into(),
+            from: conn["from"].as_str().unwrap_or("").to_owned().into(),
+            to: conn["to"].as_str().unwrap_or("").to_owned().into(),
             edge_type: conn["connection_type"]
                 .as_str()
                 .unwrap_or("unknown")
-                .to_string(),
+                .to_owned(),
             capability: None,
             label: None,
             metrics: None,

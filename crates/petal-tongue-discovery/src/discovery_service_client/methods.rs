@@ -121,7 +121,7 @@ impl DiscoveryServiceClient {
 
         let result = self.send_request(request).await?;
 
-        Ok(result["status"].as_str().unwrap_or("unknown").to_string())
+        Ok(result["status"].as_str().unwrap_or("unknown").to_owned())
     }
 
     /// Parse a primal from the discovery service JSON response
@@ -150,7 +150,7 @@ impl DiscoveryServiceClient {
             .as_str()
             .or_else(|| value["type"].as_str())
             .unwrap_or("unknown")
-            .to_string();
+            .to_owned();
 
         let endpoint = value["endpoint"]
             .as_str()
