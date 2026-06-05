@@ -44,7 +44,7 @@ svg = { workspace = true }
 chrono = { workspace = true }
 
 [dev-dependencies]
-anyhow = { workspace = true }
+anyhow = "1.0"
 tokio = { workspace = true, features = ["test-util", "macros"] }
 petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }
 

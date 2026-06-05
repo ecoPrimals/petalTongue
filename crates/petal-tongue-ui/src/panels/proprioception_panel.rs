@@ -47,8 +47,15 @@ impl PanelInstance for ProprioceptionPanel {
 
         // Discover Neural API in blocking context
         let provider = tokio::task::block_in_place(|| {
-            tokio::runtime::Handle::current()
-                .block_on(async { NeuralApiProvider::discover(None).await.ok() })
+            tokio::runtime::Handle::current().block_on(async {
+                NeuralApiProvider::discover(None)
+                    .await
+                    .map_err(|e| {
+                        tracing::warn!("Neural API discovery failed: {e}");
+                        e
+                    })
+                    .ok()
+            })
         });
 
         if provider.is_some() {

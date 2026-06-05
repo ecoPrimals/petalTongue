@@ -83,7 +83,13 @@ impl GpuComputeProvider {
     ///
     /// Does not return errors; discovery failures result in an empty provider.
     pub async fn new() -> Result<Self> {
-        let service = Self::discover_compute_provider().await.ok();
+        let service = Self::discover_compute_provider()
+            .await
+            .map_err(|e| {
+                tracing::debug!("GPU compute discovery: {e}");
+                e
+            })
+            .ok();
 
         let capabilities = service
             .as_ref()

@@ -124,8 +124,14 @@ impl ContentBackendClient {
         let family = std::env::var(petal_tongue_core::constants::FAMILY_ID)
             .or_else(|_| std::env::var(petal_tongue_core::constants::PETALTONGUE_FAMILY_ID))
             .ok();
-        let client = DiscoveryServiceClient::discover(family.as_deref()).ok()?;
-        let primals = client.discover_by_capability("content").await.ok()?;
+        let client = DiscoveryServiceClient::discover(family.as_deref())
+            .map_err(|e| tracing::debug!("content discovery service: {e}"))
+            .ok()?;
+        let primals = client
+            .discover_by_capability("content")
+            .await
+            .map_err(|e| tracing::debug!("content capability query: {e}"))
+            .ok()?;
 
         for primal in &primals {
             // Prefer endpoints struct with explicit transport info
