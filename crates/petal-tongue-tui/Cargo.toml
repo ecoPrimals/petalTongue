@@ -26,7 +26,7 @@ ratatui = { workspace = true }
 crossterm = { workspace = true, features = ["event-stream"] }
 
 # Async runtime
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "sync", "time", "macros"] }
 
 # Serialization
 serde = { workspace = true }
@@ -46,7 +46,7 @@ chrono = { workspace = true }
 dashmap = { workspace = true }
 
 [dev-dependencies]
-anyhow = { workspace = true }  # examples/simple_demo.rs
+anyhow = "1.0"  # examples/simple_demo.rs
 tempfile = { workspace = true }
 
 [[example]]

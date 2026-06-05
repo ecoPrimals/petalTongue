@@ -32,7 +32,7 @@ doom-core = { path = "../doom-core", optional = true }  # Doom integration for p
 # petal-tongue-discovery::DiscoveryServiceClient.
 # NO compile-time dependency on other primals - TRUE PRIMAL sovereignty!
 
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "sync", "time", "net", "io-util", "macros"] }
 tokio-tungstenite = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -91,7 +91,7 @@ mock = ["petal-tongue-discovery/test-fixtures", "petal-tongue-api/test-fixtures"
 
 
 [dev-dependencies]
-anyhow = { workspace = true }  # Integration tests and examples
+anyhow = "1.0"  # Integration tests and examples
 petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }  # For tests that use test_fixtures (run: cargo test --features test-fixtures or --features mock)
 tokio = { workspace = true, features = ["test-util", "macros"] }
 tempfile = { workspace = true }

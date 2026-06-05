@@ -69,7 +69,6 @@ toml = "0.8"
 
 # Error handling
 thiserror = "2.0"
-anyhow = "1.0"
 
 # Audio synthesis (OPTIONAL - requires ALSA libraries on Linux)
 # Enable with feature: native-audio
@@ -300,7 +299,7 @@ petal-tongue-scene = { path = "crates/petal-tongue-scene" }
 png = { workspace = true, optional = true }
 
 [dev-dependencies]
-anyhow = { workspace = true }
+anyhow = "1.0"
 petal-tongue-core = { path = "crates/petal-tongue-core", features = ["test-fixtures"] }
 tempfile = { workspace = true }
 criterion = { workspace = true }

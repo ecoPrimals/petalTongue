@@ -374,7 +374,7 @@ mod tests {
 
     #[tokio::test]
     #[cfg(not(feature = "ui"))]
-    async fn test_ui_mode_error_is_anyhow() {
+    async fn test_ui_mode_error_display() {
         let data_service = Arc::new(crate::data_service::DataService::new());
         let result = run(None, false, data_service).await;
         let err = result.unwrap_err();
