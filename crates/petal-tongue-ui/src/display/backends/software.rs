@@ -8,7 +8,6 @@
 //!
 //! - VNC server for remote access
 //! - WebSocket streaming for browser access
-//! - Window display (if windowing available)
 //! - Pure Rust, no native dependencies
 
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
@@ -30,8 +29,6 @@ enum SoftwareBackend {
     Vnc,
     /// WebSocket streaming (browser access)
     WebSocket,
-    /// Window display (if available)
-    Window,
     /// Memory buffer only (for testing/headless)
     Memory,
 }
@@ -110,12 +107,6 @@ impl SoftwareDisplay {
             tracing::warn!("WebSocket port {} already in use", port);
         }
         false
-    }
-
-    /// Check if Window backend is available
-    const fn check_window() -> bool {
-        // Check if we can create a window (winit available)
-        cfg!(feature = "window")
     }
 
     /// Send frame to VNC clients
@@ -221,10 +212,7 @@ impl DisplayBackend for SoftwareDisplay {
         info!("🎨 Initializing software rendering backend...");
 
         // Try backends in order of preference
-        if Self::check_window() {
-            info!("   Using window backend");
-            self.backend = SoftwareBackend::Window;
-        } else if Self::check_websocket() {
+        if Self::check_websocket() {
             info!("   Using WebSocket backend");
             self.backend = SoftwareBackend::WebSocket;
         } else if Self::check_vnc() {
@@ -263,7 +251,6 @@ impl DisplayBackend for SoftwareDisplay {
         match self.backend {
             SoftwareBackend::Vnc => self.send_vnc_frame(buffer).await,
             SoftwareBackend::WebSocket => self.send_websocket_frame(buffer).await,
-            SoftwareBackend::Window => Ok(()),
             SoftwareBackend::Memory => Ok(()),
         }
     }
@@ -277,7 +264,6 @@ impl DisplayBackend for SoftwareDisplay {
         match self.backend {
             SoftwareBackend::Vnc => "Software Rendering (VNC)",
             SoftwareBackend::WebSocket => "Software Rendering (WebSocket)",
-            SoftwareBackend::Window => "Software Rendering (Window)",
             SoftwareBackend::Memory => "Software Rendering (Memory)",
         }
     }

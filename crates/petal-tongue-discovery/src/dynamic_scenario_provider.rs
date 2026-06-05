@@ -260,7 +260,7 @@ impl VisualizationDataProvider for DynamicScenarioProvider {
     }
 
     async fn health_check(&self) -> DiscoveryResult<String> {
-        let name = self.name().unwrap_or("Dynamic Scenario").to_string();
+        let name = self.name().unwrap_or("Dynamic Scenario").to_owned();
         let n = self.primals.len();
         Ok(format!("Dynamic scenario '{name}' with {n} primals"))
     }

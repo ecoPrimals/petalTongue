@@ -50,11 +50,11 @@ pub fn handle_motor_command(handlers: &RpcHandlers, req: JsonRpcRequest) -> Json
         }
         "motor.fit_to_view" => Some(MotorCommand::FitToView),
         "motor.set_mode" => {
-            let mode = req.params["mode"].as_str().unwrap_or("").to_string();
+            let mode = req.params["mode"].as_str().unwrap_or("").to_owned();
             Some(MotorCommand::SetMode { mode })
         }
         "motor.navigate" => {
-            let node_id = req.params["node_id"].as_str().unwrap_or("").to_string();
+            let node_id = req.params["node_id"].as_str().unwrap_or("").to_owned();
             Some(MotorCommand::Navigate {
                 target_node: node_id,
             })
@@ -74,8 +74,8 @@ pub fn handle_motor_command(handlers: &RpcHandlers, req: JsonRpcRequest) -> Json
             })
         }
         "motor.notification" => {
-            let level = req.params["level"].as_str().unwrap_or("info").to_string();
-            let message = req.params["message"].as_str().unwrap_or("").to_string();
+            let level = req.params["level"].as_str().unwrap_or("info").to_owned();
+            let message = req.params["message"].as_str().unwrap_or("").to_owned();
             let duration_ms = req.params["duration_ms"].as_u64();
             Some(MotorCommand::Notification {
                 level,

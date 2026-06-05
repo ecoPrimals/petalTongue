@@ -82,7 +82,6 @@ audio = []   # Audio sensor/provider features
 # Off by default so normal builds do not register non-functional discovery entries.
 audio-socket = []
 audio-direct = []
-window = []  # Window-related display features
 doom = ["dep:doom-core"]  # Doom integration for platform testing
 
 # Mock provider for dev/test only - NEVER use in production (sovereignty compliance)

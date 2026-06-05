@@ -175,7 +175,7 @@ fn render_device_details(frame: &mut Frame, area: Rect, primals: &Arc<Vec<Primal
         ]),
         Line::from(vec![
             Span::raw("Total Capabilities: "),
-            Span::styled(format!("{cap_count}"), Style::default().fg(Color::Green)),
+            Span::styled(cap_count.to_string(), Style::default().fg(Color::Green)),
         ]),
         Line::from(""),
         Line::from(vec![Span::styled(

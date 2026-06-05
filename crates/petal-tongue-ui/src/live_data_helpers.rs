@@ -100,7 +100,7 @@ pub fn format_age_for_display(age_secs: f64) -> String {
 #[must_use]
 pub fn format_metric_value(value: f64, unit: &str) -> String {
     if unit.is_empty() {
-        format!("{value}")
+        value.to_string()
     } else {
         format!("{value}{unit}")
     }

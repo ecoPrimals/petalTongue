@@ -40,7 +40,7 @@ pub const fn health_to_emoji(health: &PrimalHealthStatus) -> &'static str {
 #[must_use]
 pub fn get_trust_level(info: &PrimalInfo) -> String {
     if let Some(trust) = info.trust_level() {
-        return format!("{trust}");
+        return trust.to_string();
     }
     "unknown".to_owned()
 }

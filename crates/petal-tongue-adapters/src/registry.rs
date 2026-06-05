@@ -129,7 +129,7 @@ impl AdapterRegistry {
                     ui.label(s);
                 }
                 PropertyValue::Number(n) => {
-                    ui.label(format!("{n}"));
+                    ui.label(n.to_string());
                 }
                 PropertyValue::Boolean(b) => {
                     ui.label(if *b { "✓ true" } else { "✗ false" });

@@ -251,9 +251,9 @@ impl UnixSocketProvider {
             result["capabilities"].as_array().unwrap_or(&vec![]),
         );
 
-        let node_id = result["node_id"].as_str().unwrap_or("unknown").to_string();
+        let node_id = result["node_id"].as_str().unwrap_or("unknown").to_owned();
 
-        let _version = result["version"].as_str().unwrap_or("unknown").to_string();
+        let _version = result["version"].as_str().unwrap_or("unknown").to_owned();
 
         // Derive primal type from socket name or capabilities
         let primal_type = self.infer_primal_type(path, &capabilities);
@@ -263,7 +263,7 @@ impl UnixSocketProvider {
             .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("unknown")
-            .to_string();
+            .to_owned();
 
         Ok(PrimalInfo::new(
             node_id,
@@ -306,7 +306,7 @@ impl UnixSocketProvider {
             .split(['-', '.'].as_ref())
             .next()
             .unwrap_or("unknown")
-            .to_string();
+            .to_owned();
 
         // If we couldn't infer from name, use capability categories as fallback
         if primal_type == "unknown" || primal_type.is_empty() {

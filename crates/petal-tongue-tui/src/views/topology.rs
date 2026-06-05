@@ -389,7 +389,7 @@ fn render_details(
                 Span::raw("  • "),
                 Span::styled(edge_type, Style::default().fg(Color::Yellow)),
                 Span::raw(": "),
-                Span::styled(format!("{count}"), Style::default().fg(Color::Green)),
+                Span::styled(count.to_string(), Style::default().fg(Color::Green)),
             ])));
         }
 
