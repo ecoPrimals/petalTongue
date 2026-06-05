@@ -64,3 +64,62 @@ pub(super) fn parse_topology_edges(result: &Value) -> DiscoveryResult<Vec<Topolo
 
     Ok(edges)
 }
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used, clippy::expect_used, reason = "test code")]
+    use super::*;
+
+    #[test]
+    fn parse_primal_minimal() {
+        let val = serde_json::json!({
+            "id": "node-1",
+            "primal_type": "songbird",
+            "socket_path": "/run/membrane/songbird.sock",
+            "health": "healthy",
+            "capabilities": ["security.auth", "tls.provide"]
+        });
+        let info = parse_primal(&val).unwrap();
+        assert_eq!(info.name, "songbird");
+        assert_eq!(info.endpoint, "/run/membrane/songbird.sock");
+        assert_eq!(info.health, PrimalHealthStatus::Healthy);
+        assert_eq!(info.capabilities.len(), 2);
+    }
+
+    #[test]
+    fn parse_primal_missing_fields_defaults() {
+        let val = serde_json::json!({});
+        let info = parse_primal(&val).unwrap();
+        assert_eq!(info.name, "unknown");
+        assert_eq!(info.endpoint, "");
+        assert_eq!(info.health, PrimalHealthStatus::Unknown);
+    }
+
+    #[test]
+    fn parse_topology_edges_success() {
+        let val = serde_json::json!({
+            "connections": [
+                { "from": "a", "to": "b", "connection_type": "ipc" },
+                { "from": "b", "to": "c", "connection_type": "mesh" }
+            ]
+        });
+        let edges = parse_topology_edges(&val).unwrap();
+        assert_eq!(edges.len(), 2);
+        assert_eq!(edges[0].edge_type, "ipc");
+        assert_eq!(edges[1].edge_type, "mesh");
+    }
+
+    #[test]
+    fn parse_topology_edges_missing_connections() {
+        let val = serde_json::json!({ "nodes": [] });
+        let err = parse_topology_edges(&val).unwrap_err();
+        assert!(err.to_string().contains("connections"), "error: {err}");
+    }
+
+    #[test]
+    fn parse_topology_edges_empty() {
+        let val = serde_json::json!({ "connections": [] });
+        let edges = parse_topology_edges(&val).unwrap();
+        assert!(edges.is_empty());
+    }
+}
