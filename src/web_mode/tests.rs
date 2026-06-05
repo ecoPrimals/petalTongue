@@ -953,3 +953,919 @@ async fn test_cors_preflight_responds() {
         .unwrap_or("");
     assert_eq!(acao, "*", "wildcard CORS should respond with *");
 }
+
+// ── Liveness & Readiness handlers ──────────────────────────────────────
+
+#[tokio::test]
+async fn test_liveness_handler() {
+    let resp = liveness_handler().await.into_response();
+    assert_eq!(resp.status(), 200);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(v["status"], "alive");
+}
+
+#[tokio::test]
+async fn test_readiness_handler() {
+    let resp = readiness_handler().await.into_response();
+    assert_eq!(resp.status(), 200);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(v["status"], "ready");
+    assert_eq!(v["ready"], true);
+    assert!(v["version"].as_str().is_some());
+    assert!(v["primal"].as_str().is_some());
+}
+
+// ── Security headers middleware ────────────────────────────────────────
+
+#[tokio::test]
+async fn test_security_headers_applied() {
+    use axum::body::Body;
+
+    let app =
+        Router::new()
+            .route("/test", get(|| async { "ok" }))
+            .layer(axum::middleware::from_fn(
+                super::security_headers_middleware,
+            ));
+
+    let req = axum::http::Request::builder()
+        .uri("/test")
+        .body(Body::empty())
+        .unwrap();
+    let resp = tower::ServiceExt::oneshot(app, req).await.unwrap();
+
+    assert_eq!(resp.status(), 200);
+    assert_eq!(
+        resp.headers().get("x-content-type-options").unwrap(),
+        "nosniff"
+    );
+    assert_eq!(resp.headers().get("x-frame-options").unwrap(), "DENY");
+    assert_eq!(
+        resp.headers().get("referrer-policy").unwrap(),
+        "strict-origin-when-cross-origin"
+    );
+    assert!(
+        resp.headers()
+            .get("permissions-policy")
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .contains("camera=()")
+    );
+}
+
+// ── Content backend: success paths ─────────────────────────────────────
+
+#[tokio::test]
+async fn test_content_fallback_success_returns_body() {
+    use base64::Engine as _;
+    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+    use tokio::net::UnixListener;
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let sock_path = tmp.path().join("test-fb-success.sock");
+
+    let listener = UnixListener::bind(&sock_path).unwrap();
+
+    let content_bytes = b"<h1>Page content</h1>";
+
+    let server = tokio::spawn(async move {
+        let (stream, _) = listener.accept().await.unwrap();
+        let (reader, mut writer) = stream.into_split();
+        let mut reader = BufReader::new(reader);
+        let mut line = String::new();
+        reader.read_line(&mut line).await.unwrap();
+        let req: serde_json::Value = serde_json::from_str(&line).unwrap();
+        assert_eq!(req["method"], "content.resolve");
+
+        let resp = serde_json::json!({
+            "jsonrpc": "2.0",
+            "result": {
+                "content": base64::engine::general_purpose::STANDARD.encode(content_bytes),
+                "mime_type": "text/html"
+            },
+            "id": req["id"]
+        });
+        let mut resp_line = serde_json::to_string(&resp).unwrap();
+        resp_line.push('\n');
+        writer.write_all(resp_line.as_bytes()).await.unwrap();
+        writer.flush().await.unwrap();
+    });
+
+    let client = Arc::new(ContentBackendClient {
+        endpoint: ContentEndpoint::Unix(sock_path),
+        request_id: std::sync::atomic::AtomicU64::new(1),
+    });
+    let nb_config = Arc::new(crate::notebook_render::NotebookRenderConfig::default());
+
+    let req = axum::http::Request::builder()
+        .uri("/page.html")
+        .body(axum::body::Body::empty())
+        .unwrap();
+
+    let resp = content_fallback(req, client, nb_config, 3600).await;
+    server.await.unwrap();
+
+    assert_eq!(resp.status(), 200);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    assert_eq!(&body[..], content_bytes);
+}
+
+#[tokio::test]
+async fn test_content_fallback_not_found_returns_404() {
+    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+    use tokio::net::UnixListener;
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let sock_path = tmp.path().join("test-fb-404.sock");
+
+    let listener = UnixListener::bind(&sock_path).unwrap();
+
+    let server = tokio::spawn(async move {
+        let (stream, _) = listener.accept().await.unwrap();
+        let (reader, mut writer) = stream.into_split();
+        let mut reader = BufReader::new(reader);
+        let mut line = String::new();
+        reader.read_line(&mut line).await.unwrap();
+        let req: serde_json::Value = serde_json::from_str(&line).unwrap();
+
+        let resp = serde_json::json!({
+            "jsonrpc": "2.0",
+            "error": { "code": -32601, "message": "Not found" },
+            "id": req["id"]
+        });
+        let mut resp_line = serde_json::to_string(&resp).unwrap();
+        resp_line.push('\n');
+        writer.write_all(resp_line.as_bytes()).await.unwrap();
+        writer.flush().await.unwrap();
+    });
+
+    let client = Arc::new(ContentBackendClient {
+        endpoint: ContentEndpoint::Unix(sock_path),
+        request_id: std::sync::atomic::AtomicU64::new(1),
+    });
+    let nb_config = Arc::new(crate::notebook_render::NotebookRenderConfig::default());
+
+    let req = axum::http::Request::builder()
+        .uri("/missing-page")
+        .body(axum::body::Body::empty())
+        .unwrap();
+
+    let resp = content_fallback(req, client, nb_config, 0).await;
+    server.await.unwrap();
+
+    assert_eq!(resp.status(), 404);
+}
+
+#[tokio::test]
+async fn test_content_fallback_notebook_mime_renders_html() {
+    use base64::Engine as _;
+    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+    use tokio::net::UnixListener;
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let sock_path = tmp.path().join("test-fb-nbmime.sock");
+
+    let listener = UnixListener::bind(&sock_path).unwrap();
+
+    let notebook_json = serde_json::json!({
+        "nbformat": 4,
+        "nbformat_minor": 5,
+        "metadata": { "title": "Test Notebook" },
+        "cells": [{
+            "cell_type": "markdown",
+            "source": ["# Hello World"],
+            "metadata": {}
+        }]
+    });
+    let notebook_bytes = serde_json::to_vec(&notebook_json).unwrap();
+
+    let server = tokio::spawn(async move {
+        let (stream, _) = listener.accept().await.unwrap();
+        let (reader, mut writer) = stream.into_split();
+        let mut reader = BufReader::new(reader);
+        let mut line = String::new();
+        reader.read_line(&mut line).await.unwrap();
+        let req: serde_json::Value = serde_json::from_str(&line).unwrap();
+
+        let resp = serde_json::json!({
+            "jsonrpc": "2.0",
+            "result": {
+                "content": base64::engine::general_purpose::STANDARD.encode(&notebook_bytes),
+                "mime_type": "application/x-ipynb+json"
+            },
+            "id": req["id"]
+        });
+        let mut resp_line = serde_json::to_string(&resp).unwrap();
+        resp_line.push('\n');
+        writer.write_all(resp_line.as_bytes()).await.unwrap();
+        writer.flush().await.unwrap();
+    });
+
+    let client = Arc::new(ContentBackendClient {
+        endpoint: ContentEndpoint::Unix(sock_path),
+        request_id: std::sync::atomic::AtomicU64::new(1),
+    });
+    let nb_config = Arc::new(crate::notebook_render::NotebookRenderConfig::default());
+
+    let req = axum::http::Request::builder()
+        .uri("/abc123def456")
+        .body(axum::body::Body::empty())
+        .unwrap();
+
+    let resp = content_fallback(req, client, nb_config, 0).await;
+    server.await.unwrap();
+
+    assert_eq!(resp.status(), 200);
+    let ct = resp
+        .headers()
+        .get("content-type")
+        .unwrap()
+        .to_str()
+        .unwrap();
+    assert!(
+        ct.contains("text/html"),
+        "notebook MIME should render as HTML"
+    );
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let html = std::str::from_utf8(&body).unwrap();
+    assert!(
+        html.contains("Test Notebook"),
+        "should contain notebook title"
+    );
+    assert!(html.contains("Hello World"), "should contain cell content");
+}
+
+#[tokio::test]
+async fn test_content_index_success_returns_provider_content() {
+    use base64::Engine as _;
+    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+    use tokio::net::UnixListener;
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let sock_path = tmp.path().join("test-ci-success.sock");
+
+    let listener = UnixListener::bind(&sock_path).unwrap();
+
+    let content_bytes = b"<html><body>Welcome</body></html>";
+
+    let server = tokio::spawn(async move {
+        let (stream, _) = listener.accept().await.unwrap();
+        let (reader, mut writer) = stream.into_split();
+        let mut reader = BufReader::new(reader);
+        let mut line = String::new();
+        reader.read_line(&mut line).await.unwrap();
+        let req: serde_json::Value = serde_json::from_str(&line).unwrap();
+        assert_eq!(req["params"]["path"], "/");
+
+        let resp = serde_json::json!({
+            "jsonrpc": "2.0",
+            "result": {
+                "content": base64::engine::general_purpose::STANDARD.encode(content_bytes),
+                "mime_type": "text/html"
+            },
+            "id": req["id"]
+        });
+        let mut resp_line = serde_json::to_string(&resp).unwrap();
+        resp_line.push('\n');
+        writer.write_all(resp_line.as_bytes()).await.unwrap();
+        writer.flush().await.unwrap();
+    });
+
+    let client = Arc::new(ContentBackendClient {
+        endpoint: ContentEndpoint::Unix(sock_path),
+        request_id: std::sync::atomic::AtomicU64::new(1),
+    });
+
+    let resp = super::content_backend::content_index(client).await;
+    server.await.unwrap();
+
+    assert_eq!(resp.status(), 200);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    assert_eq!(&body[..], content_bytes);
+}
+
+// ── Content-direct backend ─────────────────────────────────────────────
+
+#[tokio::test]
+async fn test_content_direct_index_serves_root_page() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let content_dir = tmp.path().join("content");
+    std::fs::create_dir(&content_dir).unwrap();
+    std::fs::write(
+        content_dir.join("_index.md"),
+        "+++\ntitle = \"Home\"\n+++\n# Welcome\n\nThis is the home page.",
+    )
+    .unwrap();
+
+    let state = Arc::new(super::content_direct::ContentDirectState::new(content_dir));
+
+    let resp = super::content_direct::content_direct_index(Arc::clone(&state)).await;
+    assert_eq!(resp.status(), 200);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let html = std::str::from_utf8(&body).unwrap();
+    assert!(
+        html.contains("Welcome") || html.contains("Home"),
+        "index should render markdown content"
+    );
+}
+
+#[tokio::test]
+async fn test_content_direct_index_fallback_when_no_index() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let content_dir = tmp.path().join("content");
+    std::fs::create_dir(&content_dir).unwrap();
+
+    let state = Arc::new(super::content_direct::ContentDirectState::new(content_dir));
+
+    let resp = super::content_direct::content_direct_index(Arc::clone(&state)).await;
+    assert_eq!(resp.status(), 200);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let html = std::str::from_utf8(&body).unwrap();
+    assert!(
+        html.contains("Content-direct mode active"),
+        "should serve fallback HTML"
+    );
+}
+
+#[tokio::test]
+async fn test_content_direct_nav_returns_json() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let content_dir = tmp.path().join("content");
+    std::fs::create_dir_all(content_dir.join("docs")).unwrap();
+    std::fs::write(
+        content_dir.join("docs/_index.md"),
+        "+++\ntitle = \"Documentation\"\nweight = 1\n+++\n",
+    )
+    .unwrap();
+    std::fs::write(
+        content_dir.join("docs/getting-started.md"),
+        "+++\ntitle = \"Getting Started\"\n+++\n# Getting Started",
+    )
+    .unwrap();
+
+    let state = Arc::new(super::content_direct::ContentDirectState::new(content_dir));
+
+    let resp = super::content_direct::content_direct_nav(Arc::clone(&state)).await;
+    assert_eq!(resp.status(), 200);
+    let ct = resp
+        .headers()
+        .get("content-type")
+        .unwrap()
+        .to_str()
+        .unwrap();
+    assert!(ct.contains("application/json"));
+
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let nav: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert!(nav.is_array(), "nav should be a JSON array");
+    let sections = nav.as_array().unwrap();
+    assert!(!sections.is_empty(), "should discover docs section");
+    assert_eq!(sections[0]["title"], "Documentation");
+}
+
+#[tokio::test]
+async fn test_content_direct_viz_list_returns_json() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let content_dir = tmp.path().join("content");
+    std::fs::create_dir(&content_dir).unwrap();
+
+    let state = Arc::new(super::content_direct::ContentDirectState::new(content_dir));
+
+    let resp = super::content_direct::content_direct_viz_list(Arc::clone(&state)).await;
+    assert_eq!(resp.status(), 200);
+    let ct = resp
+        .headers()
+        .get("content-type")
+        .unwrap()
+        .to_str()
+        .unwrap();
+    assert!(ct.contains("application/json"));
+
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let viz: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert!(viz.is_array(), "viz list should be a JSON array");
+    let entries = viz.as_array().unwrap();
+    assert!(entries.len() >= 2, "should have kderm + nucleus built-in");
+}
+
+#[tokio::test]
+async fn test_content_direct_fallback_serves_markdown() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let content_dir = tmp.path().join("content");
+    std::fs::create_dir(&content_dir).unwrap();
+    std::fs::write(
+        content_dir.join("about.md"),
+        "+++\ntitle = \"About\"\n+++\n# About Page\n\nSome content here.",
+    )
+    .unwrap();
+
+    let state = Arc::new(super::content_direct::ContentDirectState::new(content_dir));
+
+    let req = axum::http::Request::builder()
+        .uri("/about")
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let resp = super::content_direct::content_direct_fallback(req, Arc::clone(&state), 0).await;
+    assert_eq!(resp.status(), 200);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let html = std::str::from_utf8(&body).unwrap();
+    assert!(
+        html.contains("About") || html.contains("about"),
+        "should render about page"
+    );
+}
+
+#[tokio::test]
+async fn test_content_direct_fallback_serves_static_file() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let content_dir = tmp.path().join("content");
+    let static_dir = tmp.path().join("static");
+    std::fs::create_dir(&content_dir).unwrap();
+    std::fs::create_dir(&static_dir).unwrap();
+    std::fs::write(static_dir.join("style.css"), "body { color: red; }").unwrap();
+
+    let state = Arc::new(super::content_direct::ContentDirectState::new(content_dir));
+
+    let req = axum::http::Request::builder()
+        .uri("/style.css")
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let resp = super::content_direct::content_direct_fallback(req, Arc::clone(&state), 300).await;
+    assert_eq!(resp.status(), 200);
+    let ct = resp
+        .headers()
+        .get("content-type")
+        .unwrap()
+        .to_str()
+        .unwrap();
+    assert!(
+        ct.contains("text/css"),
+        "should serve CSS with correct MIME"
+    );
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    assert_eq!(&body[..], b"body { color: red; }");
+}
+
+#[tokio::test]
+async fn test_content_direct_fallback_returns_404_for_missing() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let content_dir = tmp.path().join("content");
+    std::fs::create_dir(&content_dir).unwrap();
+
+    let state = Arc::new(super::content_direct::ContentDirectState::new(content_dir));
+
+    let req = axum::http::Request::builder()
+        .uri("/nonexistent")
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let resp = super::content_direct::content_direct_fallback(req, Arc::clone(&state), 0).await;
+    assert_eq!(resp.status(), 404);
+}
+
+#[tokio::test]
+async fn test_content_direct_modality_json() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let content_dir = tmp.path().join("content");
+    std::fs::create_dir(&content_dir).unwrap();
+    std::fs::write(
+        content_dir.join("test.md"),
+        "+++\ntitle = \"Test\"\n+++\n# Test Page",
+    )
+    .unwrap();
+
+    let state = Arc::new(super::content_direct::ContentDirectState::new(content_dir));
+
+    let req = axum::http::Request::builder()
+        .uri("/test?modality=json")
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let resp = super::content_direct::content_direct_fallback(req, Arc::clone(&state), 0).await;
+    assert_eq!(resp.status(), 200);
+    let ct = resp
+        .headers()
+        .get("content-type")
+        .unwrap()
+        .to_str()
+        .unwrap();
+    assert!(
+        ct.contains("application/json"),
+        "modality=json should return JSON"
+    );
+}
+
+#[tokio::test]
+async fn test_content_direct_viz_route_kderm_svg() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let content_dir = tmp.path().join("content");
+    std::fs::create_dir(&content_dir).unwrap();
+
+    let state = Arc::new(super::content_direct::ContentDirectState::new(content_dir));
+
+    let req = axum::http::Request::builder()
+        .uri("/viz/kderm-topology")
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let resp = super::content_direct::content_direct_fallback(req, Arc::clone(&state), 0).await;
+    assert_eq!(resp.status(), 200);
+    let ct = resp
+        .headers()
+        .get("content-type")
+        .unwrap()
+        .to_str()
+        .unwrap();
+    assert!(
+        ct.contains("svg"),
+        "kderm-topology default format should be SVG"
+    );
+}
+
+#[tokio::test]
+async fn test_content_direct_viz_route_scene_json() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let content_dir = tmp.path().join("content");
+    std::fs::create_dir(&content_dir).unwrap();
+
+    let state = Arc::new(super::content_direct::ContentDirectState::new(content_dir));
+
+    let req = axum::http::Request::builder()
+        .uri("/viz/nucleus-composition?format=scene-json")
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let resp = super::content_direct::content_direct_fallback(req, Arc::clone(&state), 0).await;
+    assert_eq!(resp.status(), 200);
+    let ct = resp
+        .headers()
+        .get("content-type")
+        .unwrap()
+        .to_str()
+        .unwrap();
+    assert!(ct.contains("application/json"));
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let scene: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert!(scene.is_object(), "scene-json should return valid JSON");
+}
+
+#[tokio::test]
+async fn test_content_direct_viz_route_animation_json() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let content_dir = tmp.path().join("content");
+    std::fs::create_dir(&content_dir).unwrap();
+
+    let state = Arc::new(super::content_direct::ContentDirectState::new(content_dir));
+
+    let req = axum::http::Request::builder()
+        .uri("/viz/nucleus-composition?format=animation-json")
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let resp = super::content_direct::content_direct_fallback(req, Arc::clone(&state), 0).await;
+    assert_eq!(resp.status(), 200);
+    let ct = resp
+        .headers()
+        .get("content-type")
+        .unwrap()
+        .to_str()
+        .unwrap();
+    assert!(ct.contains("application/json"));
+}
+
+#[tokio::test]
+async fn test_content_direct_viz_route_unknown_viz() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let content_dir = tmp.path().join("content");
+    std::fs::create_dir(&content_dir).unwrap();
+
+    let state = Arc::new(super::content_direct::ContentDirectState::new(content_dir));
+
+    let req = axum::http::Request::builder()
+        .uri("/viz/nonexistent-viz")
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let resp = super::content_direct::content_direct_fallback(req, Arc::clone(&state), 0).await;
+    assert_eq!(resp.status(), 200);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let text = std::str::from_utf8(&body).unwrap();
+    assert!(
+        text.contains("Unknown visualization"),
+        "should report unknown viz"
+    );
+}
+
+// ── Viz data: registry + scene builders ────────────────────────────────
+
+#[test]
+fn test_viz_registry_discover_without_static() {
+    let reg = crate::viz_data::VizRegistry::discover(None);
+    let available = reg.available();
+    assert!(available.contains(&"kderm-topology"), "should have kderm");
+    assert!(
+        available.contains(&"nucleus-composition"),
+        "should have nucleus"
+    );
+    assert!(
+        !available.contains(&"entity-graph"),
+        "entity-graph needs static dir"
+    );
+}
+
+#[test]
+fn test_viz_registry_discover_with_entity_graph() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let graph_dir = tmp.path().join("graph");
+    std::fs::create_dir(&graph_dir).unwrap();
+    std::fs::write(
+        graph_dir.join("entity-graph.json"),
+        r#"{"nodes":[],"edges":[]}"#,
+    )
+    .unwrap();
+
+    let reg = crate::viz_data::VizRegistry::discover(Some(tmp.path()));
+    assert!(
+        reg.available().contains(&"entity-graph"),
+        "should discover entity-graph with JSON file"
+    );
+    assert_eq!(reg.list().len(), 3, "should have 3 visualizations total");
+}
+
+#[test]
+fn test_viz_registry_get_and_list() {
+    let reg = crate::viz_data::VizRegistry::discover(None);
+    let entry = reg.get("kderm-topology").unwrap();
+    assert_eq!(entry.slug, "kderm-topology");
+    assert!(entry.has_animation);
+    assert!(entry.data_source.is_none());
+
+    let nucleus = reg.get("nucleus-composition").unwrap();
+    assert_eq!(nucleus.title, "NUCLEUS Atomics Composition");
+    assert!(nucleus.has_animation);
+
+    assert!(reg.get("nonexistent").is_none());
+}
+
+#[test]
+fn test_viz_registry_build_kderm_scene() {
+    let reg = crate::viz_data::VizRegistry::discover(None);
+    let scene = reg.build_scene("kderm-topology");
+    assert!(scene.is_some(), "kderm scene should build");
+    let scene = scene.unwrap();
+    assert!(
+        scene.node_count() > 1,
+        "scene should have nodes beyond root"
+    );
+}
+
+#[test]
+fn test_viz_registry_build_nucleus_scene() {
+    let reg = crate::viz_data::VizRegistry::discover(None);
+    let scene = reg.build_scene("nucleus-composition");
+    assert!(scene.is_some(), "nucleus scene should build");
+    let scene = scene.unwrap();
+    assert!(
+        scene.node_count() > 1,
+        "scene should have nodes beyond root"
+    );
+}
+
+#[test]
+fn test_viz_registry_build_unknown_returns_none() {
+    let reg = crate::viz_data::VizRegistry::discover(None);
+    assert!(reg.build_scene("no-such-viz").is_none());
+}
+
+#[test]
+fn test_viz_registry_build_kderm_animation() {
+    let reg = crate::viz_data::VizRegistry::discover(None);
+    let anim = reg.build_animation("kderm-topology");
+    assert!(anim.is_some(), "kderm should have animation");
+}
+
+#[test]
+fn test_viz_registry_build_nucleus_animation() {
+    let reg = crate::viz_data::VizRegistry::discover(None);
+    let anim = reg.build_animation("nucleus-composition");
+    assert!(anim.is_some(), "nucleus should have animation");
+}
+
+#[test]
+fn test_viz_registry_no_animation_for_entity_graph() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let graph_dir = tmp.path().join("graph");
+    std::fs::create_dir(&graph_dir).unwrap();
+    std::fs::write(
+        graph_dir.join("entity-graph.json"),
+        r#"{"nodes":[],"edges":[]}"#,
+    )
+    .unwrap();
+
+    let reg = crate::viz_data::VizRegistry::discover(Some(tmp.path()));
+    let anim = reg.build_animation("entity-graph");
+    assert!(anim.is_none(), "entity-graph should not have animation");
+}
+
+#[test]
+fn test_build_nucleus_scene_directly() {
+    let scene = crate::viz_data::build_nucleus_scene();
+    assert!(scene.node_count() > 1);
+}
+
+#[test]
+fn test_build_nucleus_expand_animation() {
+    let anim = crate::viz_data::build_nucleus_expand_animation("tower-atomic");
+    match anim {
+        petal_tongue_scene::animation::Sequence::Sequential(anims) => {
+            assert!(!anims.is_empty(), "animation should have keyframes");
+        }
+        _ => panic!("expected Sequential"),
+    }
+}
+
+#[test]
+fn test_build_kderm_scene_directly() {
+    let scene = crate::viz_data::build_kderm_scene();
+    assert!(scene.node_count() > 1);
+}
+
+#[test]
+fn test_build_kderm_relay_animation() {
+    let anim = crate::viz_data::build_kderm_relay_animation();
+    match anim {
+        petal_tongue_scene::animation::Sequence::Sequential(anims) => {
+            assert!(!anims.is_empty(), "animation should have keyframes");
+        }
+        _ => panic!("expected Sequential"),
+    }
+}
+
+// ── Content render: site.rs ────────────────────────────────────────────
+
+#[test]
+fn test_load_entity_registry_from_config() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let config = tmp.path().join("config.toml");
+    std::fs::write(
+        &config,
+        r#"
+[extra.entity_registry.beardog]
+display = "BearDog"
+emoji = "🐻"
+kind = "primal"
+description = "Cryptographic security"
+"#,
+    )
+    .unwrap();
+
+    let registry = crate::content_render::load_entity_registry(&config);
+    assert_eq!(registry.len(), 1);
+    let entry = registry.get("beardog").unwrap();
+    assert_eq!(entry.display, "BearDog");
+    assert_eq!(entry.emoji, "🐻");
+    assert_eq!(entry.kind, "primal");
+    assert_eq!(entry.description.as_deref(), Some("Cryptographic security"));
+}
+
+#[test]
+fn test_load_entity_registry_missing_file() {
+    let registry = crate::content_render::load_entity_registry(std::path::Path::new(
+        "/nonexistent/config.toml",
+    ));
+    assert!(registry.is_empty());
+}
+
+#[test]
+fn test_load_entity_registry_no_extra_section() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let config = tmp.path().join("config.toml");
+    std::fs::write(&config, "[site]\ntitle = \"Test\"").unwrap();
+
+    let registry = crate::content_render::load_entity_registry(&config);
+    assert!(registry.is_empty());
+}
+
+#[test]
+fn test_build_nav_tree_from_content_dir() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let content_dir = tmp.path().join("content");
+    std::fs::create_dir(&content_dir).unwrap();
+
+    std::fs::create_dir(content_dir.join("primals")).unwrap();
+    std::fs::write(
+        content_dir.join("primals/_index.md"),
+        "+++\ntitle = \"Primals\"\nweight = 1\n+++\n",
+    )
+    .unwrap();
+    std::fs::write(
+        content_dir.join("primals/beardog.md"),
+        "+++\ntitle = \"BearDog\"\n+++\n# BearDog",
+    )
+    .unwrap();
+
+    std::fs::create_dir(content_dir.join("springs")).unwrap();
+    std::fs::write(
+        content_dir.join("springs/_index.md"),
+        "+++\ntitle = \"Springs\"\nweight = 2\n+++\n",
+    )
+    .unwrap();
+
+    let nav = crate::content_render::build_nav_tree(&content_dir);
+    assert_eq!(nav.len(), 2, "should have 2 sections");
+    assert_eq!(nav[0].title, "Primals");
+    assert_eq!(nav[1].title, "Springs");
+    assert_eq!(nav[0].pages.len(), 1, "primals section should have 1 page");
+    assert_eq!(nav[0].pages[0].title, "BearDog");
+}
+
+#[test]
+fn test_build_nav_tree_empty_dir() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let nav = crate::content_render::build_nav_tree(tmp.path());
+    assert!(nav.is_empty());
+}
+
+#[test]
+fn test_build_nav_tree_nonexistent_dir() {
+    let nav = crate::content_render::build_nav_tree(std::path::Path::new("/nonexistent/dir"));
+    assert!(nav.is_empty());
+}
+
+// ── Custom 404 page ────────────────────────────────────────────────────
+
+#[tokio::test]
+async fn test_docroot_custom_404_html() {
+    use axum::body::Body;
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    std::fs::write(
+        tmp.path().join("404.html"),
+        "<html><body>Custom Not Found</body></html>",
+    )
+    .unwrap();
+
+    let nb_cfg = Arc::new(crate::notebook_render::NotebookRenderConfig::default());
+    let docroot = tmp.path().to_string_lossy().into_owned();
+    let app = Router::new().fallback(move |req: axum::extract::Request| {
+        docroot_fallback(req, docroot, nb_cfg, 0, false)
+    });
+
+    let req = axum::http::Request::builder()
+        .uri("/nonexistent-page")
+        .body(Body::empty())
+        .unwrap();
+    let resp = tower::ServiceExt::oneshot(app, req).await.unwrap();
+    assert_eq!(resp.status(), 404);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let html = std::str::from_utf8(&body).unwrap();
+    assert!(
+        html.contains("Custom Not Found"),
+        "should serve custom 404.html"
+    );
+}
+
+// ── run() content-direct invalid docroot ───────────────────────────────
+
+#[tokio::test]
+async fn test_run_content_direct_invalid_docroot_rejects() {
+    let mut cfg = test_config("127.0.0.1:0");
+    cfg.backend = "content-direct";
+    cfg.docroot = Some("/nonexistent/content/dir".to_owned());
+    let ds = Arc::new(DataService::new());
+    let result = super::run(cfg, ds).await;
+    assert!(
+        result.is_err(),
+        "content-direct with invalid docroot should fail"
+    );
+    let err_msg = result.unwrap_err().to_string();
+    assert!(
+        err_msg.contains("Web config") || err_msg.contains("docroot"),
+        "error should mention docroot: {err_msg}"
+    );
+}

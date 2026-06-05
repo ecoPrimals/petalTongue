@@ -74,7 +74,10 @@ pub enum AppError {
     /// Wrapped error from dependencies (catch-all for untyped sources).
     #[cfg_attr(
         not(test),
-        allow(dead_code, reason = "retained as catch-all; all production sites now typed")
+        allow(
+            dead_code,
+            reason = "retained as catch-all; all production sites now typed"
+        )
     )]
     #[error("{0}")]
     Other(String),
