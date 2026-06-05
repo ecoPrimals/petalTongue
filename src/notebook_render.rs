@@ -550,4 +550,120 @@ mod tests {
             "empty code cells should not render"
         );
     }
+
+    #[test]
+    fn render_jpeg_output() {
+        let nb = serde_json::json!({
+            "nbformat": 4, "nbformat_minor": 5, "metadata": {},
+            "cells": [{
+                "cell_type": "code", "source": ["plot()"], "metadata": {},
+                "outputs": [{
+                    "output_type": "display_data",
+                    "data": { "image/jpeg": "AAAA" }
+                }]
+            }]
+        });
+        let json = serde_json::to_vec(&nb).unwrap();
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        assert!(html.contains("data:image/jpeg;base64,AAAA"));
+    }
+
+    #[test]
+    fn render_svg_output() {
+        let nb = serde_json::json!({
+            "nbformat": 4, "nbformat_minor": 5, "metadata": {},
+            "cells": [{
+                "cell_type": "code", "source": ["svg()"], "metadata": {},
+                "outputs": [{
+                    "output_type": "display_data",
+                    "data": { "image/svg+xml": ["<svg>", "<circle/>", "</svg>"] }
+                }]
+            }]
+        });
+        let json = serde_json::to_vec(&nb).unwrap();
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        assert!(html.contains("<svg>"));
+    }
+
+    #[test]
+    fn render_text_plain_only_output() {
+        let nb = serde_json::json!({
+            "nbformat": 4, "nbformat_minor": 5, "metadata": {},
+            "cells": [{
+                "cell_type": "code", "source": ["print(42)"], "metadata": {},
+                "outputs": [{
+                    "output_type": "execute_result",
+                    "data": { "text/plain": ["42"] }
+                }]
+            }]
+        });
+        let json = serde_json::to_vec(&nb).unwrap();
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        assert!(html.contains("42"));
+    }
+
+    #[test]
+    fn language_from_language_info() {
+        let nb = serde_json::json!({
+            "nbformat": 4, "nbformat_minor": 5,
+            "metadata": { "language_info": { "name": "julia" } },
+            "cells": [{
+                "cell_type": "code", "source": ["1+1"], "metadata": {},
+                "outputs": []
+            }]
+        });
+        let json = serde_json::to_vec(&nb).unwrap();
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        assert!(
+            html.contains("julia"),
+            "should annotate with language_info.name"
+        );
+    }
+
+    #[test]
+    fn unknown_cell_type_ignored() {
+        let nb = serde_json::json!({
+            "nbformat": 4, "nbformat_minor": 5, "metadata": {},
+            "cells": [{
+                "cell_type": "widget",
+                "source": ["ignored"],
+                "metadata": {},
+                "outputs": []
+            }]
+        });
+        let json = serde_json::to_vec(&nb).unwrap();
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        assert!(!html.contains("ignored"));
+    }
+
+    #[test]
+    fn raw_cell_rendered() {
+        let nb = serde_json::json!({
+            "nbformat": 4, "nbformat_minor": 5, "metadata": {},
+            "cells": [{
+                "cell_type": "raw",
+                "source": ["raw <content>"],
+                "metadata": {},
+                "outputs": []
+            }]
+        });
+        let json = serde_json::to_vec(&nb).unwrap();
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        assert!(html.contains("nb-raw"));
+        assert!(html.contains("raw &lt;content&gt;"));
+    }
+
+    #[test]
+    fn invalid_json_returns_none() {
+        assert!(render_notebook(b"not json", &NotebookRenderConfig::default()).is_none());
+    }
+
+    #[test]
+    fn nbformat_3_rejected() {
+        let nb = serde_json::json!({
+            "nbformat": 3, "nbformat_minor": 0, "metadata": {}, "cells": []
+        });
+        let json = serde_json::to_vec(&nb).unwrap();
+        assert!(render_notebook(&json, &NotebookRenderConfig::default()).is_none());
+    }
 }

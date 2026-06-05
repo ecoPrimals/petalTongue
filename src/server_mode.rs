@@ -63,7 +63,11 @@ pub async fn run(
         }
     });
 
-    tracing::info!("IPC server starting (UDS + optional TCP, no display)");
+    if tcp_port.is_some() {
+        tracing::info!("IPC server starting (UDS + TCP dual transport, no display)");
+    } else {
+        tracing::info!("IPC server starting (UDS-only, no TCP bind, no display)");
+    }
 
     tokio::select! {
         result = server.start() => {
@@ -204,6 +208,48 @@ mod tests {
         let data_service = Arc::new(DataService::new());
         let graph = data_service.graph();
         assert!(graph.read().is_ok());
+    }
+
+    /// Wave 79 transport compliance: `run()` with `tcp_port: None` must not
+    /// configure a TCP port on the `UnixSocketServer`.
+    #[test]
+    fn test_uds_only_no_tcp_port_configured() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let socket_path = temp.path().join("transport-compliance.sock");
+        let socket_override = Some(socket_path);
+
+        let graph = Arc::new(DataService::new()).graph();
+        let (motor_tx, _motor_rx) = std::sync::mpsc::channel();
+
+        let server =
+            UnixSocketServer::new_with_socket(graph, socket_override).expect("create server");
+        let server = server.with_motor_sender(motor_tx);
+
+        assert!(
+            !server.has_tcp_port(),
+            "UDS-only server should not have a TCP port configured"
+        );
+    }
+
+    /// Wave 79 transport compliance: `run()` with `tcp_port: Some(port)` must
+    /// configure TCP on the `UnixSocketServer`.
+    #[test]
+    fn test_dual_transport_has_tcp_port() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let socket_path = temp.path().join("dual-transport.sock");
+        let socket_override = Some(socket_path);
+
+        let graph = Arc::new(DataService::new()).graph();
+        let (motor_tx, _motor_rx) = std::sync::mpsc::channel();
+
+        let server =
+            UnixSocketServer::new_with_socket(graph, socket_override).expect("create server");
+        let server = server.with_motor_sender(motor_tx).with_tcp_port(8080);
+
+        assert!(
+            server.has_tcp_port(),
+            "dual-transport server should have a TCP port configured"
+        );
     }
 
     #[test]

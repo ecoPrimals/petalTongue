@@ -178,6 +178,12 @@ impl UnixSocketServer {
         self
     }
 
+    /// Returns `true` if a TCP port has been configured.
+    #[must_use]
+    pub const fn has_tcp_port(&self) -> bool {
+        self.tcp_port.is_some()
+    }
+
     /// Override the TCP bind host (default: `127.0.0.1`).
     ///
     /// PG-55: `--bind` flag for Docker/network-facing deployments.
