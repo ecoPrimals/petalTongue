@@ -445,3 +445,31 @@ fn partial_protocol_key_not_classified() {
         "partial key 'proto' should not match"
     );
 }
+
+#[test]
+fn health_liveness_not_classified_as_btsp() {
+    let plain = br#"{"jsonrpc":"2.0","method":"health.liveness","id":1}"#;
+    assert!(
+        !UnixSocketServer::is_btsp_json_announcement(plain),
+        "health.liveness JSON-RPC should not match BTSP announcement"
+    );
+}
+
+#[test]
+fn has_tcp_port_reflects_builder() {
+    let graph = Arc::new(RwLock::new(GraphEngine::new()));
+    env_test_helpers::with_env_vars(
+        &[
+            ("FAMILY_ID", Some("test-family")),
+            ("XDG_RUNTIME_DIR", Some("/tmp")),
+            ("PETALTONGUE_NODE_ID", Some("default")),
+        ],
+        || {
+            let server = UnixSocketServer::new(Arc::clone(&graph)).unwrap();
+            assert!(!server.has_tcp_port(), "default: no TCP port");
+
+            let server = server.with_tcp_port(9999);
+            assert!(server.has_tcp_port(), "after with_tcp_port: TCP port set");
+        },
+    );
+}
