@@ -121,10 +121,15 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # 6,217+ tests, ~90% coverage
+cargo test --workspace --all-features     # 6,292+ tests, ~85-90% coverage
 ```
 
 ## Current State
+
+Wave 82c (June 6, 2026). 6,292+ tests, all passing. Deep debt passes
+1–5 complete. UDS health probe fix shipped (P1 — plain JSON-RPC on UDS
+now served via filesystem auth when BTSP Phase 2 active). Transport
+compliance verified (server --socket = UDS-only, no TCP bind).
 
 Stadial parity gate cleared (April 17, 2026). All CI gates pass (fmt,
 clippy pedantic+nursery, doc, cargo deny, tests). Zero unsafe, zero
@@ -133,7 +138,6 @@ TODO/FIXME, zero production `unwrap()`, zero `#[allow(` in production code
 reasons for justified suppressions; targeted `#[allow]` only where
 `#[expect]` cannot apply (e.g. `cfg_attr` platform gates). SPDX headers
 on all source files. Edition 2024, deny.toml enforced.
-98 test suites, all passing (all-features).
 
 Native `async fn` in traits (April 25, 2026): eliminated all manual
 `fn -> impl Future + Send` desugaring across 13 production modules.
