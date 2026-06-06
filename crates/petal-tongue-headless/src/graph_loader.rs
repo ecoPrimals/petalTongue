@@ -94,6 +94,18 @@ fn load_scenario_file(graph: &Arc<RwLock<GraphEngine>>, path: &str) -> Result<()
     Ok(())
 }
 
+#[cfg(test)]
+fn make_test_args(scenario: Option<&str>, demo: bool) -> Args {
+    Args {
+        mode: crate::args::OutputMode::Auto,
+        output: None,
+        width: 800,
+        height: 600,
+        scenario: scenario.map(String::from),
+        demo,
+    }
+}
+
 /// Built-in demonstration topology (opt-in via `--demo` or `SHOWCASE_MODE`).
 fn load_demo_topology(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessError> {
     use petal_tongue_core::constants;
@@ -169,4 +181,154 @@ fn load_demo_topology(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessEr
     tracing::info!("📊 Loaded: {nc} primals, {ec} connections");
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn new_graph() -> Arc<RwLock<GraphEngine>> {
+        Arc::new(RwLock::new(GraphEngine::new()))
+    }
+
+    #[test]
+    fn load_graph_data_no_source_succeeds() {
+        let graph = new_graph();
+        let args = make_test_args(None, false);
+        assert!(load_graph_data(&graph, &args).is_ok());
+        assert_eq!(graph.read().unwrap().nodes().len(), 0);
+    }
+
+    #[test]
+    fn load_graph_data_demo_populates_graph() {
+        let graph = new_graph();
+        let args = make_test_args(None, true);
+        assert!(load_graph_data(&graph, &args).is_ok());
+        let g = graph.read().unwrap();
+        assert!(g.nodes().len() >= 3, "demo should load 3+ primals");
+        assert!(g.edges().len() >= 2, "demo should load 2+ edges");
+    }
+
+    #[test]
+    fn load_scenario_valid_json() {
+        let scenario = serde_json::json!({
+            "primals": [
+                {
+                    "id": "test-1",
+                    "name": "TestPrimal",
+                    "domain": "testing",
+                    "capabilities": ["test.run"]
+                },
+                {
+                    "id": "test-2",
+                    "name": "TestPrimal2",
+                    "domain": "testing"
+                }
+            ],
+            "edges": [
+                { "from": "test-1", "to": "test-2", "type": "depends_on", "label": "dep" }
+            ]
+        });
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), scenario.to_string()).unwrap();
+
+        let graph = new_graph();
+        let path = temp.path().to_str().unwrap();
+        load_scenario_file(&graph, path).unwrap();
+
+        let g = graph.read().unwrap();
+        assert_eq!(g.nodes().len(), 2);
+        assert_eq!(g.edges().len(), 1);
+    }
+
+    #[test]
+    fn load_scenario_nonexistent_file() {
+        let graph = new_graph();
+        let result = load_scenario_file(&graph, "/nonexistent/scenario.json");
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(
+            matches!(err, HeadlessError::ScenarioLoad(_)),
+            "expected ScenarioLoad, got {err:?}"
+        );
+    }
+
+    #[test]
+    fn load_scenario_invalid_json() {
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "not json {{{").unwrap();
+
+        let graph = new_graph();
+        let result = load_scenario_file(&graph, temp.path().to_str().unwrap());
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            HeadlessError::ScenarioLoad(_)
+        ));
+    }
+
+    #[test]
+    fn load_scenario_empty_arrays() {
+        let scenario = serde_json::json!({ "primals": [], "edges": [] });
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), scenario.to_string()).unwrap();
+
+        let graph = new_graph();
+        load_scenario_file(&graph, temp.path().to_str().unwrap()).unwrap();
+        assert_eq!(graph.read().unwrap().nodes().len(), 0);
+    }
+
+    #[test]
+    fn load_scenario_missing_required_fields_skips_node() {
+        let scenario = serde_json::json!({
+            "primals": [
+                { "id": "only-id" },
+                { "id": "valid", "name": "Valid", "domain": "test" }
+            ]
+        });
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), scenario.to_string()).unwrap();
+
+        let graph = new_graph();
+        load_scenario_file(&graph, temp.path().to_str().unwrap()).unwrap();
+        let g = graph.read().unwrap();
+        assert_eq!(
+            g.nodes().len(),
+            1,
+            "node with missing name/domain should be skipped"
+        );
+    }
+
+    #[test]
+    fn load_scenario_edges_missing_from_to_skipped() {
+        let scenario = serde_json::json!({
+            "primals": [
+                { "id": "a", "name": "A", "domain": "test" },
+                { "id": "b", "name": "B", "domain": "test" }
+            ],
+            "edges": [
+                { "type": "orphan" },
+                { "from": "a", "to": "b" }
+            ]
+        });
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), scenario.to_string()).unwrap();
+
+        let graph = new_graph();
+        load_scenario_file(&graph, temp.path().to_str().unwrap()).unwrap();
+        let g = graph.read().unwrap();
+        assert_eq!(
+            g.edges().len(),
+            1,
+            "edge without from/to should be skipped, valid edge should remain"
+        );
+    }
+
+    #[test]
+    fn headless_error_display() {
+        let err = HeadlessError::ScenarioLoad("bad file".into());
+        assert!(err.to_string().contains("bad file"));
+        let err = HeadlessError::LockPoisoned("poisoned".into());
+        assert!(err.to_string().contains("poisoned"));
+    }
 }

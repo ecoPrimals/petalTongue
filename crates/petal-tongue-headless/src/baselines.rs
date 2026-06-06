@@ -341,3 +341,78 @@ fn baseline_bindings() -> Vec<(&'static str, petal_tongue_core::DataBinding)> {
         ),
     ]
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::args::OutputMode;
+
+    #[test]
+    fn baseline_bindings_catalog_nonempty() {
+        let bindings = baseline_bindings();
+        assert!(bindings.len() >= 10, "catalog should have 10+ bindings");
+        for (name, _binding) in &bindings {
+            assert!(!name.is_empty(), "binding names should not be empty");
+        }
+    }
+
+    #[test]
+    fn baseline_bindings_unique_names() {
+        let bindings = baseline_bindings();
+        let mut names: Vec<&str> = bindings.iter().map(|(n, _)| *n).collect();
+        let original_len = names.len();
+        names.sort_unstable();
+        names.dedup();
+        assert_eq!(
+            names.len(),
+            original_len,
+            "baseline binding names must be unique"
+        );
+    }
+
+    #[test]
+    fn render_baselines_to_temp_dir() {
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("test_baselines");
+        let args = Args {
+            mode: OutputMode::Baselines,
+            output: Some(out.to_str().unwrap().to_owned()),
+            width: 800,
+            height: 600,
+            scenario: None,
+            demo: false,
+        };
+        render_baselines(&args).unwrap();
+        assert!(out.exists(), "output directory should be created");
+        let files: Vec<_> = std::fs::read_dir(&out)
+            .unwrap()
+            .filter_map(std::result::Result::ok)
+            .collect();
+        assert!(!files.is_empty(), "should export at least one SVG");
+        for entry in &files {
+            let name = entry.file_name();
+            let name = name.to_str().unwrap();
+            assert!(
+                std::path::Path::new(name)
+                    .extension()
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case("svg")),
+                "all exports should be SVGs"
+            );
+        }
+    }
+
+    #[test]
+    fn render_baselines_default_output_dir() {
+        let args = Args {
+            mode: OutputMode::Baselines,
+            output: None,
+            width: 800,
+            height: 600,
+            scenario: None,
+            demo: false,
+        };
+        let result = render_baselines(&args);
+        assert!(result.is_ok());
+        let _ = std::fs::remove_dir_all("baselines_svg");
+    }
+}

@@ -294,3 +294,165 @@ pub fn load_entity_graph(path: &std::path::Path) -> Option<EntityGraph> {
     let content = std::fs::read_to_string(path).ok()?;
     serde_json::from_str(&content).ok()
 }
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used, reason = "test code")]
+    use super::*;
+
+    fn sample_graph() -> EntityGraph {
+        EntityGraph {
+            nodes: vec![
+                GraphNode {
+                    id: "beardog".into(),
+                    display: "BearDog".into(),
+                    kind: "primal".into(),
+                    emoji: "🐻🐕".into(),
+                },
+                GraphNode {
+                    id: "songbird".into(),
+                    display: "SongBird".into(),
+                    kind: "primal".into(),
+                    emoji: "🐦".into(),
+                },
+                GraphNode {
+                    id: "petaltongue".into(),
+                    display: "PetalTongue".into(),
+                    kind: "primal".into(),
+                    emoji: "🌸👅".into(),
+                },
+            ],
+            edges: vec![
+                GraphEdge {
+                    source: "beardog".into(),
+                    target: "songbird".into(),
+                    relation: "validates".into(),
+                    inverse: false,
+                },
+                GraphEdge {
+                    source: "songbird".into(),
+                    target: "petaltongue".into(),
+                    relation: "discovers".into(),
+                    inverse: false,
+                },
+            ],
+        }
+    }
+
+    #[test]
+    fn build_scene_with_populated_graph() {
+        let graph = sample_graph();
+        let scene = build_entity_graph_scene(&graph);
+
+        assert!(
+            scene.node_count() >= 4,
+            "scene should have root + edges + nodes groups + legend, got {} nodes",
+            scene.node_count()
+        );
+        assert!(
+            scene.total_primitives() > 0,
+            "scene should contain primitives"
+        );
+    }
+
+    #[test]
+    fn force_layout_positions_all_nodes() {
+        let graph = sample_graph();
+        let positions = force_layout(&graph.nodes, &graph.edges, 800.0, 600.0);
+
+        assert_eq!(positions.len(), 3);
+        assert!(positions.contains_key("beardog"));
+        assert!(positions.contains_key("songbird"));
+        assert!(positions.contains_key("petaltongue"));
+
+        for (x, y) in positions.values() {
+            assert!(*x >= 0.0 && *x <= 800.0, "x out of bounds: {x}");
+            assert!(*y >= 0.0 && *y <= 600.0, "y out of bounds: {y}");
+        }
+    }
+
+    #[test]
+    fn force_layout_single_node() {
+        let graph = EntityGraph {
+            nodes: vec![GraphNode {
+                id: "solo".into(),
+                display: "Solo".into(),
+                kind: "infra".into(),
+                emoji: "🏗️".into(),
+            }],
+            edges: vec![],
+        };
+        let positions = force_layout(&graph.nodes, &graph.edges, 800.0, 600.0);
+        assert_eq!(positions.len(), 1);
+    }
+
+    #[test]
+    fn kind_color_known_and_default() {
+        let primal = kind_color("primal");
+        let unknown = kind_color("nonexistent");
+        assert_ne!(primal, unknown, "known kinds should differ from default");
+    }
+
+    #[test]
+    fn relation_color_known_and_default() {
+        let validates = relation_color("validates");
+        let unknown = relation_color("nonexistent");
+        assert_ne!(
+            validates, unknown,
+            "known relations should differ from default"
+        );
+    }
+
+    #[test]
+    fn inverse_edges_skipped_in_scene() {
+        let graph = EntityGraph {
+            nodes: vec![
+                GraphNode {
+                    id: "a".into(),
+                    display: "A".into(),
+                    kind: "primal".into(),
+                    emoji: "🅰️".into(),
+                },
+                GraphNode {
+                    id: "b".into(),
+                    display: "B".into(),
+                    kind: "primal".into(),
+                    emoji: "🅱️".into(),
+                },
+            ],
+            edges: vec![
+                GraphEdge {
+                    source: "a".into(),
+                    target: "b".into(),
+                    relation: "validates".into(),
+                    inverse: false,
+                },
+                GraphEdge {
+                    source: "b".into(),
+                    target: "a".into(),
+                    relation: "validated by".into(),
+                    inverse: true,
+                },
+            ],
+        };
+        let scene = build_entity_graph_scene(&graph);
+        let edges_node = scene.get("edges").expect("edges group exists");
+        assert_eq!(
+            edges_node.children.len(),
+            1,
+            "inverse edges should be skipped"
+        );
+    }
+
+    #[test]
+    fn load_entity_graph_nonexistent_returns_none() {
+        assert!(load_entity_graph(std::path::Path::new("/nonexistent/graph.json")).is_none());
+    }
+
+    #[test]
+    fn load_entity_graph_invalid_json_returns_none() {
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "not json").unwrap();
+        assert!(load_entity_graph(temp.path()).is_none());
+    }
+}
