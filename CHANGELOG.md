@@ -6,6 +6,100 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 82c: UDS Health Probe Fix (June 6, 2026)
+
+P1 fix: `health.liveness` returning empty response on UDS while TCP worked.
+
+#### Fixed
+- **UDS plain JSON-RPC serving**: When BTSP Phase 2 is active (production
+  `FAMILY_ID`), plain JSON-RPC on UDS was classified as `PlainJsonRpc` and
+  returned `Ok(None)` from `run_uds_handshake`. The parent gate treated `None`
+  as a PT-09 rejection, silently dropping the connection — zero bytes written.
+  Introduced `UdsHandshakeOutcome` enum to distinguish `PlainJsonRpc` (serve via
+  filesystem auth) from `Reject` (EOF, peek error, failed handshake). UDS
+  connections sending plain JSON-RPC now route through `handle_connection_split`,
+  since UDS is filesystem-authenticated. TCP plain JSON-RPC rejection unchanged.
+
+#### Added
+- `has_tcp_port()` accessor on `UnixSocketServer`.
+- 2 new tests: BTSP classification for `health.liveness`, `has_tcp_port` builder.
+
+#### Verified
+- **6,292 tests pass**, zero Clippy warnings.
+
+### Wave 79: Transport Compliance + Coverage Sprint (June 5, 2026)
+
+Transport compliance verification and coverage push.
+
+#### Added
+- **Transport compliance tests**: `test_uds_only_no_tcp_port_configured` and
+  `test_dual_transport_has_tcp_port` prove `server --socket` without `--port`
+  does not configure TCP.
+- **Content render tests** (+16): tables, ordered/unordered lists, links, images,
+  emphasis, bold, strikethrough, thematic break, inline code, blockquotes,
+  date/extra front matter, invalid TOML, unclosed front matter, unknown entity
+  shortcode fallback, `resolve_shortcodes` integration.
+- **Notebook render tests** (+10): JPEG output, SVG output, text/plain-only,
+  `language_info` fallback, unknown cell type, raw cell, invalid JSON,
+  nbformat v3 rejection.
+- **Discovery parse tests** (+5): `parse_primal` minimal + defaults,
+  `parse_topology_edges` success/error/empty.
+
+#### Changed
+- **Transport log clarity**: `server_mode::run` now logs `"UDS-only, no TCP bind"`
+  or `"UDS + TCP dual transport"` at startup (replaces generic message).
+
+#### Verified
+- **6,290 tests pass**, zero Clippy warnings.
+
+### Deep Debt Pass 5: Tokio Narrowing + Anyhow Demotion + Discovery Logging (June 5, 2026)
+
+Structural evolution: dependency scoping, error visibility.
+
+#### Changed
+- **Tokio feature narrowing**: `petal-tongue-core`, `petal-tongue-discovery`,
+  `petal-tongue-ui`, `petal-tongue-tui` now declare only the `tokio` features
+  they actually use (e.g. `["rt", "sync", "time", "net", "io-util", "macros"]`).
+- **Anyhow demotion**: Removed from `[workspace.dependencies]`, now per-crate
+  `[dev-dependencies]` only — clarifies non-production status.
+- **Discovery error logging**: 4 critical `.ok()` sites (proprioception panel,
+  metrics panel, GPU compute, content backend) now log errors via
+  `tracing::warn!`/`tracing::debug!` before discarding to `Option`.
+- **Test rename**: `test_ui_mode_error_is_anyhow` → `test_ui_mode_error_display`.
+
+### Deep Debt Pass 4: Format Idiom + Dead Feature + `.to_owned()` Sweep (June 5, 2026)
+
+#### Changed
+- Replaced 6 `format!("{x}")` sites with `x.to_string()`.
+- Removed dead `window` feature from `petal-tongue-ui` (`Cargo.toml`, enum
+  variant, `check_window()` function, all match arms).
+- Converted 13 `unwrap_or("literal").to_string()` sites to `.to_owned()`.
+
+### Wave 78: Coverage Sprint (June 5, 2026)
+
+Coverage push: +42 new tests targeting content-backend integration paths.
+
+#### Added
+- 42 new tests across `content_direct.rs`, `viz_data/`, `content_render/site.rs`,
+  `content_backend.rs`, and web handlers.
+
+#### Verified
+- **6,259 tests pass**, zero Clippy warnings.
+
+### Wave 77d: NestGate Integration Readiness (June 4, 2026)
+
+Typed errors, MIME-based notebook detection, audio decode evolution.
+
+#### Changed
+- **Typed docroot validation**: `AppError::Other` for docroot path errors replaced
+  with `AppError::DocrootValidation`.
+- **MIME-based notebook detection**: Hash-based URLs now detected via content MIME
+  type, enabling `.ipynb` rendering for content-addressable URLs.
+- **Audio decode evolution**: `StartupAudioError::Decode` evolved from
+  `Box<dyn Error>` to `String` — eliminates last `Box<dyn Error>` in codebase.
+- **Sandbox tokio narrowing**: `sandbox/mock-biomeos` tokio features narrowed
+  to exact usage.
+
 ### Deep Debt Pass 3: TRUE PRIMAL TLS + NESTGATE Removal + Complete Idiom Sweep (June 3, 2026)
 
 Third and final deep debt pass: sovereignty sweep, dead constant removal,
