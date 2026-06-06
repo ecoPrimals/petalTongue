@@ -219,6 +219,86 @@ fn test_performance_config_default() {
 }
 
 #[test]
+fn test_web_env_overrides_docroot_and_cache_ttl() {
+    env_test_helpers::with_env_vars(
+        &[
+            ("PETALTONGUE_CONFIG", None),
+            ("PETALTONGUE_DOCROOT", Some("/srv/content")),
+            ("PETALTONGUE_CACHE_TTL", Some("3600")),
+        ],
+        || {
+            let config = Config::from_env().expect("from_env");
+            assert_eq!(config.web.docroot, Some(PathBuf::from("/srv/content")));
+            assert_eq!(config.web.cache_ttl_secs, 3600);
+        },
+    );
+}
+
+#[test]
+fn test_web_env_overrides_strip_sources_and_spa() {
+    env_test_helpers::with_env_vars(
+        &[
+            ("PETALTONGUE_CONFIG", None),
+            ("PETALTONGUE_STRIP_SOURCES", Some("true")),
+            ("PETALTONGUE_SPA", Some("1")),
+        ],
+        || {
+            let config = Config::from_env().expect("from_env");
+            assert!(config.web.strip_sources, "STRIP_SOURCES=true should enable");
+            assert!(config.web.spa, "SPA=1 should enable");
+        },
+    );
+}
+
+#[test]
+fn test_web_env_overrides_allowed_origins() {
+    env_test_helpers::with_env_vars(
+        &[
+            ("PETALTONGUE_CONFIG", None),
+            (
+                "PETALTONGUE_ALLOWED_ORIGINS",
+                Some("https://a.com, https://b.com"),
+            ),
+        ],
+        || {
+            let config = Config::from_env().expect("from_env");
+            assert_eq!(config.web.allowed_origins.len(), 2);
+            assert!(
+                config
+                    .web
+                    .allowed_origins
+                    .contains(&"https://a.com".to_owned())
+            );
+            assert!(
+                config
+                    .web
+                    .allowed_origins
+                    .contains(&"https://b.com".to_owned())
+            );
+        },
+    );
+}
+
+#[test]
+fn test_web_env_override_invalid_cache_ttl() {
+    env_test_helpers::with_env_vars(
+        &[
+            ("PETALTONGUE_CONFIG", None),
+            ("PETALTONGUE_CACHE_TTL", Some("not-a-number")),
+        ],
+        || {
+            let result = Config::from_env();
+            assert!(result.is_err());
+            let err = result.unwrap_err();
+            assert!(
+                matches!(err, ConfigError::EnvError(_)),
+                "expected EnvError for invalid CACHE_TTL, got {err:?}"
+            );
+        },
+    );
+}
+
+#[test]
 fn test_config_error_display() {
     let err = ConfigError::LoadError("parse error".to_string());
     assert!(err.to_string().contains("parse error"));

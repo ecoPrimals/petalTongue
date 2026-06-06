@@ -76,7 +76,7 @@ pub fn render_png(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<(), He
     Ok(())
 }
 
-/// Render HTML (SVG wrapped in a standalone HTML document) (PT-04)
+/// Render HTML (SVG wrapped in a standalone HTML document) (PT-04).
 pub fn render_html(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<(), HeadlessError> {
     let ui = SvgUI::new(graph, args.width, args.height);
 
@@ -91,4 +91,111 @@ pub fn render_html(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<(), H
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::args::OutputMode;
+
+    fn empty_graph() -> Arc<RwLock<GraphEngine>> {
+        Arc::new(RwLock::new(GraphEngine::new()))
+    }
+
+    fn test_args_with_output(output: Option<&str>) -> Args {
+        Args {
+            mode: OutputMode::Auto,
+            output: output.map(String::from),
+            width: 800,
+            height: 600,
+            scenario: None,
+            demo: false,
+        }
+    }
+
+    #[test]
+    fn render_terminal_empty_graph() {
+        let graph = empty_graph();
+        assert!(render_terminal(graph).is_ok());
+    }
+
+    #[test]
+    fn render_svg_to_stdout() {
+        let graph = empty_graph();
+        let args = test_args_with_output(None);
+        assert!(render_svg(graph, &args).is_ok());
+    }
+
+    #[test]
+    fn render_svg_to_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("test.svg");
+        let graph = empty_graph();
+        let args = test_args_with_output(Some(path.to_str().unwrap()));
+        assert!(render_svg(graph, &args).is_ok());
+        assert!(path.exists());
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert!(content.contains("<svg"), "should be valid SVG");
+    }
+
+    #[test]
+    fn render_json_to_stdout() {
+        let graph = empty_graph();
+        let args = test_args_with_output(None);
+        assert!(render_json(graph, &args).is_ok());
+    }
+
+    #[test]
+    fn render_json_to_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("test.json");
+        let graph = empty_graph();
+        let args = test_args_with_output(Some(path.to_str().unwrap()));
+        assert!(render_json(graph, &args).is_ok());
+        assert!(path.exists());
+    }
+
+    #[test]
+    fn render_dot_to_stdout() {
+        let graph = empty_graph();
+        let args = test_args_with_output(None);
+        assert!(render_dot(graph, &args).is_ok());
+    }
+
+    #[test]
+    fn render_dot_to_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("test.dot");
+        let graph = empty_graph();
+        let args = test_args_with_output(Some(path.to_str().unwrap()));
+        assert!(render_dot(graph, &args).is_ok());
+        assert!(path.exists());
+    }
+
+    #[test]
+    fn render_png_to_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("test.png");
+        let graph = empty_graph();
+        let args = test_args_with_output(Some(path.to_str().unwrap()));
+        assert!(render_png(graph, &args).is_ok());
+        assert!(path.exists());
+    }
+
+    #[test]
+    fn render_html_to_stdout() {
+        let graph = empty_graph();
+        let args = test_args_with_output(None);
+        assert!(render_html(graph, &args).is_ok());
+    }
+
+    #[test]
+    fn render_html_to_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("test.html");
+        let graph = empty_graph();
+        let args = test_args_with_output(Some(path.to_str().unwrap()));
+        assert!(render_html(graph, &args).is_ok());
+        assert!(path.exists());
+    }
 }

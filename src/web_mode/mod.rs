@@ -13,7 +13,7 @@ mod handlers;
 #[cfg(test)]
 mod tests;
 
-pub use handlers::{build_response, is_ipynb, is_notebook_mime};
+pub use handlers::{build_response, is_ipynb};
 
 use crate::data_service::DataService;
 use crate::error::AppError;
