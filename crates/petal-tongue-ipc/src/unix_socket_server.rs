@@ -53,6 +53,20 @@ pub struct UnixSocketServer {
     _push_delivery_thread: std::thread::JoinHandle<()>,
 }
 
+/// Outcome of UDS BTSP handshake classification.
+///
+/// Distinguishes plain JSON-RPC (filesystem-authenticated, should be served)
+/// from actual handshake failures (should be rejected).
+enum UdsHandshakeOutcome {
+    /// BTSP handshake completed successfully.
+    Authenticated(crate::btsp::HandshakeResult),
+    /// Plain JSON-RPC on UDS — no BTSP handshake attempted.
+    /// UDS is filesystem-authenticated; serve via method gate.
+    PlainJsonRpc,
+    /// Connection should be rejected (EOF, peek error, or failed handshake).
+    Reject,
+}
+
 impl UnixSocketServer {
     /// Create a new Unix socket server with graph and visualization state
     pub fn new(graph: Arc<std::sync::RwLock<GraphEngine>>) -> Result<Self, IpcServerError> {
@@ -343,39 +357,54 @@ impl UnixSocketServer {
             let (reader, mut writer) = stream.into_split();
             let mut buf_reader = tokio::io::BufReader::new(reader);
 
-            let handshake_result =
-                Self::run_uds_handshake(&mut buf_reader, &mut writer, cfg).await?;
-
-            let Some(ref hs) = handshake_result else {
-                warn!(
-                    family_id = %cfg.family_id,
-                    "BTSP Phase 2: rejecting unauthenticated UDS connection (PT-09 enforcement)"
-                );
-                return Ok(());
-            };
+            let outcome = Self::run_uds_handshake(&mut buf_reader, &mut writer, cfg).await?;
 
             let ctx = crate::method_gate::CallerContext::unix();
 
-            if Self::is_phase3_cipher(&hs.cipher) {
-                if let Some(ref session_key) = hs.session_key {
-                    return Self::try_phase3_upgrade_split(
-                        handlers,
-                        buf_reader,
-                        writer,
-                        &hs.cipher,
-                        session_key,
-                        &ctx,
-                    )
-                    .await;
+            match outcome {
+                UdsHandshakeOutcome::Reject => {
+                    warn!(
+                        family_id = %cfg.family_id,
+                        "BTSP Phase 2: rejecting UDS connection (handshake failed or EOF)"
+                    );
+                    return Ok(());
                 }
-                info!(
-                    "Phase 3: cipher={} but no session_key from verify, staying plaintext",
-                    hs.cipher
-                );
-            }
+                UdsHandshakeOutcome::PlainJsonRpc => {
+                    debug!(
+                        family_id = %cfg.family_id,
+                        "BTSP Phase 2: UDS plain JSON-RPC — serving via filesystem auth"
+                    );
+                    unix_socket_connection::handle_connection_split(
+                        handlers, buf_reader, writer, &ctx,
+                    )
+                    .await?;
+                    return Ok(());
+                }
+                UdsHandshakeOutcome::Authenticated(ref hs) => {
+                    if Self::is_phase3_cipher(&hs.cipher) {
+                        if let Some(ref session_key) = hs.session_key {
+                            return Self::try_phase3_upgrade_split(
+                                handlers,
+                                buf_reader,
+                                writer,
+                                &hs.cipher,
+                                session_key,
+                                &ctx,
+                            )
+                            .await;
+                        }
+                        info!(
+                            "Phase 3: cipher={} but no session_key from verify, staying plaintext",
+                            hs.cipher
+                        );
+                    }
 
-            unix_socket_connection::handle_connection_split(handlers, buf_reader, writer, &ctx)
-                .await?;
+                    unix_socket_connection::handle_connection_split(
+                        handlers, buf_reader, writer, &ctx,
+                    )
+                    .await?;
+                }
+            }
         } else {
             let ctx = crate::method_gate::CallerContext::unix();
             unix_socket_connection::handle_connection(handlers, stream, &ctx).await?;
@@ -388,7 +417,7 @@ impl UnixSocketServer {
         buf_reader: &mut tokio::io::BufReader<tokio::net::unix::OwnedReadHalf>,
         writer: &mut tokio::net::unix::OwnedWriteHalf,
         cfg: &crate::btsp::BtspHandshakeConfig,
-    ) -> Result<Option<crate::btsp::HandshakeResult>, unix_socket_connection::ConnectionError> {
+    ) -> Result<UdsHandshakeOutcome, unix_socket_connection::ConnectionError> {
         use tokio::io::AsyncBufReadExt;
 
         enum BtspRoute {
@@ -406,17 +435,17 @@ impl UnixSocketServer {
                     debug!("BTSP: JSON-line announcement on UDS, routing to JSON-line handshake");
                     BtspRoute::JsonLine
                 } else {
-                    debug!("BTSP: first bytes are JSON-RPC on UDS, bypassing handshake");
+                    debug!("BTSP: plain JSON-RPC on UDS, serving via filesystem auth");
                     BtspRoute::PlainJsonRpc
                 }
             }
             Ok(_) => {
                 debug!("BTSP: UDS connection sent EOF before any data");
-                return Ok(None);
+                return Ok(UdsHandshakeOutcome::Reject);
             }
             Err(e) => {
                 error!("BTSP: UDS peek failed: {e}");
-                return Ok(None);
+                return Ok(UdsHandshakeOutcome::Reject);
             }
         };
 
@@ -428,11 +457,11 @@ impl UnixSocketServer {
                             "BTSP authenticated on UDS (length-prefixed): session={}",
                             result.session_token
                         );
-                        Ok(Some(result))
+                        Ok(UdsHandshakeOutcome::Authenticated(result))
                     }
                     Err(e) => {
                         error!("BTSP handshake failed on UDS, rejecting connection: {e}");
-                        Ok(None)
+                        Ok(UdsHandshakeOutcome::Reject)
                     }
                 }
             }
@@ -443,15 +472,15 @@ impl UnixSocketServer {
                             "BTSP authenticated on UDS (JSON-line): session={}",
                             result.session_token
                         );
-                        Ok(Some(result))
+                        Ok(UdsHandshakeOutcome::Authenticated(result))
                     }
                     Err(e) => {
                         error!("BTSP JSON-line handshake failed on UDS, rejecting: {e}");
-                        Ok(None)
+                        Ok(UdsHandshakeOutcome::Reject)
                     }
                 }
             }
-            BtspRoute::PlainJsonRpc => Ok(None),
+            BtspRoute::PlainJsonRpc => Ok(UdsHandshakeOutcome::PlainJsonRpc),
         }
     }
 
