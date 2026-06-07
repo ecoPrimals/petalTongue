@@ -332,6 +332,108 @@ async fn test_unix_socket_connection_handle_request() {
     assert_eq!(err_response["error"]["code"], -32700);
 }
 
+/// Wave 86 P2: health.liveness round-trip over UDS — must return {"status":"alive"}
+/// without BTSP auth, matching ecosystem standard for 13/13 health parity.
+#[tokio::test]
+async fn test_uds_health_liveness_returns_alive() {
+    let handlers = test_handlers();
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let socket_path = tmp.path().join("health-liveness.sock");
+
+    let listener = tokio::net::UnixListener::bind(&socket_path).expect("bind");
+    let handlers = Arc::new(handlers);
+
+    let server_handlers = Arc::clone(&handlers);
+    tokio::spawn(async move {
+        let (stream, _) = listener.accept().await.expect("accept");
+        let ctx = CallerContext::unix();
+        unix_socket_connection::handle_connection(&server_handlers, stream, &ctx)
+            .await
+            .expect("handle_connection");
+    });
+
+    let mut stream = UnixStream::connect(&socket_path).await.expect("connect");
+    let request = json!({
+        "jsonrpc": "2.0",
+        "method": "health.liveness",
+        "params": {},
+        "id": 1
+    });
+    let line = serde_json::to_string(&request).expect("serialize") + "\n";
+    stream.write_all(line.as_bytes()).await.expect("write");
+
+    let reader = BufReader::new(stream);
+    let mut response_line = String::new();
+    let mut reader = reader;
+    reader.read_line(&mut response_line).await.expect("read");
+    let response: serde_json::Value =
+        serde_json::from_str(response_line.trim()).expect("parse response");
+    assert_eq!(response["jsonrpc"], "2.0");
+    assert_eq!(response["id"], 1);
+    assert!(
+        response["error"].is_null(),
+        "health.liveness should not return an error: {response}"
+    );
+    assert_eq!(
+        response["result"]["status"], "alive",
+        "ecosystem standard: health.liveness must return {{\"status\":\"alive\"}}"
+    );
+}
+
+/// Verify multiple health methods work on the same UDS connection (persistent
+/// connection with sequential requests — ecosystem health sweep pattern).
+#[tokio::test]
+async fn test_uds_health_multi_method_sequence() {
+    let handlers = test_handlers();
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let socket_path = tmp.path().join("health-multi.sock");
+
+    let listener = tokio::net::UnixListener::bind(&socket_path).expect("bind");
+    let handlers = Arc::new(handlers);
+
+    let server_handlers = Arc::clone(&handlers);
+    tokio::spawn(async move {
+        let (stream, _) = listener.accept().await.expect("accept");
+        let ctx = CallerContext::unix();
+        unix_socket_connection::handle_connection(&server_handlers, stream, &ctx)
+            .await
+            .expect("handle_connection");
+    });
+
+    let stream = UnixStream::connect(&socket_path).await.expect("connect");
+    let (read_half, mut write_half) = tokio::io::split(stream);
+    let mut reader = BufReader::new(read_half);
+
+    let methods = [
+        ("health.liveness", "alive"),
+        ("health.check", "healthy"),
+        ("health.readiness", "ready"),
+    ];
+
+    for (i, (method, expected_status)) in methods.iter().enumerate() {
+        let request = json!({
+            "jsonrpc": "2.0",
+            "method": method,
+            "params": {},
+            "id": i + 1
+        });
+        let line = serde_json::to_string(&request).expect("serialize") + "\n";
+        write_half.write_all(line.as_bytes()).await.expect("write");
+
+        let mut response_line = String::new();
+        reader
+            .read_line(&mut response_line)
+            .await
+            .expect("read response");
+        let response: serde_json::Value =
+            serde_json::from_str(response_line.trim()).expect("parse");
+        assert_eq!(
+            response["result"]["status"], *expected_status,
+            "{method} should return status={expected_status}"
+        );
+    }
+}
+
 // ──────────────────────────────────────────────────────────────────────────
 // Barrick Lab baselines — full pipeline test
 // ──────────────────────────────────────────────────────────────────────────
