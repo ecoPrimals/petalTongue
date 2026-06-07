@@ -473,3 +473,35 @@ fn has_tcp_port_reflects_builder() {
         },
     );
 }
+
+/// Wave 86 P2: verify health.liveness via handle_connection_split (post-peek path).
+/// This simulates the exact code path after UdsHandshakeOutcome::PlainJsonRpc
+/// routes a buffered reader to the NDJSON handler.
+#[tokio::test]
+async fn health_liveness_via_connection_split_returns_alive() {
+    let graph = Arc::new(RwLock::new(GraphEngine::new()));
+    let viz_state = Arc::new(RwLock::new(VisualizationState::new()));
+    let handlers = super::RpcHandlers::new(graph, "test".to_owned(), viz_state);
+
+    let input = b"{\"jsonrpc\":\"2.0\",\"method\":\"health.liveness\",\"params\":{},\"id\":1}\n";
+    let reader = tokio::io::BufReader::new(&input[..]);
+    let mut output = Vec::new();
+
+    let ctx = crate::method_gate::CallerContext::unix();
+    crate::unix_socket_connection::handle_connection_split(&handlers, reader, &mut output, &ctx)
+        .await
+        .expect("handle_connection_split");
+
+    let response: serde_json::Value =
+        serde_json::from_slice(output.trim_ascii()).expect("parse response");
+    assert_eq!(response["jsonrpc"], "2.0");
+    assert_eq!(response["id"], 1);
+    assert!(
+        response["error"].is_null(),
+        "health.liveness should not be gated on UDS: {response}"
+    );
+    assert_eq!(
+        response["result"]["status"], "alive",
+        "ecosystem standard: health.liveness returns {{\"status\":\"alive\"}}"
+    );
+}

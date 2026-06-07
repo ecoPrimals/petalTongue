@@ -6,6 +6,26 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 86: Health Liveness Parity (June 6, 2026)
+
+P2 closure: confirm `health.liveness` returns `{"status":"alive"}` unauthenticated
+on UDS — ecosystem standard for 13/13 health parity.
+
+#### Verified
+- Wave 82c fix (`UdsHandshakeOutcome::PlainJsonRpc` → `handle_connection_split`)
+  already serves `health.liveness` on UDS without BTSP auth.
+- Method gate classifies `health.*` as **Public** (no token required).
+- Handler returns exactly `{"status":"alive"}` per `DEPLOYMENT_BEHAVIOR_STANDARD`.
+
+#### Added
+- Integration test: full UDS round-trip for `health.liveness` (connect → send →
+  receive `{"status":"alive"}`).
+- Integration test: sequential health sweep (liveness + check + readiness) on
+  single persistent UDS connection.
+- Unit test: `handle_connection_split` serves `health.liveness` via buffered
+  reader (post-BTSP-peek path).
+- **6,334 tests pass**, zero Clippy warnings.
+
 ### Wave 82c: UDS Health Probe Fix (June 6, 2026)
 
 P1 fix: `health.liveness` returning empty response on UDS while TCP worked.
