@@ -281,3 +281,229 @@ impl SessionManager {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used, reason = "test code")]
+
+    use super::*;
+    use crate::instance::InstanceId;
+    use crate::session::state::SessionState;
+
+    fn session_path_in(dir: &tempfile::TempDir, name: &str) -> PathBuf {
+        dir.path().join("nested").join("sessions").join(name)
+    }
+
+    #[test]
+    fn with_session_path_creates_parent_directories() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = session_path_in(&dir, "session.ron");
+        assert!(!path.parent().unwrap().exists());
+
+        SessionManager::with_session_path(path.clone()).unwrap();
+
+        assert!(path.parent().unwrap().exists());
+    }
+
+    #[test]
+    fn session_path_returns_correct_path() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = session_path_in(&dir, "sess.ron");
+        let manager = SessionManager::with_session_path(path.clone()).unwrap();
+
+        assert_eq!(manager.session_path(), path.as_path());
+    }
+
+    #[test]
+    fn load_or_create_creates_new_state_when_missing() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = session_path_in(&dir, "new.ron");
+        let mut manager = SessionManager::with_session_path(path.clone()).unwrap();
+        let instance_id = InstanceId::new();
+
+        assert!(manager.current_state().is_none());
+        assert!(!path.exists());
+
+        manager.load_or_create(instance_id.clone()).unwrap();
+
+        assert!(manager.current_state().is_some());
+        assert!(manager.is_dirty());
+        assert_eq!(manager.current_state().unwrap().instance_id, instance_id);
+    }
+
+    #[test]
+    fn load_or_create_save_reload_roundtrip() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = session_path_in(&dir, "roundtrip.ron");
+        let instance_id = InstanceId::new();
+
+        let mut manager = SessionManager::with_session_path(path.clone()).unwrap();
+        manager.load_or_create(instance_id.clone()).unwrap();
+        manager
+            .current_state_mut()
+            .unwrap()
+            .add_metadata("marker", "saved");
+        manager.save().unwrap();
+        assert!(path.exists());
+
+        let mut manager2 = SessionManager::with_session_path(path).unwrap();
+        manager2.load_or_create(instance_id).unwrap();
+
+        assert!(!manager2.is_dirty());
+        assert_eq!(
+            manager2.current_state().unwrap().metadata.get("marker"),
+            Some(&"saved".to_owned())
+        );
+    }
+
+    #[test]
+    fn current_state_none_until_loaded() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = session_path_in(&dir, "state.ron");
+        let mut manager = SessionManager::with_session_path(path).unwrap();
+
+        assert!(manager.current_state().is_none());
+
+        manager.load_or_create(InstanceId::new()).unwrap();
+
+        assert!(manager.current_state().is_some());
+    }
+
+    #[test]
+    fn current_state_mut_marks_dirty() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = session_path_in(&dir, "mut.ron");
+        let mut manager = SessionManager::with_session_path(path).unwrap();
+        manager.load_or_create(InstanceId::new()).unwrap();
+        manager.save().unwrap();
+        assert!(!manager.is_dirty());
+
+        let _ = manager.current_state_mut();
+
+        assert!(manager.is_dirty());
+    }
+
+    #[test]
+    fn update_state_replaces_and_marks_dirty() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = session_path_in(&dir, "update.ron");
+        let mut manager = SessionManager::with_session_path(path).unwrap();
+        manager.load_or_create(InstanceId::new()).unwrap();
+        manager.save().unwrap();
+
+        let mut replacement = SessionState::new(InstanceId::new());
+        replacement.add_metadata("replaced", "yes");
+        manager.update_state(replacement);
+
+        assert!(manager.is_dirty());
+        assert_eq!(
+            manager.current_state().unwrap().metadata.get("replaced"),
+            Some(&"yes".to_owned())
+        );
+    }
+
+    #[test]
+    fn mark_dirty_and_unsaved_change_aliases() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = session_path_in(&dir, "dirty.ron");
+        let mut manager = SessionManager::with_session_path(path).unwrap();
+        manager.load_or_create(InstanceId::new()).unwrap();
+        manager.save().unwrap();
+        assert!(!manager.is_dirty());
+        assert!(!manager.has_unsaved_changes());
+
+        manager.mark_dirty();
+
+        assert!(manager.is_dirty());
+        assert!(manager.has_unsaved_changes());
+    }
+
+    #[test]
+    fn save_clears_dirty_and_fails_without_state() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = session_path_in(&dir, "save.ron");
+        let mut manager = SessionManager::with_session_path(path.clone()).unwrap();
+
+        let no_state = manager.save();
+        assert!(matches!(no_state, Err(SessionError::NoState)));
+
+        manager.load_or_create(InstanceId::new()).unwrap();
+        assert!(manager.is_dirty());
+        manager.save().unwrap();
+        assert!(!manager.is_dirty());
+        assert!(path.exists());
+    }
+
+    #[test]
+    fn auto_save_if_needed_skips_when_clean() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = session_path_in(&dir, "autosave.ron");
+        let mut manager = SessionManager::with_session_path(path).unwrap();
+        manager.load_or_create(InstanceId::new()).unwrap();
+        manager.save().unwrap();
+        assert!(!manager.is_dirty());
+
+        let saved = manager.auto_save_if_needed().unwrap();
+
+        assert!(!saved);
+        assert!(!manager.is_dirty());
+    }
+
+    #[test]
+    fn set_auto_save_interval_enforces_minimum_one() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = session_path_in(&dir, "interval.ron");
+        let mut manager = SessionManager::with_session_path(path).unwrap();
+        manager.load_or_create(InstanceId::new()).unwrap();
+        manager.save().unwrap();
+        manager.mark_dirty();
+        manager.set_auto_save_interval(0);
+
+        let saved = manager.auto_save_if_needed().unwrap();
+
+        assert!(
+            !saved,
+            "interval of 0 should clamp to 1 second, not save immediately"
+        );
+    }
+
+    #[test]
+    fn export_import_roundtrip() {
+        let dir = tempfile::tempdir().unwrap();
+        let session_path = session_path_in(&dir, "main.ron");
+        let export_path = dir.path().join("export.ron");
+        let mut manager = SessionManager::with_session_path(session_path).unwrap();
+        let instance_id = InstanceId::new();
+        manager.load_or_create(instance_id.clone()).unwrap();
+        manager
+            .current_state_mut()
+            .unwrap()
+            .add_metadata("exported", "value");
+        manager.save().unwrap();
+
+        manager.export(&export_path).unwrap();
+        assert!(export_path.exists());
+
+        let mut manager2 = SessionManager::with_session_path(dir.path().join("other.ron")).unwrap();
+        manager2.import(&export_path).unwrap();
+
+        assert!(manager2.is_dirty());
+        assert_eq!(manager2.current_state().unwrap().instance_id, instance_id);
+        assert_eq!(
+            manager2.current_state().unwrap().metadata.get("exported"),
+            Some(&"value".to_owned())
+        );
+    }
+
+    #[test]
+    fn export_without_state_returns_no_state() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = session_path_in(&dir, "no-export.ron");
+        let export_path = dir.path().join("out.ron");
+        let manager = SessionManager::with_session_path(path).unwrap();
+
+        let result = manager.export(&export_path);
+
+        assert!(matches!(result, Err(SessionError::NoState)));
+    }
+}
