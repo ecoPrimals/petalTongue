@@ -336,3 +336,279 @@ impl Default for PerformanceConfig {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used, reason = "test code")]
+
+    use super::*;
+    use crate::constants::{DEFAULT_HEADLESS_PORT, DEFAULT_WEB_PORT};
+    use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+
+    #[test]
+    fn config_error_display_all_variants() {
+        let err = ConfigError::LoadError("parse error".to_string());
+        assert!(err.to_string().contains("Failed to load config file"));
+        assert!(err.to_string().contains("parse error"));
+
+        let err = ConfigError::ValidationError("port 0".to_string());
+        assert!(err.to_string().contains("Invalid configuration"));
+        assert!(err.to_string().contains("port 0"));
+
+        let err = ConfigError::EnvError("bad var".to_string());
+        assert!(err.to_string().contains("Environment variable error"));
+        assert!(err.to_string().contains("bad var"));
+
+        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "missing file");
+        let err = ConfigError::IoError(io_err);
+        assert!(err.to_string().contains("IO error"));
+        assert!(err.to_string().contains("missing file"));
+    }
+
+    #[test]
+    fn config_default_nested_values() {
+        let config = Config::default();
+
+        assert_eq!(config.network.web_port, DEFAULT_WEB_PORT);
+        assert_eq!(config.network.headless_port, DEFAULT_HEADLESS_PORT);
+        assert_eq!(config.network.workers, 4);
+
+        assert!(config.paths.runtime_dir.is_none());
+        assert!(config.paths.data_dir.is_none());
+        assert!(config.paths.config_dir.is_none());
+        assert!(config.paths.cache_dir.is_none());
+
+        assert_eq!(config.discovery.timeout, Duration::from_millis(200));
+        assert_eq!(config.discovery.retry_attempts, 3);
+        assert_eq!(config.discovery.retry_delay, Duration::from_millis(100));
+        assert_eq!(config.discovery.cache_ttl, Duration::from_mins(1));
+
+        assert_eq!(config.thresholds.health_threshold, 80.0);
+        assert_eq!(config.thresholds.confidence_threshold, 80.0);
+        assert_eq!(config.thresholds.cpu_warning, 50.0);
+        assert_eq!(config.thresholds.cpu_critical, 80.0);
+        assert_eq!(config.thresholds.memory_warning, 50.0);
+        assert_eq!(config.thresholds.memory_critical, 80.0);
+
+        assert_eq!(config.performance.max_fps, 240);
+        assert_eq!(config.performance.max_frame_size, 16 * 1024 * 1024);
+        assert_eq!(config.performance.max_width, 7680);
+        assert_eq!(config.performance.max_height, 4320);
+
+        assert!(config.web.docroot.is_none());
+        assert_eq!(config.web.backend, "filesystem");
+        assert_eq!(config.web.index_file, "index.html");
+        assert_eq!(config.web.cache_ttl_secs, 3600);
+        assert!(!config.web.strip_sources);
+        assert!(!config.web.spa);
+        assert!(config.web.allowed_origins.is_empty());
+    }
+
+    #[test]
+    fn network_config_default_ports_and_addrs() {
+        let network = NetworkConfig::default();
+
+        assert_eq!(network.web_port, 3000);
+        assert_eq!(network.web_port, DEFAULT_WEB_PORT);
+        assert_eq!(network.headless_port, 8080);
+        assert_eq!(network.headless_port, DEFAULT_HEADLESS_PORT);
+
+        let expected_bind = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
+        assert_eq!(
+            network.web_addr(),
+            SocketAddr::new(expected_bind, DEFAULT_WEB_PORT)
+        );
+        assert_eq!(
+            network.headless_addr(),
+            SocketAddr::new(expected_bind, DEFAULT_HEADLESS_PORT)
+        );
+    }
+
+    #[test]
+    fn network_config_merge_other_overrides_base() {
+        let base = NetworkConfig {
+            web_port: 3000,
+            headless_port: 8080,
+            workers: 4,
+            ..Default::default()
+        };
+        let other = NetworkConfig {
+            web_port: 4000,
+            headless_port: 9000,
+            workers: 8,
+            ..Default::default()
+        };
+
+        let merged = NetworkConfig::merge(base, other);
+        assert_eq!(merged.web_port, 4000);
+        assert_eq!(merged.headless_port, 9000);
+        assert_eq!(merged.workers, 8);
+    }
+
+    #[test]
+    fn web_serve_config_default_values() {
+        let web = WebServeConfig::default();
+
+        assert!(web.docroot.is_none());
+        assert_eq!(web.backend, "filesystem");
+        assert_eq!(web.index_file, "index.html");
+        assert_eq!(web.cache_ttl_secs, 3600);
+        assert!(!web.strip_sources);
+        assert!(!web.spa);
+        assert!(web.allowed_origins.is_empty());
+    }
+
+    #[test]
+    fn web_serve_config_merge_rules() {
+        let base = WebServeConfig {
+            docroot: Some(PathBuf::from("/base/docroot")),
+            backend: "content-provider".to_owned(),
+            index_file: "base.html".to_owned(),
+            cache_ttl_secs: 60,
+            strip_sources: true,
+            spa: false,
+            allowed_origins: vec!["https://base.example".to_owned()],
+        };
+        let other = WebServeConfig {
+            docroot: Some(PathBuf::from("/other/docroot")),
+            backend: "filesystem".to_owned(),
+            index_file: "other.html".to_owned(),
+            cache_ttl_secs: 120,
+            strip_sources: false,
+            spa: true,
+            allowed_origins: vec!["https://other.example".to_owned()],
+        };
+
+        let merged = base.merge(other);
+        assert_eq!(merged.docroot, Some(PathBuf::from("/other/docroot")));
+        assert_eq!(merged.backend, "content-provider");
+        assert_eq!(merged.index_file, "other.html");
+        assert_eq!(merged.cache_ttl_secs, 120);
+        assert!(merged.strip_sources);
+        assert!(merged.spa);
+        assert_eq!(
+            merged.allowed_origins,
+            vec!["https://other.example".to_owned()]
+        );
+
+        let base = WebServeConfig {
+            strip_sources: true,
+            spa: true,
+            allowed_origins: vec!["https://keep.example".to_owned()],
+            ..Default::default()
+        };
+        let other = WebServeConfig {
+            strip_sources: false,
+            spa: false,
+            allowed_origins: Vec::new(),
+            ..Default::default()
+        };
+        let merged = base.merge(other);
+        assert!(merged.strip_sources);
+        assert!(merged.spa);
+        assert_eq!(
+            merged.allowed_origins,
+            vec!["https://keep.example".to_owned()]
+        );
+    }
+
+    #[test]
+    fn paths_config_merge_other_overrides_none_falls_back() {
+        let base = PathsConfig {
+            runtime_dir: Some(PathBuf::from("/base/runtime")),
+            data_dir: Some(PathBuf::from("/base/data")),
+            config_dir: Some(PathBuf::from("/base/config")),
+            cache_dir: Some(PathBuf::from("/base/cache")),
+        };
+        let other = PathsConfig {
+            runtime_dir: None,
+            data_dir: Some(PathBuf::from("/other/data")),
+            config_dir: None,
+            cache_dir: Some(PathBuf::from("/other/cache")),
+        };
+
+        let merged = base.merge(other);
+        assert_eq!(merged.runtime_dir, Some(PathBuf::from("/base/runtime")));
+        assert_eq!(merged.data_dir, Some(PathBuf::from("/other/data")));
+        assert_eq!(merged.config_dir, Some(PathBuf::from("/base/config")));
+        assert_eq!(merged.cache_dir, Some(PathBuf::from("/other/cache")));
+    }
+
+    #[test]
+    fn paths_config_explicit_runtime_dir() {
+        let paths = PathsConfig {
+            runtime_dir: Some(PathBuf::from("/explicit/runtime")),
+            ..Default::default()
+        };
+
+        assert_eq!(
+            paths.runtime_dir().unwrap(),
+            PathBuf::from("/explicit/runtime")
+        );
+    }
+
+    #[test]
+    fn discovery_config_default_values() {
+        let discovery = DiscoveryConfig::default();
+
+        assert_eq!(discovery.timeout, Duration::from_millis(200));
+        assert_eq!(discovery.retry_attempts, 3);
+        assert_eq!(discovery.retry_delay, Duration::from_millis(100));
+        assert_eq!(discovery.cache_ttl, Duration::from_mins(1));
+    }
+
+    #[test]
+    fn thresholds_config_default_values() {
+        let thresholds = ThresholdsConfig::default();
+
+        assert_eq!(thresholds.health_threshold, 80.0);
+        assert_eq!(thresholds.confidence_threshold, 80.0);
+        assert_eq!(thresholds.cpu_warning, 50.0);
+        assert_eq!(thresholds.cpu_critical, 80.0);
+        assert_eq!(thresholds.memory_warning, 50.0);
+        assert_eq!(thresholds.memory_critical, 80.0);
+    }
+
+    #[test]
+    fn performance_config_default_values() {
+        let performance = PerformanceConfig::default();
+
+        assert_eq!(performance.max_fps, 240);
+        assert_eq!(performance.max_frame_size, 16 * 1024 * 1024);
+        assert_eq!(performance.max_width, 7680);
+        assert_eq!(performance.max_height, 4320);
+    }
+
+    #[test]
+    fn config_serde_roundtrip() {
+        let original = Config::default();
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: Config = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(restored.network.web_port, original.network.web_port);
+        assert_eq!(
+            restored.network.headless_port,
+            original.network.headless_port
+        );
+        assert_eq!(restored.network.workers, original.network.workers);
+        assert_eq!(restored.paths.runtime_dir, original.paths.runtime_dir);
+        assert_eq!(restored.paths.data_dir, original.paths.data_dir);
+        assert_eq!(restored.discovery.timeout, original.discovery.timeout);
+        assert_eq!(
+            restored.discovery.retry_attempts,
+            original.discovery.retry_attempts
+        );
+        assert_eq!(
+            restored.thresholds.health_threshold,
+            original.thresholds.health_threshold
+        );
+        assert_eq!(restored.performance.max_fps, original.performance.max_fps);
+        assert_eq!(
+            restored.performance.max_frame_size,
+            original.performance.max_frame_size
+        );
+        assert_eq!(restored.web.backend, original.web.backend);
+        assert_eq!(restored.web.index_file, original.web.index_file);
+        assert_eq!(restored.web.cache_ttl_secs, original.web.cache_ttl_secs);
+    }
+}

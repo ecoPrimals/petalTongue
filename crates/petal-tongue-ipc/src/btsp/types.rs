@@ -251,3 +251,134 @@ impl BtspHandshakeConfig {
             .map(|s| base64::engine::general_purpose::STANDARD.encode(s.as_bytes()))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used, reason = "test code")]
+
+    use super::*;
+    use petal_tongue_core::constants::APP_DIR_NAME;
+    use std::path::PathBuf;
+
+    #[test]
+    fn conflicting_posture_display_contains_family_id() {
+        let err = BtspGuardError::ConflictingPosture {
+            family_id: "my-family".to_owned(),
+        };
+        let msg = err.to_string();
+        assert!(msg.contains("my-family"));
+        assert!(msg.contains("FAMILY_ID=my-family"));
+    }
+
+    #[test]
+    fn posture_equality() {
+        assert_eq!(BtspPosture::Development, BtspPosture::Development);
+        let prod_a = BtspPosture::Production {
+            family_id: "abc".to_owned(),
+        };
+        let prod_b = BtspPosture::Production {
+            family_id: "abc".to_owned(),
+        };
+        assert_eq!(prod_a, prod_b);
+        assert_ne!(
+            BtspPosture::Development,
+            BtspPosture::Production {
+                family_id: "abc".to_owned(),
+            }
+        );
+    }
+
+    #[test]
+    fn is_production_family_id_cases() {
+        assert!(!super::is_production_family_id(None));
+
+        let empty = String::new();
+        assert!(!super::is_production_family_id(Some(&empty)));
+
+        let default_lower = "default".to_owned();
+        assert!(!super::is_production_family_id(Some(&default_lower)));
+
+        let default_upper = "DEFAULT".to_owned();
+        assert!(!super::is_production_family_id(Some(&default_upper)));
+
+        let abc = "abc123".to_owned();
+        assert!(super::is_production_family_id(Some(&abc)));
+
+        let whitespace = "  ".to_owned();
+        assert!(!super::is_production_family_id(Some(&whitespace)));
+    }
+
+    #[test]
+    fn sanitize_family_segment_cases() {
+        assert_eq!(super::sanitize_family_segment("abc-123"), "abc-123");
+        assert_eq!(super::sanitize_family_segment("abc/def"), "abc_def");
+        assert_eq!(super::sanitize_family_segment(" trimmed "), "trimmed");
+    }
+
+    #[test]
+    fn socket_filename_development_and_production() {
+        assert_eq!(
+            socket_filename(&BtspPosture::Development),
+            format!("{APP_DIR_NAME}.sock")
+        );
+        assert_eq!(
+            socket_filename(&BtspPosture::Production {
+                family_id: "abc-123".to_owned(),
+            }),
+            format!("{APP_DIR_NAME}-abc-123.sock")
+        );
+    }
+
+    #[test]
+    fn domain_symlink_filename_development_and_production() {
+        assert_eq!(
+            domain_symlink_filename(&BtspPosture::Development),
+            "visualization.sock"
+        );
+        assert_eq!(
+            domain_symlink_filename(&BtspPosture::Production {
+                family_id: "abc-123".to_owned(),
+            }),
+            "visualization-abc-123.sock"
+        );
+    }
+
+    #[test]
+    fn handshake_policy_mapping() {
+        assert!(matches!(
+            handshake_policy(&BtspPosture::Development),
+            HandshakePolicy::Open
+        ));
+        let policy = handshake_policy(&BtspPosture::Production {
+            family_id: "fam1".to_owned(),
+        });
+        match policy {
+            HandshakePolicy::EnforceProvider { family_id } => {
+                assert_eq!(family_id, "fam1");
+            }
+            HandshakePolicy::Open => panic!("expected EnforceProvider"),
+        }
+    }
+
+    #[test]
+    fn handshake_result_construction_and_fields() {
+        let result = HandshakeResult {
+            session_token: "tok".to_owned(),
+            cipher: "chacha20-poly1305".to_owned(),
+            session_key: Some(vec![1, 2, 3]),
+        };
+        assert_eq!(result.session_token, "tok");
+        assert_eq!(result.cipher, "chacha20-poly1305");
+        assert_eq!(result.session_key, Some(vec![1, 2, 3]));
+    }
+
+    #[test]
+    fn btsp_handshake_config_field_access() {
+        let config = BtspHandshakeConfig {
+            provider_socket: PathBuf::from("/tmp/provider.sock"),
+            family_id: "test-family".to_owned(),
+        };
+        assert_eq!(config.provider_socket, PathBuf::from("/tmp/provider.sock"));
+        assert_eq!(config.family_id, "test-family");
+    }
+}

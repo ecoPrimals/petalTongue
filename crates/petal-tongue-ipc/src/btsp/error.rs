@@ -70,3 +70,93 @@ pub enum BtspHandshakeError {
         context: &'static str,
     },
 }
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used, reason = "test code")]
+
+    use super::*;
+    use std::io;
+    use std::path::PathBuf;
+
+    #[test]
+    fn provider_connect_display() {
+        let err = BtspHandshakeError::ProviderConnect {
+            path: PathBuf::from("/run/provider.sock"),
+            source: io::Error::new(io::ErrorKind::NotFound, "no such file"),
+        };
+        let msg = err.to_string();
+        assert!(msg.contains("BTSP provider"));
+        assert!(msg.contains("/run/provider.sock"));
+        assert!(msg.contains("no such file"));
+    }
+
+    #[test]
+    fn io_display() {
+        let err = BtspHandshakeError::Io {
+            context: "reading hello",
+            source: io::Error::new(io::ErrorKind::BrokenPipe, "broken pipe"),
+        };
+        assert_eq!(err.to_string(), "reading hello: broken pipe");
+    }
+
+    #[test]
+    fn json_display() {
+        let json_err = serde_json::from_str::<()>("bad").unwrap_err();
+        let err = BtspHandshakeError::Json {
+            context: "decode frame",
+            source: json_err,
+        };
+        let msg = err.to_string();
+        assert!(msg.starts_with("decode frame: "));
+    }
+
+    #[test]
+    fn unexpected_eof_display() {
+        let err = BtspHandshakeError::UnexpectedEof {
+            expected: "handshake response",
+        };
+        assert_eq!(err.to_string(), "EOF before handshake response");
+    }
+
+    #[test]
+    fn provider_rpc_error_display() {
+        let err = BtspHandshakeError::ProviderRpcError(serde_json::json!({
+            "code": -32000,
+            "message": "session expired"
+        }));
+        let msg = err.to_string();
+        assert!(msg.starts_with("BTSP provider error: "));
+        assert!(msg.contains("session expired"));
+    }
+
+    #[test]
+    fn no_result_display() {
+        let err = BtspHandshakeError::NoResult;
+        assert_eq!(err.to_string(), "no result in provider response");
+    }
+
+    #[test]
+    fn verify_failed_display() {
+        let err = BtspHandshakeError::VerifyFailed {
+            reason: "invalid token".to_owned(),
+        };
+        assert_eq!(err.to_string(), "BTSP verify failed: invalid token");
+    }
+
+    #[test]
+    fn key_derivation_failed_display() {
+        let err = BtspHandshakeError::KeyDerivationFailed {
+            context: "HKDF expand",
+        };
+        assert_eq!(err.to_string(), "Phase 3 key derivation: HKDF expand");
+    }
+
+    #[test]
+    fn phase3_crypto_display() {
+        let err = BtspHandshakeError::Phase3Crypto {
+            context: "decrypt frame",
+        };
+        assert_eq!(err.to_string(), "Phase 3 crypto: decrypt frame");
+    }
+}
