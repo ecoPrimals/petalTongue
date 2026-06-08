@@ -6,6 +6,37 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 100: Transport Evolution (June 8, 2026)
+
+sourDough canonical transport standard adoption — `TRANSPORT_ENDPOINT`
+env var, `TransportEndpoint` type, `connect_transport()` function.
+
+#### Added
+- **`TransportEndpoint` type** (`petal-tongue-core::transport`): Serde-tagged
+  enum matching sourDough Wire 100 canonical format (`uds`, `tcp`, `mesh_relay`).
+  Includes `from_env()`, `connect_transport()`, and `TransportStream` enum
+  with `AsyncRead`+`AsyncWrite` delegation.
+- **`TRANSPORT_ENDPOINT` env var** accepted in `main.rs`: When set by the
+  launcher/Tower Atomic, it supersedes CLI `--port`/`--socket`/`--bind` for
+  IPC server transport. Logged at startup.
+- **`resolve_server_transport()`**: Centralized transport resolution for
+  `server` and `live` modes — prioritizes `TRANSPORT_ENDPOINT` over CLI args.
+- **13 new tests**: Serde roundtrip (UDS/TCP/mesh_relay), `from_env()` (unset,
+  valid, invalid), `connect_transport()` mesh_relay error, display format,
+  `is_local()` predicate.
+
+#### Changed
+- **Content backend**: Unified `rpc_unix()` + `rpc_tcp()` into single
+  `rpc_transport()` using `connect_transport()`. `ContentEndpoint` now
+  converts to `TransportEndpoint` via `to_transport_endpoint()`.
+- **Push delivery** (PT-06): Replaced raw `UnixStream::connect` /
+  `TcpStream::connect` dispatch with `connect_transport()`.
+
+#### Verified
+- `--port` remains Tier 5 fallback (debug/standalone only).
+- **Zero self-binding anti-patterns** — all TCP bind is opt-in or user-facing.
+- **6,347 tests pass**, zero Clippy warnings.
+
 ### Wave 86: Health Liveness Parity (June 6, 2026)
 
 P2 closure: confirm `health.liveness` returns `{"status":"alive"}` unauthenticated

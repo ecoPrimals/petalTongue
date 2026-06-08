@@ -225,6 +225,10 @@ enum Commands {
     },
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "UniBin entry point: CLI parse, transport resolve, mode dispatch"
+)]
 fn main() -> Result<(), AppError> {
     let cli = Cli::parse();
 
@@ -233,11 +237,24 @@ fn main() -> Result<(), AppError> {
     let global_socket = cli.socket.clone();
     let global_port = cli.port;
 
+    let transport_endpoint = match petal_tongue_core::transport::TransportEndpoint::from_env() {
+        Ok(Some(ep)) => {
+            tracing::info!(transport = %ep, "TRANSPORT_ENDPOINT injected by launcher");
+            Some(ep)
+        }
+        Ok(None) => None,
+        Err(e) => {
+            tracing::warn!(error = %e, "invalid TRANSPORT_ENDPOINT, ignoring");
+            None
+        }
+    };
+
     tracing::info!(
         version = env!("CARGO_PKG_VERSION"),
         command = ?cli.command,
         family_id = cli.family_id.as_deref().unwrap_or("(env)"),
         socket = global_socket.as_deref().unwrap_or("(default)"),
+        transport = transport_endpoint.as_ref().map(ToString::to_string).as_deref().unwrap_or("(cli/default)"),
         "🌸 petalTongue starting"
     );
 
@@ -308,9 +325,14 @@ fn main() -> Result<(), AppError> {
             bind,
             socket,
         } => {
-            let merged_socket = socket.or(global_socket);
-            let merged_port = port.or(global_port);
-            let bind_host = parse_ipc_bind_host(bind.as_deref());
+            let (merged_socket, merged_port, bind_host) = resolve_server_transport(
+                transport_endpoint.as_ref(),
+                socket,
+                port,
+                global_socket,
+                global_port,
+                bind.as_deref(),
+            );
             tracing::info!(mode = "live", tcp_port = ?merged_port, ?bind_host, socket = ?merged_socket, "Launching NUCLEUS interactive mode (IPC + GUI)");
             live_mode::run_on_main_thread(
                 scenario,
@@ -331,6 +353,7 @@ fn main() -> Result<(), AppError> {
             data_service,
             global_socket,
             global_port,
+            transport_endpoint,
         )),
     };
 
@@ -353,6 +376,7 @@ async fn dispatch_async(
     data_service: std::sync::Arc<data_service::DataService>,
     global_socket: Option<String>,
     global_port: Option<u16>,
+    transport_endpoint: Option<petal_tongue_core::transport::TransportEndpoint>,
 ) -> Result<(), AppError> {
     match command {
         Commands::Tui {
@@ -416,9 +440,14 @@ async fn dispatch_async(
             headless_mode::run(&bind_addr, workers, data_service).await
         }
         Commands::Server { port, bind, socket } => {
-            let merged_socket = socket.or(global_socket);
-            let merged_port = port.or(global_port);
-            let bind_host = parse_ipc_bind_host(bind.as_deref());
+            let (merged_socket, merged_port, bind_host) = resolve_server_transport(
+                transport_endpoint.as_ref(),
+                socket,
+                port,
+                global_socket,
+                global_port,
+                bind.as_deref(),
+            );
             tracing::info!(mode = "server", tcp_port = ?merged_port, ?bind_host, socket = ?merged_socket, "Launching IPC server (no display)");
             server_mode::run(data_service, merged_port, bind_host, merged_socket).await
         }
@@ -541,6 +570,49 @@ fn resolve_bind(
         return format!("0.0.0.0:{p}");
     }
     default()
+}
+
+/// Resolve server transport from `TRANSPORT_ENDPOINT` (launcher-injected) or CLI args.
+///
+/// `TRANSPORT_ENDPOINT` takes priority over CLI flags when set.
+/// This implements the sourDough canonical transport injection standard (Wave 100).
+fn resolve_server_transport(
+    transport: Option<&petal_tongue_core::transport::TransportEndpoint>,
+    cli_socket: Option<String>,
+    cli_port: Option<u16>,
+    global_socket: Option<String>,
+    global_port: Option<u16>,
+    cli_bind: Option<&str>,
+) -> (Option<String>, Option<u16>, std::net::IpAddr) {
+    use petal_tongue_core::transport::TransportEndpoint;
+
+    if let Some(ep) = transport {
+        match ep {
+            TransportEndpoint::Uds { path } => {
+                tracing::info!(transport = %ep, "using launcher-injected UDS transport");
+                return (
+                    Some(path.to_string_lossy().into_owned()),
+                    None,
+                    std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST),
+                );
+            }
+            TransportEndpoint::Tcp { host, port } => {
+                tracing::info!(transport = %ep, "using launcher-injected TCP transport");
+                let bind_host: std::net::IpAddr = host
+                    .parse()
+                    .unwrap_or(std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST));
+                return (None, Some(*port), bind_host);
+            }
+            TransportEndpoint::MeshRelay { .. } => {
+                tracing::warn!(transport = %ep, "mesh_relay transport not supported for server bind, falling back to CLI");
+            }
+        }
+    }
+
+    let merged_socket = cli_socket.or(global_socket);
+    let merged_port = cli_port.or(global_port);
+    let bind_host = parse_ipc_bind_host(cli_bind);
+    (merged_socket, merged_port, bind_host)
 }
 
 /// Parse an IPC TCP bind host from the `--bind` flag or `PETALTONGUE_IPC_HOST` env.

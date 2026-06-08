@@ -13,6 +13,14 @@
 //! are treated as `host:port` TCP addresses.
 
 use crate::visualization_handler::CallbackDispatch;
+use petal_tongue_core::transport::TransportEndpoint;
+
+fn parse_tcp_endpoint(addr: &str) -> TransportEndpoint {
+    if let Some((host, Ok(port))) = addr.rsplit_once(':').map(|(h, p)| (h, p.parse::<u16>())) {
+        return TransportEndpoint::tcp(host, port);
+    }
+    TransportEndpoint::tcp(addr, 0)
+}
 use tokio::io::AsyncWriteExt;
 use tokio::sync::mpsc;
 
@@ -97,15 +105,14 @@ async fn deliver_notification(
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
     buf.push(b'\n');
 
-    if socket_addr.starts_with('/') {
-        let mut stream = tokio::net::UnixStream::connect(socket_addr).await?;
-        stream.write_all(&buf).await?;
-        stream.flush().await?;
+    let endpoint = if socket_addr.starts_with('/') {
+        petal_tongue_core::transport::TransportEndpoint::uds(socket_addr)
     } else {
-        let mut stream = tokio::net::TcpStream::connect(socket_addr).await?;
-        stream.write_all(&buf).await?;
-        stream.flush().await?;
-    }
+        parse_tcp_endpoint(socket_addr)
+    };
+    let mut stream = petal_tongue_core::transport::connect_transport(&endpoint).await?;
+    stream.write_all(&buf).await?;
+    stream.flush().await?;
 
     tracing::debug!(
         subscriber = %dispatch.subscriber_id,
