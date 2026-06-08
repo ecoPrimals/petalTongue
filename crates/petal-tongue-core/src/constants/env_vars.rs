@@ -170,6 +170,11 @@ pub const CONTENT_BACKEND_PROVIDER: &str = "CONTENT_BACKEND_PROVIDER";
 /// When set, the content backend uses TCP JSON-RPC instead of a local Unix socket.
 pub const CONTENT_BACKEND_ENDPOINT: &str = "CONTENT_BACKEND_ENDPOINT";
 
+/// Transport endpoint (sourDough canonical standard, Wave 100).
+/// JSON-encoded `TransportEndpoint` for launcher-injected transport.
+/// When set, the primal uses this transport instead of self-binding.
+pub const TRANSPORT_ENDPOINT: &str = "TRANSPORT_ENDPOINT";
+
 /// JSON-RPC authentication mode (`permissive` or `enforced`).
 pub const PETALTONGUE_AUTH_MODE: &str = "PETALTONGUE_AUTH_MODE";
 

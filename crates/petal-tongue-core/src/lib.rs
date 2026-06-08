@@ -62,6 +62,7 @@ pub mod spring_adapter; // Universal spring data adapter (multi-format normaliza
 pub mod state_sync; // State synchronization across devices
 pub mod system_info; // System information utilities (safe FFI wrappers)
 pub mod telemetry_adapter; // JSONL telemetry adapter (hotSpring ingestion)
+pub mod transport; // TransportEndpoint (sourDough canonical standard, Wave 100)
 pub mod types;
 #[cfg(test)]
 mod types_tests;

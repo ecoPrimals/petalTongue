@@ -121,15 +121,17 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # 6,292+ tests, ~85-90% coverage
+cargo test --workspace --all-features     # 6,347+ tests, ~85-90% coverage
 ```
 
 ## Current State
 
-Wave 82c (June 6, 2026). 6,292+ tests, all passing. Deep debt passes
-1–5 complete. UDS health probe fix shipped (P1 — plain JSON-RPC on UDS
-now served via filesystem auth when BTSP Phase 2 active). Transport
-compliance verified (server --socket = UDS-only, no TCP bind).
+Wave 100 Transport Evolution (June 8, 2026). 6,347+ tests, all passing.
+`TransportEndpoint` type (sourDough canonical standard) implemented with
+`connect_transport()`. `TRANSPORT_ENDPOINT` env var accepted — launcher-injected
+transport supersedes CLI `--port`/`--socket`. Content backend and push delivery
+refactored to use unified transport. `--port` remains Tier 5 (debug/standalone).
+Zero self-binding anti-patterns (verified by audit).
 
 Stadial parity gate cleared (April 17, 2026). All CI gates pass (fmt,
 clippy pedantic+nursery, doc, cargo deny, tests). Zero unsafe, zero

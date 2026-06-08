@@ -44,6 +44,24 @@ pub enum ContentEndpoint {
     Tcp(String),
 }
 
+impl ContentEndpoint {
+    /// Convert to canonical `TransportEndpoint` for connection.
+    fn to_transport_endpoint(&self) -> petal_tongue_core::transport::TransportEndpoint {
+        use petal_tongue_core::transport::TransportEndpoint;
+        match self {
+            Self::Unix(p) => TransportEndpoint::uds(p),
+            Self::Tcp(addr) => {
+                if let Some((host, Ok(port))) =
+                    addr.rsplit_once(':').map(|(h, p)| (h, p.parse::<u16>()))
+                {
+                    return TransportEndpoint::tcp(host, port);
+                }
+                TransportEndpoint::tcp(addr, 0)
+            }
+        }
+    }
+}
+
 impl std::fmt::Display for ContentEndpoint {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -203,10 +221,8 @@ impl ContentBackendClient {
         let mut line = serde_json::to_string(&req)?;
         line.push('\n');
 
-        let resp_line = match &self.endpoint {
-            ContentEndpoint::Unix(sock) => self.rpc_unix(sock, &line).await?,
-            ContentEndpoint::Tcp(addr) => self.rpc_tcp(addr, &line).await?,
-        };
+        let transport_ep = self.endpoint.to_transport_endpoint();
+        let resp_line = self.rpc_transport(&transport_ep, &line).await?;
 
         let resp: serde_json::Value = serde_json::from_str(&resp_line)?;
 
@@ -232,47 +248,23 @@ impl ContentBackendClient {
         Ok(Some((bytes, mime.to_owned())))
     }
 
-    async fn rpc_unix(
+    async fn rpc_transport(
         &self,
-        sock: &std::path::Path,
+        endpoint: &petal_tongue_core::transport::TransportEndpoint,
         request: &str,
     ) -> Result<String, ContentBackendError> {
         use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
-        use tokio::net::UnixStream;
 
-        let mut stream =
-            UnixStream::connect(sock)
-                .await
-                .map_err(|source| ContentBackendError::Connect {
-                    endpoint: format!("unix:{}", sock.display()),
-                    source,
-                })?;
+        let mut stream = petal_tongue_core::transport::connect_transport(endpoint)
+            .await
+            .map_err(|source| ContentBackendError::Connect {
+                endpoint: endpoint.to_string(),
+                source,
+            })?;
         stream.write_all(request.as_bytes()).await?;
         stream.flush().await?;
 
-        let (reader, _) = stream.into_split();
-        let mut reader = tokio::io::BufReader::new(reader);
-        let mut resp = String::new();
-        reader.read_line(&mut resp).await?;
-        Ok(resp)
-    }
-
-    async fn rpc_tcp(&self, addr: &str, request: &str) -> Result<String, ContentBackendError> {
-        use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
-        use tokio::net::TcpStream;
-
-        let mut stream =
-            TcpStream::connect(addr)
-                .await
-                .map_err(|source| ContentBackendError::Connect {
-                    endpoint: format!("tcp:{addr}"),
-                    source,
-                })?;
-        stream.write_all(request.as_bytes()).await?;
-        stream.flush().await?;
-
-        let (reader, _) = stream.into_split();
-        let mut reader = tokio::io::BufReader::new(reader);
+        let mut reader = tokio::io::BufReader::new(stream);
         let mut resp = String::new();
         reader.read_line(&mut resp).await?;
         Ok(resp)
