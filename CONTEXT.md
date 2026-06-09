@@ -121,14 +121,15 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # 6,402+ tests, ~85-90% coverage
+cargo test --workspace --all-features     # 6,454+ tests, ~85-90% coverage
 ```
 
 ## Current State
 
-Wave 102 Deep Debt Modernization (June 9, 2026). 6,402+ tests, all passing.
-`.ok()` error observability, `unwrap_or_default()` idiom sweep, `content_render`
-smart refactor (887L → 4 cohesive submodules, no file >400L).
+Wave 102 Deep Debt Modernization + Coverage Sprint (June 9, 2026). 6,454+ tests,
+all passing. `.ok()` error observability, `unwrap_or_default()` idiom sweep,
+`content_render` smart refactor (887L → 4 submodules), +52 tests across
+sensor/types, tufte/constraints, dynamic_schema/types, content_direct.
 `TransportEndpoint` type (sourDough canonical standard) implemented with
 `connect_transport()`. `TRANSPORT_ENDPOINT` env var accepted — launcher-injected
 transport supersedes CLI `--port`/`--socket`. Content backend and push delivery

@@ -420,3 +420,210 @@ fn handle_viz_route(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::http::header;
+    use std::path::Path;
+
+    #[test]
+    fn mime_from_extension_known_types() {
+        assert_eq!(
+            mime_from_extension(Path::new("style.css")),
+            "text/css; charset=utf-8"
+        );
+        assert_eq!(
+            mime_from_extension(Path::new("app.js")),
+            "application/javascript; charset=utf-8"
+        );
+        assert_eq!(
+            mime_from_extension(Path::new("data.json")),
+            "application/json; charset=utf-8"
+        );
+        assert_eq!(mime_from_extension(Path::new("chart.svg")), "image/svg+xml");
+        assert_eq!(mime_from_extension(Path::new("photo.png")), "image/png");
+        assert_eq!(mime_from_extension(Path::new("photo.jpg")), "image/jpeg");
+        assert_eq!(mime_from_extension(Path::new("photo.jpeg")), "image/jpeg");
+        assert_eq!(mime_from_extension(Path::new("anim.gif")), "image/gif");
+        assert_eq!(mime_from_extension(Path::new("image.webp")), "image/webp");
+        assert_eq!(mime_from_extension(Path::new("font.woff2")), "font/woff2");
+        assert_eq!(mime_from_extension(Path::new("font.woff")), "font/woff");
+        assert_eq!(
+            mime_from_extension(Path::new("favicon.ico")),
+            "image/x-icon"
+        );
+        assert_eq!(
+            mime_from_extension(Path::new("feed.xml")),
+            "application/xml"
+        );
+        assert_eq!(
+            mime_from_extension(Path::new("notes.txt")),
+            "text/plain; charset=utf-8"
+        );
+        assert_eq!(
+            mime_from_extension(Path::new("module.wasm")),
+            "application/wasm"
+        );
+    }
+
+    #[test]
+    fn mime_from_extension_unknown_fallback() {
+        assert_eq!(
+            mime_from_extension(Path::new("file.xyz")),
+            "application/octet-stream"
+        );
+        assert_eq!(
+            mime_from_extension(Path::new("noext")),
+            "application/octet-stream"
+        );
+    }
+
+    #[test]
+    fn build_response_sets_content_type() {
+        let resp = build_response(b"hello".to_vec(), "text/plain", 0);
+        assert_eq!(
+            resp.headers().get(header::CONTENT_TYPE).unwrap(),
+            "text/plain"
+        );
+    }
+
+    #[test]
+    fn build_response_sets_cache_control_when_nonzero() {
+        let resp = build_response(b"data".to_vec(), "text/html", 3600);
+        let cc = resp
+            .headers()
+            .get(header::CACHE_CONTROL)
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert!(
+            cc.contains("max-age=3600"),
+            "expected max-age=3600, got {cc}"
+        );
+        assert!(cc.contains("public"));
+    }
+
+    #[test]
+    fn build_response_no_cache_control_when_zero() {
+        let resp = build_response(b"data".to_vec(), "text/html", 0);
+        assert!(resp.headers().get(header::CACHE_CONTROL).is_none());
+    }
+
+    #[test]
+    fn resolve_content_path_direct_md() {
+        let dir = tempfile::tempdir().unwrap();
+        let content = dir.path().join("content");
+        std::fs::create_dir(&content).unwrap();
+        std::fs::write(content.join("about.md"), "# About").unwrap();
+
+        let state = ContentDirectState {
+            content_dir: content,
+            static_dir: None,
+            registry: HashMap::new(),
+            nav: Vec::new(),
+            viz_registry: crate::viz_data::VizRegistry::discover(None),
+        };
+
+        let resolved = state.resolve_content_path("/about");
+        assert!(resolved.is_some(), "should resolve about.md");
+        assert!(resolved.unwrap().ends_with("about.md"));
+    }
+
+    #[test]
+    fn resolve_content_path_index_md() {
+        let dir = tempfile::tempdir().unwrap();
+        let content = dir.path().join("content");
+        let section = content.join("docs");
+        std::fs::create_dir_all(&section).unwrap();
+        std::fs::write(section.join("_index.md"), "# Docs").unwrap();
+
+        let state = ContentDirectState {
+            content_dir: content,
+            static_dir: None,
+            registry: HashMap::new(),
+            nav: Vec::new(),
+            viz_registry: crate::viz_data::VizRegistry::discover(None),
+        };
+
+        let resolved = state.resolve_content_path("/docs");
+        assert!(resolved.is_some(), "should resolve docs/_index.md");
+    }
+
+    #[test]
+    fn resolve_content_path_root_index() {
+        let dir = tempfile::tempdir().unwrap();
+        let content = dir.path().join("content");
+        std::fs::create_dir(&content).unwrap();
+        std::fs::write(content.join("_index.md"), "# Home").unwrap();
+
+        let state = ContentDirectState {
+            content_dir: content,
+            static_dir: None,
+            registry: HashMap::new(),
+            nav: Vec::new(),
+            viz_registry: crate::viz_data::VizRegistry::discover(None),
+        };
+
+        let resolved = state.resolve_content_path("/");
+        assert!(resolved.is_some(), "should resolve root _index.md");
+    }
+
+    #[test]
+    fn resolve_content_path_not_found() {
+        let dir = tempfile::tempdir().unwrap();
+        let content = dir.path().join("content");
+        std::fs::create_dir(&content).unwrap();
+
+        let state = ContentDirectState {
+            content_dir: content,
+            static_dir: None,
+            registry: HashMap::new(),
+            nav: Vec::new(),
+            viz_registry: crate::viz_data::VizRegistry::discover(None),
+        };
+
+        assert!(state.resolve_content_path("/nonexistent").is_none());
+    }
+
+    #[test]
+    fn resolve_static_path_found() {
+        let dir = tempfile::tempdir().unwrap();
+        let static_dir = dir.path().join("static");
+        let css_dir = static_dir.join("css");
+        std::fs::create_dir_all(&css_dir).unwrap();
+        std::fs::write(css_dir.join("main.css"), "body {}").unwrap();
+
+        let state = ContentDirectState {
+            content_dir: dir.path().to_path_buf(),
+            static_dir: Some(static_dir),
+            registry: HashMap::new(),
+            nav: Vec::new(),
+            viz_registry: crate::viz_data::VizRegistry::discover(None),
+        };
+
+        let resolved = state.resolve_static_path("/css/main.css");
+        assert!(resolved.is_some());
+    }
+
+    #[test]
+    fn resolve_static_path_none_when_no_static_dir() {
+        let state = ContentDirectState {
+            content_dir: PathBuf::from("/tmp/nonexistent"),
+            static_dir: None,
+            registry: HashMap::new(),
+            nav: Vec::new(),
+            viz_registry: crate::viz_data::VizRegistry::discover(None),
+        };
+
+        assert!(state.resolve_static_path("/css/main.css").is_none());
+    }
+
+    #[test]
+    fn fallback_index_contains_petaltongue() {
+        let html = fallback_index();
+        let body = html.0;
+        assert!(body.contains("petalTongue"));
+        assert!(body.contains("Content-direct mode"));
+    }
+}

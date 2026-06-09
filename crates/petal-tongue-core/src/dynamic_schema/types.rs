@@ -343,3 +343,176 @@ impl Default for DynamicData {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn schema_version_new_and_display() {
+        let v = SchemaVersion::new(2, 3, 4);
+        assert_eq!(v.major, 2);
+        assert_eq!(v.minor, 3);
+        assert_eq!(v.patch, 4);
+        assert_eq!(v.to_string(), "2.3.4");
+    }
+
+    #[test]
+    fn schema_version_parse_valid() {
+        let v = SchemaVersion::parse("1.2.3").unwrap();
+        assert_eq!(v, SchemaVersion::new(1, 2, 3));
+    }
+
+    #[test]
+    fn schema_version_parse_invalid_abc() {
+        assert!(SchemaVersion::parse("abc").is_err());
+    }
+
+    #[test]
+    fn schema_version_parse_wrong_number_of_parts() {
+        assert!(SchemaVersion::parse("1.2").is_err());
+        assert!(SchemaVersion::parse("1.2.3.4").is_err());
+    }
+
+    #[test]
+    fn schema_version_is_compatible_with() {
+        let v1_2 = SchemaVersion::new(1, 2, 0);
+        let v1_1 = SchemaVersion::new(1, 1, 0);
+        let v2_0 = SchemaVersion::new(2, 0, 0);
+
+        assert!(v1_2.is_compatible_with(&v1_1));
+        assert!(!v1_1.is_compatible_with(&v1_2));
+        assert!(!v2_0.is_compatible_with(&SchemaVersion::new(1, 0, 0)));
+        assert!(!SchemaVersion::new(1, 0, 0).is_compatible_with(&v2_0));
+    }
+
+    #[test]
+    fn schema_version_default_is_1_0_0() {
+        assert_eq!(SchemaVersion::default(), SchemaVersion::new(1, 0, 0));
+    }
+
+    #[test]
+    fn dynamic_value_accessors() {
+        assert!(DynamicValue::Null.is_null());
+        assert_eq!(DynamicValue::Boolean(true).as_bool(), Some(true));
+        assert_eq!(DynamicValue::Number(2.78).as_f64(), Some(2.78));
+        assert_eq!(
+            DynamicValue::String("hello".to_string()).as_str(),
+            Some("hello")
+        );
+
+        let arr = DynamicValue::Array(vec![DynamicValue::Number(1.0)]);
+        assert_eq!(arr.as_array().unwrap().len(), 1);
+
+        let mut obj = HashMap::new();
+        obj.insert("k".to_string(), DynamicValue::Null);
+        assert!(DynamicValue::Object(obj).as_object().is_some());
+
+        assert_eq!(DynamicValue::Null.as_str(), None);
+        assert_eq!(DynamicValue::Boolean(true).as_f64(), None);
+    }
+
+    #[test]
+    fn dynamic_value_json_roundtrip() {
+        let original = DynamicValue::Object({
+            let mut map = HashMap::new();
+            map.insert("name".to_string(), DynamicValue::String("test".to_string()));
+            map.insert("count".to_string(), DynamicValue::Number(42.0));
+            map.insert("active".to_string(), DynamicValue::Boolean(true));
+            map.insert(
+                "items".to_string(),
+                DynamicValue::Array(vec![DynamicValue::Null]),
+            );
+            map
+        });
+
+        let json = original.to_json_value();
+        let restored = DynamicValue::from_json_value(json);
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn dynamic_value_serde_roundtrip() {
+        let original = DynamicValue::Array(vec![
+            DynamicValue::String("a".to_string()),
+            DynamicValue::Number(1.5),
+            DynamicValue::Boolean(false),
+        ]);
+
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: DynamicValue = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn dynamic_data_new_and_with_version() {
+        let empty = DynamicData::new();
+        assert!(empty.version.is_none());
+        assert!(empty.fields.is_empty());
+
+        let versioned = DynamicData::with_version(SchemaVersion::new(1, 0, 0));
+        assert_eq!(versioned.version, Some(SchemaVersion::new(1, 0, 0)));
+        assert!(versioned.fields.is_empty());
+    }
+
+    #[test]
+    fn dynamic_data_field_accessors() {
+        let mut data = DynamicData::new();
+        data.set(
+            "name".to_string(),
+            DynamicValue::String("alice".to_string()),
+        );
+        data.set("score".to_string(), DynamicValue::Number(99.5));
+        data.set("enabled".to_string(), DynamicValue::Boolean(true));
+
+        assert_eq!(data.get_str("name"), Some("alice"));
+        assert_eq!(data.get_f64("score"), Some(99.5));
+        assert_eq!(data.get_bool("enabled"), Some(true));
+        assert_eq!(data.get_str("missing"), None);
+    }
+
+    #[test]
+    fn dynamic_data_merge_overwrites_conflicting_keys() {
+        let mut base = DynamicData::new();
+        base.set("a".to_string(), DynamicValue::String("old".to_string()));
+        base.set("b".to_string(), DynamicValue::Number(1.0));
+
+        let mut other = DynamicData::new();
+        other.set("a".to_string(), DynamicValue::String("new".to_string()));
+        other.set("c".to_string(), DynamicValue::Boolean(false));
+
+        base.merge(&other);
+
+        assert_eq!(base.get_str("a"), Some("new"));
+        assert_eq!(base.get_f64("b"), Some(1.0));
+        assert_eq!(base.get_bool("c"), Some(false));
+    }
+
+    #[test]
+    fn dynamic_data_json_roundtrip() {
+        let mut data = DynamicData::with_version(SchemaVersion::new(1, 2, 3));
+        data.set("key".to_string(), DynamicValue::String("value".to_string()));
+
+        let json = data.to_json_string().unwrap();
+        let restored = DynamicData::from_json_str(&json).unwrap();
+
+        assert_eq!(restored.version, data.version);
+        assert_eq!(restored.get_str("key"), Some("value"));
+    }
+
+    #[test]
+    fn deserialize_version_string_format() {
+        let json = r#"{"version": "2.0.0", "field": "x"}"#;
+        let data = DynamicData::from_json_str(json).unwrap();
+        assert_eq!(data.version, Some(SchemaVersion::new(2, 0, 0)));
+        assert_eq!(data.get_str("field"), Some("x"));
+    }
+
+    #[test]
+    fn deserialize_version_struct_format() {
+        let json = r#"{"version": {"major": 3, "minor": 1, "patch": 0}, "field": "y"}"#;
+        let data = DynamicData::from_json_str(json).unwrap();
+        assert_eq!(data.version, Some(SchemaVersion::new(3, 1, 0)));
+        assert_eq!(data.get_str("field"), Some("y"));
+    }
+}

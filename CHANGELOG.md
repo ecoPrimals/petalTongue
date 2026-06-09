@@ -6,9 +6,23 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
-### Wave 102: Deep Debt Modernization (June 9, 2026)
+### Wave 102: Deep Debt Modernization + Coverage Sprint (June 9, 2026)
 
-Error observability, idiomatic Rust patterns, and smart module refactor.
+Error observability, idiomatic Rust patterns, smart module refactor, and
+coverage expansion across 4 previously-untested production modules.
+
+#### Added
+- **+52 new tests** across 4 production modules:
+  - `sensor/types.rs` (13 tests): SensorError display, capabilities, event
+    classification, modifier constructors
+  - `tufte/constraints.rs` (12 tests): DataInkRatio, ChartjunkDetection,
+    ColorAccessibility, DataDensity, SmallestEffectiveDifference,
+    SmallMultiplesPreference
+  - `dynamic_schema/types.rs` (15 tests): SchemaVersion parsing/compat,
+    DynamicValue accessors/roundtrip, DynamicData merge/serde,
+    deserialize_version string+struct formats
+  - `content_direct.rs` (12 tests): MIME detection, response builder,
+    content/static path resolution, fallback index
 
 #### Changed
 - **`.ok()` error logging** — 8 high-priority broadcast/discovery paths now
@@ -28,7 +42,7 @@ Error observability, idiomatic Rust patterns, and smart module refactor.
   Public API and all 22 tests preserved.
 
 #### Verified
-- **6,402 tests pass**, zero Clippy warnings.
+- **6,454 tests pass**, zero Clippy warnings.
 
 ### Wave 100: Transport Evolution (June 8, 2026)
 
