@@ -59,10 +59,16 @@ impl NetworkBackend {
     }
 
     async fn try_discover() -> Option<String> {
-        let backend = BiomeOsBackend::from_env().ok()?;
+        let backend = BiomeOsBackend::from_env()
+            .inspect_err(|e| tracing::debug!("audio backend env: {e}"))
+            .ok()?;
         let discovery = CapabilityDiscovery::new(backend);
         let query = CapabilityQuery::new("audio");
-        let endpoint = discovery.discover_one(&query).await.ok()?;
+        let endpoint = discovery
+            .discover_one(&query)
+            .await
+            .inspect_err(|e| tracing::debug!("audio capability discovery: {e}"))
+            .ok()?;
 
         endpoint.endpoints.jsonrpc.or(endpoint.endpoints.tarpc)
     }

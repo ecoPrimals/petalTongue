@@ -157,7 +157,7 @@ pub async fn content_direct_fallback(
         .and_then(|v| v.to_str().ok())
         .unwrap_or("text/html")
         .to_owned();
-    let query = req.uri().query().unwrap_or("").to_owned();
+    let query = req.uri().query().unwrap_or_default().to_owned();
 
     // Visualization routes
     if path.starts_with("/viz/") {
@@ -358,7 +358,7 @@ fn handle_viz_route(
         "svg"
     };
 
-    let viz_name = path.strip_prefix("/viz/").unwrap_or("");
+    let viz_name = path.strip_prefix("/viz/").unwrap_or_default();
 
     // Animation format doesn't require a scene build
     if format == "animation-json" {

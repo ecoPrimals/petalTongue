@@ -343,7 +343,7 @@ where
     let client_nonce_b64 = params
         .get("client_nonce")
         .and_then(serde_json::Value::as_str)
-        .unwrap_or("");
+        .unwrap_or_default();
     let client_nonce = base64::engine::general_purpose::STANDARD
         .decode(client_nonce_b64)
         .unwrap_or_default();

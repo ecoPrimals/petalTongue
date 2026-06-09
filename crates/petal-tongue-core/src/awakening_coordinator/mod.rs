@@ -134,6 +134,7 @@ impl AwakeningCoordinator {
     }
 
     /// Process a single timeline event
+    #[expect(clippy::too_many_lines, reason = "match-per-variant dispatcher")]
     async fn process_event(&self, event: &TimelineEvent) -> Result<()> {
         match &event.event_type {
             TimelineEventType::StageTransition { stage } => {
@@ -156,6 +157,7 @@ impl AwakeningCoordinator {
                         }),
                     })
                     .await
+                    .inspect_err(|e| tracing::debug!("awakening stage broadcast: {e}"))
                     .ok();
             }
 
@@ -173,6 +175,7 @@ impl AwakeningCoordinator {
                         }),
                     })
                     .await
+                    .inspect_err(|e| tracing::debug!("awakening visual broadcast: {e}"))
                     .ok();
             }
 
@@ -191,6 +194,7 @@ impl AwakeningCoordinator {
                         }),
                     })
                     .await
+                    .inspect_err(|e| tracing::debug!("awakening audio start broadcast: {e}"))
                     .ok();
             }
 
@@ -209,6 +213,7 @@ impl AwakeningCoordinator {
                         }),
                     })
                     .await
+                    .inspect_err(|e| tracing::debug!("awakening audio stop broadcast: {e}"))
                     .ok();
             }
 
@@ -227,6 +232,7 @@ impl AwakeningCoordinator {
                         }),
                     })
                     .await
+                    .inspect_err(|e| tracing::debug!("awakening text broadcast: {e}"))
                     .ok();
             }
 
@@ -245,6 +251,7 @@ impl AwakeningCoordinator {
                         }),
                     })
                     .await
+                    .inspect_err(|e| tracing::debug!("awakening discovery broadcast: {e}"))
                     .ok();
             }
         }

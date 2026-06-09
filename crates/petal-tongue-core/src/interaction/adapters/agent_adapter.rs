@@ -76,7 +76,7 @@ impl InputAdapter for AgentInputAdapter {
                 let target_str = parsed
                     .get("target")
                     .and_then(serde_json::Value::as_str)
-                    .unwrap_or("");
+                    .unwrap_or_default();
                 let target = if target_str.is_empty() {
                     context
                         .current_focus
@@ -129,7 +129,7 @@ impl InputAdapter for AgentInputAdapter {
                 let target_str = parsed
                     .get("target")
                     .and_then(serde_json::Value::as_str)
-                    .unwrap_or("");
+                    .unwrap_or_default();
                 let target = if target_str.is_empty() {
                     context
                         .current_focus

@@ -6,6 +6,30 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 102: Deep Debt Modernization (June 9, 2026)
+
+Error observability, idiomatic Rust patterns, and smart module refactor.
+
+#### Changed
+- **`.ok()` error logging** — 8 high-priority broadcast/discovery paths now
+  surface errors via `inspect_err()` before discarding: awakening coordinator
+  (6 event broadcasts), engine modality stop, biomeOS UI manager discovery,
+  audio network backend discovery.
+- **`unwrap_or("")` → `unwrap_or_default()`** — 20+ sites modernized across
+  `content_render`, `content_direct`, BTSP handshake, `system_info`,
+  `gpu_compute_provider`, `agent_adapter`, scene compiler/data-binding,
+  chart renderers. Semantically identical (Default for `&str` is `""`),
+  more idiomatic.
+
+#### Refactored
+- **`content_render/mod.rs`** (887L → 361L): Smart-split into cohesive
+  submodules — `front_matter.rs` (85L, TOML parsing), `markdown.rs` (379L,
+  pulldown-cmark compiler), `shortcodes.rs` (87L, entity resolution).
+  Public API and all 22 tests preserved.
+
+#### Verified
+- **6,402 tests pass**, zero Clippy warnings.
+
 ### Wave 100: Transport Evolution (June 8, 2026)
 
 sourDough canonical transport standard adoption — `TRANSPORT_ENDPOINT`

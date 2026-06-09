@@ -62,12 +62,12 @@ fn game_channel_to_binding(
     let label = data
         .get("label")
         .and_then(|v| v.as_str())
-        .unwrap_or("")
+        .unwrap_or_default()
         .to_string();
     let unit = data
         .get("unit")
         .and_then(|v| v.as_str())
-        .unwrap_or("")
+        .unwrap_or_default()
         .to_string();
 
     match payload.channel {

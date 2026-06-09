@@ -173,7 +173,7 @@ impl GpuComputeProvider {
                         let endpoint = manifest
                             .get("endpoint")
                             .and_then(|e| e.as_str())
-                            .unwrap_or("")
+                            .unwrap_or_default()
                             .to_owned();
                         let id = manifest
                             .get("id")

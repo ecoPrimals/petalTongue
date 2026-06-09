@@ -210,7 +210,10 @@ pub fn draw_genome_track(
                 let Some(obj) = seg.as_object() else {
                     continue;
                 };
-                let seg_track = obj.get("track").and_then(|v| v.as_str()).unwrap_or("");
+                let seg_track = obj
+                    .get("track")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default();
                 if seg_track != track_name {
                     continue;
                 }
@@ -223,7 +226,10 @@ pub fn draw_genome_track(
                     .and_then(serde_json::Value::as_f64)
                     .unwrap_or(0.0);
                 let strand = obj.get("strand").and_then(|v| v.as_str()).unwrap_or("+");
-                let seg_label = obj.get("label").and_then(|v| v.as_str()).unwrap_or("");
+                let seg_label = obj
+                    .get("label")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default();
 
                 let x0 = (start / sequence_length) as f32 * avail_w + rect.left();
                 let x1 = (end / sequence_length) as f32 * avail_w + rect.left();
@@ -339,7 +345,7 @@ pub fn draw_circular_map(
         let arc_label = obj
             .get("label")
             .and_then(serde_json::Value::as_str)
-            .unwrap_or("");
+            .unwrap_or_default();
 
         let r = base_radius + (ring_idx as f32 + 1.0) * ring_spacing;
         let color = category_colors[ring_idx % category_colors.len()];
