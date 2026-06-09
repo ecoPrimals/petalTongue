@@ -469,3 +469,224 @@ impl TufteConstraint for SmallMultiplesPreference {
         true
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::grammar::{GeometryType, GrammarExpr};
+    use crate::primitive::{Color, Primitive};
+
+    fn expr() -> GrammarExpr {
+        GrammarExpr::new("data", GeometryType::Point)
+    }
+
+    fn data_point(x: f64, y: f64) -> Primitive {
+        Primitive::Point {
+            x,
+            y,
+            radius: 5.0,
+            fill: Some(Color::BLACK),
+            stroke: None,
+            data_id: Some("d".to_owned()),
+        }
+    }
+
+    fn junk_point() -> Primitive {
+        Primitive::Point {
+            x: 0.0,
+            y: 0.0,
+            radius: 5.0,
+            fill: Some(Color::rgb(0.5, 0.5, 0.5)),
+            stroke: None,
+            data_id: None,
+        }
+    }
+
+    fn junk_rect() -> Primitive {
+        Primitive::Rect {
+            x: 0.0,
+            y: 0.0,
+            width: 100.0,
+            height: 50.0,
+            fill: Some(Color::rgb(0.9, 0.9, 0.9)),
+            stroke: None,
+            corner_radius: 0.0,
+            data_id: None,
+        }
+    }
+
+    #[test]
+    fn data_ink_ratio_empty_primitives_passes() {
+        let result = DataInkRatio.evaluate(&[], &expr(), None);
+        assert!(result.passed);
+        assert!((result.score - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn data_ink_ratio_data_heavy_passes() {
+        let primitives = vec![
+            data_point(0.0, 0.0),
+            data_point(1.0, 1.0),
+            data_point(2.0, 2.0),
+        ];
+        let result = DataInkRatio.evaluate(&primitives, &expr(), None);
+        assert!(result.passed);
+        assert!((result.score - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn data_ink_ratio_junk_heavy_fails() {
+        let primitives = vec![
+            junk_point(),
+            junk_point(),
+            junk_point(),
+            data_point(0.0, 0.0),
+        ];
+        let result = DataInkRatio.evaluate(&primitives, &expr(), None);
+        assert!(!result.passed);
+        assert!((result.score - 0.25).abs() < 1e-10);
+    }
+
+    #[test]
+    fn chartjunk_detection_no_primitives_is_clean() {
+        let result = ChartjunkDetection.evaluate(&[], &expr(), None);
+        assert!(result.passed);
+        assert!((result.score - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn chartjunk_detection_decorative_without_data_detected() {
+        let primitives = vec![junk_rect()];
+        let result = ChartjunkDetection.evaluate(&primitives, &expr(), None);
+        assert!(!result.passed);
+        assert!(result.score < 1.0);
+    }
+
+    #[test]
+    fn color_accessibility_empty_fills_passes() {
+        let result = ColorAccessibility.evaluate(&[], &expr(), None);
+        assert!(result.passed);
+        assert!((result.score - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn color_accessibility_contrast_evaluation() {
+        let high_contrast = vec![Primitive::Point {
+            x: 0.0,
+            y: 0.0,
+            radius: 5.0,
+            fill: Some(Color::WHITE),
+            stroke: None,
+            data_id: Some("d1".to_owned()),
+        }];
+        let high = ColorAccessibility.evaluate(&high_contrast, &expr(), None);
+        assert!(high.passed, "high contrast should pass: {}", high.message);
+
+        let low_contrast = vec![Primitive::Point {
+            x: 0.0,
+            y: 0.0,
+            radius: 5.0,
+            fill: Some(Color::rgba(0.13, 0.13, 0.15, 1.0)),
+            stroke: None,
+            data_id: Some("d2".to_owned()),
+        }];
+        let low = ColorAccessibility.evaluate(&low_contrast, &expr(), None);
+        assert!(!low.passed, "low contrast should fail: {}", low.message);
+    }
+
+    #[test]
+    fn data_density_present_passes_empty_fails() {
+        let with_data = DataDensity.evaluate(&[data_point(0.0, 0.0)], &expr(), None);
+        assert!(with_data.passed);
+        assert!((with_data.score - 1.0).abs() < 1e-10);
+
+        let empty = DataDensity.evaluate(&[], &expr(), None);
+        assert!(!empty.passed);
+        assert!((empty.score - 0.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn smallest_effective_difference_well_spaced_passes() {
+        let primitives = vec![data_point(0.0, 0.0), data_point(100.0, 100.0)];
+        let result = SmallestEffectiveDifference.evaluate(&primitives, &expr(), None);
+        assert!(result.passed);
+    }
+
+    #[test]
+    fn smallest_effective_difference_overlapping_fails() {
+        let primitives = vec![
+            data_point(100.0, 100.0),
+            Primitive::Point {
+                x: 100.5,
+                y: 100.5,
+                radius: 5.0,
+                fill: Some(Color::BLACK),
+                stroke: None,
+                data_id: Some("b".to_owned()),
+            },
+        ];
+        let result = SmallestEffectiveDifference.evaluate(&primitives, &expr(), None);
+        assert!(
+            !result.passed,
+            "overlapping points should fail: {}",
+            result.message
+        );
+    }
+
+    #[test]
+    fn small_multiples_few_categories_pass_many_recommend_faceting() {
+        let expr_few = GrammarExpr::new("data", GeometryType::Point).with_color("cat");
+        let few_data = [
+            serde_json::json!({"cat": "a"}),
+            serde_json::json!({"cat": "b"}),
+        ];
+        let few = SmallMultiplesPreference.evaluate(&[], &expr_few, Some(&few_data));
+        assert!(few.passed);
+
+        let many_data = [
+            serde_json::json!({"cat": "a"}),
+            serde_json::json!({"cat": "b"}),
+            serde_json::json!({"cat": "c"}),
+            serde_json::json!({"cat": "d"}),
+            serde_json::json!({"cat": "e"}),
+        ];
+        let many = SmallMultiplesPreference.evaluate(&[], &expr_few, Some(&many_data));
+        assert!(!many.passed);
+        assert!(many.message.contains("faceting"));
+    }
+
+    #[test]
+    fn constraint_names_severity_and_auto_correctable() {
+        assert_eq!(DataInkRatio.name(), "DataInkRatio");
+        assert_eq!(LieFactor.name(), "LieFactor");
+        assert_eq!(ChartjunkDetection.name(), "ChartjunkDetection");
+        assert_eq!(ColorAccessibility.name(), "ColorAccessibility");
+        assert_eq!(DataDensity.name(), "DataDensity");
+        assert_eq!(
+            SmallestEffectiveDifference.name(),
+            "SmallestEffectiveDifference"
+        );
+        assert_eq!(SmallMultiplesPreference.name(), "SmallMultiplesPreference");
+
+        assert_eq!(DataInkRatio.severity(), ConstraintSeverity::Warning);
+        assert!(!DataInkRatio.auto_correctable());
+        assert_eq!(LieFactor.severity(), ConstraintSeverity::Warning);
+        assert!(LieFactor.auto_correctable());
+        assert_eq!(ChartjunkDetection.severity(), ConstraintSeverity::Warning);
+        assert!(!ChartjunkDetection.auto_correctable());
+        assert_eq!(ColorAccessibility.severity(), ConstraintSeverity::Warning);
+        assert!(ColorAccessibility.auto_correctable());
+        assert_eq!(DataDensity.severity(), ConstraintSeverity::Info);
+        assert!(!DataDensity.auto_correctable());
+        assert_eq!(
+            SmallestEffectiveDifference.severity(),
+            ConstraintSeverity::Warning
+        );
+        assert!(!SmallestEffectiveDifference.auto_correctable());
+        assert_eq!(
+            SmallMultiplesPreference.severity(),
+            ConstraintSeverity::Info
+        );
+        assert!(SmallMultiplesPreference.auto_correctable());
+    }
+}

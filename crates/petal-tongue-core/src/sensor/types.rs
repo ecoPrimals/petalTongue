@@ -506,3 +506,284 @@ impl Modifiers {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io;
+
+    fn ts() -> Instant {
+        Instant::now()
+    }
+
+    #[test]
+    fn sensor_error_display_strings() {
+        assert_eq!(
+            SensorError::Unavailable("camera".into()).to_string(),
+            "sensor unavailable: camera"
+        );
+        assert_eq!(
+            SensorError::Io(io::Error::new(io::ErrorKind::NotFound, "device")).to_string(),
+            "sensor I/O error: device"
+        );
+        assert_eq!(
+            SensorError::DataFormat("bad frame".into()).to_string(),
+            "sensor data error: bad frame"
+        );
+        assert_eq!(
+            SensorError::Timeout("poll".into()).to_string(),
+            "sensor timeout: poll"
+        );
+    }
+
+    #[test]
+    fn has_capability_returns_correct_booleans() {
+        let caps = SensorCapabilities {
+            sensor_type: SensorType::Mouse,
+            input: true,
+            output: false,
+            spatial: true,
+            temporal: false,
+            continuous: true,
+            discrete: true,
+            bidirectional: false,
+        };
+        assert!(caps.has_capability(SensorCapability::Input));
+        assert!(!caps.has_capability(SensorCapability::Output));
+        assert!(caps.has_capability(SensorCapability::Spatial));
+        assert!(!caps.has_capability(SensorCapability::Temporal));
+        assert!(caps.has_capability(SensorCapability::Continuous));
+        assert!(caps.has_capability(SensorCapability::Discrete));
+        assert!(!caps.has_capability(SensorCapability::Bidirectional));
+    }
+
+    #[test]
+    fn sensor_event_timestamp_extracts_correctly() {
+        let t_click = ts();
+        let click = SensorEvent::Click {
+            x: 1.0,
+            y: 2.0,
+            button: MouseButton::Left,
+            timestamp: t_click,
+        };
+        assert_eq!(click.timestamp(), t_click);
+
+        let t_heartbeat = ts();
+        let heartbeat = SensorEvent::Heartbeat {
+            latency: std::time::Duration::from_millis(5),
+            timestamp: t_heartbeat,
+        };
+        assert_eq!(heartbeat.timestamp(), t_heartbeat);
+
+        let t_generic = ts();
+        let generic = SensorEvent::Generic {
+            data: "payload".into(),
+            timestamp: t_generic,
+        };
+        assert_eq!(generic.timestamp(), t_generic);
+    }
+
+    #[test]
+    fn is_user_interaction_true_for_interactive_events() {
+        let t = ts();
+        let interactive = [
+            SensorEvent::Click {
+                x: 0.0,
+                y: 0.0,
+                button: MouseButton::Left,
+                timestamp: t,
+            },
+            SensorEvent::KeyPress {
+                key: Key::Enter,
+                modifiers: Modifiers::none(),
+                timestamp: t,
+            },
+            SensorEvent::ButtonPress {
+                button: 1,
+                timestamp: t,
+            },
+            SensorEvent::Scroll {
+                delta_x: 0.0,
+                delta_y: 1.0,
+                timestamp: t,
+            },
+            SensorEvent::VoiceCommand {
+                transcript: "hello".into(),
+                confidence: 0.9,
+                timestamp: t,
+            },
+            SensorEvent::Gesture {
+                gesture_type: GestureType::Wave,
+                magnitude: 0.5,
+                timestamp: t,
+            },
+            SensorEvent::Touch {
+                x: 10.0,
+                y: 20.0,
+                pressure: 1.0,
+                timestamp: t,
+            },
+            SensorEvent::GazePosition {
+                x: 100.0,
+                y: 200.0,
+                fixation_ms: 50,
+                timestamp: t,
+            },
+            SensorEvent::SwitchActivation {
+                switch_id: 0,
+                timestamp: t,
+            },
+            SensorEvent::AgentCommand {
+                intent: "select".into(),
+                parameters: serde_json::json!({}),
+                timestamp: t,
+            },
+        ];
+        for event in interactive {
+            assert!(event.is_user_interaction());
+        }
+    }
+
+    #[test]
+    fn is_user_interaction_false_for_passive_events() {
+        let t = ts();
+        let passive = [
+            SensorEvent::Position {
+                x: 0.0,
+                y: 0.0,
+                timestamp: t,
+            },
+            SensorEvent::Heartbeat {
+                latency: std::time::Duration::ZERO,
+                timestamp: t,
+            },
+            SensorEvent::FrameAcknowledged {
+                frame_id: 42,
+                timestamp: t,
+            },
+            SensorEvent::DisplayVisible {
+                visible: true,
+                timestamp: t,
+            },
+            SensorEvent::AudioLevel {
+                amplitude: 0.5,
+                frequency: None,
+                timestamp: t,
+            },
+            SensorEvent::Temperature {
+                celsius: 22.0,
+                timestamp: t,
+            },
+            SensorEvent::Generic {
+                data: "raw".into(),
+                timestamp: t,
+            },
+        ];
+        for event in passive {
+            assert!(!event.is_user_interaction());
+        }
+    }
+
+    #[test]
+    fn is_confirmation_true_for_confirmation_events() {
+        let t = ts();
+        let confirmations = [
+            SensorEvent::Heartbeat {
+                latency: std::time::Duration::from_millis(1),
+                timestamp: t,
+            },
+            SensorEvent::FrameAcknowledged {
+                frame_id: 1,
+                timestamp: t,
+            },
+            SensorEvent::DisplayVisible {
+                visible: false,
+                timestamp: t,
+            },
+        ];
+        for event in confirmations {
+            assert!(event.is_confirmation());
+        }
+    }
+
+    #[test]
+    fn is_confirmation_false_for_non_confirmation_events() {
+        let t = ts();
+        let non_confirmations = [
+            SensorEvent::Click {
+                x: 0.0,
+                y: 0.0,
+                button: MouseButton::Left,
+                timestamp: t,
+            },
+            SensorEvent::KeyPress {
+                key: Key::Tab,
+                modifiers: Modifiers::none(),
+                timestamp: t,
+            },
+            SensorEvent::Position {
+                x: 1.0,
+                y: 1.0,
+                timestamp: t,
+            },
+            SensorEvent::Generic {
+                data: "x".into(),
+                timestamp: t,
+            },
+        ];
+        for event in non_confirmations {
+            assert!(!event.is_confirmation());
+        }
+    }
+
+    #[test]
+    fn modifiers_none_all_false() {
+        let m = Modifiers::none();
+        assert!(!m.ctrl);
+        assert!(!m.alt);
+        assert!(!m.shift);
+        assert!(!m.meta);
+    }
+
+    #[test]
+    fn modifiers_ctrl_only_ctrl_true() {
+        let m = Modifiers::ctrl();
+        assert!(m.ctrl);
+        assert!(!m.alt);
+        assert!(!m.shift);
+        assert!(!m.meta);
+    }
+
+    #[test]
+    fn key_debug_format() {
+        assert_eq!(format!("{:?}", Key::Escape), "Escape");
+        assert_eq!(format!("{:?}", Key::Char('a')), "Char('a')");
+        assert_eq!(format!("{:?}", Key::F(5)), "F(5)");
+    }
+
+    #[test]
+    fn mouse_button_debug_format() {
+        assert_eq!(format!("{:?}", MouseButton::Left), "Left");
+        assert_eq!(format!("{:?}", MouseButton::Other(4)), "Other(4)");
+    }
+
+    #[test]
+    fn gesture_type_equality() {
+        assert_eq!(GestureType::Wave, GestureType::Wave);
+        assert_eq!(
+            GestureType::Swipe(GestureDirection::Up),
+            GestureType::Swipe(GestureDirection::Up)
+        );
+        assert_ne!(
+            GestureType::Swipe(GestureDirection::Up),
+            GestureType::Swipe(GestureDirection::Down)
+        );
+        assert_ne!(GestureType::PinchIn, GestureType::PinchOut);
+    }
+
+    #[test]
+    fn gesture_direction_equality() {
+        assert_eq!(GestureDirection::Left, GestureDirection::Left);
+        assert_ne!(GestureDirection::Left, GestureDirection::Right);
+    }
+}
