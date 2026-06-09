@@ -73,7 +73,11 @@ impl BiomeOSUIManager {
         let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
 
         // Try to discover biomeOS provider
-        let biomeos_provider = BiomeOSProvider::discover().await.ok().flatten();
+        let biomeos_provider = BiomeOSProvider::discover()
+            .await
+            .inspect_err(|e| tracing::debug!("biomeOS provider discovery: {e}"))
+            .ok()
+            .flatten();
 
         // Demo fallback only when biomeOS unavailable AND mock feature enabled
         let use_fixtures = biomeos_provider.is_none() && cfg!(feature = "mock");

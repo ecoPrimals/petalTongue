@@ -78,7 +78,7 @@ fn json_str_or(val: &serde_json::Value, key: &str, alt: &str) -> String {
     val.get(key)
         .or_else(|| val.get(alt))
         .and_then(serde_json::Value::as_str)
-        .unwrap_or("")
+        .unwrap_or_default()
         .to_owned()
 }
 
@@ -96,7 +96,7 @@ where
     let client_ephemeral_pub = client_hello
         .get("client_ephemeral_pub")
         .and_then(serde_json::Value::as_str)
-        .unwrap_or("")
+        .unwrap_or_default()
         .to_owned();
 
     tracing::debug!(
@@ -122,12 +122,12 @@ where
     let server_ephemeral_pub = create_result
         .get("server_ephemeral_pub")
         .and_then(serde_json::Value::as_str)
-        .unwrap_or("")
+        .unwrap_or_default()
         .to_owned();
     let challenge = create_result
         .get("challenge")
         .and_then(serde_json::Value::as_str)
-        .unwrap_or("")
+        .unwrap_or_default()
         .to_owned();
 
     tracing::debug!(session_token = %session_token, "BTSP JSON-line: session created via security provider");
@@ -166,7 +166,7 @@ where
     let response = challenge_response
         .get("response")
         .and_then(serde_json::Value::as_str)
-        .unwrap_or("")
+        .unwrap_or_default()
         .to_owned();
     let preferred_cipher = challenge_response
         .get("preferred_cipher")

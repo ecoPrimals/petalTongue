@@ -355,7 +355,7 @@ pub fn compile_geometry(
                         .as_object()
                         .and_then(|o| o.get("label"))
                         .and_then(|v| v.as_str())
-                        .unwrap_or("");
+                        .unwrap_or_default();
                     if !label.is_empty() && span_deg > 15.0 {
                         let mid_rad = f64::midpoint(start_rad, end_rad);
                         let label_r = r_outer + 6.0;

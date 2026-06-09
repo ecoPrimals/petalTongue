@@ -336,7 +336,7 @@ impl DataBindingCompiler {
                 let data: Vec<Value> = segments
                     .iter()
                     .filter_map(|seg| {
-                        let track = seg.get("track").and_then(Value::as_str).unwrap_or("");
+                        let track = seg.get("track").and_then(Value::as_str).unwrap_or_default();
                         let track_idx = tracks.iter().position(|t| t == track).unwrap_or(0);
                         let start = seg.get("start").and_then(Value::as_f64)?;
                         let end = seg.get("end").and_then(Value::as_f64)?;
@@ -383,7 +383,7 @@ impl DataBindingCompiler {
                             .get("ring")
                             .and_then(Value::as_str)
                             .or_else(|| arc.get("ring").and_then(Value::as_u64).map(|_| ""))
-                            .unwrap_or("");
+                            .unwrap_or_default();
                         let ring_idx = arc.get("ring").and_then(Value::as_u64).map_or_else(
                             || rings.iter().position(|r| r == ring_name).unwrap_or(0),
                             |idx| idx as usize,
@@ -395,7 +395,10 @@ impl DataBindingCompiler {
                             .and_then(Value::as_str)
                             .or_else(|| arc.get("name").and_then(Value::as_str))
                             .unwrap_or("feature");
-                        let category = arc.get("category").and_then(Value::as_str).unwrap_or("");
+                        let category = arc
+                            .get("category")
+                            .and_then(Value::as_str)
+                            .unwrap_or_default();
                         Some(serde_json::json!({
                             "x": f64::midpoint(start, end),
                             "y": ring_idx,

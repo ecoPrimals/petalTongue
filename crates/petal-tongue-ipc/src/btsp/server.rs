@@ -10,7 +10,7 @@ use super::types::{BtspHandshakeConfig, HandshakeResult};
 fn json_str(val: &serde_json::Value, key: &str) -> String {
     val.get(key)
         .and_then(serde_json::Value::as_str)
-        .unwrap_or("")
+        .unwrap_or_default()
         .to_owned()
 }
 

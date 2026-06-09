@@ -112,10 +112,10 @@ impl SystemInfo {
                 .map(|s| {
                     s.lines()
                         .next()
-                        .unwrap_or("")
+                        .unwrap_or_default()
                         .split_whitespace()
                         .nth(2)
-                        .unwrap_or("")
+                        .unwrap_or_default()
                         .to_string()
                 })
                 .filter(|v| !v.is_empty());

@@ -287,6 +287,7 @@ impl<M: GUIModality + 'static> UniversalRenderingEngine<M> {
                 name: name_for_events,
             })
             .await
+            .inspect_err(|e| tracing::debug!("modality stop broadcast: {e}"))
             .ok();
 
         result

@@ -494,7 +494,7 @@ fn paint_combat_grid(ui: &mut Ui, scene: &NarrativeScene) {
             .get("label")
             .or_else(|| entity.get("id"))
             .and_then(|v| v.as_str())
-            .unwrap_or("");
+            .unwrap_or_default();
 
         let screen_pos =
             rect.left_top() + vec2(ex as f32 * cell + cell / 2.0, ey as f32 * cell + cell / 2.0);

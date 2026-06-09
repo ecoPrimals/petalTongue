@@ -60,7 +60,7 @@ fn parse_entity_entry(key: &str, t: &toml::Table) -> EntityRegistryEntry {
         emoji: t
             .get("emoji")
             .and_then(|v| v.as_str())
-            .unwrap_or("")
+            .unwrap_or_default()
             .to_string(),
         kind: t
             .get("kind")
