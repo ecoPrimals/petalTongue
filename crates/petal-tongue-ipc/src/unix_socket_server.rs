@@ -15,6 +15,28 @@ use std::sync::Arc;
 use tokio::net::UnixListener;
 use tracing::{debug, error, info, warn};
 
+/// Check if a UDS bind error is eligible for TCP fallback.
+///
+/// Returns `true` when:
+/// - The error is `PermissionDenied` (EACCES — Android SELinux) AND
+/// - `PRIMAL_BIND_MODE` is `fallback`, `auto`, `tcp_only`, or `tcp`
+///
+/// This enables graceful degradation on grapheneGate (Pixel 8) where
+/// SELinux denies UDS bind in `/data/local/tmp`. `deploy_pixel.sh`
+/// exports `PRIMAL_BIND_MODE=fallback` to opt in.
+fn is_uds_fallback_eligible(error: &std::io::Error) -> bool {
+    if error.kind() != std::io::ErrorKind::PermissionDenied {
+        return false;
+    }
+    matches!(
+        std::env::var("PRIMAL_BIND_MODE")
+            .unwrap_or_default()
+            .to_lowercase()
+            .as_str(),
+        "fallback" | "auto" | "tcp_only" | "tcp"
+    )
+}
+
 /// Derive `<name>.pid` path from a socket path (e.g. `petaltongue.sock` → `petaltongue.pid`).
 fn pid_path(socket_path: &std::path::Path) -> PathBuf {
     socket_path.with_extension("pid")
@@ -241,28 +263,45 @@ impl UnixSocketServer {
             }
         }
 
-        let uds_listener = UnixListener::bind(&self.socket_path)
-            .map_err(|e| IpcServerError::SocketError(e.to_string()))?;
-        info!(
-            "Unix socket server listening: {}",
-            self.socket_path.display()
-        );
-        info!("   Family ID: {}", self.family_id);
-
-        write_pid_file(&self.socket_path);
-
-        if let Some(parent) = self.socket_path.parent() {
-            let symlink_name = crate::btsp::domain_symlink_filename(&posture);
-            let symlink_path = parent.join(&symlink_name);
-            let _ = std::fs::remove_file(&symlink_path);
-            if let Err(e) = std::os::unix::fs::symlink(&self.socket_path, &symlink_path) {
-                debug!("Could not create capability symlink {symlink_name}: {e}");
-            } else {
+        let uds_listener = match UnixListener::bind(&self.socket_path) {
+            Ok(l) => {
                 info!(
-                    "🔗 Capability symlink: {} → {}",
-                    symlink_path.display(),
+                    "Unix socket server listening: {}",
                     self.socket_path.display()
                 );
+                Some(l)
+            }
+            Err(e) if is_uds_fallback_eligible(&e) => {
+                warn!(
+                    "UDS bind failed at {} ({e}) — PRIMAL_BIND_MODE permits TCP fallback",
+                    self.socket_path.display()
+                );
+                None
+            }
+            Err(e) => {
+                return Err(IpcServerError::SocketError(e.to_string()));
+            }
+        };
+        if uds_listener.is_some() {
+            info!("   Family ID: {}", self.family_id);
+        }
+
+        if uds_listener.is_some() {
+            write_pid_file(&self.socket_path);
+
+            if let Some(parent) = self.socket_path.parent() {
+                let symlink_name = crate::btsp::domain_symlink_filename(&posture);
+                let symlink_path = parent.join(&symlink_name);
+                let _ = std::fs::remove_file(&symlink_path);
+                if let Err(e) = std::os::unix::fs::symlink(&self.socket_path, &symlink_path) {
+                    debug!("Could not create capability symlink {symlink_name}: {e}");
+                } else {
+                    info!(
+                        "Capability symlink: {} -> {}",
+                        symlink_path.display(),
+                        self.socket_path.display()
+                    );
+                }
             }
         }
 
@@ -271,15 +310,34 @@ impl UnixSocketServer {
             let listener = tokio::net::TcpListener::bind(addr)
                 .await
                 .map_err(|e| IpcServerError::SocketError(format!("TCP bind {addr}: {e}")))?;
-            info!("🔌 TCP JSON-RPC server listening: {addr}");
+            info!("TCP JSON-RPC server listening: {addr}");
+            Some(listener)
+        } else if uds_listener.is_none() {
+            let port = petal_tongue_core::constants::ECOSYSTEM_TCP_FALLBACK_PORT;
+            let addr = std::net::SocketAddr::new(self.tcp_bind_host, port);
+            let listener = tokio::net::TcpListener::bind(addr)
+                .await
+                .map_err(|e| IpcServerError::SocketError(format!("TCP fallback bind {addr}: {e}")))?;
+            info!("TCP JSON-RPC fallback server listening: {addr} (UDS unavailable)");
             Some(listener)
         } else {
             None
         };
 
+        if uds_listener.is_none() && tcp_listener.is_none() {
+            return Err(IpcServerError::SocketError(
+                "no transport available: UDS failed and no TCP configured".into(),
+            ));
+        }
+
         loop {
             tokio::select! {
-                result = uds_listener.accept() => {
+                result = async {
+                    match &uds_listener {
+                        Some(l) => l.accept().await,
+                        None => std::future::pending().await,
+                    }
+                } => {
                     match result {
                         Ok((stream, _addr)) => {
                             let server = Arc::clone(&self);
