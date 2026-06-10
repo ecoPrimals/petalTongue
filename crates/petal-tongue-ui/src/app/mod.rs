@@ -569,7 +569,11 @@ impl PetalTongueApp {
     pub fn active_session_count(&self) -> usize {
         self.visualization_state
             .as_ref()
-            .and_then(|vs| vs.read().ok())
+            .and_then(|vs| {
+                vs.read()
+                    .inspect_err(|e| tracing::warn!("viz state lock poisoned: {e}"))
+                    .ok()
+            })
             .map_or(0, |state| state.sessions().len())
     }
 }

@@ -6,6 +6,34 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 107: Remaining Debt Cleanup (June 10, 2026)
+
+Final surgical debt pass — `/tmp` hardcoding, async error observability,
+RwLock poison logging, doc/code alignment.
+
+#### Fixed
+- **`/tmp` literal** in `main.rs` `announce_to_neural_api()` → uses
+  `LEGACY_TMP_PREFIX` constant. petalTongue now has zero raw `/tmp` literals
+  in production code.
+- **Capabilities doc/code mismatch** — `get_status()` documented "Panics on
+  poison" but actually returned `None`. Doc corrected.
+
+#### Changed
+- **GPU compute re-discovery** (`initialize()`) — `.ok()` now logs error
+  via `inspect_err()` before discarding.
+- **Socket dir iteration** (`unix_socket_provider`) — `next_entry().await`
+  errors now logged and break cleanly instead of silently ending iteration.
+- **5 RwLock `.read().ok()` sites** now log poison via `inspect_err()`:
+  `data_service`, `adapter_registry`, `audio_sonification`, `capabilities`,
+  `app/mod.rs` visualization state.
+- **UDS server `start()` function** — added `#[expect(clippy::too_many_lines)]`
+  for the bind+fallback+accept loop (131 lines, from Wave 107 UDS→TCP fallback).
+
+#### Verified
+- **6,454 tests pass**, zero Clippy warnings.
+- **Zero `/tmp` literals** in production code (verified via audit).
+- **Zero TODO/FIXME/HACK** comments in codebase.
+
 ### Wave 102: Deep Debt Modernization + Coverage Sprint (June 9, 2026)
 
 Error observability, idiomatic Rust patterns, smart module refactor, and

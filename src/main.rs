@@ -677,7 +677,7 @@ async fn announce_to_neural_api() {
     let family = std::env::var(petal_tongue_core::constants::FAMILY_ID)
         .unwrap_or_else(|_| "nat0".to_owned());
     let socket_dir = std::env::var(petal_tongue_core::constants::XDG_RUNTIME_DIR)
-        .unwrap_or_else(|_| "/tmp".to_owned());
+        .unwrap_or_else(|_| petal_tongue_core::constants::LEGACY_TMP_PREFIX.to_owned());
     let socket = format!("{socket_dir}/biomeos/neural-api-{family}.sock");
 
     let uds_path = petal_tongue_ipc::socket_path::get_petaltongue_socket_path()

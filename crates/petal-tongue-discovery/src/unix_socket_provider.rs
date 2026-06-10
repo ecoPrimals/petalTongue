@@ -88,7 +88,15 @@ impl UnixSocketProvider {
             let mut probe_futures = Vec::new();
             let provider = Arc::new(self.clone());
 
-            while let Some(entry) = entries.next_entry().await.ok().flatten() {
+            loop {
+                let entry = match entries.next_entry().await {
+                    Ok(Some(entry)) => entry,
+                    Ok(None) => break,
+                    Err(e) => {
+                        tracing::debug!("socket dir read: {e}");
+                        break;
+                    }
+                };
                 let path = entry.path();
 
                 // Look for .sock files (Unix domain sockets)

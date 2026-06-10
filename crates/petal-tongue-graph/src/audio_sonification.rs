@@ -239,7 +239,13 @@ impl AudioSonificationRenderer {
     /// Get detailed information about a specific node's audio
     #[must_use]
     pub fn describe_node_audio(&self, node_id: &str) -> Option<String> {
-        let node = self.graph.read().ok()?.get_node(node_id)?.clone();
+        let node = self
+            .graph
+            .read()
+            .inspect_err(|e| tracing::warn!("sonification graph lock poisoned: {e}"))
+            .ok()?
+            .get_node(node_id)?
+            .clone();
         let attrs = self.node_to_audio(&node);
         let name = node.info.name.clone();
         let health_desc = match node.info.health {

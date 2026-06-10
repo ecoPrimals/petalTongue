@@ -273,7 +273,10 @@ impl ComputeProvider for GpuComputeProvider {
     async fn initialize(&mut self) -> Result<()> {
         if self.service.is_none() {
             // Try discovery again
-            self.service = Self::discover_compute_provider().await.ok();
+            self.service = Self::discover_compute_provider()
+                .await
+                .inspect_err(|e| tracing::debug!("GPU compute re-discovery: {e}"))
+                .ok();
 
             if let Some(ref svc) = self.service {
                 self.capabilities = Self::parse_capabilities(&svc.capabilities);

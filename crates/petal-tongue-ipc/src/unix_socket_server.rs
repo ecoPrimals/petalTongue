@@ -236,6 +236,7 @@ impl UnixSocketServer {
     /// BTSP Phase 2: when `BtspHandshakeConfig` is available from the environment,
     /// every accepted connection must complete a handshake (delegated to the security provider)
     /// before JSON-RPC is served. Development mode (no FAMILY_ID) skips handshake.
+    #[expect(clippy::too_many_lines, reason = "UDS server start: bind + fallback + accept loop")]
     pub async fn start(self: Arc<Self>) -> Result<(), IpcServerError> {
         let posture = crate::btsp::current_btsp_posture();
         crate::btsp::log_handshake_policy(&crate::btsp::handshake_policy(&posture));
@@ -315,9 +316,9 @@ impl UnixSocketServer {
         } else if uds_listener.is_none() {
             let port = petal_tongue_core::constants::ECOSYSTEM_TCP_FALLBACK_PORT;
             let addr = std::net::SocketAddr::new(self.tcp_bind_host, port);
-            let listener = tokio::net::TcpListener::bind(addr)
-                .await
-                .map_err(|e| IpcServerError::SocketError(format!("TCP fallback bind {addr}: {e}")))?;
+            let listener = tokio::net::TcpListener::bind(addr).await.map_err(|e| {
+                IpcServerError::SocketError(format!("TCP fallback bind {addr}: {e}"))
+            })?;
             info!("TCP JSON-RPC fallback server listening: {addr} (UDS unavailable)");
             Some(listener)
         } else {

@@ -83,7 +83,11 @@ impl AdapterRegistry {
     /// If multiple adapters provide decorations, they're merged (last wins).
     #[must_use]
     pub fn get_node_decoration(&self, properties: &Properties) -> Option<NodeDecoration> {
-        let adapters = self.adapters.read().ok()?;
+        let adapters = self
+            .adapters
+            .read()
+            .inspect_err(|e| tracing::warn!("adapter registry lock poisoned: {e}"))
+            .ok()?;
 
         let mut decoration: Option<NodeDecoration> = None;
 
