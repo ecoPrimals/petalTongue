@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: June 3, 2026 (Wave 76 consolidation — S3 cutover readiness, complete idiom sweep, zero production debt)
+**Updated**: June 10, 2026 (Wave 107 — transport evolution complete, 4-gate mesh live, zero P1 blockers)
 
 ---
 
@@ -48,6 +48,10 @@ export PETALTONGUE_HEADLESS_PORT=9000
 export BIOMEOS_NEURAL_API_SOCKET=/run/user/$(id -u)/biomeos-neural-api.sock
 export BIOMEOS_SOCKET_DIR=/run/user/$(id -u)/biomeos  # DH-1: socket base dir
 
+# Transport (Wave 100 — launcher-injected, supersedes CLI args)
+export TRANSPORT_ENDPOINT='{"transport":"uds","path":"/run/user/1000/biomeos/petaltongue.sock"}'
+export PRIMAL_BIND_MODE=fallback  # UDS→TCP fallback for Android/SELinux
+
 # JH-0 MethodGate authorization mode (default: permissive)
 export PETALTONGUE_AUTH_MODE=enforced  # reject unauthenticated protected calls
 
@@ -86,7 +90,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace --all-features           # 6,217+ tests
+cargo test --workspace --all-features           # 6,454+ tests
 cargo clippy --workspace --all-features -- -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)

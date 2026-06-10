@@ -2,6 +2,44 @@
 
 This document describes all environment variables used by petalTongue.
 
+## Transport Configuration (sourDough Standard — Wave 100+)
+
+### **TRANSPORT_ENDPOINT**
+**Type**: JSON string  
+**Default**: None (falls back to CLI args or XDG socket resolution)  
+**Required**: No  
+**Example**: `TRANSPORT_ENDPOINT='{"transport":"uds","path":"/run/user/1000/biomeos/petaltongue.sock"}'`
+
+Launcher-injected JSON describing **how** petalTongue is reached. Supersedes all CLI
+args (`--socket`, `--port`, `--bind`) when set. The launcher/Tower Atomic decides the
+transport — primals never self-bind in production.
+
+**Wire format** (sourDough canonical, `#[serde(tag = "transport")]`):
+```json
+{ "transport": "uds", "path": "/run/user/1000/biomeos/petaltongue.sock" }
+{ "transport": "tcp", "host": "127.0.0.1", "port": 9900 }
+{ "transport": "mesh_relay", "peer_id": "strandgate", "capability": "visualization" }
+```
+
+**Resolution priority** (Wave 100):
+- Priority 0: `TRANSPORT_ENDPOINT` env var (launcher-injected)
+- Priority 1: CLI `--socket` / `--port` / `--bind`
+- Priority 2: XDG runtime socket resolution
+
+---
+
+### **PRIMAL_BIND_MODE**
+**Type**: String (`fallback`)  
+**Default**: None (UDS-only, fatal on bind failure)  
+**Required**: No  
+**Example**: `PRIMAL_BIND_MODE=fallback`
+
+When set to `fallback`, the UDS server detects `PermissionDenied` on socket bind
+and falls back to TCP on the ecosystem port (9900). Enables Android/SELinux
+deployments (grapheneGate) where UDS bind is denied.
+
+---
+
 ## Socket Configuration (biomeOS Standard)
 
 ### **PETALTONGUE_SOCKET**
