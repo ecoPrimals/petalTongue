@@ -126,10 +126,9 @@ cargo test --workspace --all-features     # 6,454+ tests, ~85-90% coverage
 
 ## Current State
 
-Wave 102 Deep Debt Modernization + Coverage Sprint (June 9, 2026). 6,454+ tests,
-all passing. `.ok()` error observability, `unwrap_or_default()` idiom sweep,
-`content_render` smart refactor (887L → 4 submodules), +52 tests across
-sensor/types, tufte/constraints, dynamic_schema/types, content_direct.
+Wave 107 Remaining Debt Cleanup (June 10, 2026). 6,454+ tests, all passing.
+Zero `/tmp` literals in production. Zero TODO/FIXME/HACK. RwLock poison
+observability. GPU compute + socket dir error logging. Doc/code alignment.
 `TransportEndpoint` type (sourDough canonical standard) implemented with
 `connect_transport()`. `TRANSPORT_ENDPOINT` env var accepted — launcher-injected
 transport supersedes CLI `--port`/`--socket`. Content backend and push delivery

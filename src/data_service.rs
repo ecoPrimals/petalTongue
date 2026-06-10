@@ -185,7 +185,11 @@ impl DataService {
     ///
     /// Returns `None` if the graph lock is poisoned.
     pub fn snapshot_sync(&self) -> Option<DataSnapshot> {
-        let graph = self.graph.read().ok()?;
+        let graph = self
+            .graph
+            .read()
+            .inspect_err(|e| tracing::warn!("graph lock poisoned: {e}"))
+            .ok()?;
         let primals = graph.nodes().iter().map(|node| node.info.clone()).collect();
         let edges = graph.edges().to_vec();
         drop(graph);

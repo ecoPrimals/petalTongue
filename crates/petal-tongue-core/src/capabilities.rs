@@ -150,12 +150,14 @@ impl CapabilityDetector {
 
     /// Get the status of a specific modality
     ///
-    /// # Panics
-    ///
-    /// Panics if the capabilities lock is poisoned.
+    /// Returns `None` if the capabilities lock is poisoned.
     #[must_use]
     pub fn get_status(&self, modality: Modality) -> Option<ModalityCapability> {
-        let caps = self.capabilities.read().ok()?;
+        let caps = self
+            .capabilities
+            .read()
+            .inspect_err(|e| tracing::warn!("capabilities lock poisoned: {e}"))
+            .ok()?;
         caps.iter().find(|c| c.modality == modality).cloned()
     }
 
