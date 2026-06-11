@@ -6,6 +6,24 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 110: HEALTH-01 Compliance (June 11, 2026)
+
+Bare `"health"` method now returns enriched schema per HEALTH-01 ecosystem standard.
+
+#### Changed
+- **Bare `"health"` rerouted** from liveness (`{"status":"alive"}`) to enriched
+  `health.check` (`{status, primal, version, uptime_s, uptime_seconds, modalities_active}`).
+  Health sweeps calling `{"method":"health"}` now get full primal identity.
+- **`uptime_s` field added** to `health.check` response alongside `uptime_seconds`
+  for HEALTH-01 ecosystem parity (13/13 standard).
+- **`"health"` advertised** in `capabilities.list` methods array.
+
+#### Added
+- Test: `dispatch_bare_health_routes_to_enriched_check` — validates HEALTH-01 schema
+  (status, primal, version, uptime_s) for bare `"health"` method.
+- Test assertions: `handle_health_check_returns_healthy` now validates both `uptime_s`
+  and `uptime_seconds` fields.
+
 ### Wave 107: Remaining Debt Cleanup (June 10, 2026)
 
 Final surgical debt pass — `/tmp` hardcoding, async error observability,

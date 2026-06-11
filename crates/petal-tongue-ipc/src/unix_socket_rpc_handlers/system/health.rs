@@ -52,7 +52,8 @@ pub fn handle_health_readiness(handlers: &RpcHandlers, request: JsonRpcRequest) 
 /// Handle health.check: return status, version, primal, uptime, and modalities.
 ///
 /// Per `DEPLOYMENT_VALIDATION_STANDARD.md` v1.0 the response MUST include
-/// `version` and `primal` fields.
+/// `version` and `primal` fields. Per HEALTH-01 (Wave 110), bare `"health"`
+/// also routes here and the response includes `uptime_s` for ecosystem parity.
 #[must_use]
 pub fn handle_health_check(handlers: &RpcHandlers, request: JsonRpcRequest) -> JsonRpcResponse {
     use petal_tongue_core::capability_names::primal_names;
@@ -61,6 +62,7 @@ pub fn handle_health_check(handlers: &RpcHandlers, request: JsonRpcRequest) -> J
     let modalities = capability_detection::detect_active_modalities();
     let modality_strs: Vec<&str> = modalities.iter().map(CapabilityTaxonomy::as_str).collect();
     let display_available = modalities.contains(&CapabilityTaxonomy::UIVisualization);
+    let uptime = handlers.uptime_seconds();
 
     JsonRpcResponse::success(
         request.id,
@@ -68,7 +70,8 @@ pub fn handle_health_check(handlers: &RpcHandlers, request: JsonRpcRequest) -> J
             "status": "healthy",
             "version": env!("CARGO_PKG_VERSION"),
             "primal": primal_names::PETALTONGUE,
-            "uptime_seconds": handlers.uptime_seconds(),
+            "uptime_s": uptime,
+            "uptime_seconds": uptime,
             "display_available": display_available,
             "modalities_active": modality_strs,
         }),

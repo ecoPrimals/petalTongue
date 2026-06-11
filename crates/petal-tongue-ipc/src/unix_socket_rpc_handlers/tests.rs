@@ -211,6 +211,31 @@ async fn dispatch_status_alias_routes_to_health_check() {
 }
 
 #[tokio::test]
+async fn dispatch_bare_health_routes_to_enriched_check() {
+    let h = test_handlers();
+    let req = JsonRpcRequest::new("health", json!({}), json!(1));
+    let resp = h.handle_request(req, &test_ctx()).await;
+    assert!(resp.error.is_none());
+    let r = resp.result.unwrap();
+    assert_eq!(
+        r["status"], "healthy",
+        "HEALTH-01: bare health → enriched check"
+    );
+    assert_eq!(
+        r["primal"], "petaltongue",
+        "HEALTH-01: primal field required"
+    );
+    assert!(
+        r["version"].as_str().is_some(),
+        "HEALTH-01: version field required"
+    );
+    assert!(
+        r["uptime_s"].as_u64().is_some(),
+        "HEALTH-01: uptime_s field required"
+    );
+}
+
+#[tokio::test]
 async fn dispatch_identity_get() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("identity.get", json!({}), json!(1));

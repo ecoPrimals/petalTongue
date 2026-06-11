@@ -38,7 +38,8 @@ pub fn get_capabilities(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
     }
 
     let methods = vec![
-        // System
+        // System (HEALTH-01: bare "health" → enriched check)
+        "health",
         "health.check",
         "health.liveness",
         "health.readiness",
