@@ -126,14 +126,14 @@ cargo test --workspace --all-features     # 6,454+ tests, ~85-90% coverage
 
 ## Current State
 
-Wave 107 Remaining Debt Cleanup (June 10, 2026). 6,454+ tests, all passing.
+Wave 110 HEALTH-01 Compliance (June 11, 2026). 6,455+ tests, all passing.
+Bare `"health"` method rerouted from liveness to enriched `health.check` —
+returns `{status, primal, version, uptime_s}` per HEALTH-01 13/13 standard.
+`uptime_s` field added alongside `uptime_seconds` for ecosystem parity.
 Zero `/tmp` literals in production. Zero TODO/FIXME/HACK. RwLock poison
-observability. GPU compute + socket dir error logging. Doc/code alignment.
-`TransportEndpoint` type (sourDough canonical standard) implemented with
-`connect_transport()`. `TRANSPORT_ENDPOINT` env var accepted — launcher-injected
-transport supersedes CLI `--port`/`--socket`. Content backend and push delivery
-refactored to use unified transport. `--port` remains Tier 5 (debug/standalone).
-Zero self-binding anti-patterns (verified by audit).
+observability. `TransportEndpoint` type (sourDough canonical standard)
+with `connect_transport()`. `TRANSPORT_ENDPOINT` env var accepted.
+Zero self-binding anti-patterns.
 
 Stadial parity gate cleared (April 17, 2026). All CI gates pass (fmt,
 clippy pedantic+nursery, doc, cargo deny, tests). Zero unsafe, zero

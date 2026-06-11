@@ -34,8 +34,11 @@ impl RpcHandlers {
 
         match method {
             // Health (with SEMANTIC_METHOD_NAMING_STANDARD aliases)
-            "health.check" | "status" | "check" => system::handle_health_check(self, req),
-            "health.liveness" | "ping" | "health" => system::handle_health_liveness(self, req),
+            // HEALTH-01: bare "health" routes to enriched check (status, primal, version, uptime_s)
+            "health.check" | "status" | "check" | "health" => {
+                system::handle_health_check(self, req)
+            }
+            "health.liveness" | "ping" => system::handle_health_liveness(self, req),
             "health.readiness" => system::handle_health_readiness(self, req),
             "health.get" => system::get_health(self, req.id),
 

@@ -30,6 +30,14 @@ fn handle_health_check_returns_healthy() {
         "DEPLOYMENT_VALIDATION_STANDARD: health.check MUST include version"
     );
     assert!(
+        r["uptime_s"].as_u64().is_some(),
+        "HEALTH-01: uptime_s field required for ecosystem parity"
+    );
+    assert!(
+        r["uptime_seconds"].as_u64().is_some(),
+        "backward-compat: uptime_seconds still present"
+    );
+    assert!(
         r["modalities_active"]
             .as_array()
             .unwrap()
