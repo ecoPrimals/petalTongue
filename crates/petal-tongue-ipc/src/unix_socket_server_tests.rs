@@ -474,6 +474,97 @@ fn has_tcp_port_reflects_builder() {
     );
 }
 
+#[test]
+fn ribocipher_prefix_constant_is_correct() {
+    assert_eq!(
+        UnixSocketServer::RIBOCIPHER_PREFIX,
+        [0xEC, 0x01],
+        "riboCipher signal prefix per Wave 113 guideStone"
+    );
+}
+
+#[tokio::test]
+async fn strip_ribocipher_prefix_removes_signal_bytes() {
+    let data = b"\xEC\x01{\"jsonrpc\":\"2.0\",\"method\":\"health\",\"id\":1}\n";
+    let mut reader = tokio::io::BufReader::new(&data[..]);
+    UnixSocketServer::strip_ribocipher_prefix(&mut reader).await;
+
+    use tokio::io::AsyncBufReadExt;
+    let mut remaining = Vec::new();
+    reader.read_until(b'\n', &mut remaining).await.unwrap();
+    assert!(
+        remaining.starts_with(b"{\"jsonrpc\""),
+        "after strip, remaining should start with JSON: {remaining:?}"
+    );
+}
+
+#[tokio::test]
+async fn strip_ribocipher_prefix_leaves_plain_json_untouched() {
+    let data = b"{\"jsonrpc\":\"2.0\",\"method\":\"health\",\"id\":1}\n";
+    let mut reader = tokio::io::BufReader::new(&data[..]);
+    UnixSocketServer::strip_ribocipher_prefix(&mut reader).await;
+
+    use tokio::io::AsyncBufReadExt;
+    let mut remaining = Vec::new();
+    reader.read_until(b'\n', &mut remaining).await.unwrap();
+    assert!(
+        remaining.starts_with(b"{\"jsonrpc\""),
+        "plain JSON-RPC should pass through unchanged: {remaining:?}"
+    );
+}
+
+#[tokio::test]
+async fn strip_ribocipher_prefix_leaves_btsp_binary_untouched() {
+    let data = b"\x00\x00\x00\x10some_btsp_frame_data";
+    let mut reader = tokio::io::BufReader::new(&data[..]);
+    UnixSocketServer::strip_ribocipher_prefix(&mut reader).await;
+
+    use tokio::io::AsyncBufReadExt;
+    let buf = reader.fill_buf().await.unwrap();
+    assert_eq!(
+        buf[0], 0x00,
+        "non-riboCipher binary prefix should pass through unchanged"
+    );
+}
+
+#[tokio::test]
+async fn ribocipher_prefix_then_health_returns_enriched_response() {
+    let graph = Arc::new(RwLock::new(GraphEngine::new()));
+    let viz_state = Arc::new(RwLock::new(VisualizationState::new()));
+    let handlers = super::RpcHandlers::new(graph, "test".to_owned(), viz_state);
+
+    let mut input = Vec::new();
+    input.extend_from_slice(&[0xEC, 0x01]);
+    input
+        .extend_from_slice(b"{\"jsonrpc\":\"2.0\",\"method\":\"health\",\"params\":{},\"id\":1}\n");
+
+    let mut reader = tokio::io::BufReader::new(&input[..]);
+    UnixSocketServer::strip_ribocipher_prefix(&mut reader).await;
+
+    let mut output = Vec::new();
+    let ctx = crate::method_gate::CallerContext::unix();
+    crate::unix_socket_connection::handle_connection_split(&handlers, reader, &mut output, &ctx)
+        .await
+        .expect("handle_connection_split");
+
+    let response: serde_json::Value =
+        serde_json::from_slice(output.trim_ascii()).expect("parse response");
+    assert_eq!(response["jsonrpc"], "2.0");
+    assert_eq!(response["id"], 1);
+    assert!(
+        response["error"].is_null(),
+        "riboCipher-prefixed health should succeed: {response}"
+    );
+    assert_eq!(
+        response["result"]["status"], "healthy",
+        "HEALTH-01: bare health returns enriched check"
+    );
+    assert_eq!(
+        response["result"]["primal"], "petaltongue",
+        "HEALTH-01: primal field required"
+    );
+}
+
 /// Wave 86 P2: verify health.liveness via handle_connection_split (post-peek path).
 /// This simulates the exact code path after UdsHandshakeOutcome::PlainJsonRpc
 /// routes a buffered reader to the NDJSON handler.

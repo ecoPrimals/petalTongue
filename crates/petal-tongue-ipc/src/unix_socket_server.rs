@@ -383,6 +383,28 @@ impl UnixSocketServer {
         }
     }
 
+    /// riboCipher signal prefix: `[0xEC, 0x01]`.
+    ///
+    /// cellMembrane probes prepend this 2-byte prefix before JSON-RPC on UDS.
+    /// Per Wave 113 guideStone amendment, all primals MUST accept and strip
+    /// this prefix rather than rejecting the connection.
+    const RIBOCIPHER_PREFIX: [u8; 2] = [0xEC, 0x01];
+
+    /// Peek the UDS `BufReader` for a riboCipher `[0xEC, 0x01]` prefix and
+    /// consume it if present. This runs before BTSP classification so the
+    /// remaining bytes start with `{` (JSON-RPC) or a BTSP framing byte.
+    async fn strip_ribocipher_prefix<R: tokio::io::AsyncBufRead + Unpin>(reader: &mut R) {
+        use tokio::io::AsyncBufReadExt;
+
+        match reader.fill_buf().await {
+            Ok(buf) if buf.len() >= 2 && buf[..2] == Self::RIBOCIPHER_PREFIX => {
+                debug!("riboCipher prefix detected on UDS — stripping [0xEC, 0x01]");
+                reader.consume(2);
+            }
+            _ => {}
+        }
+    }
+
     /// Classify a peek buffer as BTSP JSON-line protocol announcement.
     ///
     /// Whitespace-tolerant: leading ASCII whitespace is ignored before
@@ -415,13 +437,15 @@ impl UnixSocketServer {
         stream: tokio::net::UnixStream,
         btsp_config: Option<Arc<crate::btsp::BtspHandshakeConfig>>,
     ) -> Result<(), unix_socket_connection::ConnectionError> {
+        let (reader, mut writer) = stream.into_split();
+        let mut buf_reader = tokio::io::BufReader::new(reader);
+
+        Self::strip_ribocipher_prefix(&mut buf_reader).await;
+
+        let ctx = crate::method_gate::CallerContext::unix();
+
         if let Some(ref cfg) = btsp_config {
-            let (reader, mut writer) = stream.into_split();
-            let mut buf_reader = tokio::io::BufReader::new(reader);
-
             let outcome = Self::run_uds_handshake(&mut buf_reader, &mut writer, cfg).await?;
-
-            let ctx = crate::method_gate::CallerContext::unix();
 
             match outcome {
                 UdsHandshakeOutcome::Reject => {
@@ -468,8 +492,8 @@ impl UnixSocketServer {
                 }
             }
         } else {
-            let ctx = crate::method_gate::CallerContext::unix();
-            unix_socket_connection::handle_connection(handlers, stream, &ctx).await?;
+            unix_socket_connection::handle_connection_split(handlers, buf_reader, writer, &ctx)
+                .await?;
         }
         Ok(())
     }
