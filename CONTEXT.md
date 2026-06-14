@@ -126,13 +126,11 @@ cargo test --workspace --all-features     # 6,454+ tests, ~85-90% coverage
 
 ## Current State
 
-Wave 110 HEALTH-01 Compliance (June 11, 2026). 6,455+ tests, all passing.
-Bare `"health"` method rerouted from liveness to enriched `health.check` —
-returns `{status, primal, version, uptime_s}` per HEALTH-01 13/13 standard.
-`uptime_s` field added alongside `uptime_seconds` for ecosystem parity.
-Zero `/tmp` literals in production. Zero TODO/FIXME/HACK. RwLock poison
-observability. `TransportEndpoint` type (sourDough canonical standard)
-with `connect_transport()`. `TRANSPORT_ENDPOINT` env var accepted.
+Wave 113 riboCipher Prefix Acceptance (June 14, 2026). 6,460+ tests, all passing.
+UDS connections now accept and strip the `[0xEC, 0x01]` riboCipher signal
+prefix before BTSP classification or JSON-RPC parsing. HEALTH-01 compliant
+(bare `"health"` → enriched check with `uptime_s`). Zero `/tmp` literals.
+Zero TODO/FIXME/HACK. `TransportEndpoint` type with `connect_transport()`.
 Zero self-binding anti-patterns.
 
 Stadial parity gate cleared (April 17, 2026). All CI gates pass (fmt,

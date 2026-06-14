@@ -6,6 +6,25 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 113: riboCipher Prefix Acceptance (June 14, 2026)
+
+Accept and strip the `[0xEC, 0x01]` riboCipher signal prefix on UDS connections
+per Wave 113 guideStone amendment. cellMembrane health probes prepend this
+2-byte prefix before JSON-RPC; all primals MUST accept it.
+
+#### Added
+- **riboCipher prefix stripping** in `handle_uds_with_btsp`: peek first 2 bytes
+  via `BufReader::fill_buf()`, consume if `[0xEC, 0x01]`, then proceed to BTSP
+  classification or plain JSON-RPC. Works on both BTSP-active and dev paths.
+- `RIBOCIPHER_PREFIX` constant (`[0xEC, 0x01]`) on `UnixSocketServer`.
+- 5 tests: prefix constant, strip-removes-bytes, plain-JSON-passthrough,
+  BTSP-binary-passthrough, full riboCipher→health enriched response roundtrip.
+
+#### Changed
+- `handle_uds_with_btsp`: always splits stream + creates `BufReader` up front
+  (previously only in BTSP path), enabling consistent prefix detection before
+  protocol classification.
+
 ### Wave 110: HEALTH-01 Compliance (June 11, 2026)
 
 Bare `"health"` method now returns enriched schema per HEALTH-01 ecosystem standard.

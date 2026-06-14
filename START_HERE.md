@@ -90,7 +90,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace --all-features           # 6,455+ tests
+cargo test --workspace --all-features           # 6,460+ tests
 cargo clippy --workspace --all-features -- -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
