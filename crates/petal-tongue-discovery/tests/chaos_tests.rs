@@ -29,7 +29,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 #[cfg(feature = "test-fixtures")]
-use petal_tongue_discovery::DemoVisualizationProvider;
+use petal_tongue_discovery::OfflineVisualizationProvider;
 
 #[tokio::test]
 async fn chaos_no_providers_graceful_degradation() {
@@ -59,8 +59,8 @@ async fn chaos_concurrent_discovery_sources() {
 #[cfg(feature = "test-fixtures")]
 fn one_demo_provider()
 -> impl std::future::Future<Output = DiscoveryResult<Vec<KnownVisualizationProvider>>> {
-    std::future::ready(Ok(vec![KnownVisualizationProvider::Demo(
-        DemoVisualizationProvider::new(),
+    std::future::ready(Ok(vec![KnownVisualizationProvider::Offline(
+        OfflineVisualizationProvider::new(),
     )]))
 }
 

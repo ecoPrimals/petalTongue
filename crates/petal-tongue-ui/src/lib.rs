@@ -92,8 +92,6 @@ pub mod tutorial_mode; // Concrete InputAdapter implementations (pointer, keyboa
 pub mod biomeos_integration; // biomeOS UI Integration (device management provider)
 pub mod biomeos_ui_manager; // biomeOS UI Manager - Phase 5 (integration & wiring)
 pub mod data_source;
-#[cfg(feature = "mock")]
-pub mod demo_device_provider; // Demo fallback when biomeOS unavailable
 pub mod device_panel; // Device Management UI - Phase 2
 pub mod display; // Pure Rust display system
 pub mod display_pure_rust;
@@ -116,6 +114,8 @@ pub mod mode_presets; // Mode presets — named bundles of motor commands (SAME 
 pub mod multimodal_stream;
 pub mod niche_designer; // Niche Designer UI - Phase 4
 pub mod node_palette; // Node palette - available node types for graph builder
+#[cfg(feature = "offline-demo")]
+pub mod offline_device_provider; // Offline degraded state when biomeOS unavailable
 pub mod output_verification; // Universal output verification (visual, audio, haptic, etc.)
 pub mod primal_panel; // Primal Status UI - Phase 3
 pub mod proc_stats;
@@ -132,7 +132,7 @@ pub mod egui_compiler;
 pub mod game_data_channel;
 pub mod interaction_bridge;
 pub mod neural_registration;
-#[cfg(any(test, feature = "mock"))]
+#[cfg(any(test, feature = "offline-demo"))]
 pub mod sandbox_provider;
 pub mod scene_bridge;
 pub mod scene_interaction;

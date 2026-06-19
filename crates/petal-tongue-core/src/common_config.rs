@@ -4,6 +4,7 @@
 //! Previously sourced from sourdough-core, now self-contained for independence.
 
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 
 /// Common configuration shared by all primals.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -13,7 +14,7 @@ pub struct CommonConfig {
 
     /// Host to bind to
     #[serde(default = "default_host")]
-    pub host: String,
+    pub host: Cow<'static, str>,
 
     /// Port to bind to
     #[serde(default = "default_port")]
@@ -21,7 +22,7 @@ pub struct CommonConfig {
 
     /// Log level
     #[serde(default = "default_log_level")]
-    pub log_level: String,
+    pub log_level: Cow<'static, str>,
 }
 
 impl Default for CommonConfig {
@@ -35,16 +36,16 @@ impl Default for CommonConfig {
     }
 }
 
-fn default_host() -> String {
-    crate::constants::DEFAULT_LOOPBACK_HOST.to_string()
+const fn default_host() -> Cow<'static, str> {
+    Cow::Borrowed(crate::constants::DEFAULT_LOOPBACK_HOST)
 }
 
 const fn default_port() -> u16 {
     crate::constants::DEFAULT_HEADLESS_PORT
 }
 
-fn default_log_level() -> String {
-    "info".to_owned()
+const fn default_log_level() -> Cow<'static, str> {
+    Cow::Borrowed("info")
 }
 
 #[cfg(test)]
@@ -64,9 +65,9 @@ mod tests {
     fn test_config_serialization_roundtrip() {
         let config = CommonConfig {
             name: "test-primal".to_owned(),
-            host: "0.0.0.0".to_owned(),
+            host: Cow::Borrowed("0.0.0.0"),
             port: 9000,
-            log_level: "debug".to_owned(),
+            log_level: Cow::Borrowed("debug"),
         };
         let json = serde_json::to_string(&config).expect("serialize");
         let restored: CommonConfig = serde_json::from_str(&json).expect("deserialize");

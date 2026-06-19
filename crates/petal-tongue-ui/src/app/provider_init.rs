@@ -38,15 +38,17 @@ pub(super) fn discover_data_providers(
         }
     } else if tutorial_mode.is_enabled() {
         tracing::info!("📚 Tutorial mode: Using demonstration data");
-        #[cfg(feature = "mock")]
+        #[cfg(feature = "offline-demo")]
         {
-            vec![KnownVisualizationProvider::Demo(
-                petal_tongue_discovery::DemoVisualizationProvider::new(),
+            vec![KnownVisualizationProvider::Offline(
+                petal_tongue_discovery::OfflineVisualizationProvider::new(),
             )]
         }
-        #[cfg(not(feature = "mock"))]
+        #[cfg(not(feature = "offline-demo"))]
         {
-            tracing::info!("💡 Mock feature disabled - start with --features mock for demo data");
+            tracing::info!(
+                "💡 Offline-demo feature disabled — start with --features offline-demo for sample data"
+            );
             vec![]
         }
     } else {
@@ -56,16 +58,16 @@ pub(super) fn discover_data_providers(
                     if providers.is_empty() {
                         tracing::warn!("No visualization providers discovered");
                         if crate::tutorial_mode::should_fallback(0) {
-                            #[cfg(feature = "mock")]
+                            #[cfg(feature = "offline-demo")]
                             {
-                                tracing::info!("💡 Using tutorial data as graceful fallback");
-                                vec![KnownVisualizationProvider::Demo(
-                                    petal_tongue_discovery::DemoVisualizationProvider::new(),
+                                tracing::info!("💡 Using offline sample data as graceful fallback");
+                                vec![KnownVisualizationProvider::Offline(
+                                    petal_tongue_discovery::OfflineVisualizationProvider::new(),
                                 )]
                             }
-                            #[cfg(not(feature = "mock"))]
+                            #[cfg(not(feature = "offline-demo"))]
                             {
-                                tracing::info!("💡 Use --features mock for demo data fallback");
+                                tracing::info!("💡 Use --features offline-demo for offline sample data fallback");
                                 vec![]
                             }
                         } else {
@@ -91,16 +93,16 @@ pub(super) fn discover_data_providers(
                 Err(e) => {
                     tracing::error!("Provider discovery failed: {}", e);
                     if crate::tutorial_mode::should_fallback(0) {
-                        #[cfg(feature = "mock")]
+                        #[cfg(feature = "offline-demo")]
                         {
                             tracing::info!("💡 Using tutorial data as graceful fallback");
-                            vec![KnownVisualizationProvider::Demo(
-                                petal_tongue_discovery::DemoVisualizationProvider::new(),
+                            vec![KnownVisualizationProvider::Offline(
+                                petal_tongue_discovery::OfflineVisualizationProvider::new(),
                             )]
                         }
-                        #[cfg(not(feature = "mock"))]
+                        #[cfg(not(feature = "offline-demo"))]
                         {
-                            tracing::info!("💡 Use --features mock for demo data fallback");
+                            tracing::info!("💡 Use --features offline-demo for demo data fallback");
                             vec![]
                         }
                     } else {

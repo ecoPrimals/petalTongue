@@ -3,8 +3,8 @@
 
 use crate::error::EntropyError;
 use crate::types::EntropyCapture;
-use aes_gcm::{
-    Aes256Gcm,
+use chacha20poly1305::{
+    XChaCha20Poly1305,
     aead::{Aead, KeyInit, OsRng, generic_array::GenericArray},
 };
 use serde::{Deserialize, Serialize};
@@ -27,7 +27,7 @@ pub struct StreamConfirmation {
 struct EncryptedEntropy {
     /// Encrypted data
     ciphertext: Vec<u8>,
-    /// Nonce for decryption (96 bits for AES-GCM)
+    /// Nonce for decryption (192 bits for XChaCha20-Poly1305)
     nonce: Vec<u8>,
 }
 
@@ -170,20 +170,18 @@ pub async fn stream_entropy(
 /// When the security/crypto provider exposes a key exchange API, this can be evolved without
 /// breaking existing entropy capture flows.
 fn encrypt_entropy(plaintext: &[u8]) -> Result<EncryptedEntropy, EntropyError> {
-    // Generate random encryption key (32 bytes for AES-256)
-    // This is secure for ephemeral entropy data with TLS transport
-    // EVOLUTION PATH: When security/crypto-provider key exchange is available:
-    //   1. let provider_pubkey = fetch_security_crypto_public_key().await?;
-    //   2. let shared_secret = ecdh_key_exchange(&our_private_key, &provider_pubkey)?;
-    //   3. let key = hkdf_derive(&shared_secret, b"entropy-encryption", 32)?;
-    let key = Aes256Gcm::generate_key(&mut OsRng);
-    let cipher = Aes256Gcm::new(&key);
+    // Generate random encryption key (256-bit for XChaCha20-Poly1305)
+    // Ephemeral key per capture — secure for transit to security primal.
+    // Evolution: when security/crypto-provider key exchange is discovered,
+    // derive shared key via ECDH + HKDF instead of ephemeral random.
+    let key = XChaCha20Poly1305::generate_key(&mut OsRng);
+    let cipher = XChaCha20Poly1305::new(&key);
 
-    // Generate random nonce (96 bits = 12 bytes, recommended for AES-GCM)
-    let nonce_bytes: [u8; 12] = rand::random();
+    // XChaCha20 uses 192-bit (24-byte) nonces — safe for random generation
+    // (no realistic collision risk unlike 96-bit nonces)
+    let nonce_bytes: [u8; 24] = rand::random();
     let nonce = GenericArray::from_slice(&nonce_bytes);
 
-    // Encrypt with authenticated encryption
     let ciphertext = cipher
         .encrypt(nonce, plaintext)
         .map_err(|_| EntropyError::Encrypt)?;
@@ -210,14 +208,18 @@ mod tests {
         let data = b"test entropy data with sensitive information";
 
         // Generate key for testing
-        let key = Aes256Gcm::generate_key(&mut OsRng);
+        let key = XChaCha20Poly1305::generate_key(&mut OsRng);
         let _key_bytes: [u8; 32] = key.as_slice().try_into().unwrap();
 
         // Encrypt
         let encrypted = encrypt_entropy(data).expect("Encryption failed");
 
         // Verify structure
-        assert_eq!(encrypted.nonce.len(), 12, "Nonce should be 12 bytes");
+        assert_eq!(
+            encrypted.nonce.len(),
+            24,
+            "XChaCha20 nonce should be 24 bytes"
+        );
         assert!(
             encrypted.ciphertext.len() > data.len(),
             "Ciphertext should be longer (includes auth tag)"
@@ -294,8 +296,8 @@ mod tests {
     fn test_encrypt_empty_data() {
         let data: &[u8] = &[];
         let encrypted = encrypt_entropy(data).expect("empty encryption should succeed");
-        assert_eq!(encrypted.nonce.len(), 12);
-        assert!(!encrypted.ciphertext.is_empty(), "GCM adds auth tag");
+        assert_eq!(encrypted.nonce.len(), 24, "XChaCha20 uses 192-bit nonce");
+        assert!(!encrypted.ciphertext.is_empty(), "AEAD adds auth tag");
     }
 
     #[test]

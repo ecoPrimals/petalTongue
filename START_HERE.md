@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: June 10, 2026 (Wave 107 — transport evolution complete, 4-gate mesh live, zero P1 blockers)
+**Updated**: June 19, 2026 (Wave 116 — gate mesh visualization, AEAD consolidated, 5-gate WireGuard overlay, 13/13 NUCLEUS on eastGate)
 
 ---
 
@@ -127,14 +127,14 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 - `constants/` -- Centralized self-knowledge (name, ports, socket names); submodules: `mod.rs`, `network.rs`, `display.rs`, `timeouts.rs`, `thresholds.rs`, `tufte_tolerances.rs`
 - `graph_engine/` -- Graph data model (nodes, edges, layout); submodules: `mod.rs`, `types.rs`, `layout.rs`, `tests.rs`
 - `config_system/` -- XDG-compliant configuration (env > file > defaults); submodules: `types.rs`, `loader.rs`
-- `data_channel.rs` -- Re-exports `DataBinding` and `ThresholdRange` from `petal-tongue-types` (11 variants: TimeSeries, Distribution, Bar, Gauge, Spectrum, Heatmap, Scatter, Scatter3D, FieldMap, GameScene, Soundscape)
+- `data_channel.rs` -- Re-exports `DataBinding` and `ThresholdRange` from `petal-tongue-types` (13 variants: TimeSeries, Distribution, Bar, Gauge, Spectrum, Heatmap, Scatter, Scatter3D, FieldMap, GameScene, Soundscape, GenomeTrack, CircularMap)
 - `capability_names.rs` -- Centralized capability/method/socket/primal constants (62+ capabilities, 2 self-knowledge identities)
 - `sensory_matrix/` -- Sensory Capability Matrix (input×output negotiation); submodules: `capability_sets.rs`, `matrix.rs`
 - `telemetry_adapter.rs` -- JSONL telemetry ingestion (hotSpring)
 - `or_exit.rs` -- `OrExit<T>` trait for zero-panic validation binaries
 
 ### IPC (`petal-tongue-ipc`)
-- `unix_socket_server.rs` -- JSON-RPC 2.0 server over Unix sockets
+- `unix_socket_server/` -- JSON-RPC 2.0 server over Unix sockets (mod.rs + handshake.rs + tcp_transport.rs)
 - `tarpc_client.rs` -- tarpc binary RPC client
 - `tarpc_types/` -- tarpc types split into submodules
 - `socket_path.rs` -- XDG-compliant socket path discovery

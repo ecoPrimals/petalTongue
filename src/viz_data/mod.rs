@@ -6,6 +6,7 @@
 //! visualizations at runtime.
 
 pub mod entity_graph;
+pub mod gate_mesh;
 pub mod kderm;
 pub mod nucleus;
 
@@ -16,6 +17,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 pub use entity_graph::{build_entity_graph_scene, load_entity_graph};
+pub use gate_mesh::{build_enrollment_animation, build_gate_mesh_scene};
 pub use kderm::{build_kderm_relay_animation, build_kderm_scene};
 pub use nucleus::{build_nucleus_expand_animation, build_nucleus_scene};
 
@@ -87,6 +89,18 @@ impl VizRegistry {
             },
         );
 
+        entries.insert(
+            "gate-mesh".to_owned(),
+            VizEntry {
+                slug: "gate-mesh".to_owned(),
+                title: "Gate Mesh Topology".to_owned(),
+                description: "WireGuard overlay, enrollment status, and NUCLEUS health per gate"
+                    .to_owned(),
+                data_source: None,
+                has_animation: true,
+            },
+        );
+
         Self { entries }
     }
 
@@ -114,6 +128,7 @@ impl VizRegistry {
                 let graph = load_entity_graph(path)?;
                 Some(build_entity_graph_scene(&graph))
             }
+            "gate-mesh" => Some(build_gate_mesh_scene()),
             "kderm-topology" => Some(build_kderm_scene()),
             "nucleus-composition" => Some(build_nucleus_scene()),
             _ => None,
@@ -127,6 +142,7 @@ impl VizRegistry {
             return None;
         }
         match slug {
+            "gate-mesh" => Some(build_enrollment_animation()),
             "kderm-topology" => Some(build_kderm_relay_animation()),
             "nucleus-composition" => Some(build_nucleus_expand_animation("nest-atomic")),
             _ => None,

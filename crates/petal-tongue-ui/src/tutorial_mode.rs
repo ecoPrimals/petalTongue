@@ -97,7 +97,7 @@ impl TutorialMode {
     /// - Testing without full ecosystem
     /// - Showcasing capabilities
     pub fn load_into_graph(&self, graph: Arc<RwLock<GraphEngine>>, layout: LayoutAlgorithm) {
-        #[cfg(any(test, feature = "mock"))]
+        #[cfg(any(test, feature = "offline-demo"))]
         {
             use crate::sandbox_provider::{get_default_scenario, load_sandbox_scenario};
 
@@ -172,10 +172,10 @@ impl TutorialMode {
             info!("✅ Tutorial data loaded successfully");
             info!("🎓 Tutorial mode active - explore the sandbox!");
         }
-        #[cfg(not(any(test, feature = "mock")))]
+        #[cfg(not(any(test, feature = "offline-demo")))]
         {
-            warn!("📚 Tutorial mode: mock feature disabled - using minimal example");
-            info!("💡 Start with --features mock for sandbox scenarios");
+            warn!("📚 Tutorial mode: offline-demo feature disabled — using minimal example");
+            info!("💡 Start with --features offline-demo for sandbox scenarios");
             let mut graph = graph
                 .write()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);

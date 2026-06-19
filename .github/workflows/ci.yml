@@ -2,7 +2,7 @@
 #
 # Lean CI — single job, shared build cache.
 # Binary distribution handled by plasmidBin CI/CD (auto-harvest.yml).
-# This workflow validates code quality only.
+# This workflow validates code quality, licenses, and cross-compile targets.
 
 name: CI
 
@@ -26,14 +26,14 @@ env:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-          targets: wasm32-unknown-unknown
+          targets: wasm32-unknown-unknown, aarch64-unknown-linux-gnu
 
       - uses: Swatinem/rust-cache@v2
 
@@ -43,11 +43,18 @@ jobs:
       - name: Clippy
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
+      # License compliance and banned-crate policy (deny.toml)
+      - uses: EmbarkStudios/cargo-deny-action@v2
+
       - name: Test
         run: cargo test --workspace --all-features
 
       - name: WASM check
         run: cargo check --target wasm32-unknown-unknown -p petal-tongue-wasm
+
+      # ecoBin cross-compile target (ARM64 Linux glibc)
+      - name: aarch64 check
+        run: cargo check --target aarch64-unknown-linux-gnu
 
       - name: Doc
         run: cargo doc --workspace --no-deps

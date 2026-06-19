@@ -251,15 +251,15 @@ impl ProviderHealth {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::demo_provider::DemoVisualizationProvider;
     use crate::known_visualization_provider::FailingHealthCheckProvider;
+    use crate::offline_provider::OfflineVisualizationProvider;
 
     #[tokio::test]
     async fn test_parallel_health_checks() {
         let providers = vec![
-            KnownVisualizationProvider::Demo(DemoVisualizationProvider::new()),
-            KnownVisualizationProvider::Demo(DemoVisualizationProvider::new()),
-            KnownVisualizationProvider::Demo(DemoVisualizationProvider::new()),
+            KnownVisualizationProvider::Offline(OfflineVisualizationProvider::new()),
+            KnownVisualizationProvider::Offline(OfflineVisualizationProvider::new()),
+            KnownVisualizationProvider::Offline(OfflineVisualizationProvider::new()),
         ];
 
         let start = std::time::Instant::now();
@@ -277,8 +277,8 @@ mod tests {
     #[tokio::test]
     async fn test_first_available_success() {
         let providers = vec![
-            KnownVisualizationProvider::Demo(DemoVisualizationProvider::new()),
-            KnownVisualizationProvider::Demo(DemoVisualizationProvider::new()),
+            KnownVisualizationProvider::Offline(OfflineVisualizationProvider::new()),
+            KnownVisualizationProvider::Offline(OfflineVisualizationProvider::new()),
         ];
 
         let result = discover_first_available(providers, Duration::from_secs(1)).await;
@@ -312,7 +312,7 @@ mod tests {
     #[tokio::test]
     async fn test_check_all_providers_health_with_unhealthy() {
         let providers = vec![
-            KnownVisualizationProvider::Demo(DemoVisualizationProvider::new()),
+            KnownVisualizationProvider::Offline(OfflineVisualizationProvider::new()),
             KnownVisualizationProvider::FailingHealth(FailingHealthCheckProvider),
         ];
 
@@ -326,8 +326,8 @@ mod tests {
     async fn test_concurrent_with_failures() {
         // Test graceful degradation when some sources fail
         let result = ConcurrentDiscoveryResult {
-            providers: vec![KnownVisualizationProvider::Demo(
-                DemoVisualizationProvider::new(),
+            providers: vec![KnownVisualizationProvider::Offline(
+                OfflineVisualizationProvider::new(),
             )],
             failures: vec![
                 DiscoveryFailure::new("mDNS", "Timeout"),
@@ -387,9 +387,9 @@ mod tests {
     #[tokio::test]
     async fn test_parallel_faster_than_sequential() {
         let providers = vec![
-            KnownVisualizationProvider::Demo(DemoVisualizationProvider::new()),
-            KnownVisualizationProvider::Demo(DemoVisualizationProvider::new()),
-            KnownVisualizationProvider::Demo(DemoVisualizationProvider::new()),
+            KnownVisualizationProvider::Offline(OfflineVisualizationProvider::new()),
+            KnownVisualizationProvider::Offline(OfflineVisualizationProvider::new()),
+            KnownVisualizationProvider::Offline(OfflineVisualizationProvider::new()),
         ];
 
         let start = std::time::Instant::now();
@@ -405,8 +405,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_discover_concurrent_single_success() {
-        let ok_providers = vec![KnownVisualizationProvider::Demo(
-            DemoVisualizationProvider::new(),
+        let ok_providers = vec![KnownVisualizationProvider::Offline(
+            OfflineVisualizationProvider::new(),
         )];
         let result = discover_concurrent(
             vec![("success", || async { Ok(ok_providers) })],

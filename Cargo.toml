@@ -190,8 +190,7 @@ tower-http = { version = "0.5", features = ["fs", "trace", "cors", "compression-
 tower = { version = "0.5", features = ["util"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
 
-# Entropy / encryption
-aes-gcm = "0.10"
+# Entropy / encryption (single AEAD: XChaCha20-Poly1305 everywhere)
 chacha20poly1305 = "0.10"
 hkdf = "0.12"
 sha2 = "0.10"

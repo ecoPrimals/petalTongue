@@ -118,19 +118,18 @@ impl CapabilityDetector {
             tested: true,
         });
 
-        // Haptic - Not implemented yet
         caps.push(ModalityCapability {
             modality: Modality::Haptic,
             status: ModalityStatus::Unavailable,
-            reason: "Haptic feedback not yet implemented".to_owned(),
+            reason: "Capability not discovered: requires hardware primal with haptic.output"
+                .to_owned(),
             tested: false,
         });
 
-        // VR/AR - Not implemented yet
         caps.push(ModalityCapability {
             modality: Modality::VR3D,
             status: ModalityStatus::Unavailable,
-            reason: "VR/AR rendering not yet implemented".to_owned(),
+            reason: "Capability not discovered: requires compute primal with render.vr".to_owned(),
             tested: false,
         });
     }
@@ -276,7 +275,7 @@ mod tests {
         // Text should always be available
         assert!(detector.is_available(Modality::TextDescription));
 
-        // Haptic not implemented yet
+        // Haptic requires discovery of hardware primal with haptic.output capability
         assert!(!detector.is_available(Modality::Haptic));
     }
 

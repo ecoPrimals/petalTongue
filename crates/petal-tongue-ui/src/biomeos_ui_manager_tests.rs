@@ -6,7 +6,7 @@ use super::*;
 async fn test_biomeos_ui_manager_creation() {
     let manager = BiomeOSUIManager::new().await;
 
-    // Should default to mock mode if biomeOS not available
+    // Defaults to offline mode when biomeOS unavailable and offline-demo is enabled
     assert_eq!(manager.current_tab, UITab::Devices);
 }
 
@@ -24,13 +24,13 @@ async fn test_tab_switching() {
 }
 
 #[tokio::test]
-async fn test_fixture_mode() {
+async fn test_offline_mode() {
     let manager = BiomeOSUIManager::new().await;
 
-    #[cfg(feature = "mock")]
-    assert!(manager.is_fixture_mode());
-    #[cfg(not(feature = "mock"))]
-    assert!(!manager.is_fixture_mode());
+    #[cfg(feature = "offline-demo")]
+    assert!(manager.is_offline_mode());
+    #[cfg(not(feature = "offline-demo"))]
+    assert!(!manager.is_offline_mode());
 }
 
 #[tokio::test]
@@ -54,18 +54,21 @@ async fn test_rpc_data_access() {
     let manager = Arc::new(RwLock::new(BiomeOSUIManager::new().await));
     let rpc = BiomeOSUIRPC::new(manager);
 
-    // Test data access via RPC (mock data only when mock feature enabled)
+    // Test data access via RPC (offline sample data only when offline-demo feature enabled)
     let devices = rpc.get_devices().await.unwrap();
     let primals = rpc.get_primals_extended().await.unwrap();
     let templates = rpc.get_niche_templates().await.unwrap();
 
-    #[cfg(feature = "mock")]
+    #[cfg(feature = "offline-demo")]
     {
-        assert!(!devices.is_empty(), "Should have mock devices");
-        assert!(!primals.is_empty(), "Should have mock primals");
-        assert!(!templates.is_empty(), "Should have mock templates");
+        assert!(!devices.is_empty(), "Should have offline sample devices");
+        assert!(!primals.is_empty(), "Should have offline sample primals");
+        assert!(
+            !templates.is_empty(),
+            "Should have offline sample templates"
+        );
     }
-    #[cfg(not(feature = "mock"))]
+    #[cfg(not(feature = "offline-demo"))]
     {
         assert!(devices.is_empty());
         assert!(primals.is_empty());

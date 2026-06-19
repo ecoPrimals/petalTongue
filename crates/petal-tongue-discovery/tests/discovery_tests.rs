@@ -15,10 +15,10 @@ use petal_tongue_discovery::discover_visualization_providers;
 #[cfg(feature = "test-fixtures")]
 async fn test_mock_provider_direct_only() {
     // Mock provider is ONLY for test code - never used in discover_visualization_providers().
-    // Tests that need demo data should use DemoVisualizationProvider directly.
-    use petal_tongue_discovery::{DemoVisualizationProvider, VisualizationDataProvider};
+    // Tests that need demo data should use OfflineVisualizationProvider directly.
+    use petal_tongue_discovery::{OfflineVisualizationProvider, VisualizationDataProvider};
 
-    let provider = DemoVisualizationProvider::new();
+    let provider = OfflineVisualizationProvider::new();
     let primals = provider.get_primals().await.unwrap();
     assert!(!primals.is_empty(), "Mock provider should return primals");
 }
@@ -66,13 +66,13 @@ async fn test_discover_without_hints() {
 
 #[tokio::test]
 #[cfg(feature = "test-fixtures")]
-async fn test_demo_provider_metadata() {
-    use petal_tongue_discovery::{DemoVisualizationProvider, VisualizationDataProvider};
+async fn test_offline_provider_metadata() {
+    use petal_tongue_discovery::{OfflineVisualizationProvider, VisualizationDataProvider};
 
-    let provider = DemoVisualizationProvider::new();
+    let provider = OfflineVisualizationProvider::new();
     let metadata = provider.get_metadata();
-    assert_eq!(metadata.name, "Demo Provider");
-    assert_eq!(metadata.protocol, "demo");
+    assert!(metadata.name.contains("Offline"));
+    assert_eq!(metadata.protocol, "offline");
 }
 
 #[tokio::test]

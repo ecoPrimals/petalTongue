@@ -6,16 +6,15 @@
 //! of which modality resolved it.
 
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 
 /// Identifies a data source (capability string, not a primal name).
-pub type DataSourceId = Arc<str>;
+pub type DataSourceId = String;
 
 /// Identifies a rendered primitive within a single frame.
 pub type PrimitiveId = u64;
 
 /// Identifies a grammar expression by ID.
-pub type GrammarId = Arc<str>;
+pub type GrammarId = String;
 
 /// Perspective-invariant reference to a data row.
 ///

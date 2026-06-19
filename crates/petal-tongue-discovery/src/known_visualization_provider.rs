@@ -2,7 +2,7 @@
 //! Enum dispatch for [`VisualizationDataProvider`] (replaces `Box<dyn …>` with RPITIT).
 
 #[cfg(any(test, feature = "test-fixtures"))]
-use crate::DemoVisualizationProvider;
+use crate::OfflineVisualizationProvider;
 use crate::errors::DiscoveryResult;
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
 use crate::{
@@ -25,9 +25,9 @@ pub enum KnownVisualizationProvider {
     Dynamic(DynamicScenarioProvider),
     /// Static scenario file provider.
     Scenario(ScenarioVisualizationProvider),
-    /// Demo / tutorial data.
+    /// Offline / degraded sample data (test/dev only).
     #[cfg(any(test, feature = "test-fixtures"))]
-    Demo(DemoVisualizationProvider),
+    Offline(OfflineVisualizationProvider),
     /// Test-only: health check always fails.
     #[cfg(any(test, feature = "test-fixtures"))]
     FailingHealth(FailingHealthCheckProvider),
@@ -98,7 +98,7 @@ impl VisualizationDataProvider for KnownVisualizationProvider {
             Self::Dynamic(p) => p.get_primals().await,
             Self::Scenario(p) => p.get_primals().await,
             #[cfg(any(test, feature = "test-fixtures"))]
-            Self::Demo(p) => p.get_primals().await,
+            Self::Offline(p) => p.get_primals().await,
             #[cfg(any(test, feature = "test-fixtures"))]
             Self::FailingHealth(p) => p.get_primals().await,
             #[cfg(any(test, feature = "test-fixtures"))]
@@ -115,7 +115,7 @@ impl VisualizationDataProvider for KnownVisualizationProvider {
             Self::Dynamic(p) => p.get_topology().await,
             Self::Scenario(p) => p.get_topology().await,
             #[cfg(any(test, feature = "test-fixtures"))]
-            Self::Demo(p) => p.get_topology().await,
+            Self::Offline(p) => p.get_topology().await,
             #[cfg(any(test, feature = "test-fixtures"))]
             Self::FailingHealth(p) => p.get_topology().await,
             #[cfg(any(test, feature = "test-fixtures"))]
@@ -132,7 +132,7 @@ impl VisualizationDataProvider for KnownVisualizationProvider {
             Self::Dynamic(p) => p.health_check().await,
             Self::Scenario(p) => p.health_check().await,
             #[cfg(any(test, feature = "test-fixtures"))]
-            Self::Demo(p) => p.health_check().await,
+            Self::Offline(p) => p.health_check().await,
             #[cfg(any(test, feature = "test-fixtures"))]
             Self::FailingHealth(p) => p.health_check().await,
             #[cfg(any(test, feature = "test-fixtures"))]
@@ -149,7 +149,7 @@ impl VisualizationDataProvider for KnownVisualizationProvider {
             Self::Dynamic(p) => p.get_metadata(),
             Self::Scenario(p) => p.get_metadata(),
             #[cfg(any(test, feature = "test-fixtures"))]
-            Self::Demo(p) => p.get_metadata(),
+            Self::Offline(p) => p.get_metadata(),
             #[cfg(any(test, feature = "test-fixtures"))]
             Self::FailingHealth(p) => p.get_metadata(),
             #[cfg(any(test, feature = "test-fixtures"))]

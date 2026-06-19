@@ -391,7 +391,7 @@ fn write_discovery_file(transport: &IpcTransport) -> Result<(), IpcServerError> 
 
     let ecosystem_dir = petal_tongue_core::constants::ecosystem_runtime_dir_name();
     let discovery_file = runtime_dir
-        .join(&ecosystem_dir)
+        .join(ecosystem_dir.as_ref())
         .join("petaltongue-ipc-port");
 
     // Create parent directory if needed
@@ -418,7 +418,7 @@ fn remove_discovery_file() -> Result<(), IpcServerError> {
     if let Ok(runtime_dir) = platform_dirs::runtime_dir() {
         let ecosystem_dir = petal_tongue_core::constants::ecosystem_runtime_dir_name();
         let discovery_file = runtime_dir
-            .join(&ecosystem_dir)
+            .join(ecosystem_dir.as_ref())
             .join("petaltongue-ipc-port");
         if discovery_file.exists() {
             std::fs::remove_file(&discovery_file).map_err(|e| {

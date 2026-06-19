@@ -213,7 +213,7 @@ impl InversePipeline for VisualInversePipeline {
                 let mut row = DataRow::new();
                 row.insert(
                     "source".into(),
-                    serde_json::Value::String(data_id.source.to_string()),
+                    serde_json::Value::String(data_id.source.clone()),
                 );
                 row.insert("row_key".into(), data_id.row_key.clone());
                 Some(row)

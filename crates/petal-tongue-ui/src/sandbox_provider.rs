@@ -5,7 +5,7 @@
 //! - Tutorial mode (`SHOWCASE_MODE=true`)
 //! - Development and demonstrations
 //!
-//! This is NOT a mock—it loads real JSON files. Use `--features mock` to enable
+//! This is NOT a mock—it loads real JSON files. Use `--features offline-demo` to enable
 //! (or when running tests). Production builds without the feature use empty tutorial.
 
 use petal_tongue_core::PrimalInfo;

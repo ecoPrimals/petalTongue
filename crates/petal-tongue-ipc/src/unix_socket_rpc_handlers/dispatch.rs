@@ -17,7 +17,7 @@ impl RpcHandlers {
         req: JsonRpcRequest,
         ctx: &CallerContext,
     ) -> JsonRpcResponse {
-        let method = req.method.as_str();
+        let method = req.method.as_ref();
 
         // JH-0: auth introspection methods — handled inline (need gate + context)
         match method {
@@ -68,9 +68,10 @@ impl RpcHandlers {
             "ui.render" => ui::handle_ui_render(self, req).await,
             "ui.display_status" => ui::handle_ui_display_status(self, req),
 
-            // Graph + topology
+            // Graph + topology + gate mesh
             "visualization.render.graph" => graph::render_graph(self, req.params, req.id).await,
             "topology.get" => system::get_topology(self, req.id),
+            "gate.mesh.status" => system::get_gate_mesh_status(self, req.id),
             "visualization.render" => visualization::handle_render(self, req),
             "visualization.render.scene" => visualization::handle_render_scene(self, req),
             "visualization.session.list" => {

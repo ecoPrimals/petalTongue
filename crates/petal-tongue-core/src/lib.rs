@@ -28,6 +28,7 @@ pub mod biomeos_discovery; // biomeOS discovery backend
 pub mod capabilities;
 pub mod capability_discovery; // Capability-based discovery (TRUE PRIMAL)
 pub mod capability_names;
+pub mod capability_registry; // capability_registry.toml loader (network fallbacks)
 pub mod channel; // SAME DAVE channel model (afferent/efferent pathways)
 pub mod common_config;
 pub mod config;
@@ -40,6 +41,7 @@ pub mod dynamic_schema; // Dynamic schema system for live evolution
 pub mod error;
 #[cfg(test)]
 mod error_tests;
+pub mod gate_mesh; // Shared gate mesh topology (single source of truth)
 pub mod graph_builder; // SAME DAVE proprioception data (Neural API)
 pub mod graph_engine;
 pub mod graph_validation; // Graph validation (cycle detection, dependencies)

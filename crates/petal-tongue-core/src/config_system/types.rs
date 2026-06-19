@@ -2,6 +2,7 @@
 
 use crate::constants::{DEFAULT_HEADLESS_PORT, DEFAULT_WEB_PORT};
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
 use std::time::Duration;
@@ -98,6 +99,12 @@ impl Default for NetworkConfig {
     }
 }
 
+/// Default web content backend identifier.
+pub const DEFAULT_WEB_BACKEND: &str = "filesystem";
+
+/// Default index file served for directory requests.
+pub const DEFAULT_WEB_INDEX_FILE: &str = "index.html";
+
 /// Web serving mode configuration (PT-3).
 ///
 /// Controls static file serving, backend selection, caching, CORS, SPA routing,
@@ -112,10 +119,10 @@ pub struct WebServeConfig {
     pub docroot: Option<PathBuf>,
 
     /// Content backend: `"filesystem"` (default) or `"content-provider"`.
-    pub backend: String,
+    pub backend: Cow<'static, str>,
 
     /// Default index file name served when a directory is requested.
-    pub index_file: String,
+    pub index_file: Cow<'static, str>,
 
     /// Static file cache TTL in seconds (for `Cache-Control` headers).
     pub cache_ttl_secs: u64,
@@ -136,8 +143,8 @@ impl Default for WebServeConfig {
     fn default() -> Self {
         Self {
             docroot: None,
-            backend: "filesystem".to_owned(),
-            index_file: "index.html".to_owned(),
+            backend: Cow::Borrowed(DEFAULT_WEB_BACKEND),
+            index_file: Cow::Borrowed(DEFAULT_WEB_INDEX_FILE),
             cache_ttl_secs: 3600,
             strip_sources: false,
             spa: false,
@@ -150,7 +157,9 @@ impl WebServeConfig {
     pub(crate) fn merge(self, other: Self) -> Self {
         Self {
             docroot: other.docroot.or(self.docroot),
-            backend: if other.backend == "filesystem" && self.backend != "filesystem" {
+            backend: if other.backend.as_ref() == DEFAULT_WEB_BACKEND
+                && self.backend.as_ref() != DEFAULT_WEB_BACKEND
+            {
                 self.backend
             } else {
                 other.backend
@@ -462,8 +471,8 @@ mod tests {
     fn web_serve_config_merge_rules() {
         let base = WebServeConfig {
             docroot: Some(PathBuf::from("/base/docroot")),
-            backend: "content-provider".to_owned(),
-            index_file: "base.html".to_owned(),
+            backend: Cow::Borrowed("content-provider"),
+            index_file: Cow::Borrowed("base.html"),
             cache_ttl_secs: 60,
             strip_sources: true,
             spa: false,
@@ -471,8 +480,8 @@ mod tests {
         };
         let other = WebServeConfig {
             docroot: Some(PathBuf::from("/other/docroot")),
-            backend: "filesystem".to_owned(),
-            index_file: "other.html".to_owned(),
+            backend: Cow::Borrowed(DEFAULT_WEB_BACKEND),
+            index_file: Cow::Borrowed("other.html"),
             cache_ttl_secs: 120,
             strip_sources: false,
             spa: true,

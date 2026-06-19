@@ -114,7 +114,7 @@ impl E2ETestRunner {
             // Step 1: Create BiomeOS client
             let client =
                 BiomeOSClient::new(petal_tongue_core::test_fixtures::endpoints::MOCK_BIOMEOS)
-                    .with_fixture_mode(self.config.use_mock);
+                    .with_offline_mode(self.config.use_mock);
             steps_completed += 1;
 
             // Step 2: Discover primals
@@ -493,7 +493,7 @@ mod tests {
         assert_eq!(runner.results.len(), 0);
     }
 
-    #[cfg(feature = "mock")]
+    #[cfg(feature = "offline-demo")]
     #[tokio::test]
     async fn test_e2e_runner_with_mock() {
         let config = E2ETestConfig {

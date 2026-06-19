@@ -13,6 +13,7 @@
 mod display;
 mod env_vars;
 mod network;
+mod network_defaults;
 mod timeouts;
 
 pub mod thresholds;
@@ -21,9 +22,17 @@ pub mod tufte_tolerances;
 pub use display::*;
 pub use env_vars::*;
 pub use network::*;
+pub use network_defaults::NetworkDefaults;
 pub use timeouts::*;
 
+use std::borrow::Cow;
 use std::time::Duration;
+
+/// Read an env var or return a borrowed compile-time default (zero-copy when unset).
+#[must_use]
+pub(crate) fn env_or_borrowed_str(key: &str, default: &'static str) -> Cow<'static, str> {
+    std::env::var(key).map_or(Cow::Borrowed(default), Cow::Owned)
+}
 
 /// Read an env var, parse it as `T`, or return `default`.
 pub(crate) fn env_or<T: std::str::FromStr>(key: &str, default: T) -> T {

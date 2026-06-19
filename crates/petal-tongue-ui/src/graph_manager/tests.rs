@@ -393,7 +393,7 @@ fn test_graph_metadata_with_all_fields() {
 }
 
 #[test]
-#[cfg(feature = "mock")]
+#[cfg(feature = "offline-demo")]
 fn test_render_with_provider_and_graphs() {
     use petal_tongue_core::graph_builder::VisualGraph;
     use petal_tongue_discovery::NeuralApiProvider;
@@ -431,7 +431,7 @@ fn test_render_with_provider_and_graphs() {
 }
 
 #[test]
-#[cfg(feature = "mock")]
+#[cfg(feature = "offline-demo")]
 fn test_render_with_provider_no_graph() {
     use petal_tongue_discovery::NeuralApiProvider;
     use std::path::PathBuf;

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::UnixSocketServer;
+use super::handshake::{RIBOCIPHER_PREFIX, is_btsp_json_announcement, strip_ribocipher_prefix};
 use crate::json_rpc::JsonRpcRequest;
 use crate::json_rpc::error_codes;
 use crate::visualization_handler::VisualizationState;
@@ -410,7 +411,7 @@ async fn test_introspect_without_awareness_returns_error() {
 fn btsp_json_announcement_detected() {
     let announcement = br#"{"protocol":"btsp","version":"1.0"}"#;
     assert!(
-        UnixSocketServer::is_btsp_json_announcement(announcement),
+        is_btsp_json_announcement(announcement),
         "should detect BTSP JSON-line protocol announcement"
     );
 }
@@ -419,7 +420,7 @@ fn btsp_json_announcement_detected() {
 fn plain_jsonrpc_not_classified_as_btsp() {
     let jsonrpc = br#"{"jsonrpc":"2.0","method":"health.check","id":1}"#;
     assert!(
-        !UnixSocketServer::is_btsp_json_announcement(jsonrpc),
+        !is_btsp_json_announcement(jsonrpc),
         "plain JSON-RPC should not be classified as BTSP announcement"
     );
 }
@@ -427,21 +428,21 @@ fn plain_jsonrpc_not_classified_as_btsp() {
 #[test]
 fn non_json_not_classified_as_btsp_announcement() {
     assert!(
-        !UnixSocketServer::is_btsp_json_announcement(b"\x00\x00\x00\x10"),
+        !is_btsp_json_announcement(b"\x00\x00\x00\x10"),
         "length-prefixed binary should not match JSON-line check"
     );
 }
 
 #[test]
 fn empty_buffer_not_classified_as_btsp() {
-    assert!(!UnixSocketServer::is_btsp_json_announcement(b""));
+    assert!(!is_btsp_json_announcement(b""));
 }
 
 #[test]
 fn partial_protocol_key_not_classified() {
     let partial = br#"{"proto":"btsp"}"#;
     assert!(
-        !UnixSocketServer::is_btsp_json_announcement(partial),
+        !is_btsp_json_announcement(partial),
         "partial key 'proto' should not match"
     );
 }
@@ -450,7 +451,7 @@ fn partial_protocol_key_not_classified() {
 fn health_liveness_not_classified_as_btsp() {
     let plain = br#"{"jsonrpc":"2.0","method":"health.liveness","id":1}"#;
     assert!(
-        !UnixSocketServer::is_btsp_json_announcement(plain),
+        !is_btsp_json_announcement(plain),
         "health.liveness JSON-RPC should not match BTSP announcement"
     );
 }
@@ -477,7 +478,7 @@ fn has_tcp_port_reflects_builder() {
 #[test]
 fn ribocipher_prefix_constant_is_correct() {
     assert_eq!(
-        UnixSocketServer::RIBOCIPHER_PREFIX,
+        RIBOCIPHER_PREFIX,
         [0xEC, 0x01],
         "riboCipher signal prefix per Wave 113 guideStone"
     );
@@ -487,7 +488,7 @@ fn ribocipher_prefix_constant_is_correct() {
 async fn strip_ribocipher_prefix_removes_signal_bytes() {
     let data = b"\xEC\x01{\"jsonrpc\":\"2.0\",\"method\":\"health\",\"id\":1}\n";
     let mut reader = tokio::io::BufReader::new(&data[..]);
-    UnixSocketServer::strip_ribocipher_prefix(&mut reader).await;
+    strip_ribocipher_prefix(&mut reader).await;
 
     use tokio::io::AsyncBufReadExt;
     let mut remaining = Vec::new();
@@ -502,7 +503,7 @@ async fn strip_ribocipher_prefix_removes_signal_bytes() {
 async fn strip_ribocipher_prefix_leaves_plain_json_untouched() {
     let data = b"{\"jsonrpc\":\"2.0\",\"method\":\"health\",\"id\":1}\n";
     let mut reader = tokio::io::BufReader::new(&data[..]);
-    UnixSocketServer::strip_ribocipher_prefix(&mut reader).await;
+    strip_ribocipher_prefix(&mut reader).await;
 
     use tokio::io::AsyncBufReadExt;
     let mut remaining = Vec::new();
@@ -517,7 +518,7 @@ async fn strip_ribocipher_prefix_leaves_plain_json_untouched() {
 async fn strip_ribocipher_prefix_leaves_btsp_binary_untouched() {
     let data = b"\x00\x00\x00\x10some_btsp_frame_data";
     let mut reader = tokio::io::BufReader::new(&data[..]);
-    UnixSocketServer::strip_ribocipher_prefix(&mut reader).await;
+    strip_ribocipher_prefix(&mut reader).await;
 
     use tokio::io::AsyncBufReadExt;
     let buf = reader.fill_buf().await.unwrap();
@@ -539,7 +540,7 @@ async fn ribocipher_prefix_then_health_returns_enriched_response() {
         .extend_from_slice(b"{\"jsonrpc\":\"2.0\",\"method\":\"health\",\"params\":{},\"id\":1}\n");
 
     let mut reader = tokio::io::BufReader::new(&input[..]);
-    UnixSocketServer::strip_ribocipher_prefix(&mut reader).await;
+    strip_ribocipher_prefix(&mut reader).await;
 
     let mut output = Vec::new();
     let ctx = crate::method_gate::CallerContext::unix();

@@ -2,6 +2,7 @@
 //! Handlers for health, capability, and topology JSON-RPC methods.
 
 mod capabilities;
+mod gate_mesh;
 mod health;
 mod identity_lifecycle;
 mod proprioception;
@@ -12,6 +13,7 @@ pub use capabilities::{
     get_capabilities, handle_announce_capabilities, handle_capabilities_sensory,
     handle_capabilities_sensory_negotiate,
 };
+pub use gate_mesh::get_gate_mesh_status;
 pub use health::{
     get_health, handle_health_check, handle_health_liveness, handle_health_readiness,
 };
