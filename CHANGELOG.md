@@ -6,6 +6,36 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 116: Gate Mesh Visualization & Deep Debt Execution (June 19, 2026)
+
+Meta-tier visualization for primalSpring overwatch: gate mesh topology, AEAD
+consolidation, topology deduplication, and pre-existing serde bug resolution.
+
+#### Added
+- **Gate mesh topology visualization** (`gate-mesh` slug in VizRegistry): renders
+  all 9 gates + 2 VPS nodes with WireGuard overlay links, enrollment status color
+  coding, latency labels, and enrollment progression animation.
+- **`gate.mesh.status` IPC method**: JSON-RPC handler returning full mesh topology
+  (gates, links, enrollment counts) from shared canonical data.
+- **`petal_tongue_core::gate_mesh` module**: single source of truth for mesh
+  topology data (`GATES`, `VPS_NODES`, `WG_LINKS` constants + helper functions).
+- 9 new tests for gate mesh topology (4 core, 4 viz registry, 1 IPC handler).
+
+#### Changed
+- **AEAD consolidated**: dropped `aes-gcm` dependency; entropy crate now uses
+  `XChaCha20-Poly1305` (192-bit nonces, single cipher story across entire codebase).
+- **`DataSourceId`/`GrammarId` → `String`**: fixed pre-existing `Arc<str>` serde
+  incompatibility in `interaction/` module that blocked full workspace compilation.
+- **Headless demo topology**: all primal IDs now overridable via environment
+  variables (`PETALTONGUE_HEADLESS_DEMO_SELF_ID`, `_SECURITY_ID`, `_SECURITY_NAME`);
+  removed hardcoded "encryption-demo-1".
+- **Capability stubs evolved**: Haptic/VR modality reasons now report
+  `CapabilityNotDiscovered` with required capability names instead of generic
+  "not implemented" language.
+
+#### Removed
+- `aes-gcm` workspace dependency (consolidated to `chacha20poly1305`).
+
 ### Wave 113: riboCipher Prefix Acceptance (June 14, 2026)
 
 Accept and strip the `[0xEC, 0x01]` riboCipher signal prefix on UDS connections

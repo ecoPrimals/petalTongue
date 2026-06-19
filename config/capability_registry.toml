@@ -104,6 +104,33 @@ signals = [
     { name = "observe", role = "participant", capability = "viz.stream" },
 ]
 
+# ─── Network fallbacks (registry > env > const) ───────────────────────
+#
+# Ports are discovery fallbacks, not authoritative endpoints.
+# Runtime resolution via ipc.resolve / HTTP probing takes precedence.
+
+[network.fallbacks]
+web_port = 3000
+headless_port = 8080
+websocket_port = 8765
+sandbox_security_port = 9000
+sandbox_discovery_port = 8080
+display_backend_port = 9001
+tcp_fallback_port = 9900
+discovery_ports = [8080, 8081, 3000, 9000, 9900]
+loopback_host = "127.0.0.1"
+bind_host = "0.0.0.0"
+gpu_compute_endpoint = "tarpc://localhost:9001"
+legacy_tmp_prefix = "/tmp"
+alternative_run_dir = "/var/run/ecoPrimals"
+
+[network.capability_ports]
+visualization = 3000
+interaction = 3000
+discovery = 8080
+compute = 9001
+security = 9000
+
 # ─── Test fixtures ────────────────────────────────────────────────────
 
 [test_fixtures]

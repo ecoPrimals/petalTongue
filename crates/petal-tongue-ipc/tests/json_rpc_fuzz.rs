@@ -66,7 +66,7 @@ fn json_rpc_request_strategy() -> impl Strategy<Value = JsonRpcRequest> {
     )
         .prop_map(|(method, params, id)| JsonRpcRequest {
             jsonrpc: Cow::Borrowed("2.0"),
-            method,
+            method: Cow::Owned(method),
             params,
             id,
         })
@@ -91,7 +91,7 @@ fn json_rpc_response_strategy() -> impl Strategy<Value = JsonRpcResponse> {
                 result: None,
                 error: Some(petal_tongue_ipc::JsonRpcError {
                     code,
-                    message,
+                    message: Cow::Owned(message),
                     data: None,
                 }),
                 id,
@@ -121,7 +121,7 @@ proptest! {
         match (&parsed.error, &resp.error) {
             (Some(a), Some(b)) => {
                 prop_assert_eq!(a.code, b.code);
-                prop_assert_eq!(a.message.as_str(), b.message.as_str());
+                prop_assert_eq!(a.message.as_ref(), b.message.as_ref());
             }
             (None, None) => {}
             _ => prop_assert!(false, "error mismatch"),

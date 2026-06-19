@@ -23,7 +23,7 @@ pub enum ContentBackendError {
     #[error("connect({endpoint}): {source}")]
     Connect {
         endpoint: String,
-        source: std::io::Error,
+        source: petal_tongue_core::transport::TransportError,
     },
     #[error("write: {0}")]
     Write(#[from] std::io::Error),

@@ -9,8 +9,8 @@
 //! ```text
 //! ┌─────────────────────────────────────────────────────────────┐
 //! │ BiomeOSUIManager                                            │
-//! │  ├─ Provider (BiomeOSProvider or DemoDeviceProvider when mock)  │
-//! │  ├─ DevicePanel (device management; shared UIEventHandler)   │
+//! │  ├─ Provider (BiomeOSProvider or OfflineDeviceProvider)     │
+//! │  ├─ DevicePanel (device management; shared UIEventHandler)  │
 //! │  ├─ PrimalPanel (primal status)                             │
 //! │  ├─ NicheDesigner (niche creation)                          │
 //! │  └─ JSON-RPC Methods (biomeOS API)                          │
@@ -18,11 +18,11 @@
 //! ```
 
 use crate::biomeos_integration::{BiomeOSProvider, Device, NicheTemplate, Primal};
-#[cfg(feature = "mock")]
-use crate::demo_device_provider::DemoDeviceProvider;
 use crate::device_panel::DevicePanel;
 use crate::error::Result;
 use crate::niche_designer::NicheDesigner;
+#[cfg(feature = "offline-demo")]
+use crate::offline_device_provider::OfflineDeviceProvider;
 use crate::primal_panel::PrimalPanel;
 use crate::ui_events::UIEventHandler;
 use egui::Ui;
@@ -33,12 +33,13 @@ use tracing::{info, warn};
 
 /// biomeOS UI Manager - Main integration point
 pub struct BiomeOSUIManager {
-    /// Provider for data (`BiomeOS` or Mock)
+    /// Live biomeOS provider (when ecosystem is reachable)
     biomeos_provider: Option<BiomeOSProvider>,
-    /// Demo provider - only when `mock` feature enabled (graceful fallback when biomeOS unavailable)
-    #[cfg(feature = "mock")]
-    demo_provider: Option<DemoDeviceProvider>,
-    use_fixtures: bool,
+    /// Offline provider — only when `offline-demo` feature enabled and biomeOS unavailable
+    #[cfg(feature = "offline-demo")]
+    offline_provider: Option<OfflineDeviceProvider>,
+    /// Operating in offline/degraded mode (no live ecosystem connection)
+    offline_mode: bool,
 
     /// UI Panels
     device_panel: DevicePanel,
@@ -72,37 +73,38 @@ impl BiomeOSUIManager {
 
         let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
 
-        // Try to discover biomeOS provider
         let biomeos_provider = BiomeOSProvider::discover()
             .await
             .inspect_err(|e| tracing::debug!("biomeOS provider discovery: {e}"))
             .ok()
             .flatten();
 
-        // Demo fallback only when biomeOS unavailable AND mock feature enabled
-        let use_fixtures = biomeos_provider.is_none() && cfg!(feature = "mock");
+        let offline_mode = biomeos_provider.is_none() && cfg!(feature = "offline-demo");
 
-        if use_fixtures {
-            info!("📦 Using demo provider (biomeOS not available, mock feature enabled)");
+        if offline_mode {
+            info!(
+                "Offline mode: biomeOS unavailable — serving degraded sample data (offline-demo enabled)"
+            );
         } else if biomeos_provider.is_none() {
-            info!("⚠️ biomeOS not available - empty panels (use --features mock for demo data)");
+            info!(
+                "Ecosystem unavailable — empty panels (use --features offline-demo for sample data)"
+            );
         } else {
             info!("✅ Connected to biomeOS");
         }
 
-        // Lazy initialization: only create demo provider when needed (mock feature + biomeOS unavailable)
-        #[cfg(feature = "mock")]
-        let demo_provider = if use_fixtures {
-            Some(DemoDeviceProvider::new())
+        #[cfg(feature = "offline-demo")]
+        let offline_provider = if offline_mode {
+            Some(OfflineDeviceProvider::new())
         } else {
             None
         };
 
         Self {
             biomeos_provider,
-            #[cfg(feature = "mock")]
-            demo_provider,
-            use_fixtures,
+            #[cfg(feature = "offline-demo")]
+            offline_provider,
+            offline_mode,
             device_panel: DevicePanel::new(event_handler.clone()),
             primal_panel: PrimalPanel::new(event_handler.clone()),
             niche_designer: NicheDesigner::new(event_handler),
@@ -122,43 +124,41 @@ impl BiomeOSUIManager {
             return Ok(());
         }
 
-        let (devices, primals, templates) = if self.use_fixtures {
-            #[cfg(feature = "mock")]
+        let (devices, primals, templates) = if self.offline_mode {
+            #[cfg(feature = "offline-demo")]
             {
-                // Use demo provider (methods are not async)
-                if self.demo_provider.is_none() {
-                    self.demo_provider = Some(DemoDeviceProvider::new());
+                if self.offline_provider.is_none() {
+                    self.offline_provider = Some(OfflineDeviceProvider::new());
                 }
 
-                if let Some(demo) = &self.demo_provider {
-                    let devices = demo.get_devices();
-                    let primals = demo.get_primals_extended();
-                    let templates = demo.get_niche_templates();
-                    (devices, primals, templates)
+                if let Some(offline) = &self.offline_provider {
+                    (
+                        offline.get_devices(),
+                        offline.get_primals_extended(),
+                        offline.get_niche_templates(),
+                    )
                 } else {
-                    warn!("Demo provider not available");
+                    warn!("Offline provider not available");
                     return Ok(());
                 }
             }
-            #[cfg(not(feature = "mock"))]
+            #[cfg(not(feature = "offline-demo"))]
             {
-                // `use_fixtures` is only set `true` when `cfg!(feature = "mock")`
-                // holds (see constructor), so this branch should never execute.
-                tracing::error!("use_fixtures set without mock feature — returning empty data");
+                tracing::error!(
+                    "offline_mode set without offline-demo feature — returning empty data"
+                );
                 return Ok(());
             }
         } else if let Some(provider) = &self.biomeos_provider {
-            // Use biomeOS provider (methods are async)
             let devices = provider.get_devices().await?;
             let primals = provider.get_primals_extended().await?;
             let templates = provider.get_niche_templates().await?;
             (devices, primals, templates)
         } else {
-            warn!("No provider available");
+            warn!("No ecosystem connection — panels remain empty");
             return Ok(());
         };
 
-        // Update panels
         self.device_panel.refresh(devices).await;
         self.primal_panel.refresh(primals.clone()).await;
         self.niche_designer.refresh(templates, primals).await;
@@ -177,20 +177,16 @@ impl BiomeOSUIManager {
 
     /// Render the UI
     pub fn ui(&mut self, ui: &mut Ui) {
-        // Header
         ui.heading("🌸 biomeOS Device & Niche Management");
         ui.separator();
 
-        // Provider status
         self.render_provider_status(ui);
         ui.add_space(8.0);
 
-        // Tab bar
         self.render_tab_bar(ui);
         ui.separator();
         ui.add_space(8.0);
 
-        // Current tab content
         match self.current_tab {
             UITab::Devices => self.device_panel.ui(ui),
             UITab::Primals => self.primal_panel.ui(ui),
@@ -201,11 +197,17 @@ impl BiomeOSUIManager {
     /// Render provider status indicator
     fn render_provider_status(&self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            if self.use_fixtures {
-                ui.colored_label(egui::Color32::YELLOW, "⚠ Fixture Mode (offline)");
-                ui.label("(biomeOS not connected)");
-            } else {
+            if self.offline_mode {
+                ui.colored_label(
+                    egui::Color32::YELLOW,
+                    "⚠ Ecosystem unavailable (offline/degraded)",
+                );
+                ui.label("(serving cached sample data)");
+            } else if self.biomeos_provider.is_some() {
                 ui.colored_label(egui::Color32::GREEN, "✓ Connected to biomeOS");
+            } else {
+                ui.colored_label(egui::Color32::RED, "✗ No ecosystem connection");
+                ui.label("(panels empty until biomeOS is reachable)");
             }
         });
     }
@@ -257,10 +259,10 @@ impl BiomeOSUIManager {
         &self.niche_designer
     }
 
-    /// Check if using fixture mode (deterministic offline data).
+    /// Check if operating in offline/degraded mode (no live ecosystem connection).
     #[must_use]
-    pub const fn is_fixture_mode(&self) -> bool {
-        self.use_fixtures
+    pub const fn is_offline_mode(&self) -> bool {
+        self.offline_mode
     }
 
     /// Get current tab
@@ -271,9 +273,6 @@ impl BiomeOSUIManager {
 }
 
 /// JSON-RPC Methods for biomeOS Integration
-///
-/// These methods provide a programmatic interface for biomeOS to interact
-/// with the UI components.
 pub struct BiomeOSUIRPC {
     manager: Arc<RwLock<BiomeOSUIManager>>,
 }
@@ -287,10 +286,6 @@ impl BiomeOSUIRPC {
     }
 
     /// Show device panel
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the manager lock cannot be acquired.
     pub async fn show_device_panel(&self) -> Result<()> {
         {
             let mut manager = self.manager.write().await;
@@ -300,10 +295,6 @@ impl BiomeOSUIRPC {
     }
 
     /// Show primal panel
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the manager lock cannot be acquired.
     pub async fn show_primal_panel(&self) -> Result<()> {
         {
             let mut manager = self.manager.write().await;
@@ -313,10 +304,6 @@ impl BiomeOSUIRPC {
     }
 
     /// Show niche designer
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the manager lock cannot be acquired.
     pub async fn show_niche_designer(&self) -> Result<()> {
         {
             let mut manager = self.manager.write().await;
@@ -326,22 +313,18 @@ impl BiomeOSUIRPC {
     }
 
     /// Get device list
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the biomeOS provider fails to fetch devices.
     pub async fn get_devices(&self) -> Result<Vec<Device>> {
         let manager = self.manager.read().await;
-        if manager.use_fixtures {
-            #[cfg(feature = "mock")]
+        if manager.offline_mode {
+            #[cfg(feature = "offline-demo")]
             {
                 Ok(manager
-                    .demo_provider
+                    .offline_provider
                     .as_ref()
-                    .map(super::demo_device_provider::DemoDeviceProvider::get_devices)
+                    .map(OfflineDeviceProvider::get_devices)
                     .unwrap_or_default())
             }
-            #[cfg(not(feature = "mock"))]
+            #[cfg(not(feature = "offline-demo"))]
             Ok(Vec::new())
         } else if let Some(provider) = &manager.biomeos_provider {
             provider.get_devices().await
@@ -351,22 +334,18 @@ impl BiomeOSUIRPC {
     }
 
     /// Get primal list
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the biomeOS provider fails to fetch primals.
     pub async fn get_primals_extended(&self) -> Result<Vec<Primal>> {
         let manager = self.manager.read().await;
-        if manager.use_fixtures {
-            #[cfg(feature = "mock")]
+        if manager.offline_mode {
+            #[cfg(feature = "offline-demo")]
             {
                 Ok(manager
-                    .demo_provider
+                    .offline_provider
                     .as_ref()
-                    .map(super::demo_device_provider::DemoDeviceProvider::get_primals_extended)
+                    .map(OfflineDeviceProvider::get_primals_extended)
                     .unwrap_or_default())
             }
-            #[cfg(not(feature = "mock"))]
+            #[cfg(not(feature = "offline-demo"))]
             Ok(Vec::new())
         } else if let Some(provider) = &manager.biomeos_provider {
             provider.get_primals_extended().await
@@ -376,22 +355,18 @@ impl BiomeOSUIRPC {
     }
 
     /// Get niche templates
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the biomeOS provider fails to fetch templates.
     pub async fn get_niche_templates(&self) -> Result<Vec<NicheTemplate>> {
         let manager = self.manager.read().await;
-        if manager.use_fixtures {
-            #[cfg(feature = "mock")]
+        if manager.offline_mode {
+            #[cfg(feature = "offline-demo")]
             {
                 Ok(manager
-                    .demo_provider
+                    .offline_provider
                     .as_ref()
-                    .map(super::demo_device_provider::DemoDeviceProvider::get_niche_templates)
+                    .map(OfflineDeviceProvider::get_niche_templates)
                     .unwrap_or_default())
             }
-            #[cfg(not(feature = "mock"))]
+            #[cfg(not(feature = "offline-demo"))]
             Ok(Vec::new())
         } else if let Some(provider) = &manager.biomeos_provider {
             provider.get_niche_templates().await
@@ -401,10 +376,6 @@ impl BiomeOSUIRPC {
     }
 
     /// Refresh all data
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the manager refresh fails.
     pub async fn refresh(&self) -> Result<()> {
         let mut manager = self.manager.write().await;
         manager.refresh().await

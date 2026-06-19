@@ -15,8 +15,8 @@ pub struct BiomeOSClient {
     base_url: String,
     /// HTTP client (thin hyper wrapper — no TLS, delegated to ecosystem provider)
     client: LocalHttpClient,
-    /// Enable fixture mode for development (deterministic data when biomeOS unavailable).
-    fixture_mode: bool,
+    /// Offline mode: serve cached/sample data when biomeOS is unreachable (test/dev only).
+    offline_mode: bool,
 }
 
 /// Response from `BiomeOS` discovery API
@@ -89,31 +89,31 @@ impl BiomeOSClient {
         Self {
             base_url: base_url.into(),
             client: LocalHttpClient::with_timeout(discovery_timeouts::HTTP_TIMEOUT),
-            fixture_mode: false,
+            offline_mode: false,
         }
     }
 
-    /// Enable fixture mode (deterministic data when biomeOS unavailable).
+    /// Enable offline mode (cached/sample data when biomeOS unavailable).
     /// Requires `test-fixtures` feature; production builds return
-    /// [`BiomeOsClientError::FixtureModeUnavailable`] at runtime.
+    /// [`BiomeOsClientError::OfflineModeUnavailable`] at runtime.
     #[must_use]
-    pub const fn with_fixture_mode(mut self, enabled: bool) -> Self {
-        self.fixture_mode = enabled;
+    pub const fn with_offline_mode(mut self, enabled: bool) -> Self {
+        self.offline_mode = enabled;
         self
     }
 
     /// Check if `BiomeOS` API is available
     ///
     /// # Errors
-    /// Returns `BiomeOsClientError` on network failure or when fixture mode is enabled without the feature.
+    /// Returns `BiomeOsClientError` on network failure or when offline mode is enabled without the feature.
     pub async fn health_check(&self) -> Result<bool, BiomeOsClientError> {
         #[cfg(any(test, feature = "test-fixtures"))]
-        if self.fixture_mode {
-            return Ok(true);
+        if self.offline_mode {
+            return Ok(false);
         }
         #[cfg(not(any(test, feature = "test-fixtures")))]
-        if self.fixture_mode {
-            return Err(BiomeOsClientError::FixtureModeUnavailable);
+        if self.offline_mode {
+            return Err(BiomeOsClientError::OfflineModeUnavailable);
         }
 
         let url = format!("{}/api/v1/health", self.base_url);
@@ -122,20 +122,20 @@ impl BiomeOSClient {
 
     /// Discover primals from the biomeOS orchestrator
     ///
-    /// **PRODUCTION MODE**: Returns error if API fails (no fixture fallback)
-    /// **FIXTURE MODE**: Set `fixture_mode` for deterministic test data
+    /// **PRODUCTION MODE**: Returns error if API fails (no offline fallback)
+    /// **OFFLINE MODE**: Set `offline_mode` for cached sample data (test/dev only)
     ///
     /// # Errors
     /// Returns `BiomeOsClientError` on network failure, non-success status, or JSON parse error.
     pub async fn discover_primals(&self) -> Result<Vec<PrimalInfo>, BiomeOsClientError> {
         #[cfg(any(test, feature = "test-fixtures"))]
-        if self.fixture_mode {
-            tracing::debug!("fixture mode — returning deterministic primals");
-            return Ok(self.mock_discover_primals());
+        if self.offline_mode {
+            tracing::debug!("offline mode — returning cached sample primals");
+            return Ok(self.offline_cached_primals());
         }
         #[cfg(not(any(test, feature = "test-fixtures")))]
-        if self.fixture_mode {
-            return Err(BiomeOsClientError::FixtureModeUnavailable);
+        if self.offline_mode {
+            return Err(BiomeOsClientError::OfflineModeUnavailable);
         }
 
         let url = format!("{}/api/v1/primals", self.base_url);
@@ -178,8 +178,8 @@ impl BiomeOSClient {
 
     /// Get topology edges (connections between primals)
     ///
-    /// **PRODUCTION MODE**: Returns error if API fails (no fixture fallback)
-    /// **FIXTURE MODE**: Set `fixture_mode` for deterministic topology data
+    /// **PRODUCTION MODE**: Returns error if API fails (no offline fallback)
+    /// **OFFLINE MODE**: Set `offline_mode` for cached sample topology (test/dev only)
     ///
     /// Supports biomeOS's topology format with nodes + edges.
     ///
@@ -187,13 +187,13 @@ impl BiomeOSClient {
     /// Returns `BiomeOsClientError` on network failure, non-success status, or JSON parse error.
     pub async fn get_topology(&self) -> Result<Vec<TopologyEdge>, BiomeOsClientError> {
         #[cfg(any(test, feature = "test-fixtures"))]
-        if self.fixture_mode {
-            tracing::debug!("fixture mode — returning deterministic topology");
-            return Ok(self.mock_topology());
+        if self.offline_mode {
+            tracing::debug!("offline mode — returning cached sample topology");
+            return Ok(self.offline_cached_topology());
         }
         #[cfg(not(any(test, feature = "test-fixtures")))]
-        if self.fixture_mode {
-            return Err(BiomeOsClientError::FixtureModeUnavailable);
+        if self.offline_mode {
+            return Err(BiomeOsClientError::OfflineModeUnavailable);
         }
 
         let url = format!("{}/api/v1/topology", self.base_url);
@@ -233,33 +233,33 @@ impl BiomeOSClient {
         Ok(topology.edges)
     }
 
-    /// Fixture primal discovery (test/dev only).
-    /// Gated behind `test-fixtures` feature. Production builds return error when `fixture_mode` is set.
+    /// Cached sample primals for offline/degraded mode (test/dev only).
+    /// Gated behind `test-fixtures` feature. Production builds return error when `offline_mode` is set.
     #[cfg(any(test, feature = "test-fixtures"))]
-    fn mock_discover_primals(&self) -> Vec<PrimalInfo> {
+    fn offline_cached_primals(&self) -> Vec<PrimalInfo> {
         let now = chrono::Utc::now().timestamp().cast_unsigned();
         vec![
             PrimalInfo {
                 id: "primal-alpha".into(),
-                name: "Security Primal".to_owned(),
+                name: "Security Primal (offline sample)".to_owned(),
                 primal_type: "Security".to_owned(),
-                endpoint: "http://mock-primal-alpha:8001".to_owned(),
+                endpoint: "offline://primal-alpha".to_owned(),
                 capabilities: vec![
                     "authentication".to_owned(),
                     "authorization".to_owned(),
                     "encryption".to_owned(),
                 ],
-                health: PrimalHealthStatus::Healthy,
+                health: PrimalHealthStatus::Warning,
                 last_seen: now,
                 endpoints: None,
                 metadata: None,
-                properties: Properties::new(), // Generic properties
+                properties: Properties::new(),
             },
             PrimalInfo {
                 id: "primal-beta".into(),
-                name: "Compute Primal".to_owned(),
+                name: "Compute Primal (offline sample)".to_owned(),
                 primal_type: "Compute".to_owned(),
-                endpoint: "http://mock-primal-beta:8002".to_owned(),
+                endpoint: "offline://primal-beta".to_owned(),
                 capabilities: vec![
                     "container_runtime".to_owned(),
                     "workload_execution".to_owned(),
@@ -272,14 +272,14 @@ impl BiomeOSClient {
             },
             PrimalInfo {
                 id: "primal-gamma".into(),
-                name: "Discovery Primal".to_owned(),
+                name: "Discovery Primal (offline sample)".to_owned(),
                 primal_type: "Discovery".to_owned(),
-                endpoint: "http://mock-primal-gamma:8003".to_owned(),
+                endpoint: "offline://primal-gamma".to_owned(),
                 capabilities: vec![
                     "service_discovery".to_owned(),
                     "capability_matching".to_owned(),
                 ],
-                health: PrimalHealthStatus::Healthy,
+                health: PrimalHealthStatus::Warning,
                 last_seen: now,
                 endpoints: None,
                 metadata: None,
@@ -287,15 +287,15 @@ impl BiomeOSClient {
             },
             PrimalInfo {
                 id: "primal-delta".into(),
-                name: "Storage Primal".to_owned(),
+                name: "Storage Primal (offline sample)".to_owned(),
                 primal_type: "Storage".to_owned(),
-                endpoint: "http://mock-primal-delta:8004".to_owned(),
+                endpoint: "offline://primal-delta".to_owned(),
                 capabilities: vec![
                     "permanent_storage".to_owned(),
                     "content_addressing".to_owned(),
                     "attribution".to_owned(),
                 ],
-                health: PrimalHealthStatus::Healthy,
+                health: PrimalHealthStatus::Warning,
                 last_seen: now,
                 endpoints: None,
                 metadata: None,
@@ -303,9 +303,9 @@ impl BiomeOSClient {
             },
             PrimalInfo {
                 id: "primal-epsilon".into(),
-                name: "AI Primal".to_owned(),
+                name: "AI Primal (offline sample)".to_owned(),
                 primal_type: "AI".to_owned(),
-                endpoint: "http://mock-primal-epsilon:8005".to_owned(),
+                endpoint: "offline://primal-epsilon".to_owned(),
                 capabilities: vec!["intent_parsing".to_owned(), "task_planning".to_owned()],
                 health: PrimalHealthStatus::Critical,
                 last_seen: now,
@@ -316,10 +316,10 @@ impl BiomeOSClient {
         ]
     }
 
-    /// Mock topology (TEST/DEV ONLY - never in production)
-    /// Gated behind test-fixtures feature.
+    /// Cached sample topology for offline/degraded mode (test/dev only).
+    /// Gated behind `test-fixtures` feature.
     #[cfg(any(test, feature = "test-fixtures"))]
-    fn mock_topology(&self) -> Vec<TopologyEdge> {
+    fn offline_cached_topology(&self) -> Vec<TopologyEdge> {
         vec![
             TopologyEdge {
                 from: "primal-alpha".into(),

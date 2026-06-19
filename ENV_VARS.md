@@ -822,7 +822,7 @@ Before deploying to production:
 
 ---
 
-**Last Updated**: June 3, 2026 (Wave 76 consolidation — S3 cutover, NESTGATE_SOCKET removed, complete idiom sweep)  
+**Last Updated**: June 19, 2026 (Wave 116 — gate mesh status, capability-based network defaults, offline-mode evolution)  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 

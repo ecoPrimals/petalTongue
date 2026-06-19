@@ -12,6 +12,7 @@ mod types;
 #[cfg(test)]
 mod tests;
 
+pub use crate::capability_registry::{CapabilityRegistry, CapabilityRegistryError};
 pub use types::{
     Config, ConfigError, DiscoveryConfig, NetworkConfig, PathsConfig, PerformanceConfig,
     ThresholdsConfig, WebServeConfig,

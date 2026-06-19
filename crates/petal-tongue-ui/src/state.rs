@@ -72,7 +72,7 @@ impl AppState {
     /// # Environment Variables
     ///
     /// - `BIOMEOS_URL`: `BiomeOS` endpoint (default: `http://localhost:3000`)
-    /// - `PETALTONGUE_FIXTURE_MODE`: Enable fixture mode (`true`/`false`, default: `false`)
+    /// - `PETALTONGUE_OFFLINE_MODE`: Enable offline mode (`true`/`false`, default: `false`)
     #[must_use]
     pub fn new() -> Self {
         // Use centralized configuration system - zero hardcoding
@@ -82,7 +82,7 @@ impl AppState {
         let biomeos_url = config.biomeos_url();
 
         let biomeos_client =
-            BiomeOSClient::new(&biomeos_url).with_fixture_mode(config.fixture_mode);
+            BiomeOSClient::new(&biomeos_url).with_offline_mode(config.offline_mode);
 
         // Create graph engine (shared across renderers)
         let graph = GraphEngine::new();

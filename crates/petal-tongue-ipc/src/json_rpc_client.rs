@@ -158,7 +158,7 @@ impl JsonRpcClient {
     /// The result field from the JSON-RPC response
     pub async fn call(&self, method: &str, params: Value) -> JsonRpcResult<Value> {
         let id = self.next_id();
-        let request = JsonRpcRequest::new(method, params, Value::Number(id.into()));
+        let request = JsonRpcRequest::new(method.to_owned(), params, Value::Number(id.into()));
 
         let response = self.send_request(&request).await?;
         self.extract_result(response, id)
@@ -170,7 +170,7 @@ impl JsonRpcClient {
     /// * `method` - Method name
     /// * `params` - Method parameters as JSON value
     pub async fn notify(&self, method: &str, params: Value) -> JsonRpcResult<()> {
-        let request = JsonRpcRequest::new(method, params, Value::Null);
+        let request = JsonRpcRequest::new(method.to_owned(), params, Value::Null);
         self.send_request_no_response(&request).await
     }
 
@@ -185,7 +185,7 @@ impl JsonRpcClient {
         let mut responses = Vec::with_capacity(requests.len());
         for (method, params) in requests {
             let id = self.next_id();
-            let request = JsonRpcRequest::new(method, params, Value::Number(id.into()));
+            let request = JsonRpcRequest::new(method.to_owned(), params, Value::Number(id.into()));
             let response = self.send_request(&request).await?;
             responses.push(response);
         }
@@ -319,7 +319,7 @@ impl JsonRpcClient {
         if let Some(err) = response.error {
             return Err(JsonRpcClientError::RpcError {
                 code: err.code,
-                message: err.message,
+                message: err.message.into_owned(),
                 data: err.data,
             });
         }

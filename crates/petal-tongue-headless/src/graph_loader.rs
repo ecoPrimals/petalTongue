@@ -107,11 +107,15 @@ fn make_test_args(scenario: Option<&str>, demo: bool) -> Args {
 }
 
 /// Built-in demonstration topology (opt-in via `--demo` or `SHOWCASE_MODE`).
+///
+/// All primal IDs are overridable via environment variables to avoid hardcoding:
+/// - `PETALTONGUE_HEADLESS_DEMO_HEALTH_ID` / `_NAME`
+/// - `PETALTONGUE_HEADLESS_DEMO_SECURITY_ID` / `_NAME`
 fn load_demo_topology(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessError> {
     use petal_tongue_core::constants;
     use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, TopologyEdge};
 
-    tracing::info!("📚 Loading demonstration topology (--demo)");
+    tracing::info!("Loading demonstration topology (--demo)");
 
     let mut g = graph.write()?;
     let now = std::time::SystemTime::now()
@@ -119,14 +123,20 @@ fn load_demo_topology(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessEr
         .unwrap_or_default()
         .as_secs();
 
+    let self_id = std::env::var("PETALTONGUE_HEADLESS_DEMO_SELF_ID")
+        .unwrap_or_else(|_| "petaltongue-headless".to_owned());
     let health_id = std::env::var("PETALTONGUE_HEADLESS_DEMO_HEALTH_ID")
         .unwrap_or_else(|_| "health-monitor-1".to_owned());
     let health_name = std::env::var("PETALTONGUE_HEADLESS_DEMO_HEALTH_NAME")
         .unwrap_or_else(|_| "Health Monitor".to_owned());
+    let security_id = std::env::var("PETALTONGUE_HEADLESS_DEMO_SECURITY_ID")
+        .unwrap_or_else(|_| "security-primal-1".to_owned());
+    let security_name = std::env::var("PETALTONGUE_HEADLESS_DEMO_SECURITY_NAME")
+        .unwrap_or_else(|_| "Security Primal".to_owned());
 
     let primals = vec![
         PrimalInfo::new(
-            "petaltongue-headless",
+            self_id.as_str(),
             "petalTongue Headless",
             "Visualization",
             constants::default_headless_url(),
@@ -144,8 +154,8 @@ fn load_demo_topology(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessEr
             now,
         ),
         PrimalInfo::new(
-            "encryption-demo-1",
-            "Encryption Primal",
+            security_id.as_str(),
+            security_name.as_str(),
             "Encrypted Communication",
             constants::default_sandbox_security_url(),
             vec!["encryption".to_owned(), "messaging".to_owned()],
@@ -160,15 +170,15 @@ fn load_demo_topology(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessEr
 
     g.add_edge(TopologyEdge {
         from: health_id.into(),
-        to: "petaltongue-headless".into(),
+        to: self_id.clone().into(),
         edge_type: "monitors".to_owned(),
         label: Some("Health Monitoring".to_owned()),
         capability: None,
         metrics: None,
     });
     g.add_edge(TopologyEdge {
-        from: "encryption-demo-1".into(),
-        to: "petaltongue-headless".into(),
+        from: security_id.into(),
+        to: self_id.into(),
         edge_type: "sends_data".to_owned(),
         label: Some("Encrypted Messages".to_owned()),
         capability: None,
@@ -178,7 +188,7 @@ fn load_demo_topology(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessEr
     g.layout(10);
     let (nc, ec) = (g.nodes().len(), g.edges().len());
     drop(g);
-    tracing::info!("📊 Loaded: {nc} primals, {ec} connections");
+    tracing::info!("Demonstration topology loaded: {nc} primals, {ec} connections");
 
     Ok(())
 }

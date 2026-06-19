@@ -62,6 +62,22 @@ pub struct BinaryPayload {
 /// The JSON-RPC protocol version string, borrowed at zero cost.
 const JSONRPC_VERSION: Cow<'static, str> = Cow::Borrowed("2.0");
 
+/// Standard JSON-RPC error messages (borrowed when used verbatim).
+pub mod error_messages {
+    use std::borrow::Cow;
+
+    /// JSON parse failure (-32700).
+    pub const PARSE_ERROR: Cow<'static, str> = Cow::Borrowed("Parse error");
+    /// Malformed request object (-32600).
+    pub const INVALID_REQUEST: Cow<'static, str> = Cow::Borrowed("Invalid Request");
+    /// Unknown or unavailable method (-32601).
+    pub const METHOD_NOT_FOUND: Cow<'static, str> = Cow::Borrowed("Method not found");
+    /// Invalid method parameters (-32602).
+    pub const INVALID_PARAMS: Cow<'static, str> = Cow::Borrowed("Invalid params");
+    /// Internal JSON-RPC error (-32603).
+    pub const INTERNAL_ERROR: Cow<'static, str> = Cow::Borrowed("Internal error");
+}
+
 /// JSON-RPC 2.0 Request
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JsonRpcRequest {
@@ -69,7 +85,7 @@ pub struct JsonRpcRequest {
     pub jsonrpc: Cow<'static, str>,
 
     /// Method name to invoke
-    pub method: String,
+    pub method: Cow<'static, str>,
 
     /// Method parameters (structured value or array)
     #[serde(default)]
@@ -81,7 +97,7 @@ pub struct JsonRpcRequest {
 
 impl JsonRpcRequest {
     /// Create a new JSON-RPC request
-    pub fn new(method: impl Into<String>, params: Value, id: Value) -> Self {
+    pub fn new(method: impl Into<Cow<'static, str>>, params: Value, id: Value) -> Self {
         Self {
             jsonrpc: JSONRPC_VERSION,
             method: method.into(),
@@ -122,7 +138,7 @@ impl JsonRpcResponse {
     }
 
     /// Create an error response
-    pub fn error(id: Value, code: i32, message: impl Into<String>) -> Self {
+    pub fn error(id: Value, code: i32, message: impl Into<Cow<'static, str>>) -> Self {
         Self {
             jsonrpc: JSONRPC_VERSION,
             result: None,
@@ -136,7 +152,12 @@ impl JsonRpcResponse {
     }
 
     /// Create an error response with additional data
-    pub fn error_with_data(id: Value, code: i32, message: impl Into<String>, data: Value) -> Self {
+    pub fn error_with_data(
+        id: Value,
+        code: i32,
+        message: impl Into<Cow<'static, str>>,
+        data: Value,
+    ) -> Self {
         Self {
             jsonrpc: JSONRPC_VERSION,
             result: None,
@@ -157,7 +178,7 @@ pub struct JsonRpcError {
     pub code: i32,
 
     /// Human-readable error message
-    pub message: String,
+    pub message: Cow<'static, str>,
 
     /// Additional error data (optional)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -220,8 +241,11 @@ mod tests {
 
     #[test]
     fn test_json_rpc_response_error() {
-        let response =
-            JsonRpcResponse::error(json!(1), error_codes::METHOD_NOT_FOUND, "Method not found");
+        let response = JsonRpcResponse::error(
+            json!(1),
+            error_codes::METHOD_NOT_FOUND,
+            error_messages::METHOD_NOT_FOUND,
+        );
 
         assert_eq!(response.jsonrpc, "2.0");
         assert!(response.result.is_none());

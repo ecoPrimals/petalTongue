@@ -14,10 +14,125 @@
 //! { "transport": "mesh_relay", "peer_id": "strandgate", "capability": "security" }
 //! ```
 //!
+//! ## Capability-gated transports
+//!
+//! [`TransportEndpoint::MeshRelay`] is a **capability-gated transport**: it is
+//! available only when the ecosystem provides the [`MESH_RELAY_CAPABILITY`]
+//! (`mesh.relay`) capability at runtime. petalTongue does not know where the
+//! relay lives — discovery populates [`MeshRelayConfig`] when songBird (or
+//! equivalent) announces the relay gateway. Until then,
+//! [`connect_transport`] returns [`TransportError::CapabilityNotDiscovered`]
+//! so callers and UI can distinguish "not yet discovered" from hard failure.
+//!
 //! When `sourdough-core` ships the canonical `TransportEndpoint`, this module
 //! should be replaced with a re-export.
 
 use std::path::PathBuf;
+use std::sync::{OnceLock, RwLock};
+
+use thiserror::Error;
+
+/// Capability domain required for mesh relay transport.
+///
+/// Populated at runtime when the ecosystem announces a mesh relay gateway.
+pub const MESH_RELAY_CAPABILITY: &str = "mesh.relay";
+
+/// Runtime mesh relay configuration, populated when [`MESH_RELAY_CAPABILITY`]
+/// is discovered.
+///
+/// petalTongue holds self-knowledge only — the relay endpoint is never
+/// hardcoded; discovery sets this via [`set_mesh_relay_config`].
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct MeshRelayConfig {
+    /// How to reach the local mesh relay gateway (UDS or TCP).
+    pub relay: TransportEndpoint,
+}
+
+/// Errors from transport connection attempts.
+///
+/// Distinct variants allow UI layers to show appropriate messaging: capability
+/// discovery pending vs relay present but unreachable.
+#[derive(Debug, Error)]
+pub enum TransportError {
+    /// Required ecosystem capability has not been discovered at runtime.
+    #[error("capability not discovered: {capability} (required for this transport)")]
+    CapabilityNotDiscovered {
+        /// Capability domain that must be discovered (e.g. `mesh.relay`).
+        capability: String,
+    },
+
+    /// Capability was discovered but the transport could not be established.
+    #[error("transport unavailable: {message}")]
+    TransportUnavailable {
+        /// Human-readable detail (connection failure, poisoned lock, etc.).
+        message: String,
+    },
+
+    /// Underlying I/O failure for direct UDS/TCP connections.
+    #[error("connection failed: {0}")]
+    Io(#[from] std::io::Error),
+}
+
+impl TransportError {
+    /// Whether the error indicates the mesh relay capability has not been discovered.
+    #[must_use]
+    pub const fn is_capability_not_discovered(&self) -> bool {
+        matches!(self, Self::CapabilityNotDiscovered { .. })
+    }
+
+    /// Whether the error indicates discovery succeeded but connection failed.
+    #[must_use]
+    pub const fn is_transport_unavailable(&self) -> bool {
+        matches!(self, Self::TransportUnavailable { .. })
+    }
+}
+
+impl From<TransportError> for std::io::Error {
+    fn from(err: TransportError) -> Self {
+        match err {
+            TransportError::Io(source) => source,
+            TransportError::CapabilityNotDiscovered { capability } => Self::new(
+                std::io::ErrorKind::NotFound,
+                format!("capability not discovered: {capability}"),
+            ),
+            TransportError::TransportUnavailable { message } => {
+                Self::new(std::io::ErrorKind::ConnectionRefused, message)
+            }
+        }
+    }
+}
+
+static MESH_RELAY_CONFIG: OnceLock<RwLock<Option<MeshRelayConfig>>> = OnceLock::new();
+
+fn mesh_relay_config_lock() -> &'static RwLock<Option<MeshRelayConfig>> {
+    MESH_RELAY_CONFIG.get_or_init(|| RwLock::new(None))
+}
+
+/// Install runtime mesh relay configuration after capability discovery.
+///
+/// Call when the ecosystem announces [`MESH_RELAY_CAPABILITY`].
+pub fn set_mesh_relay_config(config: MeshRelayConfig) {
+    if let Ok(mut guard) = mesh_relay_config_lock().write() {
+        tracing::info!(relay = %config.relay, "mesh relay capability discovered; config installed");
+        *guard = Some(config);
+    }
+}
+
+/// Clear mesh relay configuration (e.g. on capability loss or test teardown).
+pub fn clear_mesh_relay_config() {
+    if let Ok(mut guard) = mesh_relay_config_lock().write() {
+        *guard = None;
+    }
+}
+
+/// Current mesh relay configuration, if the capability has been discovered.
+#[must_use]
+pub fn mesh_relay_config() -> Option<MeshRelayConfig> {
+    mesh_relay_config_lock()
+        .read()
+        .ok()
+        .and_then(|guard| guard.clone())
+}
 
 /// Transport endpoint — how to reach a primal or how a primal is reached.
 ///
@@ -156,13 +271,30 @@ impl tokio::io::AsyncWrite for TransportStream {
 
 /// Connect to a `TransportEndpoint`, returning a [`TransportStream`].
 ///
-/// For `Uds` and `Tcp`, this opens a connection. `MeshRelay` is not yet
-/// implemented (returns an error).
+/// `Uds` and `Tcp` open direct connections. [`TransportEndpoint::MeshRelay`] is
+/// capability-gated: connection is attempted only when [`mesh_relay_config`]
+/// is populated after [`MESH_RELAY_CAPABILITY`] discovery; otherwise returns
+/// [`TransportError::CapabilityNotDiscovered`].
 ///
 /// # Errors
 ///
-/// Returns an IO error if the connection fails.
-pub async fn connect_transport(endpoint: &TransportEndpoint) -> std::io::Result<TransportStream> {
+/// Returns [`TransportError`] if the connection fails or the mesh relay
+/// capability has not been discovered.
+pub async fn connect_transport(
+    endpoint: &TransportEndpoint,
+) -> Result<TransportStream, TransportError> {
+    match endpoint {
+        TransportEndpoint::Uds { .. } | TransportEndpoint::Tcp { .. } => {
+            connect_direct(endpoint).await
+        }
+        TransportEndpoint::MeshRelay {
+            peer_id,
+            capability,
+        } => connect_mesh_relay(peer_id, capability).await,
+    }
+}
+
+async fn connect_direct(endpoint: &TransportEndpoint) -> Result<TransportStream, TransportError> {
     match endpoint {
         TransportEndpoint::Uds { path } => {
             let stream = tokio::net::UnixStream::connect(path).await?;
@@ -172,11 +304,62 @@ pub async fn connect_transport(endpoint: &TransportEndpoint) -> std::io::Result<
             let stream = tokio::net::TcpStream::connect(format!("{host}:{port}")).await?;
             Ok(TransportStream::Tcp(stream))
         }
-        TransportEndpoint::MeshRelay { peer_id, .. } => Err(std::io::Error::new(
-            std::io::ErrorKind::Unsupported,
-            format!("mesh_relay transport to {peer_id} not yet implemented"),
-        )),
+        TransportEndpoint::MeshRelay { .. } => Err(TransportError::TransportUnavailable {
+            message: "internal error: connect_direct called for mesh relay endpoint".to_owned(),
+        }),
     }
+}
+
+async fn connect_mesh_relay(
+    peer_id: &str,
+    capability: &str,
+) -> Result<TransportStream, TransportError> {
+    let config = mesh_relay_config().ok_or_else(|| {
+        tracing::warn!(
+            peer_id = %peer_id,
+            remote_capability = %capability,
+            required_capability = MESH_RELAY_CAPABILITY,
+            "mesh relay transport unavailable: capability not discovered at runtime"
+        );
+        TransportError::CapabilityNotDiscovered {
+            capability: MESH_RELAY_CAPABILITY.to_owned(),
+        }
+    })?;
+
+    tracing::debug!(
+        peer_id = %peer_id,
+        remote_capability = %capability,
+        relay = %config.relay,
+        "attempting mesh relay connection via discovered gateway"
+    );
+
+    connect_direct(&config.relay)
+        .await
+        .map_err(|err| match err {
+            TransportError::Io(source) => {
+                tracing::warn!(
+                    peer_id = %peer_id,
+                    remote_capability = %capability,
+                    relay = %config.relay,
+                    error = %source,
+                    "mesh relay gateway connection failed"
+                );
+                TransportError::TransportUnavailable {
+                    message: format!("mesh relay to {peer_id}/{capability} unavailable: {source}"),
+                }
+            }
+            other @ (TransportError::CapabilityNotDiscovered { .. }
+            | TransportError::TransportUnavailable { .. }) => {
+                tracing::warn!(
+                    peer_id = %peer_id,
+                    remote_capability = %capability,
+                    relay = %config.relay,
+                    error = %other,
+                    "mesh relay gateway connection failed"
+                );
+                other
+            }
+        })
 }
 
 #[cfg(test)]
@@ -301,13 +484,82 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn connect_transport_mesh_relay_unsupported() {
+    async fn connect_transport_mesh_relay_capability_not_discovered() {
+        clear_mesh_relay_config();
         let ep = TransportEndpoint::MeshRelay {
             peer_id: "test".into(),
             capability: "test".into(),
         };
-        let result = connect_transport(&ep).await;
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err().kind(), std::io::ErrorKind::Unsupported);
+        let err = connect_transport(&ep).await.unwrap_err();
+        assert!(err.is_capability_not_discovered());
+        assert!(matches!(
+            err,
+            TransportError::CapabilityNotDiscovered { capability } if capability == MESH_RELAY_CAPABILITY
+        ));
+    }
+
+    #[tokio::test]
+    async fn connect_transport_mesh_relay_uses_discovered_config() {
+        clear_mesh_relay_config();
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let accept = tokio::spawn(async move {
+            listener.accept().await.ok();
+        });
+
+        set_mesh_relay_config(MeshRelayConfig {
+            relay: TransportEndpoint::tcp("127.0.0.1", port),
+        });
+
+        let ep = TransportEndpoint::MeshRelay {
+            peer_id: "strandgate".into(),
+            capability: "content".into(),
+        };
+        let stream = connect_transport(&ep).await.unwrap();
+        assert!(matches!(stream, TransportStream::Tcp(_)));
+
+        accept.abort();
+        clear_mesh_relay_config();
+    }
+
+    #[tokio::test]
+    async fn connect_transport_mesh_relay_gateway_unreachable() {
+        clear_mesh_relay_config();
+        set_mesh_relay_config(MeshRelayConfig {
+            relay: TransportEndpoint::tcp("127.0.0.1", 1),
+        });
+
+        let ep = TransportEndpoint::MeshRelay {
+            peer_id: "westgate".into(),
+            capability: "viz".into(),
+        };
+        let err = connect_transport(&ep).await.unwrap_err();
+        assert!(err.is_transport_unavailable());
+
+        clear_mesh_relay_config();
+    }
+
+    #[test]
+    fn mesh_relay_config_roundtrip() {
+        clear_mesh_relay_config();
+        assert!(mesh_relay_config().is_none());
+
+        let config = MeshRelayConfig {
+            relay: TransportEndpoint::uds("/tmp/mesh-relay.sock"),
+        };
+        set_mesh_relay_config(config.clone());
+        assert_eq!(mesh_relay_config(), Some(config));
+
+        clear_mesh_relay_config();
+        assert!(mesh_relay_config().is_none());
+    }
+
+    #[test]
+    fn transport_error_io_conversion() {
+        let err = TransportError::CapabilityNotDiscovered {
+            capability: MESH_RELAY_CAPABILITY.to_owned(),
+        };
+        let io_err: std::io::Error = err.into();
+        assert_eq!(io_err.kind(), std::io::ErrorKind::NotFound);
     }
 }

@@ -50,9 +50,9 @@ mod tests {
     }
 
     #[test]
-    fn test_fixture_mode_flag() {
+    fn test_offline_mode_flag() {
         let config = PetalTongueConfig::default();
-        assert!(!config.fixture_mode);
+        assert!(!config.offline_mode);
     }
 
     #[test]

@@ -200,10 +200,10 @@ mod tests {
             timestamp_ms: 12345,
         };
 
-        let event = InteractionEvent::from_result(&result, "my_grammar".into());
+        let event = InteractionEvent::from_result(&result, "my_grammar".to_owned());
         assert_eq!(event.event_type, "select");
         assert_eq!(event.targets.len(), 1);
-        assert_eq!(event.grammar_id, "my_grammar".into());
+        assert_eq!(event.grammar_id, "my_grammar");
     }
 
     #[test]

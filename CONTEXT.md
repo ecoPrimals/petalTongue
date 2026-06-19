@@ -121,12 +121,12 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # 6,454+ tests, ~85-90% coverage
+cargo test --workspace --all-features     # 6,618+ tests, ~85-90% coverage
 ```
 
 ## Current State
 
-Wave 113 riboCipher Prefix Acceptance (June 14, 2026). 6,460+ tests, all passing.
+Wave 116 Gate Mesh & Deep Debt (June 19, 2026). 6,618+ tests, all passing.
 UDS connections now accept and strip the `[0xEC, 0x01]` riboCipher signal
 prefix before BTSP classification or JSON-RPC parsing. HEALTH-01 compliant
 (bare `"health"` → enriched check with `uptime_s`). Zero `/tmp` literals.

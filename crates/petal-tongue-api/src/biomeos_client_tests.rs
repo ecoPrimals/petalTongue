@@ -4,8 +4,8 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 #[tokio::test]
-async fn test_fixture_mode() {
-    let client = BiomeOSClient::new("http://test-mock:9000").with_fixture_mode(true);
+async fn test_offline_mode() {
+    let client = BiomeOSClient::new("http://test-mock:9000").with_offline_mode(true);
 
     let primals = client.discover_primals().await.unwrap();
     assert_eq!(primals.len(), 5);
@@ -14,9 +14,9 @@ async fn test_fixture_mode() {
     let topology = client.get_topology().await.unwrap();
     assert_eq!(topology.len(), 5);
 
-    // Health check should always succeed in mock mode
+    // Offline mode honestly reports ecosystem as unavailable
     let health = client.health_check().await.unwrap();
-    assert!(health);
+    assert!(!health);
 }
 
 #[tokio::test]
@@ -137,7 +137,7 @@ async fn test_discover_primals_success_via_wiremock() {
         .mount(&mock_server)
         .await;
 
-    let client = BiomeOSClient::new(mock_server.uri()).with_fixture_mode(false);
+    let client = BiomeOSClient::new(mock_server.uri()).with_offline_mode(false);
     let primals = client.discover_primals().await.expect("discover_primals");
     assert_eq!(primals.len(), 1);
     assert_eq!(primals[0].id, "p1");
@@ -154,7 +154,7 @@ async fn test_discover_primals_server_error() {
         .mount(&mock_server)
         .await;
 
-    let client = BiomeOSClient::new(mock_server.uri()).with_fixture_mode(false);
+    let client = BiomeOSClient::new(mock_server.uri()).with_offline_mode(false);
     let err = client.discover_primals().await.expect_err("should fail");
     assert!(matches!(
         err,
@@ -172,7 +172,7 @@ async fn test_discover_primals_parse_error() {
         .mount(&mock_server)
         .await;
 
-    let client = BiomeOSClient::new(mock_server.uri()).with_fixture_mode(false);
+    let client = BiomeOSClient::new(mock_server.uri()).with_offline_mode(false);
     let err = client.discover_primals().await.expect_err("should fail");
     assert!(matches!(err, BiomeOsClientError::Parse(_)));
 }
@@ -195,7 +195,7 @@ async fn test_get_topology_success_via_wiremock() {
         .mount(&mock_server)
         .await;
 
-    let client = BiomeOSClient::new(mock_server.uri()).with_fixture_mode(false);
+    let client = BiomeOSClient::new(mock_server.uri()).with_offline_mode(false);
     let edges = client.get_topology().await.expect("get_topology");
     assert_eq!(edges.len(), 1);
     assert_eq!(edges[0].from.as_str(), "n1");
@@ -212,7 +212,7 @@ async fn test_get_topology_server_error() {
         .mount(&mock_server)
         .await;
 
-    let client = BiomeOSClient::new(mock_server.uri()).with_fixture_mode(false);
+    let client = BiomeOSClient::new(mock_server.uri()).with_offline_mode(false);
     let err = client.get_topology().await.expect_err("should fail");
     assert!(matches!(
         err,
@@ -230,7 +230,7 @@ async fn test_get_topology_parse_error() {
         .mount(&mock_server)
         .await;
 
-    let client = BiomeOSClient::new(mock_server.uri()).with_fixture_mode(false);
+    let client = BiomeOSClient::new(mock_server.uri()).with_offline_mode(false);
     let err = client.get_topology().await.expect_err("should fail");
     assert!(matches!(err, BiomeOsClientError::Parse(_)));
 }
@@ -245,7 +245,7 @@ async fn test_health_check_success_via_wiremock() {
         .mount(&mock_server)
         .await;
 
-    let client = BiomeOSClient::new(mock_server.uri()).with_fixture_mode(false);
+    let client = BiomeOSClient::new(mock_server.uri()).with_offline_mode(false);
     let healthy = client.health_check().await.expect("health_check");
     assert!(healthy);
 }
@@ -260,7 +260,7 @@ async fn test_health_check_non_success_status() {
         .mount(&mock_server)
         .await;
 
-    let client = BiomeOSClient::new(mock_server.uri()).with_fixture_mode(false);
+    let client = BiomeOSClient::new(mock_server.uri()).with_offline_mode(false);
     let healthy = client.health_check().await.expect("health_check");
     assert!(!healthy);
 }

@@ -6,11 +6,11 @@ use thiserror::Error;
 /// Errors from `BiomeOS` API client operations.
 #[derive(Debug, Error)]
 pub enum BiomeOsClientError {
-    /// Fixture mode requested but `test-fixtures` feature is not enabled.
+    /// Offline mode requested but `test-fixtures` feature is not enabled.
     #[error(
-        "Fixture mode requires test-fixtures feature. Use real biomeOS connection or build with --features test-fixtures."
+        "Offline mode requires test-fixtures feature. Use real biomeOS connection or build with --features test-fixtures."
     )]
-    FixtureModeUnavailable,
+    OfflineModeUnavailable,
 
     /// Network request failed (connection, timeout, etc.)
     #[error("Failed to connect to biomeOS at {url}: {source}")]
@@ -61,10 +61,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_error_display_fixture_mode_unavailable() {
-        let err = BiomeOsClientError::FixtureModeUnavailable;
+    fn test_error_display_offline_mode_unavailable() {
+        let err = BiomeOsClientError::OfflineModeUnavailable;
         let s = err.to_string();
-        assert!(s.contains("Fixture mode"));
+        assert!(s.contains("Offline mode"));
         assert!(s.contains("test-fixtures"));
     }
 

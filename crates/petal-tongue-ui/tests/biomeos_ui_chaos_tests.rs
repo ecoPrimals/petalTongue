@@ -118,10 +118,10 @@ async fn test_chaos_manager_churn() {
     for _ in 0..100 {
         let manager = BiomeOSUIManager::new().await;
         // Mock mode only when mock feature enabled and biomeOS unavailable
-        #[cfg(feature = "mock")]
-        assert!(manager.is_fixture_mode());
-        #[cfg(not(feature = "mock"))]
-        assert!(!manager.is_fixture_mode());
+        #[cfg(feature = "offline-demo")]
+        assert!(manager.is_offline_mode());
+        #[cfg(not(feature = "offline-demo"))]
+        assert!(!manager.is_offline_mode());
         drop(manager);
     }
 }

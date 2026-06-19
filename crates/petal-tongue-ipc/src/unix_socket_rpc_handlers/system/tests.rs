@@ -298,3 +298,17 @@ fn proprioception_get_with_sessions() {
     assert_eq!(r["active_scenes"], 1);
     assert_eq!(r["total_frames"], 0);
 }
+
+#[test]
+fn gate_mesh_status_returns_topology() {
+    let h = test_handlers();
+    let resp = get_gate_mesh_status(&h, serde_json::json!(1));
+    let r = resp.result.expect("gate.mesh.status should succeed");
+    let gates = r["gates"].as_array().expect("gates array");
+    assert_eq!(gates.len(), 11, "9 gates + 2 VPS nodes");
+    let links = r["links"].as_array().expect("links array");
+    assert_eq!(links.len(), 6, "6 WireGuard links");
+    assert_eq!(r["enrolled_count"], 4);
+    assert_eq!(r["total_count"], 11);
+    assert_eq!(r["source"], "offline");
+}

@@ -71,7 +71,7 @@ petaltongue
 - **Self-knowledge only** -- other primals discovered at runtime
 - **Graceful degradation** -- works standalone or in full ecosystem
 - **Grammar of Graphics** -- composable data→representation pipeline
-- **DataBinding auto-compiler** -- all 11 chart types auto-compile to grammar
+- **DataBinding auto-compiler** -- all 13 chart types auto-compile to grammar
 - **Tufte constraints** -- machine-checked visualization quality
 - **Dashboard layout engine** -- multi-panel grid with domain theming and SVG export
 - **Domain-aware rendering** -- automatic palette selection per domain
@@ -114,7 +114,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 6,460+ passing, 0 failures (`--all-features`) |
+| Tests | 6,618+ passing, 0 failures (`--all-features`) |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (`--all-features`, pedantic + nursery; `#[expect]` with reasons) |
 | Docs | `cargo doc --workspace --no-deps` zero warnings |
@@ -149,7 +149,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 6,460+ tests
+cargo test --workspace --all-features        # 6,618+ tests
 cargo clippy --workspace --all-features -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps

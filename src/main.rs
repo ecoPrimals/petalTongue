@@ -497,7 +497,7 @@ async fn dispatch_web(
             .map(|p| p.to_string_lossy().into_owned())
     });
     let effective_backend = if backend == "filesystem" {
-        config.web.backend.clone()
+        config.web.backend.clone().into_owned()
     } else {
         backend
     };

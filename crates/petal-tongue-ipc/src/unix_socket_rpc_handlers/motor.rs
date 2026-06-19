@@ -31,7 +31,7 @@ pub fn handle_motor_command(handlers: &RpcHandlers, req: JsonRpcRequest) -> Json
         );
     };
 
-    let cmd: Option<MotorCommand> = match req.method.as_str() {
+    let cmd: Option<MotorCommand> = match req.method.as_ref() {
         "motor.set_panel" => {
             let panel_name = req.params["panel"].as_str().unwrap_or("");
             let visible = req.params["visible"].as_bool().unwrap_or(true);

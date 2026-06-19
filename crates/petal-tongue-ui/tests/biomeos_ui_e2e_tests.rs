@@ -26,12 +26,12 @@ async fn test_e2e_device_assignment_flow() {
     let devices = rpc.get_devices().await.unwrap();
     let primals = rpc.get_primals_extended().await.unwrap();
 
-    #[cfg(feature = "mock")]
+    #[cfg(feature = "offline-demo")]
     {
         assert!(!devices.is_empty(), "Should have devices");
         assert!(!primals.is_empty(), "Should have primals");
     }
-    #[cfg(not(feature = "mock"))]
+    #[cfg(not(feature = "offline-demo"))]
     let _ = (&devices, &primals);
 
     // 2. Switch to device panel
@@ -56,9 +56,9 @@ async fn test_e2e_niche_creation_workflow() {
 
     // 1. Get templates (mock only when mock feature enabled)
     let templates = rpc.get_niche_templates().await.unwrap();
-    #[cfg(feature = "mock")]
+    #[cfg(feature = "offline-demo")]
     assert!(!templates.is_empty(), "Should have templates");
-    #[cfg(not(feature = "mock"))]
+    #[cfg(not(feature = "offline-demo"))]
     let _ = &templates;
 
     // 2. Switch to niche designer
@@ -112,10 +112,10 @@ async fn test_e2e_provider_fallback() {
     let manager = BiomeOSUIManager::new().await;
 
     // Mock mode only when mock feature enabled and biomeOS unavailable
-    #[cfg(feature = "mock")]
-    assert!(manager.is_fixture_mode());
-    #[cfg(not(feature = "mock"))]
-    assert!(!manager.is_fixture_mode());
+    #[cfg(feature = "offline-demo")]
+    assert!(manager.is_offline_mode());
+    #[cfg(not(feature = "offline-demo"))]
+    assert!(!manager.is_offline_mode());
 
     let manager = Arc::new(RwLock::new(manager));
     let rpc = BiomeOSUIRPC::new(manager.clone());
@@ -124,13 +124,13 @@ async fn test_e2e_provider_fallback() {
     let primals = rpc.get_primals_extended().await.unwrap();
     let templates = rpc.get_niche_templates().await.unwrap();
 
-    #[cfg(feature = "mock")]
+    #[cfg(feature = "offline-demo")]
     {
         assert!(!devices.is_empty());
         assert!(!primals.is_empty());
         assert!(!templates.is_empty());
     }
-    #[cfg(not(feature = "mock"))]
+    #[cfg(not(feature = "offline-demo"))]
     let _ = (&devices, &primals, &templates);
 }
 
@@ -211,13 +211,13 @@ async fn test_e2e_full_lifecycle() {
     let primals = rpc.get_primals_extended().await.unwrap();
     let templates = rpc.get_niche_templates().await.unwrap();
 
-    #[cfg(feature = "mock")]
+    #[cfg(feature = "offline-demo")]
     {
         assert!(!devices.is_empty());
         assert!(!primals.is_empty());
         assert!(!templates.is_empty());
     }
-    #[cfg(not(feature = "mock"))]
+    #[cfg(not(feature = "offline-demo"))]
     let _ = (&devices, &primals, &templates);
 
     // 5. Final refresh
@@ -246,10 +246,10 @@ async fn test_e2e_rapid_tab_switching() {
     }
 
     // Should still be in valid state
-    #[cfg(feature = "mock")]
-    assert!(manager.read().await.is_fixture_mode());
-    #[cfg(not(feature = "mock"))]
-    assert!(!manager.read().await.is_fixture_mode());
+    #[cfg(feature = "offline-demo")]
+    assert!(manager.read().await.is_offline_mode());
+    #[cfg(not(feature = "offline-demo"))]
+    assert!(!manager.read().await.is_offline_mode());
 }
 
 /// E2E Test: Data consistency across refreshes

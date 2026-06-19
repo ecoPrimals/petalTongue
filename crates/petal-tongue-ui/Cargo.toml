@@ -65,7 +65,7 @@ epaint = { workspace = true }
 
 [features]
 # Default: Auto-detect best backend (prefer capability-discovered, fall back to eframe)
-# mock OFF by default (sovereignty). Use --features mock for dev/demo. Tests: cargo test --features mock
+# offline-demo OFF by default (sovereignty). Use --features offline-demo for dev/sandbox. Tests: cargo test --features offline-demo
 default = ["ui-auto"]
 
 # Backend selection features (ecoBlossom evolution!)
@@ -84,15 +84,16 @@ audio-socket = []
 audio-direct = []
 doom = ["dep:doom-core"]  # Doom integration for platform testing
 
-# Mock provider for dev/test only - NEVER use in production (sovereignty compliance)
-# When disabled: biomeOS unavailable → empty panels. When enabled: graceful degradation with demo data.
-# Enables DemoVisualizationProvider, DemoDeviceProvider, and BiomeOSClient demo mode.
-mock = ["petal-tongue-discovery/test-fixtures", "petal-tongue-api/test-fixtures", "petal-tongue-core/test-fixtures"]
+# Offline/degraded capability for dev/test only - NEVER use in production (sovereignty compliance)
+# When disabled: biomeOS unavailable → empty panels with honest unavailable state.
+# When enabled: graceful degradation with clearly labeled offline sample data.
+# Enables OfflineVisualizationProvider, OfflineDeviceProvider, and BiomeOSClient offline mode.
+offline-demo = ["petal-tongue-discovery/test-fixtures", "petal-tongue-api/test-fixtures", "petal-tongue-core/test-fixtures"]
 
 
 [dev-dependencies]
 anyhow = "1.0"  # Integration tests and examples
-petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }  # For tests that use test_fixtures (run: cargo test --features test-fixtures or --features mock)
+petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }  # For tests that use test_fixtures (run: cargo test --features test-fixtures or --features offline-demo)
 tokio = { workspace = true, features = ["test-util", "macros"] }
 tempfile = { workspace = true }
 proptest = { workspace = true }
