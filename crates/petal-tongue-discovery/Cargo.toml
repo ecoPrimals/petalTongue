@@ -37,7 +37,7 @@ tracing = { workspace = true }
 socket2 = { workspace = true }
 
 # LRU cache for performance optimization (Phase 2) - pure Rust
-lru = { workspace = true }
+lru = { workspace = true, optional = true }
 
 # Modern async patterns (Discovery Evolution)
 futures-util = { workspace = true }
@@ -45,6 +45,8 @@ rand = { workspace = true }
 
 [features]
 default = []
+# Enables ProviderCache (LRU + TTL caching layer for discovery results)
+cache = ["dep:lru"]
 # Mock provider - Run tests with: cargo test --features test-fixtures
 test-fixtures = ["petal-tongue-core/test-fixtures"]
 

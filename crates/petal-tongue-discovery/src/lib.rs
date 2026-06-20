@@ -49,6 +49,7 @@
 //! # }
 //! ```
 
+#[cfg(feature = "cache")]
 pub mod cache;
 mod capabilities;
 pub mod capability_parse;

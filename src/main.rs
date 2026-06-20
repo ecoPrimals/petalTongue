@@ -36,6 +36,7 @@ mod live_mode;
 mod notebook_render;
 mod server_mode;
 mod signal;
+#[cfg(feature = "tui")]
 mod tui_mode;
 #[cfg(feature = "ui")]
 mod ui_mode;
@@ -383,12 +384,22 @@ async fn dispatch_async(
             scenario,
             refresh_rate,
         } => {
-            tracing::info!(
-                mode = "tui",
-                refresh_rate,
-                "Launching terminal UI mode (Pure Rust!)"
-            );
-            tui_mode::run(scenario, refresh_rate, data_service).await
+            #[cfg(feature = "tui")]
+            {
+                tracing::info!(
+                    mode = "tui",
+                    refresh_rate,
+                    "Launching terminal UI mode (Pure Rust!)"
+                );
+                tui_mode::run(scenario, refresh_rate, data_service).await
+            }
+            #[cfg(not(feature = "tui"))]
+            {
+                let _ = (scenario, refresh_rate, data_service);
+                Err(AppError::Tui(
+                    "TUI mode requires the 'tui' feature (enable with --features tui)".to_owned(),
+                ))
+            }
         }
         Commands::Web {
             port,

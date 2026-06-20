@@ -14,19 +14,19 @@ use petal_tongue_scene::scene_graph::SceneGraph;
 use tracing::warn;
 
 /// Compile a scene graph to SVG and return the raw SVG string.
-fn compile_svg(scene: &SceneGraph) -> (serde_json::Value, String) {
+fn compile_svg(scene: &SceneGraph) -> (serde_json::Value, &'static str) {
     let compiler = SvgCompiler;
     match compiler.compile(scene) {
         ModalityOutput::Svg(b) => (
             serde_json::Value::String(String::from_utf8_lossy(b.as_ref()).into_owned()),
-            "svg".into(),
+            "svg",
         ),
-        _ => (serde_json::Value::Null, "error".into()),
+        _ => (serde_json::Value::Null, "error"),
     }
 }
 
 /// Compile a scene graph to an HTML document wrapping SVG (PT-04).
-fn compile_html(scene: &SceneGraph) -> (serde_json::Value, String) {
+fn compile_html(scene: &SceneGraph) -> (serde_json::Value, &'static str) {
     let compiler = SvgCompiler;
     match compiler.compile(scene) {
         ModalityOutput::Svg(b) => {
@@ -36,16 +36,19 @@ fn compile_html(scene: &SceneGraph) -> (serde_json::Value, String) {
                 .unwrap_or_else(|e| String::from_utf8_lossy(e.as_bytes()).into_owned());
             if !petal_tongue_ui_core::validate_standalone_html_export(&html) {
                 warn!("HTML modality output failed validation (PT-04)");
-                return (serde_json::Value::Null, "error".into());
+                return (serde_json::Value::Null, "error");
             }
-            (serde_json::Value::String(html), "html".into())
+            (serde_json::Value::String(html), "html")
         }
-        _ => (serde_json::Value::Null, "error".into()),
+        _ => (serde_json::Value::Null, "error"),
     }
 }
 
 /// Compile a scene graph to the requested output modality.
-pub(super) fn compile_modality(scene: &SceneGraph, modality: &str) -> (serde_json::Value, String) {
+pub(super) fn compile_modality(
+    scene: &SceneGraph,
+    modality: &str,
+) -> (serde_json::Value, &'static str) {
     match modality {
         "svg" => compile_svg(scene),
         "html" => compile_html(scene),
@@ -54,9 +57,9 @@ pub(super) fn compile_modality(scene: &SceneGraph, modality: &str) -> (serde_jso
             match compiler.compile(scene) {
                 ModalityOutput::AudioParams(params) => {
                     let v = serde_json::to_value(&params).unwrap_or(serde_json::Value::Null);
-                    (v, "audio".into())
+                    (v, "audio")
                 }
-                _ => (serde_json::Value::Null, "error".into()),
+                _ => (serde_json::Value::Null, "error"),
             }
         }
         "description" | "accessibility" => {
@@ -64,9 +67,9 @@ pub(super) fn compile_modality(scene: &SceneGraph, modality: &str) -> (serde_jso
             match compiler.compile(scene) {
                 ModalityOutput::Description(b) => (
                     serde_json::Value::String(String::from_utf8_lossy(b.as_ref()).into_owned()),
-                    "description".into(),
+                    "description",
                 ),
-                _ => (serde_json::Value::Null, "error".into()),
+                _ => (serde_json::Value::Null, "error"),
             }
         }
         "haptic" => {
@@ -74,9 +77,9 @@ pub(super) fn compile_modality(scene: &SceneGraph, modality: &str) -> (serde_jso
             match compiler.compile(scene) {
                 ModalityOutput::HapticCommands(cmds) => {
                     let v = serde_json::to_value(&cmds).unwrap_or(serde_json::Value::Null);
-                    (v, "haptic".into())
+                    (v, "haptic")
                 }
-                _ => (serde_json::Value::Null, "error".into()),
+                _ => (serde_json::Value::Null, "error"),
             }
         }
         "gpu" => {
@@ -84,9 +87,9 @@ pub(super) fn compile_modality(scene: &SceneGraph, modality: &str) -> (serde_jso
             match compiler.compile(scene) {
                 ModalityOutput::GpuCommands(b) => (
                     serde_json::Value::String(String::from_utf8_lossy(b.as_ref()).into_owned()),
-                    "gpu".into(),
+                    "gpu",
                 ),
-                _ => (serde_json::Value::Null, "error".into()),
+                _ => (serde_json::Value::Null, "error"),
             }
         }
         "braille" => {
@@ -94,9 +97,9 @@ pub(super) fn compile_modality(scene: &SceneGraph, modality: &str) -> (serde_jso
             match compiler.compile(scene) {
                 ModalityOutput::BrailleCells(cells) => {
                     let v = serde_json::to_value(&cells).unwrap_or(serde_json::Value::Null);
-                    (v, "braille".into())
+                    (v, "braille")
                 }
-                _ => (serde_json::Value::Null, "error".into()),
+                _ => (serde_json::Value::Null, "error"),
             }
         }
         "terminal" => {
@@ -106,10 +109,10 @@ pub(super) fn compile_modality(scene: &SceneGraph, modality: &str) -> (serde_jso
                     let grid: Vec<String> = cells.iter().map(|row| row.iter().collect()).collect();
                     (
                         serde_json::to_value(&grid).unwrap_or(serde_json::Value::Null),
-                        "terminal".into(),
+                        "terminal",
                     )
                 }
-                _ => (serde_json::Value::Null, "error".into()),
+                _ => (serde_json::Value::Null, "error"),
             }
         }
         other => {
@@ -128,29 +131,29 @@ pub(super) fn compile_binding_modality(
     binding: &DataBinding,
     scene: &SceneGraph,
     modality: &str,
-) -> (serde_json::Value, String) {
+) -> (serde_json::Value, &'static str) {
     match (binding, modality) {
         (
             DataBinding::GameScene { .. } | DataBinding::Soundscape { .. },
             "description" | "accessibility",
         ) => {
             let desc = petal_tongue_scene::describe_binding(binding);
-            (serde_json::Value::String(desc), "description".into())
+            (serde_json::Value::String(desc), "description")
         }
         (DataBinding::GameScene { scene: json, .. }, "audio") => {
             let params = petal_tongue_scene::sonify_game_scene(json);
             let value = serde_json::to_value(&params).unwrap_or(serde_json::Value::Null);
-            (value, "audio".into())
+            (value, "audio")
         }
         (DataBinding::GameScene { scene: json, .. }, "haptic") => {
             let cmds = petal_tongue_scene::hapticize_game_scene(json);
             let value = serde_json::to_value(&cmds).unwrap_or(serde_json::Value::Null);
-            (value, "haptic".into())
+            (value, "haptic")
         }
         (DataBinding::Soundscape { definition, .. }, "haptic") => {
             let cmds = petal_tongue_scene::hapticize_soundscape(definition);
             let value = serde_json::to_value(&cmds).unwrap_or(serde_json::Value::Null);
-            (value, "haptic".into())
+            (value, "haptic")
         }
         _ => compile_modality(scene, modality),
     }

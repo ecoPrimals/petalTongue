@@ -76,6 +76,7 @@ Env: `PETALTONGUE_AUTH_MODE=enforced`. Auth introspection:
 - **No self-compute**: heavy work (GPU, physics) delegated via IPC to
   compute, display, and ledger capability providers. petalTongue discovers by capability.
 - **Feature-gated GUI**: `ui` feature (default) pulls egui/eframe/glow.
+  `tui` feature (default) pulls ratatui/crossterm.
   Headless builds (`--no-default-features`) have zero native display deps.
 - **Audio discovery**: tiered backends — ecosystem primal (Tier 1, via
   capability discovery), socket, direct, software, silent. Socket/direct

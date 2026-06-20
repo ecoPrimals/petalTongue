@@ -257,7 +257,7 @@ petal-tongue-ipc = { path = "crates/petal-tongue-ipc" }
 
 # Optional UI (can be disabled for minimal build)
 petal-tongue-ui = { path = "crates/petal-tongue-ui", optional = true }
-petal-tongue-tui = { path = "crates/petal-tongue-tui" }
+petal-tongue-tui = { path = "crates/petal-tongue-tui", optional = true }
 eframe = { workspace = true, optional = true }
 egui = { workspace = true, optional = true }
 winit = { workspace = true, optional = true }
@@ -308,11 +308,14 @@ name = "grammar_compiler"
 harness = false
 
 [features]
-default = ["ui"]
+default = ["ui", "tui"]
 # PT-12: eframe/egui/glow (OpenGL/Vulkan) only pulled in by the `ui` feature.
 # Build without --features ui (or --no-default-features) for a server/headless
 # binary with zero native display dependencies (ecoBin clean path).
 ui = ["petal-tongue-ui", "dep:eframe", "dep:egui", "dep:winit"]
+# TUI: ratatui/crossterm terminal interface (Pure Rust).
+# Disable for web-only or headless deployments.
+tui = ["dep:petal-tongue-tui"]
 examples = ["png"]
 
 [[example]]

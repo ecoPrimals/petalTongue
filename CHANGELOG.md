@@ -6,6 +6,33 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 120: Feature Gating, Dead Code Removal & Hot-Path Optimization (June 20, 2026)
+
+Binary slimming, legacy cleanup, and hot-path allocation reduction — focused
+on feature-gated optional subsystems and removing superseded code.
+
+#### Added
+- **`tui` feature flag**: TUI mode (ratatui + crossterm) now optional; disable with
+  `--no-default-features` for web/headless-only deployments. Default: enabled.
+- **`cache` feature flag** on `petal-tongue-discovery`: ProviderCache (LRU+TTL) now
+  behind optional feature; `lru` not pulled unless explicitly enabled.
+
+#### Changed
+- **Modality compile returns `&'static str`**: `compile_modality` and
+  `compile_binding_modality` now return `(Value, &'static str)` instead of
+  `(Value, String)`, eliminating heap allocations on every visualization render call.
+- **domain_charts reduced 73%**: Removed 5 pre-SceneGraph legacy renderers
+  (`draw_heatmap`, `draw_genome_track`, `draw_circular_map`, `draw_fieldmap`,
+  `draw_spectrum`) — superseded by Grammar of Graphics pipeline. 695 → 187 lines.
+- **Validation utilities gated**: Test-only functions (`validate_heatmap_dimensions`,
+  `validate_spectrum_lengths`, `value_range`, `normalize_value`) moved to
+  `#[cfg(test)]` submodule.
+
+#### Removed
+- 508 lines of dead legacy rendering code.
+- Unconditional `lru` dependency from discovery crate (now optional).
+- Unconditional `petal-tongue-tui` dependency from root binary (now feature-gated).
+
 ### Wave 116: Gate Mesh Visualization & Deep Debt Execution (June 19, 2026)
 
 Meta-tier visualization for primalSpring overwatch: gate mesh topology, AEAD
