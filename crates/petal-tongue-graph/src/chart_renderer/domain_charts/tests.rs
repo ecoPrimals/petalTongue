@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Domain charts unit tests.
 
+use super::validation::test_utils::{
+    normalize_value, validate_heatmap_dimensions, validate_spectrum_lengths, value_range,
+};
 use super::*;
 
 #[test]

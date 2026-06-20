@@ -52,7 +52,7 @@ impl VisualizationState {
         GrammarRenderResponse {
             session_id: req.session_id,
             output,
-            modality,
+            modality: modality.to_owned(),
             scene_nodes: node_count,
             total_primitives: prim_count,
             tufte_report,
@@ -97,7 +97,7 @@ impl VisualizationState {
         DashboardRenderResponse {
             session_id: req.session_id,
             output,
-            modality: modality_used,
+            modality: modality_used.to_owned(),
             panel_count: dashboard.panel_count,
             columns: dashboard.columns,
             rows: dashboard.rows,
@@ -165,7 +165,7 @@ impl VisualizationState {
                     modality::compile_binding_modality(binding, &compiled.scene, &req.format);
                 return ExportResponse {
                     session_id: req.session_id,
-                    format,
+                    format: format.to_owned(),
                     content: match output {
                         serde_json::Value::String(s) => s,
                         other => other.to_string(),
@@ -177,7 +177,7 @@ impl VisualizationState {
             let (output, format) = modality::compile_modality(&compiled.scene, &req.format);
             ExportResponse {
                 session_id: req.session_id,
-                format,
+                format: format.to_owned(),
                 content: match output {
                     serde_json::Value::String(s) => s,
                     other => other.to_string(),

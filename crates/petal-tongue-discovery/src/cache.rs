@@ -2,19 +2,12 @@
 //! Provider caching layer
 //!
 //! Implements intelligent caching to reduce API calls and improve performance.
-//!
-//! NOTE: This module is currently complete but unused. It will be integrated
-//! when performance optimization becomes a priority.
+//! Gated behind the `cache` feature.
 //!
 //! MODERN IDIOMATIC RUST:
 //! - Uses `tokio::sync::RwLock` for async compatibility (no deadlocks!)
 //! - Fully concurrent, lock-free reads
 //! - No blocking operations in async context
-
-#![expect(
-    clippy::future_not_send,
-    reason = "ProviderCache holds generic T without Send/Sync; used in single-threaded contexts"
-)]
 
 use lru::LruCache;
 use std::num::NonZeroUsize;
@@ -30,13 +23,6 @@ struct CachedEntry<T> {
     expires_at: Instant,
 }
 
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "CachedEntry helpers are exercised via ProviderCache and integration tests"
-    )
-)]
 impl<T> CachedEntry<T> {
     fn new(data: T, ttl: Duration) -> Self {
         Self {

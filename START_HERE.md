@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: June 19, 2026 (Wave 116 — gate mesh visualization, AEAD consolidated, 5-gate WireGuard overlay, 13/13 NUCLEUS on eastGate)
+**Updated**: June 20, 2026 (Wave 120 — feature-gated TUI/cache, legacy dead code removed, hot-path allocation elimination, 6,618+ tests)
 
 ---
 
