@@ -10,6 +10,7 @@
             --bg: #0f1117; --surface: #1a1d2e; --border: #2a2d3e;
             --fg: #e0e0e8; --fg-dim: #8888a0; --accent: #7ba0d4;
             --green: #4ade80; --yellow: #fbbf24; --red: #f87171; --blue: #60a5fa;
+            --purple: #a78bfa;
         }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -32,8 +33,11 @@
         .pill-warn { background: rgba(251,191,36,0.15); color: var(--yellow); }
         .pill-err { background: rgba(248,113,113,0.15); color: var(--red); }
         .pill-info { background: rgba(96,165,250,0.15); color: var(--blue); }
-        main { max-width: 72rem; margin: 0 auto; padding: 1.5rem; }
+        .pill-purple { background: rgba(167,139,250,0.15); color: var(--purple); }
+        main { max-width: 80rem; margin: 0 auto; padding: 1.5rem; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); gap: 1rem; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        @media (max-width: 60rem) { .grid-2 { grid-template-columns: 1fr; } }
         .card {
             background: var(--surface); border: 1px solid var(--border);
             border-radius: 0.5rem; padding: 1rem;
@@ -58,6 +62,20 @@
         .empty-state p { margin-top: 0.5rem; }
         section { margin-bottom: 1.5rem; }
         section > h2 { font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--fg-dim); }
+
+        .gate-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .gate-table th { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border); color: var(--fg-dim); font-weight: 500; }
+        .gate-table td { padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); }
+        .gate-table tr:last-child td { border-bottom: none; }
+        .gate-id { font-weight: 600; }
+        .wg-ip { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--fg-dim); }
+        .mesh-viz { width: 100%; max-height: 24rem; overflow: hidden; border-radius: 0.5rem; background: var(--bg); display: flex; align-items: center; justify-content: center; }
+        .mesh-viz svg { width: 100%; height: auto; max-height: 24rem; }
+        .stat-row { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+        .stat { display: flex; flex-direction: column; }
+        .stat-val { font-size: 1.4rem; font-weight: 700; }
+        .stat-label { font-size: 0.7rem; color: var(--fg-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+
         @media (prefers-color-scheme: light) {
             :root {
                 --bg: #f8f9fa; --surface: #fff; --border: #e0e0e0;
@@ -79,6 +97,32 @@
     </header>
 
     <main>
+        <section>
+            <h2>Gate Mesh Topology</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <h3>WireGuard Overlay</h3>
+                    <div class="mesh-viz" id="mesh-viz">
+                        <span class="empty-state">Loading mesh&hellip;</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Gate Status</h3>
+                    <div class="stat-row" id="mesh-stats">
+                        <div class="stat"><span class="stat-val" id="stat-enrolled">-</span><span class="stat-label">Enrolled</span></div>
+                        <div class="stat"><span class="stat-val" id="stat-total">-</span><span class="stat-label">Total</span></div>
+                        <div class="stat"><span class="stat-val" id="stat-links">-</span><span class="stat-label">Links</span></div>
+                    </div>
+                    <table class="gate-table" id="gate-table">
+                        <thead><tr><th>Gate</th><th>Zone</th><th>WG IP</th><th>Status</th><th>NUCLEUS</th></tr></thead>
+                        <tbody id="gate-tbody">
+                            <tr><td colspan="5" class="empty-state">Loading&hellip;</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
         <section>
             <h2>Discovered Primals</h2>
             <div class="grid" id="primals-grid">
@@ -120,6 +164,8 @@
             .then(applySnapshot)
             .catch(() => {});
 
+        loadGateMesh();
+
         const es = new EventSource('/api/events');
         es.onopen = function() {
             document.getElementById('conn-status').textContent = 'live';
@@ -134,6 +180,54 @@
             document.getElementById('conn-status').textContent = 'reconnecting';
             document.getElementById('conn-status').className = 'pill pill-warn';
         };
+
+        function loadGateMesh() {
+            fetch('/viz/gate-mesh')
+                .then(r => r.text())
+                .then(svg => {
+                    document.getElementById('mesh-viz').innerHTML = svg;
+                })
+                .catch(() => {
+                    document.getElementById('mesh-viz').innerHTML = '<span class="empty-state">Mesh visualization unavailable</span>';
+                });
+
+            fetch('/api/gate-mesh')
+                .then(r => r.json())
+                .then(renderGateStatus)
+                .catch(() => {});
+        }
+
+        function enrollmentPill(e) {
+            if (e === 'Enrolled') return '<span class="pill pill-ok">enrolled</span>';
+            if (e === 'MeshLive') return '<span class="pill pill-info">mesh-live</span>';
+            if (e === 'Sovereign') return '<span class="pill pill-purple">sovereign</span>';
+            if (e === 'Offline') return '<span class="pill pill-err">offline</span>';
+            return '<span class="pill pill-warn">' + esc(e) + '</span>';
+        }
+
+        function renderGateStatus(data) {
+            document.getElementById('stat-enrolled').textContent = data.enrolled_count || 0;
+            document.getElementById('stat-total').textContent = data.total_count || 0;
+            document.getElementById('stat-links').textContent = (data.links || []).length;
+
+            const tbody = document.getElementById('gate-tbody');
+            const gates = data.gates || [];
+            if (!gates.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No gate data</td></tr>';
+                return;
+            }
+            tbody.innerHTML = gates.map(function(g) {
+                const nc = g.nucleus_count || 0;
+                const ncStr = nc > 0 ? nc + '/13' : '-';
+                return '<tr>' +
+                    '<td class="gate-id">' + esc(g.id) + '</td>' +
+                    '<td>' + esc(g.zone) + '</td>' +
+                    '<td class="wg-ip">' + (g.wg_ip || '-') + '</td>' +
+                    '<td>' + enrollmentPill(g.enrollment) + '</td>' +
+                    '<td>' + ncStr + '</td>' +
+                '</tr>';
+            }).join('');
+        }
 
         function applySnapshot(snap) {
             if (!snap) return;

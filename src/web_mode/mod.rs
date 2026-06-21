@@ -18,8 +18,9 @@ pub use handlers::{build_response, is_ipynb};
 use crate::data_service::DataService;
 use crate::error::AppError;
 use handlers::{
-    docroot_fallback, events_sse_handler, health_handler, index_handler, liveness_handler,
-    primals_handler, readiness_handler, snapshot_handler, status_handler,
+    docroot_fallback, events_sse_handler, gate_mesh_handler, health_handler, index_handler,
+    liveness_handler, primals_handler, readiness_handler, snapshot_handler, status_handler,
+    viz_handler,
 };
 
 use std::sync::Arc;
@@ -88,7 +89,9 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .route("/api/status", get(status_handler))
         .route("/api/primals", get(primals_handler))
         .route("/api/snapshot", get(snapshot_handler))
+        .route("/api/gate-mesh", get(gate_mesh_handler))
         .route("/api/events", get(events_sse_handler))
+        .route("/viz/{slug}", get(viz_handler))
         .nest_service("/static", ServeDir::new(WEB_STATIC_DIR));
 
     if cfg.backend == "content-provider" {
@@ -185,6 +188,9 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
                 ),
         );
 
+    // Clone for the refresh loop before moving data_service into router state
+    let refresh_service = Arc::clone(&data_service);
+
     let app = if cfg.allowed_origins.is_empty() {
         app.with_state(data_service)
     } else {
@@ -194,6 +200,18 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
     };
 
     tracing::info!("Web UI server listening on http://{}", addr);
+
+    // Periodic DataService refresh — keeps SSE topology up to date even in web-only mode
+    tokio::spawn(async move {
+        let mut interval =
+            tokio::time::interval(petal_tongue_core::constants::default_heartbeat_interval());
+        loop {
+            interval.tick().await;
+            if let Err(e) = refresh_service.refresh().await {
+                tracing::debug!("web mode periodic refresh: {e}");
+            }
+        }
+    });
 
     let listener = tokio::net::TcpListener::bind(&addr).await?;
 

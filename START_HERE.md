@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: June 20, 2026 (Wave 120 — feature-gated TUI/cache, legacy dead code removed, hot-path allocation elimination, 6,618+ tests)
+**Updated**: June 21, 2026 (Wave 121 — web dashboard + gate mesh overwatch, /viz/{slug} endpoint, periodic refresh in web mode)
 
 ---
 
