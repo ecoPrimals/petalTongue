@@ -6,6 +6,28 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 121: Web Dashboard + Gate Mesh Overwatch (June 21, 2026)
+
+Web mode evolution and gate mesh topology update — makes petalTongue useful as
+a browser-accessible overwatch dashboard across the WireGuard mesh.
+
+#### Added
+- **`/api/gate-mesh` endpoint**: Returns gate topology (nodes, links, enrollment,
+  NUCLEUS counts) as JSON for programmatic consumption.
+- **`/viz/{slug}` endpoint**: Renders any registered visualization as SVG (default),
+  `?format=scene-json`, or `?format=animation-json`. Available in all web backends.
+- **Periodic refresh in web mode**: DataService now runs the same heartbeat-interval
+  discovery refresh as live/server modes, keeping SSE topology data current.
+- **Gate mesh panel in web dashboard**: `web/index.html` now shows the WireGuard
+  overlay SVG and a gate status table with enrollment, zone, and NUCLEUS count.
+- **5 new handler tests**: gate-mesh JSON, viz SVG/JSON render, 404 for missing slug.
+
+#### Changed
+- **Gate mesh topology updated to Wave 120 state**: flockGate promoted from
+  `MeshLive` to `Enrolled` (13/13 NUCLEUS). Removed obsolete `pepti` VPS node
+  (golgi is the sole VPS). Links reduced from 6 to 5.
+- **golgi nucleus_count**: Updated to 18 (18 services, per ecosystem blurb).
+
 ### Wave 120: Feature Gating, Dead Code Removal & Hot-Path Optimization (June 20, 2026)
 
 Binary slimming, legacy cleanup, and hot-path allocation reduction — focused

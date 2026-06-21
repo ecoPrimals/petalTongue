@@ -105,8 +105,8 @@ pub const GATES: &[MeshNode] = &[
         label: "flockGate",
         zone: "WAN",
         wg_ip: Some("10.13.37.6"),
-        enrollment: GateEnrollment::MeshLive,
-        nucleus_count: 0,
+        enrollment: GateEnrollment::Enrolled,
+        nucleus_count: 13,
         x: 150.0,
         y: 400.0,
     },
@@ -153,28 +153,16 @@ pub const GATES: &[MeshNode] = &[
 ];
 
 /// VPS/infrastructure nodes (always enrolled).
-pub const VPS_NODES: &[MeshNode] = &[
-    MeshNode {
-        id: "golgi",
-        label: "golgi (hub)",
-        zone: "VPS",
-        wg_ip: Some("10.13.37.1"),
-        enrollment: GateEnrollment::Enrolled,
-        nucleus_count: 13,
-        x: 350.0,
-        y: 280.0,
-    },
-    MeshNode {
-        id: "pepti",
-        label: "pepti (build)",
-        zone: "VPS",
-        wg_ip: Some("10.13.37.4"),
-        enrollment: GateEnrollment::Enrolled,
-        nucleus_count: 13,
-        x: 250.0,
-        y: 320.0,
-    },
-];
+pub const VPS_NODES: &[MeshNode] = &[MeshNode {
+    id: "golgi",
+    label: "golgi (hub)",
+    zone: "VPS",
+    wg_ip: Some("10.13.37.1"),
+    enrollment: GateEnrollment::Enrolled,
+    nucleus_count: 18,
+    x: 350.0,
+    y: 280.0,
+}];
 
 /// Known WireGuard overlay links.
 pub const WG_LINKS: &[MeshLink] = &[
@@ -187,11 +175,6 @@ pub const WG_LINKS: &[MeshLink] = &[
         from: "golgi",
         to: "eastGate",
         latency_ms: 11,
-    },
-    MeshLink {
-        from: "golgi",
-        to: "pepti",
-        latency_ms: 1,
     },
     MeshLink {
         from: "golgi",
@@ -239,15 +222,15 @@ mod tests {
     #[test]
     fn topology_consistency() {
         assert_eq!(GATES.len(), 9);
-        assert_eq!(VPS_NODES.len(), 2);
-        assert_eq!(WG_LINKS.len(), 6);
-        assert_eq!(all_nodes().count(), 11);
+        assert_eq!(VPS_NODES.len(), 1);
+        assert_eq!(WG_LINKS.len(), 5);
+        assert_eq!(all_nodes().count(), 10);
     }
 
     #[test]
     fn enrollment_counts() {
         assert_eq!(count_by_enrollment(GateEnrollment::Enrolled), 4);
-        assert_eq!(mesh_active_count(), 5);
+        assert_eq!(mesh_active_count(), 4);
     }
 
     #[test]

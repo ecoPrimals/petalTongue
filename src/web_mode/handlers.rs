@@ -275,3 +275,115 @@ pub(super) async fn events_sse_handler(
             .text("keepalive"),
     )
 }
+
+// ── Gate mesh status ─────────────────────────────────────────────────────
+
+/// Returns gate mesh topology as JSON (mirrors `gate.mesh.status` IPC method).
+pub(super) async fn gate_mesh_handler() -> Json<serde_json::Value> {
+    use petal_tongue_core::gate_mesh;
+
+    let gates: Vec<serde_json::Value> = gate_mesh::all_nodes()
+        .map(|node| {
+            serde_json::json!({
+                "id": node.id,
+                "label": node.label,
+                "zone": format!("{:?}", node.zone),
+                "wg_ip": node.wg_ip,
+                "enrollment": format!("{:?}", node.enrollment),
+                "nucleus_count": node.nucleus_count,
+            })
+        })
+        .collect();
+
+    let links: Vec<serde_json::Value> = gate_mesh::WG_LINKS
+        .iter()
+        .map(|link| {
+            serde_json::json!({
+                "from": link.from,
+                "to": link.to,
+                "latency_ms": link.latency_ms,
+            })
+        })
+        .collect();
+
+    let enrolled = gates
+        .iter()
+        .filter(|g| g["enrollment"] == "Enrolled")
+        .count();
+
+    Json(serde_json::json!({
+        "gates": gates,
+        "links": links,
+        "enrolled_count": enrolled,
+        "total_count": gates.len(),
+        "source": "static",
+    }))
+}
+
+// ── Visualization renderer ───────────────────────────────────────────────
+
+/// Renders a registered visualization as SVG (or JSON scene/animation).
+///
+/// Query params: `?format=svg` (default), `scene-json`, `animation-json`
+#[expect(
+    clippy::option_if_let_else,
+    reason = "match arms with different response types are clearer than map_or_else"
+)]
+pub(super) async fn viz_handler(
+    axum::extract::Path(slug): axum::extract::Path<String>,
+    query: axum::extract::Query<VizQuery>,
+) -> axum::response::Response {
+    use crate::viz_data::VizRegistry;
+    use petal_tongue_scene::modality::{ModalityCompiler, ModalityOutput, SvgCompiler};
+
+    let registry = VizRegistry::discover(None);
+
+    match query.format.as_deref().unwrap_or("svg") {
+        "scene-json" => match registry.build_scene(&slug) {
+            Some(scene) => Json(serde_json::to_value(&scene).unwrap_or_default()).into_response(),
+            None => (
+                axum::http::StatusCode::NOT_FOUND,
+                format!("visualization '{slug}' not found"),
+            )
+                .into_response(),
+        },
+        "animation-json" => match registry.build_animation(&slug) {
+            Some(anim) => Json(serde_json::to_value(&anim).unwrap_or_default()).into_response(),
+            None => (
+                axum::http::StatusCode::NOT_FOUND,
+                format!("no animation for '{slug}'"),
+            )
+                .into_response(),
+        },
+        _ => match registry.build_scene(&slug) {
+            Some(scene) => {
+                let compiler = SvgCompiler;
+                match compiler.compile(&scene) {
+                    ModalityOutput::Svg(bytes) => {
+                        let svg = String::from_utf8_lossy(bytes.as_ref()).into_owned();
+                        (
+                            [(axum::http::header::CONTENT_TYPE, "image/svg+xml")],
+                            svg,
+                        )
+                            .into_response()
+                    }
+                    _ => (
+                        axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                        "SVG compilation failed",
+                    )
+                        .into_response(),
+                }
+            }
+            None => (
+                axum::http::StatusCode::NOT_FOUND,
+                format!("visualization '{slug}' not found"),
+            )
+                .into_response(),
+        },
+    }
+}
+
+#[derive(serde::Deserialize)]
+pub(super) struct VizQuery {
+    pub format: Option<String>,
+}
