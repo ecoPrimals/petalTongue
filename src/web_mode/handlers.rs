@@ -361,11 +361,7 @@ pub(super) async fn viz_handler(
                 match compiler.compile(&scene) {
                     ModalityOutput::Svg(bytes) => {
                         let svg = String::from_utf8_lossy(bytes.as_ref()).into_owned();
-                        (
-                            [(axum::http::header::CONTENT_TYPE, "image/svg+xml")],
-                            svg,
-                        )
-                            .into_response()
+                        ([(axum::http::header::CONTENT_TYPE, "image/svg+xml")], svg).into_response()
                     }
                     _ => (
                         axum::http::StatusCode::INTERNAL_SERVER_ERROR,
