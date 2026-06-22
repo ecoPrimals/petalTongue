@@ -283,3 +283,131 @@ mod tests {
         assert!(json.contains("enrolled"));
     }
 }
+
+// ── NUCLEUS Composition ──────────────────────────────────────────────────
+
+/// A primal in the NUCLEUS composition.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NucleusPrimal {
+    /// Primal identifier (e.g. "bearDog").
+    pub id: &'static str,
+    /// Short role description.
+    pub role: &'static str,
+    /// Primary gate assignment.
+    pub gate: &'static str,
+}
+
+/// An atomic grouping of primals.
+#[derive(Debug, Clone, Serialize)]
+pub struct NucleusAtomic {
+    /// Atomic name (e.g. "Tower Atomic").
+    pub name: &'static str,
+    /// Primals in this atomic.
+    pub primals: &'static [NucleusPrimal],
+}
+
+/// Tower Atomic — trust, transport, defense.
+pub const TOWER_ATOMIC: &[NucleusPrimal] = &[
+    NucleusPrimal {
+        id: "bearDog",
+        role: "Crypto identity, BTSP auth, TLS",
+        gate: "flockGate",
+    },
+    NucleusPrimal {
+        id: "songBird",
+        role: "Mesh routing, STUN/TURN, relay",
+        gate: "flockGate",
+    },
+    NucleusPrimal {
+        id: "skunkBat",
+        role: "Threat detection, MethodGate",
+        gate: "flockGate",
+    },
+];
+
+/// Node Atomic — compute, fleet, shaders.
+pub const NODE_ATOMIC: &[NucleusPrimal] = &[
+    NucleusPrimal {
+        id: "toadStool",
+        role: "Fleet management, dispatch",
+        gate: "ironGate",
+    },
+    NucleusPrimal {
+        id: "barraCuda",
+        role: "GPU compute, LSTM, Vulkan",
+        gate: "ironGate",
+    },
+    NucleusPrimal {
+        id: "coralReef",
+        role: "Shader pipelines, SPIR-V",
+        gate: "ironGate",
+    },
+];
+
+/// Nest Atomic — storage, provenance.
+pub const NEST_ATOMIC: &[NucleusPrimal] = &[
+    NucleusPrimal {
+        id: "nestGate",
+        role: "Content-addressed storage",
+        gate: "sporeGate",
+    },
+    NucleusPrimal {
+        id: "rhizoCrypt",
+        role: "DAG sessions, Merkle roots",
+        gate: "sporeGate",
+    },
+    NucleusPrimal {
+        id: "loamSpine",
+        role: "Ledger commits, spine",
+        gate: "sporeGate",
+    },
+    NucleusPrimal {
+        id: "sweetGrass",
+        role: "Provenance braids",
+        gate: "sporeGate",
+    },
+];
+
+/// Meta — orchestration, AI, visualization.
+pub const META_ATOMIC: &[NucleusPrimal] = &[
+    NucleusPrimal {
+        id: "biomeOS",
+        role: "Composition orchestrator",
+        gate: "eastGate",
+    },
+    NucleusPrimal {
+        id: "squirrel",
+        role: "AI dispatch, Ollama",
+        gate: "eastGate",
+    },
+    NucleusPrimal {
+        id: "petalTongue",
+        role: "Visualization, dashboards",
+        gate: "eastGate",
+    },
+];
+
+/// All 4 NUCLEUS atomics.
+pub const NUCLEUS_ATOMICS: &[NucleusAtomic] = &[
+    NucleusAtomic {
+        name: "Tower Atomic",
+        primals: TOWER_ATOMIC,
+    },
+    NucleusAtomic {
+        name: "Node Atomic",
+        primals: NODE_ATOMIC,
+    },
+    NucleusAtomic {
+        name: "Nest Atomic",
+        primals: NEST_ATOMIC,
+    },
+    NucleusAtomic {
+        name: "Meta",
+        primals: META_ATOMIC,
+    },
+];
+
+/// Total primal count across all atomics.
+pub fn nucleus_primal_count() -> usize {
+    NUCLEUS_ATOMICS.iter().map(|a| a.primals.len()).sum()
+}
