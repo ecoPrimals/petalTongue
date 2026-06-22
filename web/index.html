@@ -114,12 +114,19 @@
                         <div class="stat"><span class="stat-val" id="stat-links">-</span><span class="stat-label">Links</span></div>
                     </div>
                     <table class="gate-table" id="gate-table">
-                        <thead><tr><th>Gate</th><th>Zone</th><th>WG IP</th><th>Status</th><th>NUCLEUS</th></tr></thead>
+                        <thead><tr><th>Gate</th><th>Role</th><th>WG IP</th><th>Status</th><th>N</th></tr></thead>
                         <tbody id="gate-tbody">
                             <tr><td colspan="5" class="empty-state">Loading&hellip;</td></tr>
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>NUCLEUS Composition</h2>
+            <div class="grid" id="nucleus-grid">
+                <div class="empty-state"><p>Loading composition&hellip;</p></div>
             </div>
         </section>
 
@@ -195,6 +202,11 @@
                 .then(r => r.json())
                 .then(renderGateStatus)
                 .catch(() => {});
+
+            fetch('/api/ecosystem')
+                .then(r => r.json())
+                .then(renderNucleus)
+                .catch(() => {});
         }
 
         function enrollmentPill(e) {
@@ -221,11 +233,36 @@
                 const ncStr = nc > 0 ? nc + '/13' : '-';
                 return '<tr>' +
                     '<td class="gate-id">' + esc(g.id) + '</td>' +
-                    '<td>' + esc(g.zone) + '</td>' +
+                    '<td>' + esc(g.role || g.zone) + '</td>' +
                     '<td class="wg-ip">' + (g.wg_ip || '-') + '</td>' +
                     '<td>' + enrollmentPill(g.enrollment) + '</td>' +
                     '<td>' + ncStr + '</td>' +
                 '</tr>';
+            }).join('');
+        }
+
+        function renderNucleus(data) {
+            const grid = document.getElementById('nucleus-grid');
+            const nucleus = data.nucleus || {};
+            const atomics = [
+                { name: 'Tower Atomic', key: 'tower_atomic', color: 'var(--red)' },
+                { name: 'Node Atomic', key: 'node_atomic', color: 'var(--purple)' },
+                { name: 'Nest Atomic', key: 'nest_atomic', color: 'var(--green)' },
+                { name: 'Meta', key: 'meta', color: 'var(--blue)' },
+            ];
+            grid.innerHTML = atomics.map(function(a) {
+                const primals = nucleus[a.key] || [];
+                const primalHtml = primals.map(function(p) {
+                    return '<div style="padding:0.3rem 0;border-bottom:1px solid var(--border)">' +
+                        '<span style="font-weight:600">' + esc(p.id) + '</span>' +
+                        ' <span class="pill pill-info">' + esc(p.gate) + '</span>' +
+                        '<div style="font-size:0.75rem;color:var(--fg-dim)">' + esc(p.role) + '</div>' +
+                    '</div>';
+                }).join('');
+                return '<div class="card">' +
+                    '<h3 style="border-left:3px solid ' + a.color + ';padding-left:0.5rem">' + a.name + ' (' + primals.length + ')</h3>' +
+                    primalHtml +
+                '</div>';
             }).join('');
         }
 

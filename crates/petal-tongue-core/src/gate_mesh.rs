@@ -39,8 +39,12 @@ pub struct MeshNode {
     pub wg_ip: Option<&'static str>,
     /// Current enrollment pipeline status.
     pub enrollment: GateEnrollment,
-    /// Number of NUCLEUS primals running (0–13).
+    /// Number of NUCLEUS primals running (0–13+).
     pub nucleus_count: u8,
+    /// Ecosystem role (e.g. "Build authority", "Overwatch", "Tower").
+    pub role: &'static str,
+    /// K-Derm membrane layer assignment.
+    pub kderm_layer: &'static str,
     /// X position for topology visualization layout.
     pub x: f64,
     /// Y position for topology visualization layout.
@@ -67,6 +71,8 @@ pub const GATES: &[MeshNode] = &[
         wg_ip: Some("10.13.37.2"),
         enrollment: GateEnrollment::Enrolled,
         nucleus_count: 13,
+        role: "Build authority + Nest provenance",
+        kderm_layer: "Peptidoglycan",
         x: 200.0,
         y: 150.0,
     },
@@ -77,6 +83,8 @@ pub const GATES: &[MeshNode] = &[
         wg_ip: Some("10.13.37.5"),
         enrollment: GateEnrollment::Enrolled,
         nucleus_count: 13,
+        role: "Overwatch + Meta primals",
+        kderm_layer: "Cytoplasm",
         x: 450.0,
         y: 100.0,
     },
@@ -87,6 +95,8 @@ pub const GATES: &[MeshNode] = &[
         wg_ip: None,
         enrollment: GateEnrollment::Sovereign,
         nucleus_count: 0,
+        role: "Hobby (Windows)",
+        kderm_layer: "Public",
         x: 650.0,
         y: 200.0,
     },
@@ -94,9 +104,11 @@ pub const GATES: &[MeshNode] = &[
         id: "ironGate",
         label: "ironGate",
         zone: "backbone",
-        wg_ip: None,
-        enrollment: GateEnrollment::Sovereign,
-        nucleus_count: 0,
+        wg_ip: Some("10.13.37.7"),
+        enrollment: GateEnrollment::Enrolled,
+        nucleus_count: 12,
+        role: "Node compute + GPU",
+        kderm_layer: "Cytoplasm",
         x: 700.0,
         y: 350.0,
     },
@@ -107,6 +119,8 @@ pub const GATES: &[MeshNode] = &[
         wg_ip: Some("10.13.37.6"),
         enrollment: GateEnrollment::Enrolled,
         nucleus_count: 13,
+        role: "Tower primals + sporePrint",
+        kderm_layer: "Outer membrane",
         x: 150.0,
         y: 400.0,
     },
@@ -117,6 +131,8 @@ pub const GATES: &[MeshNode] = &[
         wg_ip: None,
         enrollment: GateEnrollment::Public,
         nucleus_count: 0,
+        role: "Relay pending",
+        kderm_layer: "Public",
         x: 400.0,
         y: 450.0,
     },
@@ -127,6 +143,8 @@ pub const GATES: &[MeshNode] = &[
         wg_ip: None,
         enrollment: GateEnrollment::Public,
         nucleus_count: 0,
+        role: "Relay pending",
+        kderm_layer: "Public",
         x: 500.0,
         y: 500.0,
     },
@@ -137,6 +155,8 @@ pub const GATES: &[MeshNode] = &[
         wg_ip: None,
         enrollment: GateEnrollment::Public,
         nucleus_count: 0,
+        role: "Omada-side WiFi",
+        kderm_layer: "Public",
         x: 600.0,
         y: 480.0,
     },
@@ -147,6 +167,8 @@ pub const GATES: &[MeshNode] = &[
         wg_ip: None,
         enrollment: GateEnrollment::Offline,
         nucleus_count: 0,
+        role: "CMOS dead",
+        kderm_layer: "Offline",
         x: 750.0,
         y: 500.0,
     },
@@ -160,6 +182,8 @@ pub const VPS_NODES: &[MeshNode] = &[MeshNode {
     wg_ip: Some("10.13.37.1"),
     enrollment: GateEnrollment::Enrolled,
     nucleus_count: 18,
+    role: "WG hub + Forgejo + relay + depot",
+    kderm_layer: "Periplasm",
     x: 350.0,
     y: 280.0,
 }];
@@ -182,8 +206,18 @@ pub const WG_LINKS: &[MeshLink] = &[
         latency_ms: 32,
     },
     MeshLink {
+        from: "golgi",
+        to: "ironGate",
+        latency_ms: 11,
+    },
+    MeshLink {
         from: "sporeGate",
         to: "eastGate",
+        latency_ms: 1,
+    },
+    MeshLink {
+        from: "sporeGate",
+        to: "ironGate",
         latency_ms: 1,
     },
     MeshLink {
@@ -223,14 +257,14 @@ mod tests {
     fn topology_consistency() {
         assert_eq!(GATES.len(), 9);
         assert_eq!(VPS_NODES.len(), 1);
-        assert_eq!(WG_LINKS.len(), 5);
+        assert_eq!(WG_LINKS.len(), 7);
         assert_eq!(all_nodes().count(), 10);
     }
 
     #[test]
     fn enrollment_counts() {
-        assert_eq!(count_by_enrollment(GateEnrollment::Enrolled), 4);
-        assert_eq!(mesh_active_count(), 4);
+        assert_eq!(count_by_enrollment(GateEnrollment::Enrolled), 5);
+        assert_eq!(mesh_active_count(), 5);
     }
 
     #[test]

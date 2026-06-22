@@ -169,7 +169,7 @@ async fn test_gate_mesh_endpoint_returns_topology() {
     let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert!(v["gates"].as_array().is_some());
     assert!(v["links"].as_array().is_some());
-    assert_eq!(v["enrolled_count"], 4);
+    assert_eq!(v["enrolled_count"], 5);
     assert_eq!(v["total_count"], 10);
     assert_eq!(v["source"], "static");
     let gates = v["gates"].as_array().unwrap();
@@ -206,4 +206,21 @@ async fn test_viz_handler_not_found() {
     let path = axum::extract::Path("nonexistent-viz".to_owned());
     let resp = viz_handler(path, query).await;
     assert_eq!(resp.status(), 404);
+}
+
+#[tokio::test]
+async fn test_ecosystem_endpoint_returns_nucleus() {
+    let resp = ecosystem_handler().await.into_response();
+    assert_eq!(resp.status(), 200);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert!(v["nucleus"]["tower_atomic"].as_array().is_some());
+    assert!(v["nucleus"]["node_atomic"].as_array().is_some());
+    assert!(v["nucleus"]["nest_atomic"].as_array().is_some());
+    assert!(v["nucleus"]["meta"].as_array().is_some());
+    assert_eq!(v["metrics"]["total_primals"], 13);
+    assert_eq!(v["metrics"]["total_atomics"], 4);
+    assert_eq!(v["metrics"]["gates_enrolled"], 5);
 }
