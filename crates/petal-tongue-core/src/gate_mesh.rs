@@ -26,6 +26,20 @@ pub enum GateEnrollment {
     Offline,
 }
 
+impl GateEnrollment {
+    /// Returns a stable string representation without heap allocation.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Enrolled => "Enrolled",
+            Self::MeshLive => "MeshLive",
+            Self::Sovereign => "Sovereign",
+            Self::Public => "Public",
+            Self::Offline => "Offline",
+        }
+    }
+}
+
 /// A gate or VPS node in the mesh topology.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MeshNode {

@@ -289,7 +289,7 @@ pub(super) async fn gate_mesh_handler() -> Json<serde_json::Value> {
                 "label": node.label,
                 "zone": node.zone,
                 "wg_ip": node.wg_ip,
-                "enrollment": format!("{:?}", node.enrollment),
+                "enrollment": node.enrollment.as_str(),
                 "nucleus_count": node.nucleus_count,
                 "role": node.role,
                 "kderm_layer": node.kderm_layer,
