@@ -127,6 +127,16 @@ cargo test --workspace --all-features     # 6,618+ tests, ~85-90% coverage
 
 ## Current State
 
+Wave 123 Ecosystem Dashboard + ironGate Enrollment (June 22, 2026). 6,618+ tests,
+all passing. NUCLEUS composition extracted to typed constants in `gate_mesh`
+module (`NucleusPrimal`, `NucleusAtomic`, `NUCLEUS_ATOMICS`). Web dashboard
+serves live gate mesh topology SVG, gate status table, and color-coded NUCLEUS
+composition panel via `/api/gate-mesh`, `/api/ecosystem`, and `/viz/{slug}`
+endpoints. `GateEnrollment::as_str()` eliminates Debug-format heap allocation.
+ironGate enrolled (.7, 12/12, Node compute + GPU). 5 gates enrolled, 7 WG links.
+Zero `#[allow(dead_code)]` in production code (only `#[allow]` in test utility
+modules where `#[expect]` cannot apply). `cargo deny check` clean.
+
 Wave 116 Gate Mesh & Deep Debt (June 19, 2026). 6,618+ tests, all passing.
 UDS connections now accept and strip the `[0xEC, 0x01]` riboCipher signal
 prefix before BTSP classification or JSON-RPC parsing. HEALTH-01 compliant

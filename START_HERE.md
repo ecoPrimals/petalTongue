@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: June 22, 2026 (Wave 123 — ironGate enrolled, NUCLEUS composition endpoint, ecosystem dashboard panel)
+**Updated**: June 22, 2026 (Wave 123 — ironGate enrolled, NUCLEUS composition endpoint, ecosystem dashboard panel, typed NUCLEUS constants in core)
 
 ---
 
@@ -90,7 +90,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace --all-features           # 6,460+ tests
+cargo test --workspace --all-features           # 6,618+ tests
 cargo clippy --workspace --all-features -- -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
