@@ -243,15 +243,11 @@
 
         function renderNucleus(data) {
             const grid = document.getElementById('nucleus-grid');
-            const nucleus = data.nucleus || {};
-            const atomics = [
-                { name: 'Tower Atomic', key: 'tower_atomic', color: 'var(--red)' },
-                { name: 'Node Atomic', key: 'node_atomic', color: 'var(--purple)' },
-                { name: 'Nest Atomic', key: 'nest_atomic', color: 'var(--green)' },
-                { name: 'Meta', key: 'meta', color: 'var(--blue)' },
-            ];
-            grid.innerHTML = atomics.map(function(a) {
-                const primals = nucleus[a.key] || [];
+            const atomics = data.nucleus || [];
+            const colors = ['var(--red)', 'var(--purple)', 'var(--green)', 'var(--blue)'];
+            grid.innerHTML = atomics.map(function(a, i) {
+                const primals = a.primals || [];
+                const color = colors[i % colors.length];
                 const primalHtml = primals.map(function(p) {
                     return '<div style="padding:0.3rem 0;border-bottom:1px solid var(--border)">' +
                         '<span style="font-weight:600">' + esc(p.id) + '</span>' +
@@ -260,7 +256,7 @@
                     '</div>';
                 }).join('');
                 return '<div class="card">' +
-                    '<h3 style="border-left:3px solid ' + a.color + ';padding-left:0.5rem">' + a.name + ' (' + primals.length + ')</h3>' +
+                    '<h3 style="border-left:3px solid ' + color + ';padding-left:0.5rem">' + esc(a.name) + ' (' + primals.length + ')</h3>' +
                     primalHtml +
                 '</div>';
             }).join('');

@@ -216,10 +216,10 @@ async fn test_ecosystem_endpoint_returns_nucleus() {
         .await
         .unwrap();
     let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    assert!(v["nucleus"]["tower_atomic"].as_array().is_some());
-    assert!(v["nucleus"]["node_atomic"].as_array().is_some());
-    assert!(v["nucleus"]["nest_atomic"].as_array().is_some());
-    assert!(v["nucleus"]["meta"].as_array().is_some());
+    let atomics = v["nucleus"].as_array().expect("nucleus is array");
+    assert_eq!(atomics.len(), 4);
+    assert_eq!(atomics[0]["name"], "Tower Atomic");
+    assert_eq!(atomics[0]["primals"].as_array().unwrap().len(), 3);
     assert_eq!(v["metrics"]["total_primals"], 13);
     assert_eq!(v["metrics"]["total_atomics"], 4);
     assert_eq!(v["metrics"]["gates_enrolled"], 5);
