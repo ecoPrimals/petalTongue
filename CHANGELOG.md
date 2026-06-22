@@ -12,7 +12,12 @@ Gate mesh topology and dashboard evolution for 5-node mesh overwatch.
 
 #### Added
 - **`/api/ecosystem` endpoint**: Returns NUCLEUS composition (4 atomics, 13 primals)
-  with gate assignments and role metadata.
+  with gate assignments and role metadata. Derived from typed core constants.
+- **`NucleusPrimal` + `NucleusAtomic` types** in `petal-tongue-core::gate_mesh`:
+  Static constants (`TOWER_ATOMIC`, `NODE_ATOMIC`, `NEST_ATOMIC`, `META_ATOMIC`,
+  `NUCLEUS_ATOMICS`) — single source of truth for ecosystem composition.
+- **`GateEnrollment::as_str()`**: Zero-allocation const fn replacing `format!("{:?}")`
+  in the gate mesh handler hot path.
 - **`role` + `kderm_layer` fields on `MeshNode`**: Gates now carry their ecosystem role
   and K-Derm membrane layer for richer dashboard display.
 - **NUCLEUS Composition panel** in web dashboard: Shows all 4 atomics with primal
@@ -25,6 +30,8 @@ Gate mesh topology and dashboard evolution for 5-node mesh overwatch.
 - **Gate table shows role**: Dashboard gate table now displays ecosystem role instead
   of raw zone name.
 - **Enrolled count**: 5 (sporeGate, eastGate, flockGate, ironGate, golgi).
+- **`#[allow]` → `#[expect]`**: Last remaining `#[allow(clippy::...)]` in
+  panel_registry tests migrated for lint hygiene consistency.
 
 ### Wave 121: Web Dashboard + Gate Mesh Overwatch (June 21, 2026)
 

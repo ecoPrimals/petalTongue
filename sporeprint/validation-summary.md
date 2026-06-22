@@ -1,7 +1,7 @@
 +++
 title = "petalTongue Validation Summary"
 description = "Universal user interface primal — 6,618+ tests, 56 IPC methods, 18 crates, 7 modes, pure Rust"
-date = 2026-06-20
+date = 2026-06-22
 
 [taxonomies]
 primals = ["petaltongue"]
@@ -21,9 +21,10 @@ springs = []
 - **BTSP Phase 3** encrypted transport (ChaCha20-Poly1305 + HKDF-SHA256)
 - **MethodGate** (JH-0): public/protected method classification with auth enforcement
 - **DH-1 /tmp cleanup**: All socket paths through `BIOMEOS_SOCKET_DIR` tier chain
-- **Stadial gate**: READY (post-primordial, Wave 76 clean)
+- **Stadial gate**: READY (post-primordial, Wave 123 clean)
 - **Content pipeline**: `content_render` + `viz_data` + `content_direct` wired and compiled
 - **S3 cutover**: 4-tier content backend audited; FAMILY_ID aligned; DISCOVERY_SOCKET wired
+- **Wave 123 ecosystem dashboard**: `/api/gate-mesh`, `/api/ecosystem`, `/viz/{slug}` endpoints. Typed NUCLEUS composition (`NucleusPrimal`, `NucleusAtomic` in core). 5 gates enrolled, 7 WG links.
 - **Wave 76 consolidation**: typed `AppError` (TracingInit + 5 #[from] chains), `ContentBackendError`, zero `"literal".to_string()` in production, NESTGATE_SOCKET removed, zero hardcoded primal names
 
 ## Key Capabilities
@@ -52,7 +53,7 @@ springs = []
 - **HTTP tracing**: structured `TraceLayer` (method, uri, status, latency_ms)
 - **Custom 404**: `{docroot}/404.html` (GitHub Pages / Jekyll convention)
 - **Jupyter notebook rendering**: `.ipynb` → HTML with `metadata.title`, `--strip-sources`
-- **Live dashboard**: SSE topology stream, primal grid, health pills
+- **Live dashboard**: SSE topology stream, primal grid, health pills, gate mesh SVG, NUCLEUS composition panel
 
 ## Build & Deployment
 
