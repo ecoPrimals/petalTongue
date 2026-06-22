@@ -2,7 +2,7 @@
 //! Test doubles and panel registry unit tests.
 
 #[cfg(test)]
-#[allow(
+#[expect(
     clippy::module_inception,
     clippy::redundant_pub_crate,
     reason = "test support module reuses parent name for convenience"
