@@ -6,6 +6,26 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 123: Ecosystem Dashboard + ironGate Enrollment (June 22, 2026)
+
+Gate mesh topology and dashboard evolution for 5-node mesh overwatch.
+
+#### Added
+- **`/api/ecosystem` endpoint**: Returns NUCLEUS composition (4 atomics, 13 primals)
+  with gate assignments and role metadata.
+- **`role` + `kderm_layer` fields on `MeshNode`**: Gates now carry their ecosystem role
+  and K-Derm membrane layer for richer dashboard display.
+- **NUCLEUS Composition panel** in web dashboard: Shows all 4 atomics with primal
+  assignments, roles, and gate locations (color-coded by atomic).
+- **1 new handler test** (`test_ecosystem_endpoint_returns_nucleus`).
+
+#### Changed
+- **ironGate enrolled**: WG IP `.7`, 12/12 NUCLEUS, role "Node compute + GPU".
+  Added golgi→ironGate and sporeGate→ironGate links (7 total WG links).
+- **Gate table shows role**: Dashboard gate table now displays ecosystem role instead
+  of raw zone name.
+- **Enrolled count**: 5 (sporeGate, eastGate, flockGate, ironGate, golgi).
+
 ### Wave 121: Web Dashboard + Gate Mesh Overwatch (June 21, 2026)
 
 Web mode evolution and gate mesh topology update — makes petalTongue useful as

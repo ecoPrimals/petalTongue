@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: June 21, 2026 (Wave 121 — web dashboard + gate mesh overwatch, /viz/{slug} endpoint, periodic refresh in web mode)
+**Updated**: June 22, 2026 (Wave 123 — ironGate enrolled, NUCLEUS composition endpoint, ecosystem dashboard panel)
 
 ---
 

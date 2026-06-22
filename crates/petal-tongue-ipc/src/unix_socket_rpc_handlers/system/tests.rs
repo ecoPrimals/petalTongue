@@ -307,8 +307,8 @@ fn gate_mesh_status_returns_topology() {
     let gates = r["gates"].as_array().expect("gates array");
     assert_eq!(gates.len(), 10, "9 gates + 1 VPS node");
     let links = r["links"].as_array().expect("links array");
-    assert_eq!(links.len(), 5, "5 WireGuard links");
-    assert_eq!(r["enrolled_count"], 4);
+    assert_eq!(links.len(), 7, "7 WireGuard links");
+    assert_eq!(r["enrolled_count"], 5);
     assert_eq!(r["total_count"], 10);
     assert_eq!(r["source"], "offline");
 }

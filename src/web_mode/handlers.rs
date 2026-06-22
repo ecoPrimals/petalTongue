@@ -287,10 +287,12 @@ pub(super) async fn gate_mesh_handler() -> Json<serde_json::Value> {
             serde_json::json!({
                 "id": node.id,
                 "label": node.label,
-                "zone": format!("{:?}", node.zone),
+                "zone": node.zone,
                 "wg_ip": node.wg_ip,
                 "enrollment": format!("{:?}", node.enrollment),
                 "nucleus_count": node.nucleus_count,
+                "role": node.role,
+                "kderm_layer": node.kderm_layer,
             })
         })
         .collect();
@@ -317,6 +319,43 @@ pub(super) async fn gate_mesh_handler() -> Json<serde_json::Value> {
         "enrolled_count": enrolled,
         "total_count": gates.len(),
         "source": "static",
+    }))
+}
+
+// ── Ecosystem composition ────────────────────────────────────────────────
+
+/// Returns the NUCLEUS composition (4 atomics, 13 primals) and ecosystem metrics.
+pub(super) async fn ecosystem_handler() -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "nucleus": {
+            "tower_atomic": [
+                { "id": "bearDog", "role": "Crypto identity, BTSP auth, TLS", "gate": "flockGate" },
+                { "id": "songBird", "role": "Mesh routing, STUN/TURN, relay", "gate": "flockGate" },
+                { "id": "skunkBat", "role": "Threat detection, MethodGate", "gate": "flockGate" },
+            ],
+            "node_atomic": [
+                { "id": "toadStool", "role": "Fleet management, dispatch", "gate": "ironGate" },
+                { "id": "barraCuda", "role": "GPU compute, LSTM, Vulkan", "gate": "ironGate" },
+                { "id": "coralReef", "role": "Shader pipelines, SPIR-V", "gate": "ironGate" },
+            ],
+            "nest_atomic": [
+                { "id": "nestGate", "role": "Content-addressed storage", "gate": "sporeGate" },
+                { "id": "rhizoCrypt", "role": "DAG sessions, Merkle roots", "gate": "sporeGate" },
+                { "id": "loamSpine", "role": "Ledger commits, spine", "gate": "sporeGate" },
+                { "id": "sweetGrass", "role": "Provenance braids", "gate": "sporeGate" },
+            ],
+            "meta": [
+                { "id": "biomeOS", "role": "Composition orchestrator", "gate": "eastGate" },
+                { "id": "squirrel", "role": "AI dispatch, Ollama", "gate": "eastGate" },
+                { "id": "petalTongue", "role": "Visualization, dashboards", "gate": "eastGate" },
+            ],
+        },
+        "metrics": {
+            "total_primals": 13,
+            "total_atomics": 4,
+            "gates_enrolled": 5,
+            "source": "static",
+        },
     }))
 }
 
