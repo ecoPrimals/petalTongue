@@ -1,0 +1,220 @@
+{
+  "name": "GPU Compute Pipeline - ironGate Validation",
+  "description": "Exercises compute.dispatch capability routing to ironGate GPU (RTX 5070, sm_70). Validates LSTM zero-copy, f64 native, and physics N-body via barraCuda + coralReef.",
+  "version": "1.0.0",
+  "mode": "live-ecosystem",
+
+  "sensory_config": {
+    "required_capabilities": {
+      "outputs": ["visual"],
+      "inputs": ["pointer"]
+    },
+    "optional_capabilities": {
+      "outputs": ["audio"],
+      "inputs": ["keyboard"]
+    },
+    "complexity_hint": "high"
+  },
+
+  "ui_config": {
+    "theme": "compute-dark",
+    "animations": {
+      "enabled": true,
+      "breathing_nodes": true,
+      "connection_pulses": true,
+      "smooth_transitions": true
+    },
+    "performance": {
+      "target_fps": 60,
+      "vsync": true,
+      "hardware_acceleration": true
+    }
+  },
+
+  "ecosystem": {
+    "primals": [
+      {
+        "id": "barracuda-gpu",
+        "name": "BarraCuda (GPU Compute)",
+        "primal_type": "Compute",
+        "endpoint": "unix:///run/user/1000/biomeos/barracuda.sock",
+        "capabilities": [
+          "compute.dispatch",
+          "compute.dispatch.gpu",
+          "compute.dispatch.lstm",
+          "compute.dispatch.physics",
+          "compute.status"
+        ],
+        "health": "Healthy",
+        "last_seen": 1750636800
+      },
+      {
+        "id": "coralreef-shaders",
+        "name": "CoralReef (Shader Compilation)",
+        "primal_type": "Compute",
+        "endpoint": "unix:///run/user/1000/biomeos/coralreef.sock",
+        "capabilities": [
+          "shader.compile",
+          "shader.compile.spirv",
+          "shader.compile.wgsl",
+          "shader.compile.multi",
+          "shader.validate"
+        ],
+        "health": "Healthy",
+        "last_seen": 1750636800
+      },
+      {
+        "id": "toadstool-fleet",
+        "name": "ToadStool (Fleet Dispatch)",
+        "primal_type": "Orchestration",
+        "endpoint": "unix:///run/user/1000/biomeos/toadstool.sock",
+        "capabilities": [
+          "fleet.dispatch",
+          "fleet.status",
+          "workload.schedule",
+          "workload.cancel"
+        ],
+        "health": "Healthy",
+        "last_seen": 1750636800
+      },
+      {
+        "id": "petaltongue-viz",
+        "name": "PetalTongue (Visualization)",
+        "primal_type": "Meta",
+        "endpoint": "unix:///run/user/1000/biomeos/petaltongue.sock",
+        "capabilities": [
+          "visualization.render",
+          "visualization.render.grammar",
+          "visualization.render.scene",
+          "visualization.render.dashboard"
+        ],
+        "health": "Healthy",
+        "last_seen": 1750636800
+      }
+    ],
+    "connections": [
+      {
+        "from": "toadstool-fleet",
+        "to": "barracuda-gpu",
+        "type": "dispatch",
+        "protocol": "json-rpc-2.0"
+      },
+      {
+        "from": "barracuda-gpu",
+        "to": "coralreef-shaders",
+        "type": "shader_request",
+        "protocol": "json-rpc-2.0"
+      },
+      {
+        "from": "petaltongue-viz",
+        "to": "barracuda-gpu",
+        "type": "compute_offload",
+        "protocol": "json-rpc-2.0"
+      }
+    ]
+  },
+
+  "compute_scenarios": [
+    {
+      "id": "lstm-zero-copy",
+      "name": "LSTM Zero-Copy Inference",
+      "capability": "compute.dispatch.lstm",
+      "target_gate": "ironGate",
+      "gpu_target": "sm_70",
+      "params": {
+        "precision": "f64",
+        "batch_size": 32,
+        "sequence_length": 128,
+        "hidden_size": 256,
+        "zero_copy": true
+      },
+      "expected": {
+        "mse_threshold": 1e-20,
+        "latency_ms_max": 50
+      }
+    },
+    {
+      "id": "xor-mlp-convergence",
+      "name": "XOR MLP Convergence Test",
+      "capability": "compute.dispatch.gpu",
+      "target_gate": "ironGate",
+      "gpu_target": "sm_70",
+      "params": {
+        "precision": "f64",
+        "architecture": [2, 4, 1],
+        "epochs": 10000,
+        "learning_rate": 0.1
+      },
+      "expected": {
+        "final_mse_max": 1e-25,
+        "converged": true
+      }
+    },
+    {
+      "id": "n-body-physics",
+      "name": "N-Body Gravitational Simulation",
+      "capability": "compute.dispatch.physics",
+      "target_gate": "ironGate",
+      "gpu_target": "sm_70",
+      "params": {
+        "body_count": 1024,
+        "timesteps": 100,
+        "dt": 0.01,
+        "softening": 0.001
+      },
+      "expected": {
+        "energy_conservation_ratio": 0.999,
+        "latency_ms_max": 200
+      }
+    },
+    {
+      "id": "spirv-shader-compile",
+      "name": "SPIR-V Shader Compilation",
+      "capability": "shader.compile.spirv",
+      "target_gate": "ironGate",
+      "params": {
+        "source_language": "wgsl",
+        "target": "spirv",
+        "optimization_level": 2
+      },
+      "expected": {
+        "compile_time_ms_max": 27,
+        "valid_spirv": true
+      }
+    }
+  ],
+
+  "dashboard": {
+    "title": "GPU Compute Pipeline — ironGate",
+    "panels": [
+      {
+        "id": "gpu-status",
+        "type": "gauge",
+        "title": "GPU Utilization",
+        "data_source": "barracuda-gpu",
+        "metric": "gpu_utilization_percent"
+      },
+      {
+        "id": "compute-latency",
+        "type": "timeseries",
+        "title": "Compute Dispatch Latency",
+        "data_source": "barracuda-gpu",
+        "metric": "dispatch_latency_ms"
+      },
+      {
+        "id": "shader-throughput",
+        "type": "bar",
+        "title": "Shader Compilation Throughput",
+        "data_source": "coralreef-shaders",
+        "metric": "compiles_per_second"
+      },
+      {
+        "id": "fleet-queue",
+        "type": "gauge",
+        "title": "Fleet Queue Depth",
+        "data_source": "toadstool-fleet",
+        "metric": "pending_workloads"
+      }
+    ]
+  }
+}

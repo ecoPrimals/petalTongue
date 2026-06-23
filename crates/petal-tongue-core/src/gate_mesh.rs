@@ -59,6 +59,8 @@ pub struct MeshNode {
     pub role: &'static str,
     /// K-Derm membrane layer assignment.
     pub kderm_layer: &'static str,
+    /// GPU compute target (e.g. "sm_70", "sm_120"), None if no GPU.
+    pub gpu_target: Option<&'static str>,
     /// X position for topology visualization layout.
     pub x: f64,
     /// Y position for topology visualization layout.
@@ -87,6 +89,7 @@ pub const GATES: &[MeshNode] = &[
         nucleus_count: 13,
         role: "Build authority + Nest provenance",
         kderm_layer: "Peptidoglycan",
+        gpu_target: None,
         x: 200.0,
         y: 150.0,
     },
@@ -99,6 +102,7 @@ pub const GATES: &[MeshNode] = &[
         nucleus_count: 13,
         role: "Overwatch + Meta primals",
         kderm_layer: "Cytoplasm",
+        gpu_target: None,
         x: 450.0,
         y: 100.0,
     },
@@ -111,6 +115,7 @@ pub const GATES: &[MeshNode] = &[
         nucleus_count: 0,
         role: "Hobby (Windows)",
         kderm_layer: "Public",
+        gpu_target: Some("sm_120"),
         x: 650.0,
         y: 200.0,
     },
@@ -123,6 +128,7 @@ pub const GATES: &[MeshNode] = &[
         nucleus_count: 12,
         role: "Node compute + GPU",
         kderm_layer: "Cytoplasm",
+        gpu_target: Some("sm_70"),
         x: 700.0,
         y: 350.0,
     },
@@ -135,6 +141,7 @@ pub const GATES: &[MeshNode] = &[
         nucleus_count: 13,
         role: "Tower primals + sporePrint",
         kderm_layer: "Outer membrane",
+        gpu_target: None,
         x: 150.0,
         y: 400.0,
     },
@@ -147,6 +154,7 @@ pub const GATES: &[MeshNode] = &[
         nucleus_count: 0,
         role: "Relay pending",
         kderm_layer: "Public",
+        gpu_target: None,
         x: 400.0,
         y: 450.0,
     },
@@ -159,6 +167,7 @@ pub const GATES: &[MeshNode] = &[
         nucleus_count: 0,
         role: "Relay pending",
         kderm_layer: "Public",
+        gpu_target: None,
         x: 500.0,
         y: 500.0,
     },
@@ -171,6 +180,7 @@ pub const GATES: &[MeshNode] = &[
         nucleus_count: 0,
         role: "Omada-side WiFi",
         kderm_layer: "Public",
+        gpu_target: None,
         x: 600.0,
         y: 480.0,
     },
@@ -183,6 +193,7 @@ pub const GATES: &[MeshNode] = &[
         nucleus_count: 0,
         role: "CMOS dead",
         kderm_layer: "Offline",
+        gpu_target: None,
         x: 750.0,
         y: 500.0,
     },
@@ -198,6 +209,7 @@ pub const VPS_NODES: &[MeshNode] = &[MeshNode {
     nucleus_count: 18,
     role: "WG hub + Forgejo + relay + depot",
     kderm_layer: "Periplasm",
+    gpu_target: None,
     x: 350.0,
     y: 280.0,
 }];
@@ -263,6 +275,11 @@ pub fn mesh_active_count() -> usize {
         .count()
 }
 
+/// Nodes with GPU compute capability.
+pub fn gpu_nodes() -> impl Iterator<Item = &'static MeshNode> {
+    all_nodes().filter(|n| n.gpu_target.is_some())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -279,6 +296,14 @@ mod tests {
     fn enrollment_counts() {
         assert_eq!(count_by_enrollment(GateEnrollment::Enrolled), 5);
         assert_eq!(mesh_active_count(), 5);
+    }
+
+    #[test]
+    fn gpu_nodes_identified() {
+        let gpu: Vec<&str> = gpu_nodes().map(|n| n.id).collect();
+        assert!(gpu.contains(&"ironGate"));
+        assert!(gpu.contains(&"northGate"));
+        assert_eq!(gpu.len(), 2);
     }
 
     #[test]
