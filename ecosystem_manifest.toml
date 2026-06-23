@@ -1,0 +1,74 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# ecoPrimals Ecosystem Manifest — petalTongue view
+#
+# This manifest describes the ecosystem topology from petalTongue's perspective.
+# It is used for visualization layout, dashboard composition, and capability routing.
+# Updated per Wave 124 impulse (ironGate GPU target).
+
+[ecosystem]
+name = "ecoPrimals"
+wave = 124
+nucleus_count = 13
+atomics = 4
+
+[gates.ironGate]
+wg_ip = "10.13.37.7"
+enrollment = "enrolled"
+nucleus_count = 12
+role = "Node compute + GPU"
+kderm_layer = "Cytoplasm"
+gpu_target = "sm_70"
+gpu_device = "RTX 5070"
+gpu_validated = true
+gpu_capabilities = ["f64_native", "lstm_zero_copy", "vulkan", "wgsl"]
+
+[gates.sporeGate]
+wg_ip = "10.13.37.2"
+enrollment = "enrolled"
+nucleus_count = 13
+role = "Build authority + Nest provenance"
+kderm_layer = "Peptidoglycan"
+public_ip = "162.226.225.148"
+
+[gates.eastGate]
+wg_ip = "10.13.37.5"
+enrollment = "enrolled"
+nucleus_count = 13
+role = "Overwatch + Meta primals"
+kderm_layer = "Cytoplasm"
+
+[gates.flockGate]
+wg_ip = "10.13.37.6"
+enrollment = "enrolled"
+nucleus_count = 13
+role = "Tower primals + sporePrint"
+kderm_layer = "Outer membrane"
+
+[gates.golgi]
+wg_ip = "10.13.37.1"
+enrollment = "enrolled"
+nucleus_count = 18
+role = "WG hub + Forgejo + relay + depot"
+kderm_layer = "Periplasm"
+quorum_phase = 1
+cascade_interval_min = 15
+
+[gates.northGate]
+enrollment = "sovereign"
+role = "Hobby (Windows)"
+gpu_target = "sm_120"
+gpu_device = "RTX 5090"
+
+[compute]
+primary_gate = "ironGate"
+gpu_target = "sm_70"
+fallback_target = "sm_70"
+validated_workloads = ["lstm", "xor_mlp", "n_body", "physics_sim"]
+lstm_mse = "1.11e-30"
+
+[compute.capabilities]
+f64_native = true
+vulkan = true
+wgsl = true
+spirv = true
+zero_copy = true

@@ -293,6 +293,7 @@ pub(super) async fn gate_mesh_handler() -> Json<serde_json::Value> {
                 "nucleus_count": node.nucleus_count,
                 "role": node.role,
                 "kderm_layer": node.kderm_layer,
+                "gpu_target": node.gpu_target,
             })
         })
         .collect();
@@ -349,12 +350,27 @@ pub(super) async fn ecosystem_handler() -> Json<serde_json::Value> {
         })
         .collect();
 
+    let gpu_nodes: Vec<serde_json::Value> = gate_mesh::gpu_nodes()
+        .map(|n| {
+            serde_json::json!({
+                "gate": n.id,
+                "target": n.gpu_target,
+                "enrolled": n.enrollment == gate_mesh::GateEnrollment::Enrolled,
+            })
+        })
+        .collect();
+
     Json(serde_json::json!({
         "nucleus": atomics,
+        "compute": {
+            "gpu_nodes": gpu_nodes,
+            "primary_gate": "ironGate",
+        },
         "metrics": {
             "total_primals": gate_mesh::nucleus_primal_count(),
             "total_atomics": gate_mesh::NUCLEUS_ATOMICS.len(),
             "gates_enrolled": gate_mesh::count_by_enrollment(gate_mesh::GateEnrollment::Enrolled),
+            "gpu_capable": gate_mesh::gpu_nodes().count(),
             "source": "static",
         },
     }))

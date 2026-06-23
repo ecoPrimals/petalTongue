@@ -223,4 +223,8 @@ async fn test_ecosystem_endpoint_returns_nucleus() {
     assert_eq!(v["metrics"]["total_primals"], 13);
     assert_eq!(v["metrics"]["total_atomics"], 4);
     assert_eq!(v["metrics"]["gates_enrolled"], 5);
+    assert_eq!(v["metrics"]["gpu_capable"], 2);
+    assert_eq!(v["compute"]["primary_gate"], "ironGate");
+    let gpu_nodes = v["compute"]["gpu_nodes"].as_array().unwrap();
+    assert!(gpu_nodes.iter().any(|n| n["gate"] == "ironGate"));
 }

@@ -114,9 +114,9 @@
                         <div class="stat"><span class="stat-val" id="stat-links">-</span><span class="stat-label">Links</span></div>
                     </div>
                     <table class="gate-table" id="gate-table">
-                        <thead><tr><th>Gate</th><th>Role</th><th>WG IP</th><th>Status</th><th>N</th></tr></thead>
+                        <thead><tr><th>Gate</th><th>Role</th><th>WG IP</th><th>Status</th><th>N</th><th>GPU</th></tr></thead>
                         <tbody id="gate-tbody">
-                            <tr><td colspan="5" class="empty-state">Loading&hellip;</td></tr>
+                            <tr><td colspan="6" class="empty-state">Loading&hellip;</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -225,18 +225,20 @@
             const tbody = document.getElementById('gate-tbody');
             const gates = data.gates || [];
             if (!gates.length) {
-                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No gate data</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No gate data</td></tr>';
                 return;
             }
             tbody.innerHTML = gates.map(function(g) {
                 const nc = g.nucleus_count || 0;
                 const ncStr = nc > 0 ? nc + '/13' : '-';
+                const gpu = g.gpu_target ? '<span class="pill pill-ok">' + esc(g.gpu_target) + '</span>' : '-';
                 return '<tr>' +
                     '<td class="gate-id">' + esc(g.id) + '</td>' +
                     '<td>' + esc(g.role || g.zone) + '</td>' +
                     '<td class="wg-ip">' + (g.wg_ip || '-') + '</td>' +
                     '<td>' + enrollmentPill(g.enrollment) + '</td>' +
                     '<td>' + ncStr + '</td>' +
+                    '<td>' + gpu + '</td>' +
                 '</tr>';
             }).join('');
         }
