@@ -32,6 +32,7 @@ use tokio::sync::mpsc;
 /// well as from tests inside an existing runtime.
 ///
 /// The worker runs until the sender is dropped.
+#[must_use]
 pub fn spawn_push_delivery() -> (
     mpsc::UnboundedSender<CallbackDispatch>,
     std::thread::JoinHandle<()>,

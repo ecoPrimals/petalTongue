@@ -51,21 +51,25 @@ pub enum IpcErrorPhase {
 
 impl IpcErrorPhase {
     /// Returns true if the error is recoverable (transient, may succeed on retry).
+    #[must_use]
     pub const fn is_recoverable(&self) -> bool {
         matches!(self, Self::Connect(_) | Self::Read(_) | Self::Timeout(_))
     }
 
     /// Returns true if the operation should be retried.
+    #[must_use]
     pub const fn is_retriable(&self) -> bool {
         matches!(self, Self::Connect(_) | Self::Read(_) | Self::Timeout(_))
     }
 
     /// Returns true if this is a timeout error.
+    #[must_use]
     pub const fn is_timeout(&self) -> bool {
         matches!(self, Self::Timeout(_))
     }
 
     /// Returns true when JsonRpcError with code -32601 (method not found).
+    #[must_use]
     pub const fn is_method_not_found(&self) -> bool {
         matches!(
             self,
@@ -122,11 +126,13 @@ pub enum StreamItem {
 
 impl StreamItem {
     /// Returns true if this item terminates the stream (End or Error).
+    #[must_use]
     pub const fn is_terminal(&self) -> bool {
         matches!(self, Self::End { .. } | Self::Error { .. })
     }
 
     /// Serializes to a single NDJSON line (includes trailing newline).
+    #[must_use]
     pub fn to_ndjson_line(&self) -> String {
         serde_json::to_string(self).map_or_else(|_| String::new(), |s| s + "\n")
     }

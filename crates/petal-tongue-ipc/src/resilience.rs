@@ -28,6 +28,7 @@ impl Default for RetryPolicy {
 
 impl RetryPolicy {
     /// Exponential backoff for attempt (0-indexed), capped at max_delay.
+    #[must_use]
     pub fn delay_for_attempt(&self, attempt: u32) -> Duration {
         let exponent = i32::try_from(attempt).unwrap_or(i32::MAX);
         let delay_secs = self.initial_delay.as_secs_f64() * self.backoff_factor.powi(exponent);
@@ -36,6 +37,7 @@ impl RetryPolicy {
     }
 
     /// True if attempt < max_attempts.
+    #[must_use]
     pub const fn should_retry(&self, attempt: u32) -> bool {
         attempt < self.max_attempts
     }
@@ -130,6 +132,7 @@ impl CircuitBreaker {
         }
     }
 
+    #[must_use]
     pub const fn state(&self) -> &CircuitState {
         &self.state
     }

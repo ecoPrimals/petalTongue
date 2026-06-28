@@ -166,8 +166,8 @@ fn paint_waveform_preview(
         let start_frac = (layer.offset_secs / total_duration).clamp(0.0, 1.0) as f32;
         let end_frac =
             ((layer.offset_secs + layer.duration_secs) / total_duration).clamp(0.0, 1.0) as f32;
-        let x_start = rect.left() + width * start_frac;
-        let x_end = rect.left() + width * end_frac;
+        let x_start = start_frac.mul_add(width, rect.left());
+        let x_end = end_frac.mul_add(width, rect.left());
         let active_rect = Rect::from_min_max(pos2(x_start, rect.top()), pos2(x_end, rect.bottom()));
         painter.rect_filled(active_rect, Rounding::ZERO, color.gamma_multiply(0.08));
     }
@@ -180,7 +180,7 @@ fn paint_waveform_preview(
             let sample = layer.waveform.sample(phase, i as u64);
             let amplitude = layer.amplitude.clamp(0.0, 1.0);
             let py = mid_y - (sample * amplitude * f64::from(height) * 0.4) as f32;
-            let px = rect.left() + width * frac as f32;
+            let px = (frac as f32).mul_add(width, rect.left());
             pos2(px, py)
         })
         .collect();
@@ -227,8 +227,8 @@ fn draw_stereo_field(ui: &mut Ui, layers: &[SoundLayer]) {
 
     let field_w = rect.width() - 30.0;
     for layer in layers {
-        let pan_x = center.x + (layer.pan.clamp(-1.0, 1.0) as f32) * field_w * 0.5;
-        let amp_r = 3.0 + layer.amplitude.clamp(0.0, 1.0) as f32 * 6.0;
+        let pan_x = (layer.pan.clamp(-1.0, 1.0) as f32).mul_add(field_w * 0.5, center.x);
+        let amp_r = (layer.amplitude.clamp(0.0, 1.0) as f32).mul_add(6.0, 3.0);
         let color = waveform_color(layer.waveform);
         painter.circle_filled(pos2(pan_x, center.y), amp_r, color.gamma_multiply(0.7));
     }

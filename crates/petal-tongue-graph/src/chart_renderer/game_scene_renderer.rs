@@ -114,8 +114,8 @@ impl CameraTransform {
 
     fn world_to_screen(&self, wx: f64, wy: f64) -> Pos2 {
         pos2(
-            wx as f32 * self.scale + self.offset.x,
-            wy as f32 * self.scale + self.offset.y,
+            (wx as f32).mul_add(self.scale, self.offset.x),
+            (wy as f32).mul_add(self.scale, self.offset.y),
         )
     }
 
@@ -136,8 +136,8 @@ fn paint_tilemap(painter: &egui::Painter, tilemap: &Tilemap, cam: &CameraTransfo
                 continue;
             };
             let color = rgba_to_color32(tilemap.tile_color(tile));
-            let wx = tilemap.origin[0] + f64::from(col) * tilemap.tile_size[0];
-            let wy = tilemap.origin[1] + f64::from(row) * tilemap.tile_size[1];
+            let wx = f64::from(col).mul_add(tilemap.tile_size[0], tilemap.origin[0]);
+            let wy = f64::from(row).mul_add(tilemap.tile_size[1], tilemap.origin[1]);
             let tl = cam.world_to_screen(wx, wy);
             let size = cam.world_size(tilemap.tile_size[0], tilemap.tile_size[1]);
             let rect = Rect::from_min_size(tl, size);
@@ -200,8 +200,8 @@ fn paint_entity(painter: &egui::Painter, entity: &GameEntity, cam: &CameraTransf
 
     if entity.velocity != [0.0, 0.0] {
         let trail_end = cam.world_to_screen(
-            entity.position[0] - entity.velocity[0] * 0.1,
-            entity.position[1] - entity.velocity[1] * 0.1,
+            (-entity.velocity[0]).mul_add(0.1, entity.position[0]),
+            (-entity.velocity[1]).mul_add(0.1, entity.position[1]),
         );
         painter.line_segment(
             [trail_end, center],
@@ -496,8 +496,11 @@ fn paint_combat_grid(ui: &mut Ui, scene: &NarrativeScene) {
             .and_then(|v| v.as_str())
             .unwrap_or_default();
 
-        let screen_pos =
-            rect.left_top() + vec2(ex as f32 * cell + cell / 2.0, ey as f32 * cell + cell / 2.0);
+        let screen_pos = rect.left_top()
+            + vec2(
+                (ex as f32).mul_add(cell, cell / 2.0),
+                (ey as f32).mul_add(cell, cell / 2.0),
+            );
         if !rect.contains(screen_pos) {
             continue;
         }

@@ -557,8 +557,8 @@ pub fn hapticize_game_scene(scene_json: &serde_json::Value) -> Vec<HapticCommand
             let norm_y = (ey / 64.0).clamp(0.0, 1.0);
 
             let (pattern, intensity) = match etype {
-                "player" => (HapticPattern::Sustained, 0.3 + health * 0.4),
-                "enemy" => (HapticPattern::Pulse, 0.5 + (1.0 - health) * 0.5),
+                "player" => (HapticPattern::Sustained, health.mul_add(0.4, 0.3)),
+                "enemy" => (HapticPattern::Pulse, (1.0 - health).mul_add(0.5, 0.5)),
                 "projectile" => (HapticPattern::Ramp, 0.8),
                 "item" => (HapticPattern::Texture, 0.2),
                 _ => (HapticPattern::Pulse, 0.3),

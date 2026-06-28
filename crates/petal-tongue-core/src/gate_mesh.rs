@@ -271,11 +271,13 @@ pub fn all_nodes() -> impl Iterator<Item = &'static MeshNode> {
 }
 
 /// Count of nodes matching a given enrollment status.
+#[must_use]
 pub fn count_by_enrollment(status: GateEnrollment) -> usize {
     all_nodes().filter(|n| n.enrollment == status).count()
 }
 
 /// Count of nodes that are at least mesh-live (enrolled or mesh_live).
+#[must_use]
 pub fn mesh_active_count() -> usize {
     all_nodes()
         .filter(|n| {
@@ -459,6 +461,7 @@ pub const NUCLEUS_ATOMICS: &[NucleusAtomic] = &[
 ];
 
 /// Total primal count across all atomics.
+#[must_use]
 pub fn nucleus_primal_count() -> usize {
     NUCLEUS_ATOMICS.iter().map(|a| a.primals.len()).sum()
 }

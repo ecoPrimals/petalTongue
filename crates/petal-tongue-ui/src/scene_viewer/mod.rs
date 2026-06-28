@@ -198,7 +198,7 @@ fn render_tiled(
     } else {
         1
     };
-    let tile_width = (available_width - (columns as f32 - 1.0) * 8.0) / columns as f32;
+    let tile_width = (columns as f32 - 1.0).mul_add(-8.0, available_width) / columns as f32;
     let tile_height = tile_width * 0.65;
     let tile_size = egui::Vec2::new(tile_width, tile_height);
 

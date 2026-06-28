@@ -264,6 +264,7 @@ impl JsonRpcClient {
 
     /// Returns the next request ID. Exposed for testing ID monotonicity.
     #[cfg_attr(not(test), doc(hidden))]
+    #[must_use]
     pub fn next_id(&self) -> u64 {
         self.request_id.fetch_add(1, Ordering::Relaxed)
     }
