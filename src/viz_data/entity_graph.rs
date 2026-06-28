@@ -142,8 +142,8 @@ fn force_layout(
             let (dx, dy) = displacements[i];
             let dist = dx.hypot(dy).max(0.001);
             let scale = temp.min(dist) / dist;
-            positions[i].0 = (positions[i].0 + dx * scale).clamp(40.0, width - 40.0);
-            positions[i].1 = (positions[i].1 + dy * scale).clamp(40.0, height - 40.0);
+            positions[i].0 = dx.mul_add(scale, positions[i].0).clamp(40.0, width - 40.0);
+            positions[i].1 = dy.mul_add(scale, positions[i].1).clamp(40.0, height - 40.0);
         }
     }
 
@@ -264,7 +264,7 @@ fn build_legend(width: f64) -> SceneNode {
         .with_label("Legend");
 
     for (i, (kind, label)) in kinds.iter().enumerate() {
-        let y = i as f64 * 18.0 + 5.0;
+        let y = (i as f64).mul_add(18.0, 5.0);
         legend.primitives.push(Primitive::Point {
             x: 8.0,
             y: y + 4.0,

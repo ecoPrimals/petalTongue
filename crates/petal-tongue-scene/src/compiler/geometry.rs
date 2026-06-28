@@ -308,7 +308,7 @@ pub fn compile_geometry(
 
                     #[expect(clippy::cast_sign_loss, reason = "clamped to non-negative")]
                     let ring = ring_idx.max(0.0) as usize;
-                    let r = base_radius + (ring as f64 + 1.0) * ring_spacing;
+                    let r = (ring as f64 + 1.0).mul_add(ring_spacing, base_radius);
 
                     let fill = categorical_color(palette, i);
 
