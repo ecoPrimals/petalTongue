@@ -127,6 +127,22 @@ cargo test --workspace --all-features     # 6,618+ tests, ~85-90% coverage
 
 ## Current State
 
+Wave 128 Topology Cutover + Deep Debt (June 28, 2026). 360 tests (workspace),
+all passing. Major topology shift: Flint 2 H1 is now the plasma membrane (edge
+router), sporeGate is ephemeral compute (hot-pluggable). `MeshNode` gains
+`lan_ip: Option<&'static str>` for physical network layer. New
+`/api/physical-topology` endpoint returns edge router, backbone switch, bridge,
+port forwards, and network invariant. Dashboard gains Physical Topology panel.
+`ecosystem_manifest.toml` updated to Wave 128 with `[physical_topology]` section.
+14 multiply-add patterns evolved to `f64/f32::mul_add()` for FMA precision.
+11 public functions hardened with `#[must_use]`. KNOWN_DEBT audit: zero patterns.
+
+Wave 124 GPU Compute Topology (June 22, 2026). `MeshNode` gains
+`gpu_target: Option<&'static str>`. `ecosystem_manifest.toml` created with GPU
+targets, validated workloads, compute capabilities. GPU compute primalSpring
+scenario (`sandbox/scenarios/gpu-compute-pipeline.json`). Dashboard shows GPU
+column in gate status table. `/api/ecosystem` includes `compute` section.
+
 Wave 123 Ecosystem Dashboard + ironGate Enrollment (June 22, 2026). 6,618+ tests,
 all passing. NUCLEUS composition extracted to typed constants in `gate_mesh`
 module (`NucleusPrimal`, `NucleusAtomic`, `NUCLEUS_ATOMICS`). Web dashboard

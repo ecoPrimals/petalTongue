@@ -6,6 +6,55 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 128: Topology Cutover + Deep Debt (June 28, 2026)
+
+Physical topology evolution and floating-point precision hardening.
+
+#### Added
+- **`lan_ip` field on `MeshNode`**: Physical LAN addresses (192.168.4.x) now tracked
+  alongside WireGuard overlay IPs.
+- **`/api/physical-topology` endpoint**: Returns edge router (Flint H1), backbone
+  switch (CRS310), bridge (Flint H2), port forwards, and network invariant.
+- **Physical Topology dashboard panel**: ASCII network path diagram showing
+  INTERNET → ATT → Flint H1 → CRS310 → gates, port forward pills.
+- **`[physical_topology]` section in `ecosystem_manifest.toml`**: Edge router,
+  public IP, LAN/WG subnets, port forward target.
+- **1 new handler test** (`test_physical_topology_endpoint`).
+
+#### Changed
+- **sporeGate role**: "Compute node + Sovereign CI + Nest" (was "Build authority +
+  Nest provenance"). No longer the edge router — Flint H1 is the plasma membrane.
+- **sporeGate ephemeral**: `ephemeral = true` in ecosystem manifest. Unplugging
+  sporeGate does NOT kill the network.
+- **ironGate zone**: `"house2"` (via Omada/Flint H2 bridge, was "backbone").
+- **14 `mul_add` FMA conversions**: game_scene_renderer, soundscape_renderer,
+  entity_graph, compiler/geometry, data_binding/describe, scene_viewer.
+- **11 `#[must_use]` additions**: gate_mesh (3), ipc_errors (6), resilience (2),
+  push_delivery (1), json_rpc_client (1).
+- **KNOWN_DEBT audit**: Zero patterns found. No stale references, no hardcoded
+  paths, no missing error handling.
+
+### Wave 124: GPU Compute Topology + Ecosystem Manifest (June 22, 2026)
+
+GPU capability tracking and primalSpring scenario for compute validation.
+
+#### Added
+- **`gpu_target` field on `MeshNode`**: `Option<&'static str>` for SM target
+  (e.g. "sm_70" for ironGate RTX 5070, "sm_120" for northGate RTX 5090).
+- **`gpu_nodes()` helper**: Iterator over GPU-capable mesh nodes.
+- **`ecosystem_manifest.toml`**: Centralized topology config from petalTongue's
+  perspective — GPU targets, validated workloads, compute capabilities.
+- **`sandbox/scenarios/gpu-compute-pipeline.json`**: primalSpring scenario
+  exercising `compute.dispatch` on ironGate (LSTM, XOR MLP, N-body, SPIR-V).
+- **GPU column in gate status table**: Dashboard displays `gpu_target` as pill.
+- **`compute` section in `/api/ecosystem`**: `gpu_nodes` array, `primary_gate`,
+  `gpu_capable` metric.
+- **1 new test** (`gpu_nodes_identified`).
+
+#### Changed
+- **`/api/gate-mesh` includes `gpu_target`**: Each node's JSON now carries GPU info.
+- **`/api/ecosystem` `metrics.gpu_capable`**: Count of GPU-capable nodes.
+
 ### Wave 123: Ecosystem Dashboard + ironGate Enrollment (June 22, 2026)
 
 Gate mesh topology and dashboard evolution for 5-node mesh overwatch.
