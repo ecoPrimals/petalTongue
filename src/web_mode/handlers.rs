@@ -288,6 +288,7 @@ pub(super) async fn gate_mesh_handler() -> Json<serde_json::Value> {
                 "id": node.id,
                 "label": node.label,
                 "zone": node.zone,
+                "lan_ip": node.lan_ip,
                 "wg_ip": node.wg_ip,
                 "enrollment": node.enrollment.as_str(),
                 "nucleus_count": node.nucleus_count,
@@ -373,6 +374,37 @@ pub(super) async fn ecosystem_handler() -> Json<serde_json::Value> {
             "gpu_capable": gate_mesh::gpu_nodes().count(),
             "source": "static",
         },
+    }))
+}
+
+// ── Physical topology ────────────────────────────────────────────────────
+
+/// Returns the physical network topology (LAN, switches, edge router, port forwards).
+pub(super) async fn physical_topology_handler() -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "edge_router": {
+            "name": "Flint H1",
+            "role": "Plasma membrane (edge router)",
+            "wan_ip": "162.226.225.148",
+            "lan_ip": "192.168.4.1",
+            "services": ["NAT", "DHCP", "DNS (91k blocklist)", "Firewall", "WiFi"],
+        },
+        "backbone_switch": {
+            "name": "CRS310",
+            "role": "L2 backbone (10G/2.5G)",
+            "ports": ["sporeGate (.3)", "eastGate (.5, 10G)", "northGate", "Omada uplink"],
+        },
+        "bridge": {
+            "name": "Flint H2",
+            "role": "Bridge WiFi AP (House 2)",
+            "lan_ip": "192.168.4.250",
+            "services": ["WiFi AP (ApertureScience)"],
+        },
+        "port_forwards": {
+            "target": "sporeGate (192.168.4.3)",
+            "services": ["WG (51820)", "SSH (22)", "Forgejo (2222/3000)", "HTTP/S (80/443)", "RustDesk", "TURN", "NestGate"],
+        },
+        "invariant": "Unplugging sporeGate does NOT kill the network. Flint is the membrane. sporeGate is ephemeral compute.",
     }))
 }
 

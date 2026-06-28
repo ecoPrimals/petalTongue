@@ -131,6 +131,21 @@
         </section>
 
         <section>
+            <h2>Physical Topology</h2>
+            <div class="grid-2" id="physical-topology">
+                <div class="card">
+                    <h3>Network Path</h3>
+                    <pre id="topo-path" style="font-size:0.75rem;line-height:1.6;color:var(--fg-dim)">Loading...</pre>
+                </div>
+                <div class="card">
+                    <h3>Key Invariant</h3>
+                    <p id="topo-invariant" style="font-style:italic;color:var(--fg-dim)"></p>
+                    <div id="topo-port-forwards" style="margin-top:0.5rem"></div>
+                </div>
+            </div>
+        </section>
+
+        <section>
             <h2>Discovered Primals</h2>
             <div class="grid" id="primals-grid">
                 <div class="empty-state">
@@ -207,6 +222,11 @@
                 .then(r => r.json())
                 .then(renderNucleus)
                 .catch(() => {});
+
+            fetch('/api/physical-topology')
+                .then(r => r.json())
+                .then(renderPhysicalTopology)
+                .catch(() => {});
         }
 
         function enrollmentPill(e) {
@@ -262,6 +282,32 @@
                     primalHtml +
                 '</div>';
             }).join('');
+        }
+
+        function renderPhysicalTopology(data) {
+            var edge = data.edge_router || {};
+            var sw = data.backbone_switch || {};
+            var bridge = data.bridge || {};
+            var pf = data.port_forwards || {};
+
+            var path = 'INTERNET\n' +
+                '  → ATT BGW320 (passthrough)\n' +
+                '    → ' + esc(edge.name || '?') + ' (' + esc(edge.wan_ip || '?') + ')\n' +
+                '        LAN: ' + esc(edge.lan_ip || '?') + '/22\n' +
+                '        → ' + esc(sw.name || '?') + ' (' + esc(sw.role || '') + ')\n' +
+                '            ├── sporeGate .3 (compute, CI, Nest)\n' +
+                '            ├── eastGate .5 (10G, overwatch)\n' +
+                '            └── Omada → H2 → ironGate .7 (GPU)\n' +
+                '\n' +
+                'WireGuard overlay (10.13.37.0/24) via golgi (.1)';
+            document.getElementById('topo-path').textContent = path;
+            document.getElementById('topo-invariant').textContent = data.invariant || '';
+
+            var services = (pf.services || []).map(function(s) {
+                return '<span class="pill pill-info" style="margin:0.15rem">' + esc(s) + '</span>';
+            }).join('');
+            document.getElementById('topo-port-forwards').innerHTML =
+                '<div style="font-size:0.75rem;color:var(--fg-dim)">Port forwards → ' + esc(pf.target || '?') + '</div>' + services;
         }
 
         function applySnapshot(snap) {

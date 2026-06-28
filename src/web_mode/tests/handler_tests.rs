@@ -228,3 +228,19 @@ async fn test_ecosystem_endpoint_returns_nucleus() {
     let gpu_nodes = v["compute"]["gpu_nodes"].as_array().unwrap();
     assert!(gpu_nodes.iter().any(|n| n["gate"] == "ironGate"));
 }
+
+#[tokio::test]
+async fn test_physical_topology_endpoint() {
+    let resp = physical_topology_handler().await.into_response();
+    assert_eq!(resp.status(), 200);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(v["edge_router"]["name"], "Flint H1");
+    assert_eq!(v["edge_router"]["wan_ip"], "162.226.225.148");
+    assert_eq!(v["backbone_switch"]["name"], "CRS310");
+    assert!(v["invariant"].as_str().unwrap().contains("ephemeral"));
+    let services = v["port_forwards"]["services"].as_array().unwrap();
+    assert!(services.len() >= 5);
+}
