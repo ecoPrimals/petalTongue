@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: June 22, 2026 (Wave 123 — ironGate enrolled, NUCLEUS composition endpoint, ecosystem dashboard panel, typed NUCLEUS constants in core)
+**Updated**: June 28, 2026 (Wave 128 — topology cutover: Flint H1 plasma membrane, sporeGate ephemeral compute, physical topology API, mul_add FMA evolution)
 
 ---
 

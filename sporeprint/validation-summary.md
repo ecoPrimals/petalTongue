@@ -1,7 +1,7 @@
 +++
 title = "petalTongue Validation Summary"
-description = "Universal user interface primal — 6,618+ tests, 56 IPC methods, 18 crates, 7 modes, pure Rust"
-date = 2026-06-22
+description = "Universal user interface primal — 360 workspace tests, 56 IPC methods, 18 crates, 7 modes, pure Rust"
+date = 2026-06-28
 
 [taxonomies]
 primals = ["petaltongue"]
@@ -11,7 +11,7 @@ springs = []
 ## Status
 
 - **v1.6.6** — workspace edition 2024, `forbid(unsafe_code)`
-- **6,618+ tests** passing, 0 failed (unit + integration + doc + property)
+- **360 workspace tests** passing, 0 failed (unit + integration + doc + property)
 - **56 IPC methods** across 10 domain categories (health, identity, auth,
   capabilities, visualization, interaction, audio, UI, motor, BTSP, gate mesh)
 - **18 workspace crates** (core, IPC, graph, scene, discovery, adapters,
@@ -21,7 +21,7 @@ springs = []
 - **BTSP Phase 3** encrypted transport (ChaCha20-Poly1305 + HKDF-SHA256)
 - **MethodGate** (JH-0): public/protected method classification with auth enforcement
 - **DH-1 /tmp cleanup**: All socket paths through `BIOMEOS_SOCKET_DIR` tier chain
-- **Stadial gate**: READY (post-primordial, Wave 123 clean)
+- **Stadial gate**: READY (post-primordial, Wave 128 topology cutover clean)
 - **Content pipeline**: `content_render` + `viz_data` + `content_direct` wired and compiled
 - **S3 cutover**: 4-tier content backend audited; FAMILY_ID aligned; DISCOVERY_SOCKET wired
 - **Wave 123 ecosystem dashboard**: `/api/gate-mesh`, `/api/ecosystem`, `/viz/{slug}` endpoints. Typed NUCLEUS composition (`NucleusPrimal`, `NucleusAtomic` in core). 5 gates enrolled, 7 WG links.
