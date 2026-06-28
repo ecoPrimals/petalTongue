@@ -3,19 +3,33 @@
 #
 # This manifest describes the ecosystem topology from petalTongue's perspective.
 # It is used for visualization layout, dashboard composition, and capability routing.
-# Updated per Wave 124 impulse (ironGate GPU target).
+# Updated per Wave 128 (topology cutover: Flint H1 is plasma membrane, sporeGate ephemeral).
 
 [ecosystem]
 name = "ecoPrimals"
-wave = 124
+wave = 128
 nucleus_count = 13
 atomics = 4
+posture = "convergence + debt"
+
+[physical_topology]
+edge_router = "Flint H1"
+public_ip = "162.226.225.148"
+lan_subnet = "192.168.4.0/22"
+wg_subnet = "10.13.37.0/24"
+wg_hub = "golgi"
+backbone_switch = "CRS310"
+
+[physical_topology.port_forwards]
+target = "sporeGate"
+services = ["WG", "SSH", "Forgejo", "HTTP/S", "RustDesk", "TURN", "NestGate"]
 
 [gates.ironGate]
+lan_ip = "H2 (via Omada)"
 wg_ip = "10.13.37.7"
 enrollment = "enrolled"
 nucleus_count = 12
-role = "Node compute + GPU"
+role = "Node compute + GPU (RTX 5070)"
 kderm_layer = "Cytoplasm"
 gpu_target = "sm_70"
 gpu_device = "RTX 5070"
@@ -23,14 +37,16 @@ gpu_validated = true
 gpu_capabilities = ["f64_native", "lstm_zero_copy", "vulkan", "wgsl"]
 
 [gates.sporeGate]
+lan_ip = "192.168.4.3"
 wg_ip = "10.13.37.2"
 enrollment = "enrolled"
 nucleus_count = 13
-role = "Build authority + Nest provenance"
+role = "Compute node + Sovereign CI + Nest"
 kderm_layer = "Peptidoglycan"
-public_ip = "162.226.225.148"
+ephemeral = true
 
 [gates.eastGate]
+lan_ip = "192.168.4.5"
 wg_ip = "10.13.37.5"
 enrollment = "enrolled"
 nucleus_count = 13
@@ -55,7 +71,7 @@ cascade_interval_min = 15
 
 [gates.northGate]
 enrollment = "sovereign"
-role = "Hobby (Windows)"
+role = "Hobby (Windows, RTX 5090)"
 gpu_target = "sm_120"
 gpu_device = "RTX 5090"
 
