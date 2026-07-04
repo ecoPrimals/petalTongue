@@ -19,8 +19,9 @@ use crate::data_service::DataService;
 use crate::error::AppError;
 use handlers::{
     docroot_fallback, ecosystem_handler, events_sse_handler, gate_mesh_handler, health_handler,
-    index_handler, liveness_handler, physical_topology_handler, primals_handler, readiness_handler,
-    snapshot_handler, status_handler, viz_handler,
+    index_handler, liveness_handler, mesh_peers_handler, physical_topology_handler,
+    primals_handler, readiness_handler, snapshot_handler, sporeprint_handler, status_handler,
+    viz_handler,
 };
 
 use std::sync::Arc;
@@ -92,6 +93,8 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .route("/api/gate-mesh", get(gate_mesh_handler))
         .route("/api/ecosystem", get(ecosystem_handler))
         .route("/api/physical-topology", get(physical_topology_handler))
+        .route("/api/mesh-peers", get(mesh_peers_handler))
+        .route("/api/sporeprint", get(sporeprint_handler))
         .route("/api/events", get(events_sse_handler))
         .route("/viz/{slug}", get(viz_handler))
         .nest_service("/static", ServeDir::new(WEB_STATIC_DIR));

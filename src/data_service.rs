@@ -43,6 +43,8 @@ pub struct DataService {
 pub enum DataUpdate {
     /// Graph topology updated
     TopologyUpdated,
+    /// Mesh peer status changed
+    MeshPeersUpdated,
 }
 
 /// Complete data snapshot for UI consumption
@@ -208,6 +210,15 @@ impl DataService {
     /// Subscribe to data updates.
     pub fn subscribe(&self) -> broadcast::Receiver<DataUpdate> {
         self.update_tx.subscribe()
+    }
+
+    /// Get current mesh peer state (songBird `mesh.peers` concept).
+    ///
+    /// Currently returns statically derived peers from the gate topology.
+    /// When songBird IPC is available, this will query live peer state.
+    #[must_use]
+    pub fn mesh_peers(&self) -> Vec<petal_tongue_core::gate_mesh::MeshPeer> {
+        petal_tongue_core::gate_mesh::derive_mesh_peers()
     }
 
     /// Check if Neural API is available.
@@ -550,6 +561,15 @@ mod tests {
             result.is_ok(),
             "refresh without neural_api should succeed (no-op)"
         );
+    }
+
+    #[tokio::test]
+    async fn test_mesh_peers_returns_peers() {
+        let service = DataService::new();
+        let peers = service.mesh_peers();
+        assert!(peers.len() >= 6);
+        assert!(peers.iter().any(|p| p.gate_id == "eastGate"));
+        assert!(peers.iter().any(|p| p.gate_id == "ironGate"));
     }
 
     #[tokio::test]
