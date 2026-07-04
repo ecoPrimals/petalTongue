@@ -146,6 +146,41 @@
         </section>
 
         <section>
+            <h2>Mesh Peers (songBird mesh.peers)</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <h3>Peer Connectivity</h3>
+                    <div class="stat-row" id="peers-stats">
+                        <div class="stat"><span class="stat-val" id="stat-connected">-</span><span class="stat-label">Connected</span></div>
+                        <div class="stat"><span class="stat-val" id="stat-peers-total">-</span><span class="stat-label">Total Peers</span></div>
+                    </div>
+                    <table class="gate-table" id="peers-table">
+                        <thead><tr><th>Gate</th><th>Status</th><th>Transport</th><th>Latency</th><th>Capabilities</th></tr></thead>
+                        <tbody id="peers-tbody">
+                            <tr><td colspan="5" class="empty-state">Loading&hellip;</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card">
+                    <h3>Routing Flow</h3>
+                    <pre id="routing-flow" style="font-size:0.72rem;line-height:1.6;color:var(--fg-dim)">Browser → lab.primals.eco → Cloudflare → Flint H1
+  → sporeGate (Caddy)
+    → songBird capability.call
+      → LAN direct: ironGate, strandGate
+      → WG relay: flockGate (via golgi)
+    → Result flows back through mesh</pre>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>sporePrint — Ecosystem Validation</h2>
+            <div class="grid" id="sporeprint-grid">
+                <div class="empty-state"><p>Loading validation data&hellip;</p></div>
+            </div>
+        </section>
+
+        <section>
             <h2>Discovered Primals</h2>
             <div class="grid" id="primals-grid">
                 <div class="empty-state">
@@ -226,6 +261,16 @@
             fetch('/api/physical-topology')
                 .then(r => r.json())
                 .then(renderPhysicalTopology)
+                .catch(() => {});
+
+            fetch('/api/mesh-peers')
+                .then(r => r.json())
+                .then(renderMeshPeers)
+                .catch(() => {});
+
+            fetch('/api/sporeprint')
+                .then(r => r.json())
+                .then(renderSporePrint)
                 .catch(() => {});
         }
 
@@ -310,6 +355,68 @@
             }).join('');
             document.getElementById('topo-port-forwards').innerHTML =
                 '<div style="font-size:0.75rem;color:var(--fg-dim)">Port forwards → ' + esc(pf.target || '?') + '</div>' + services;
+        }
+
+        function renderMeshPeers(data) {
+            document.getElementById('stat-connected').textContent = data.connected_count || 0;
+            document.getElementById('stat-peers-total').textContent = data.total_count || 0;
+
+            var peers = data.peers || [];
+            var tbody = document.getElementById('peers-tbody');
+            if (!peers.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No peers</td></tr>';
+                return;
+            }
+            tbody.innerHTML = peers.map(function(p) {
+                var statusPill = p.status === 'connected' ? '<span class="pill pill-ok">connected</span>' :
+                                 p.status === 'relayed' ? '<span class="pill pill-info">relayed</span>' :
+                                 p.status === 'pending' ? '<span class="pill pill-warn">pending</span>' :
+                                 '<span class="pill pill-err">unreachable</span>';
+                var latency = p.latency_ms !== null ? p.latency_ms + 'ms' : '-';
+                var caps = (p.capabilities || []).map(function(c) {
+                    return '<span class="cap">' + esc(c) + '</span>';
+                }).join(' ');
+                return '<tr>' +
+                    '<td class="gate-id">' + esc(p.gate_id) + '</td>' +
+                    '<td>' + statusPill + '</td>' +
+                    '<td style="font-size:0.75rem;color:var(--fg-dim)">' + esc(p.transport) + '</td>' +
+                    '<td class="wg-ip">' + latency + '</td>' +
+                    '<td>' + caps + '</td>' +
+                '</tr>';
+            }).join('');
+        }
+
+        function renderSporePrint(data) {
+            var grid = document.getElementById('sporeprint-grid');
+            var gates = data.gates || [];
+            var totals = data.totals || {};
+
+            var summaryCard = '<div class="card">' +
+                '<h3>Wave ' + (data.wave || '?') + ' — ' + esc(data.posture || '') + '</h3>' +
+                '<div class="stat-row" style="margin-top:0.5rem">' +
+                    '<div class="stat"><span class="stat-val">' + (totals.test_count || 0).toLocaleString() + '</span><span class="stat-label">Total Tests</span></div>' +
+                    '<div class="stat"><span class="stat-val">' + (totals.primals_validated || 0) + '</span><span class="stat-label">Primals</span></div>' +
+                    '<div class="stat"><span class="stat-val">' + (totals.gates_green || 0) + '</span><span class="stat-label">Gates Green</span></div>' +
+                    '<div class="stat"><span class="stat-val">' + (totals.known_debt || 0) + '</span><span class="stat-label">Known Debt</span></div>' +
+                '</div>' +
+            '</div>';
+
+            var gateCards = gates.map(function(g) {
+                var tests = g.tests || {};
+                var testList = Object.keys(tests).map(function(k) {
+                    return '<div style="display:flex;justify-content:space-between;padding:0.2rem 0;border-bottom:1px solid var(--border)">' +
+                        '<span style="font-weight:500">' + esc(k) + '</span>' +
+                        '<span class="pill pill-ok">' + tests[k].toLocaleString() + '</span>' +
+                    '</div>';
+                }).join('');
+                var statusPill = g.status === 'green' ? '<span class="pill pill-ok">green</span>' : '<span class="pill pill-warn">' + esc(g.status) + '</span>';
+                return '<div class="card">' +
+                    '<h3>' + esc(g.gate) + ' ' + statusPill + '</h3>' +
+                    testList +
+                '</div>';
+            }).join('');
+
+            grid.innerHTML = summaryCard + gateCards;
         }
 
         function applySnapshot(snap) {

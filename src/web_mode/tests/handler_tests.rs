@@ -244,3 +244,47 @@ async fn test_physical_topology_endpoint() {
     let services = v["port_forwards"]["services"].as_array().unwrap();
     assert!(services.len() >= 5);
 }
+
+#[tokio::test]
+async fn test_mesh_peers_endpoint() {
+    let resp = mesh_peers_handler().await.into_response();
+    assert_eq!(resp.status(), 200);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert!(v["connected_count"].as_u64().unwrap() >= 4);
+    assert!(v["total_count"].as_u64().unwrap() >= 6);
+    let peers = v["peers"].as_array().unwrap();
+    assert!(!peers.is_empty());
+    let east = peers.iter().find(|p| p["gate_id"] == "eastGate").unwrap();
+    assert_eq!(east["status"], "connected");
+    assert_eq!(east["transport"], "local");
+    let iron = peers.iter().find(|p| p["gate_id"] == "ironGate").unwrap();
+    assert_eq!(iron["status"], "connected");
+    assert_eq!(iron["transport"], "LAN direct");
+    let flock = peers.iter().find(|p| p["gate_id"] == "flockGate").unwrap();
+    assert_eq!(flock["status"], "relayed");
+    let graphene = peers
+        .iter()
+        .find(|p| p["gate_id"] == "grapheneGate")
+        .unwrap();
+    assert_eq!(graphene["status"], "connected");
+    assert_eq!(graphene["transport"], "ADB USB");
+}
+
+#[tokio::test]
+async fn test_sporeprint_endpoint() {
+    let resp = sporeprint_handler().await.into_response();
+    assert_eq!(resp.status(), 200);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(v["wave"], 132);
+    assert_eq!(v["totals"]["known_debt"], 0);
+    assert!(v["totals"]["test_count"].as_u64().unwrap() > 40000);
+    let gates = v["gates"].as_array().unwrap();
+    assert_eq!(gates.len(), 4);
+    assert_eq!(v["ci"]["sovereign_ci"], "sporeGate");
+}
