@@ -90,7 +90,7 @@ pub const GATES: &[MeshNode] = &[
         wg_ip: Some("10.13.37.2"),
         enrollment: GateEnrollment::Enrolled,
         nucleus_count: 13,
-        role: "Compute node + Sovereign CI + Nest",
+        role: "Public entry + Sovereign CI + Nest",
         kderm_layer: "Peptidoglycan",
         gpu_target: None,
         x: 200.0,
@@ -100,11 +100,11 @@ pub const GATES: &[MeshNode] = &[
         id: "eastGate",
         label: "eastGate",
         zone: "backbone",
-        lan_ip: Some("192.168.4.5"),
+        lan_ip: Some("192.168.4.244"),
         wg_ip: Some("10.13.37.5"),
         enrollment: GateEnrollment::Enrolled,
         nucleus_count: 13,
-        role: "Overwatch + Meta primals",
+        role: "Overwatch + primalSpring + cellMembrane",
         kderm_layer: "Cytoplasm",
         gpu_target: None,
         x: 450.0,
@@ -128,11 +128,11 @@ pub const GATES: &[MeshNode] = &[
         id: "ironGate",
         label: "ironGate",
         zone: "house2",
-        lan_ip: None,
+        lan_ip: Some("192.168.4.237"),
         wg_ip: Some("10.13.37.7"),
         enrollment: GateEnrollment::Enrolled,
         nucleus_count: 12,
-        role: "Node compute + GPU (RTX 5070)",
+        role: "GPU compute + ABG (RTX 5070, JupyterHub)",
         kderm_layer: "Cytoplasm",
         gpu_target: Some("sm_70"),
         x: 700.0,
@@ -146,11 +146,25 @@ pub const GATES: &[MeshNode] = &[
         wg_ip: Some("10.13.37.6"),
         enrollment: GateEnrollment::Enrolled,
         nucleus_count: 13,
-        role: "Tower primals + sporePrint",
+        role: "Tower atomic home (songBird, bearDog, skunkBat)",
         kderm_layer: "Outer membrane",
         gpu_target: None,
         x: 150.0,
         y: 400.0,
+    },
+    MeshNode {
+        id: "grapheneGate",
+        label: "grapheneGate",
+        zone: "mobile",
+        lan_ip: None,
+        wg_ip: None,
+        enrollment: GateEnrollment::Enrolled,
+        nucleus_count: 14,
+        role: "Portable trust anchor (Pixel 8a, Tower)",
+        kderm_layer: "Outer membrane",
+        gpu_target: None,
+        x: 300.0,
+        y: 450.0,
     },
     MeshNode {
         id: "strandGate",
@@ -158,10 +172,10 @@ pub const GATES: &[MeshNode] = &[
         zone: "house2",
         lan_ip: None,
         wg_ip: None,
-        enrollment: GateEnrollment::Public,
+        enrollment: GateEnrollment::MeshLive,
         nucleus_count: 0,
-        role: "Relay pending",
-        kderm_layer: "Public",
+        role: "CPU compute (64-core EPYC, STAR alignment)",
+        kderm_layer: "Cytoplasm",
         gpu_target: None,
         x: 400.0,
         y: 450.0,
@@ -308,8 +322,8 @@ mod tests {
 
     #[test]
     fn enrollment_counts() {
-        assert_eq!(count_by_enrollment(GateEnrollment::Enrolled), 5);
-        assert_eq!(mesh_active_count(), 5);
+        assert_eq!(count_by_enrollment(GateEnrollment::Enrolled), 6);
+        assert_eq!(mesh_active_count(), 7);
     }
 
     #[test]

@@ -382,6 +382,13 @@ pub(super) async fn ecosystem_handler() -> Json<serde_json::Value> {
 /// Returns the physical network topology (LAN, switches, edge router, port forwards).
 pub(super) async fn physical_topology_handler() -> Json<serde_json::Value> {
     Json(serde_json::json!({
+        "outer_membrane": {
+            "name": "Cloudflare",
+            "role": "K-Derm outer membrane (DDoS, TLS edge)",
+            "domains": ["lab.primals.eco", "membrane.primals.eco", "git.primals.eco"],
+            "origin_flint": "162.226.225.148",
+            "origin_golgi": "157.230.3.183",
+        },
         "edge_router": {
             "name": "Flint H1",
             "role": "Plasma membrane (edge router)",
@@ -392,7 +399,7 @@ pub(super) async fn physical_topology_handler() -> Json<serde_json::Value> {
         "backbone_switch": {
             "name": "CRS310",
             "role": "L2 backbone (10G/2.5G)",
-            "ports": ["sporeGate (.3)", "eastGate (.5, 10G)", "northGate", "Omada uplink"],
+            "ports": ["sporeGate (.3)", "eastGate (.244, 10G)", "northGate", "Omada uplink"],
         },
         "bridge": {
             "name": "Flint H2",
@@ -402,9 +409,14 @@ pub(super) async fn physical_topology_handler() -> Json<serde_json::Value> {
         },
         "port_forwards": {
             "target": "sporeGate (192.168.4.3)",
-            "services": ["WG (51820)", "SSH (22)", "Forgejo (2222/3000)", "HTTP/S (80/443)", "RustDesk", "TURN", "NestGate"],
+            "services": ["WG (51820)", "SSH (22)", "Forgejo (2222/3000)", "HTTP/S (80/443)", "TURN", "NestGate"],
         },
-        "invariant": "Unplugging sporeGate does NOT kill the network. Flint is the membrane. sporeGate is ephemeral compute.",
+        "abg_compute": {
+            "entry_point": "lab.primals.eco",
+            "routing": "Caddy → songBird → LAN direct-connect",
+            "nodes": ["ironGate (GPU, RTX 5070, JupyterHub)", "strandGate (CPU, 64-core EPYC)"],
+        },
+        "invariant": "songBird IS the port solver. Services bind to localhost. No ports exposed externally. Mesh handles all routing.",
     }))
 }
 

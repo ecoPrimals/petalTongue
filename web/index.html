@@ -287,18 +287,20 @@
         function renderPhysicalTopology(data) {
             var edge = data.edge_router || {};
             var sw = data.backbone_switch || {};
-            var bridge = data.bridge || {};
             var pf = data.port_forwards || {};
+            var cf = data.outer_membrane || {};
+            var abg = data.abg_compute || {};
 
-            var path = 'INTERNET\n' +
+            var path = 'INTERNET → Cloudflare (' + (cf.domains || []).join(', ') + ')\n' +
                 '  → ATT BGW320 (passthrough)\n' +
                 '    → ' + esc(edge.name || '?') + ' (' + esc(edge.wan_ip || '?') + ')\n' +
                 '        LAN: ' + esc(edge.lan_ip || '?') + '/22\n' +
                 '        → ' + esc(sw.name || '?') + ' (' + esc(sw.role || '') + ')\n' +
-                '            ├── sporeGate .3 (compute, CI, Nest)\n' +
-                '            ├── eastGate .5 (10G, overwatch)\n' +
-                '            └── Omada → H2 → ironGate .7 (GPU)\n' +
+                '            ├── sporeGate .3 (public entry, CI)\n' +
+                '            ├── eastGate .244 (10G, overwatch)\n' +
+                '            └── Omada → H2 → ironGate .237 (GPU)\n' +
                 '\n' +
+                'ABG Compute: ' + esc(abg.entry_point || '') + ' → ' + esc(abg.routing || '') + '\n' +
                 'WireGuard overlay (10.13.37.0/24) via golgi (.1)';
             document.getElementById('topo-path').textContent = path;
             document.getElementById('topo-invariant').textContent = data.invariant || '';
