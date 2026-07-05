@@ -247,7 +247,10 @@ async fn test_physical_topology_endpoint() {
 
 #[tokio::test]
 async fn test_mesh_peers_endpoint() {
-    let resp = mesh_peers_handler().await.into_response();
+    let data_service = Arc::new(DataService::new());
+    let resp = mesh_peers_handler(State(data_service))
+        .await
+        .into_response();
     assert_eq!(resp.status(), 200);
     let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
         .await

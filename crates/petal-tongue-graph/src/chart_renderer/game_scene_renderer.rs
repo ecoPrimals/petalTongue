@@ -112,6 +112,10 @@ impl CameraTransform {
         }
     }
 
+    #[expect(
+        clippy::missing_const_for_fn,
+        reason = "f32::mul_add is not const-stable"
+    )]
     fn world_to_screen(&self, wx: f64, wy: f64) -> Pos2 {
         pos2(
             (wx as f32).mul_add(self.scale, self.offset.x),

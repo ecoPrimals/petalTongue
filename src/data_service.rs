@@ -43,7 +43,8 @@ pub struct DataService {
 pub enum DataUpdate {
     /// Graph topology updated
     TopologyUpdated,
-    /// Mesh peer status changed
+    /// Mesh peer status changed (future: triggered by songBird IPC)
+    #[expect(dead_code, reason = "wired for songBird mesh.peers live push")]
     MeshPeersUpdated,
 }
 

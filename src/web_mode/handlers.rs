@@ -426,10 +426,11 @@ pub(super) async fn physical_topology_handler() -> Json<serde_json::Value> {
 ///
 /// In production, this calls songBird's `mesh.peers` IPC method.
 /// Currently returns derived static state as the offline fallback.
-pub(super) async fn mesh_peers_handler() -> Json<serde_json::Value> {
-    use petal_tongue_core::gate_mesh;
-
-    let peers: Vec<serde_json::Value> = gate_mesh::derive_mesh_peers()
+pub(super) async fn mesh_peers_handler(
+    State(service): State<Arc<DataService>>,
+) -> Json<serde_json::Value> {
+    let peers: Vec<serde_json::Value> = service
+        .mesh_peers()
         .iter()
         .map(|p| {
             serde_json::json!({
