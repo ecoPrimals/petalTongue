@@ -423,7 +423,7 @@ fn test_init_tracing_formats() {
 
 #[tokio::test]
 async fn test_register_with_discovery_service_completes() {
-    // Registration runs to completion (gracefully handles service unavailability)
+    use crate::registration::register_with_discovery_service;
     register_with_discovery_service(None, std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST))
         .await;
 }

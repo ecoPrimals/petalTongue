@@ -7,8 +7,11 @@ db-path = "~/.cargo/advisory-db"
 db-urls = ["https://github.com/rustsec/advisory-db"]
 yanked = "deny"
 ignore = [
-    "RUSTSEC-2024-0387", # Transitive: opentelemetry_api merged (via tarpc)
-    "RUSTSEC-2025-0141", # Transitive: BytesMut reserve overflow (pending bytes update)
+    "RUSTSEC-2024-0387", # Transitive: opentelemetry_api merged (via tarpc, no update available)
+    "RUSTSEC-2025-0141", # Transitive: BytesMut reserve overflow (pending upstream dep update)
+    "RUSTSEC-2026-0192", # Transitive: ttf-parser unmaintained (egui/eframe → skrifa migration pending upstream)
+    "RUSTSEC-2026-0194", # Transitive: quick-xml O(N²) attributes (wayland-scanner → winit → eframe, needs >=0.41)
+    "RUSTSEC-2026-0195", # Transitive: quick-xml NamespaceResolver (wayland-scanner → winit → eframe, needs >=0.41)
 ]
 
 [licenses]
