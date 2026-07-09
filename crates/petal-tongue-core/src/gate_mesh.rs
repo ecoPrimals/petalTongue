@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Gate mesh topology — shared canonical data.
 //!
-//! Single source of truth for the gate mesh topology. Both the visualization
+//! Offline fallback for the gate mesh topology. Both the visualization
 //! scene builder and the `gate.mesh.status` IPC handler consume this data.
 //!
-//! In production, this static data is the offline/capability-registry fallback.
-//! When `gate.mesh.live` capability is discovered at runtime, live state
-//! overrides these defaults.
+//! **Authoritative source**: `ecosystem_manifest.toml` `[gates.*]` section,
+//! specifically `wg_ip`, `zone`, and `roles` fields. The constants below
+//! (`GATES`, `VPS_NODES`) are compile-time snapshots for offline rendering
+//! when the manifest is unavailable.
+//!
+//! At runtime, prefer live state from `gate.mesh.live` capability discovery
+//! or the manifest reader (`EcosystemManifest::mesh_ip_for()`).
 
 use serde::{Deserialize, Serialize};
 
