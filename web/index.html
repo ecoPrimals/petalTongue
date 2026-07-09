@@ -181,6 +181,46 @@
         </section>
 
         <section>
+            <h2>Ecosystem Coordination</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <h3>Wave Status</h3>
+                    <div class="stat-row" id="coord-wave-stats">
+                        <div class="stat"><span class="stat-val" id="coord-wave-id">--</span><span class="stat-label">Current Wave</span></div>
+                        <div class="stat"><span class="stat-val" id="coord-wave-blurbs">0</span><span class="stat-label">Blurbs</span></div>
+                        <div class="stat"><span class="stat-val" id="coord-wave-fragos">0</span><span class="stat-label">FRAGOs/AARs</span></div>
+                    </div>
+                    <div id="coord-blurb-title" style="font-weight:600;margin-top:0.5rem;font-size:0.9rem;color:var(--accent)"></div>
+                    <div id="coord-blurb-preview" style="font-size:0.78rem;color:var(--fg-dim);margin-top:0.25rem;max-height:6rem;overflow:auto;white-space:pre-wrap;font-family:monospace"></div>
+                </div>
+                <div class="card">
+                    <h3>Gate Convergence (HEADs)</h3>
+                    <table class="gate-table" id="coord-heads-table">
+                        <thead><tr><th>Gate</th><th>Last Ingested</th></tr></thead>
+                        <tbody id="coord-heads-tbody">
+                            <tr><td colspan="2" class="empty-state">Loading coordination data&hellip;</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="grid-2" style="margin-top:1rem">
+                <div class="card">
+                    <h3>Recent FRAGOs / AARs</h3>
+                    <ul class="edge-list" id="coord-fragos-list">
+                        <li class="empty-state">Loading&hellip;</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>Depot Status</h3>
+                    <div class="stat-row" id="coord-depot-stats">
+                        <div class="stat"><span class="stat-val" id="coord-depot-count">--</span><span class="stat-label">Binaries</span></div>
+                    </div>
+                    <div id="coord-depot-list" style="font-size:0.75rem;color:var(--fg-dim);max-height:8rem;overflow:auto"></div>
+                </div>
+            </div>
+        </section>
+
+        <section>
             <h2>Discovered Primals</h2>
             <div class="grid" id="primals-grid">
                 <div class="empty-state">
@@ -222,6 +262,7 @@
             .catch(() => {});
 
         loadGateMesh();
+        loadCoordination();
 
         const es = new EventSource('/api/events');
         es.onopen = function() {
@@ -474,6 +515,82 @@
                     (e.edge_type ? ' <span class="pill pill-info">' + esc(e.edge_type) + '</span>' : '') +
                     (e.label ? ' <em style="color:var(--fg-dim)">' + esc(e.label) + '</em>' : '') +
                 '</li>';
+            }).join('');
+        }
+
+        function loadCoordination() {
+            fetch('/api/coord/blurbs').then(function(r) { return r.json(); }).then(renderCoordBlurbs).catch(function() {});
+            fetch('/api/coord/heads').then(function(r) { return r.json(); }).then(renderCoordHeads).catch(function() {});
+            fetch('/api/coord/fragos').then(function(r) { return r.json(); }).then(renderCoordFragos).catch(function() {});
+            fetch('/api/coord/depot').then(function(r) { return r.json(); }).then(renderCoordDepot).catch(function() {});
+        }
+
+        function renderCoordBlurbs(data) {
+            if (data.status === 'no_data' || data.status === 'unavailable') {
+                document.getElementById('coord-blurb-preview').textContent = 'Coordination backend not yet populated. Run coord.ingest to begin.';
+                return;
+            }
+            document.getElementById('coord-wave-blurbs').textContent = data.count || 0;
+            var blurbs = data.blurbs || [];
+            if (blurbs.length > 0) {
+                var latest = blurbs[0];
+                document.getElementById('coord-wave-id').textContent = latest.wave || '--';
+                document.getElementById('coord-blurb-title').textContent = latest.title || '';
+            }
+            if (data.current_content) {
+                var lines = data.current_content.split('\n').slice(0, 12).join('\n');
+                document.getElementById('coord-blurb-preview').textContent = lines + (data.current_content.split('\n').length > 12 ? '\n...' : '');
+            }
+        }
+
+        function renderCoordHeads(data) {
+            var tbody = document.getElementById('coord-heads-tbody');
+            var heads = data.heads || [];
+            if (!heads.length) {
+                tbody.innerHTML = '<tr><td colspan="2" class="empty-state">No gate HEADs ingested</td></tr>';
+                return;
+            }
+            tbody.innerHTML = heads.map(function(h) {
+                var art = h.artifact || {};
+                var ingested = art.ingested_at ? new Date(art.ingested_at).toLocaleString() : '--';
+                return '<tr>' +
+                    '<td class="gate-id">' + esc(h.gate) + '</td>' +
+                    '<td style="font-size:0.75rem;color:var(--fg-dim)">' + ingested + '</td>' +
+                '</tr>';
+            }).join('');
+        }
+
+        function renderCoordFragos(data) {
+            document.getElementById('coord-wave-fragos').textContent = data.count || 0;
+            var fragos = data.fragos || [];
+            var list = document.getElementById('coord-fragos-list');
+            if (!fragos.length) {
+                list.innerHTML = '<li class="empty-state">No FRAGOs/AARs ingested</li>';
+                return;
+            }
+            list.innerHTML = fragos.slice(0, 8).map(function(f) {
+                var kindPill = f.kind === 'aar' ? '<span class="pill pill-info">AAR</span>' :
+                               f.kind === 'frago' ? '<span class="pill pill-warn">FRAGO</span>' :
+                               '<span class="pill pill-purple">' + esc(f.kind) + '</span>';
+                return '<li>' + kindPill + ' ' + esc(f.title || f.hash) +
+                    (f.wave ? ' <em style="color:var(--fg-dim)">Wave ' + esc(f.wave) + '</em>' : '') +
+                '</li>';
+            }).join('');
+        }
+
+        function renderCoordDepot(data) {
+            document.getElementById('coord-depot-count').textContent = data.binary_count || '--';
+            var bins = data.binaries || [];
+            if (!bins.length) {
+                document.getElementById('coord-depot-list').textContent = data.status === 'no_depot' ? 'No depot found' : '';
+                return;
+            }
+            document.getElementById('coord-depot-list').innerHTML = bins.map(function(b) {
+                var sz = b.size ? (b.size / 1024 / 1024).toFixed(1) + ' MB' : '';
+                return '<div style="display:flex;justify-content:space-between;padding:0.15rem 0;border-bottom:1px solid var(--border)">' +
+                    '<span>' + esc(b.name) + '</span>' +
+                    '<span>' + sz + '</span>' +
+                '</div>';
             }).join('');
         }
     })();
