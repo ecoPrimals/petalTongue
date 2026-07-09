@@ -18,10 +18,11 @@ pub use handlers::{build_response, is_ipynb};
 use crate::data_service::DataService;
 use crate::error::AppError;
 use handlers::{
-    docroot_fallback, ecosystem_handler, events_sse_handler, gate_mesh_handler, health_handler,
-    index_handler, liveness_handler, mesh_peers_handler, physical_topology_handler,
-    primals_handler, readiness_handler, snapshot_handler, sporeprint_handler, status_handler,
-    viz_handler,
+    coord_blurbs_handler, coord_depot_handler, coord_fragos_handler, coord_heads_handler,
+    coord_topology_handler, coord_waves_handler, docroot_fallback, ecosystem_handler,
+    events_sse_handler, gate_mesh_handler, health_handler, index_handler, liveness_handler,
+    mesh_peers_handler, physical_topology_handler, primals_handler, readiness_handler,
+    snapshot_handler, sporeprint_handler, status_handler, viz_handler,
 };
 
 use std::sync::Arc;
@@ -95,6 +96,12 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .route("/api/physical-topology", get(physical_topology_handler))
         .route("/api/mesh-peers", get(mesh_peers_handler))
         .route("/api/sporeprint", get(sporeprint_handler))
+        .route("/api/coord/blurbs", get(coord_blurbs_handler))
+        .route("/api/coord/waves", get(coord_waves_handler))
+        .route("/api/coord/heads", get(coord_heads_handler))
+        .route("/api/coord/fragos", get(coord_fragos_handler))
+        .route("/api/coord/topology", get(coord_topology_handler))
+        .route("/api/coord/depot", get(coord_depot_handler))
         .route("/api/events", get(events_sse_handler))
         .route("/viz/{slug}", get(viz_handler))
         .nest_service("/static", ServeDir::new(WEB_STATIC_DIR));
