@@ -182,6 +182,36 @@ for React/Vue/Svelte apps).
 
 CORS allowed origins. Use `*` for all origins (development only).
 
+### **PETALTONGUE_COMPOSITIONS**
+**Type**: String (comma-separated `name=path` pairs)  
+**Default**: None (falls back to `PETALTONGUE_COMPOSITIONS_DIR` scan)  
+**Example**: `PETALTONGUE_COMPOSITIONS=footprint=/opt/ecoPrimals/compositions/footprint/dist/client`
+
+Mount composition web apps at `/app/{name}/`. Each composition is served as a static
+SPA with `index.html` fallback. Multiple compositions: separate with commas.
+
+### **PETALTONGUE_COMPOSITIONS_DIR**
+**Type**: String (directory path)  
+**Default**: `/opt/ecoPrimals/compositions`  
+**Example**: `PETALTONGUE_COMPOSITIONS_DIR=/home/user/compositions`
+
+Auto-discover compositions by scanning this directory. Each subdirectory with
+`dist/client/` or `index.html` is mounted at `/app/{dir_name}/`.
+
+### **ECOSYSTEM_MANIFEST_PATH**
+**Type**: String (file path)  
+**Default**: `./ecosystem_manifest.toml` (adjacent to working directory)  
+**Example**: `ECOSYSTEM_MANIFEST_PATH=/etc/ecoPrimals/manifest.toml`
+
+Path to the ecosystem manifest TOML used by sporePrint and physical topology handlers.
+
+### **ECOP_DEPOT_PATH**
+**Type**: String (directory path)  
+**Default**: `/opt/ecoPrimals/depot`  
+**Example**: `ECOP_DEPOT_PATH=/home/user/depot`
+
+Path to the binary depot directory scanned by the coordination depot handler.
+
 ---
 
 ## Capability-Based Discovery (Wave 47)

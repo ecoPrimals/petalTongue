@@ -59,6 +59,21 @@ pub struct WebConfig<'a> {
     pub spa: bool,
     /// Allowed CORS origins (empty = no CORS layer, `["*"]` = wildcard).
     pub allowed_origins: Vec<String>,
+    /// Composition mount points: each entry maps a URL prefix to a static directory.
+    /// Discovered via `PETALTONGUE_COMPOSITIONS` env (comma-separated `name=path` pairs)
+    /// or by the `--composition` CLI flag.
+    pub compositions: Vec<CompositionMount>,
+}
+
+/// A composition target mounted at a URL prefix.
+///
+/// Compositions are products that primals compose into (e.g., footPrint).
+/// They serve static web bundles from Axum with SPA fallback.
+pub struct CompositionMount {
+    /// URL-safe name (e.g., "footprint"). Mounted at `/app/{name}/`.
+    pub name: String,
+    /// Filesystem path to the `dist/client/` (or equivalent) directory.
+    pub path: std::path::PathBuf,
 }
 
 /// Start the web server with the given configuration and shared data service.
@@ -110,6 +125,30 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .route("/api/events", get(events_sse_handler))
         .route("/viz/{slug}", get(viz_handler))
         .nest_service("/static", ServeDir::new(WEB_STATIC_DIR));
+
+    for comp in &cfg.compositions {
+        if comp.path.is_dir() {
+            let prefix = format!("/app/{}", comp.name);
+            let serve = ServeDir::new(&comp.path)
+                .append_index_html_on_directories(true)
+                .fallback(tower_http::services::ServeFile::new(
+                    comp.path.join("index.html"),
+                ));
+            tracing::info!(
+                name = %comp.name,
+                path = %comp.path.display(),
+                prefix = %prefix,
+                "Mounting composition (SPA static serving)"
+            );
+            app = app.nest_service(&prefix, serve);
+        } else {
+            tracing::warn!(
+                name = %comp.name,
+                path = %comp.path.display(),
+                "Composition path not found — skipping"
+            );
+        }
+    }
 
     if cfg.backend == "content-provider" {
         let client = Arc::new(content_backend::ContentBackendClient::from_env().await);

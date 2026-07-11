@@ -47,6 +47,7 @@ impl OwnedWebConfig {
             cache_ttl_secs: self.cache_ttl_secs,
             spa: self.spa,
             allowed_origins: self.allowed_origins.clone(),
+            compositions: Vec::new(),
         }
     }
 }
