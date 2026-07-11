@@ -9,6 +9,7 @@
 
 pub mod content_backend;
 pub mod content_direct;
+mod coord_handlers;
 mod handlers;
 #[cfg(test)]
 mod tests;
@@ -17,12 +18,15 @@ pub use handlers::{build_response, is_ipynb};
 
 use crate::data_service::DataService;
 use crate::error::AppError;
-use handlers::{
+use coord_handlers::{
     coord_blurbs_handler, coord_depot_handler, coord_fragos_handler, coord_heads_handler,
-    coord_topology_handler, coord_waves_handler, docroot_fallback, ecosystem_handler,
-    events_sse_handler, gate_mesh_handler, health_handler, index_handler, liveness_handler,
-    mesh_peers_handler, physical_topology_handler, primals_handler, readiness_handler,
-    snapshot_handler, sporeprint_handler, status_handler, topology_layers_handler, viz_handler,
+    coord_topology_handler, coord_waves_handler,
+};
+use handlers::{
+    docroot_fallback, ecosystem_handler, events_sse_handler, gate_mesh_handler, health_handler,
+    index_handler, liveness_handler, mesh_peers_handler, physical_topology_handler,
+    primals_handler, readiness_handler, snapshot_handler, sporeprint_handler, status_handler,
+    topology_layers_handler, viz_handler,
 };
 
 use std::sync::Arc;
