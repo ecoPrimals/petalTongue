@@ -28,5 +28,6 @@ pub(super) fn test_config(bind: &str) -> WebConfig<'_> {
         cache_ttl_secs: 0,
         spa: false,
         allowed_origins: Vec::new(),
+        compositions: Vec::new(),
     }
 }
