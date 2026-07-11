@@ -6,6 +6,62 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 136b: Hardened + Converging (July 11, 2026)
+
+All 8 stadial criteria clear. DNSSEC live. K-Derm diderm reaffirmed.
+Manifest-driven handler evolution. Deep debt resolution.
+
+#### Added
+- **K-Derm diderm topology model**: 5-layer `KDermLayer` struct + `KDERM_LAYERS`
+  constant in `gate_mesh.rs`. `HardeningStatus` enum + `HARDENING_CONTROLS`.
+- **`/api/topology-layers` endpoint**: Returns K-Derm layers, components,
+  security properties, data flow, and hardening control status.
+- **Dashboard K-Derm section**: Live topology visualization panel with
+  membrane layers, security properties, and hardening status.
+- **`coord_handlers.rs` module**: Extracted coordination backend handlers
+  from `handlers.rs` (6 handlers, 212 lines).
+- **`ECOP_DEPOT_PATH` env discovery**: Depot path no longer hardcoded.
+- **`ECOSYSTEM_MANIFEST_PATH` env override**: sporePrint/topology handlers
+  discover manifest location at runtime.
+
+#### Changed
+- **`handlers.rs`**: 817 → 693 lines (coord_handlers extracted).
+- **`sporeprint_handler`**: Evolved from static hardcoded test counts to
+  runtime `ecosystem_manifest.toml` parsing (wave, posture, gates derived).
+- **`physical_topology_handler`**: Evolved from hardcoded IPs to manifest-driven
+  discovery. Zero hardcoded IP addresses in production handlers.
+- **`ecosystem_manifest.toml`**: Updated to Wave 136b (DNSSEC status,
+  glacial criteria, footPrint composition, diderm architecture).
+- **`crossbeam-epoch`**: 0.9.18 → 0.9.20 (RUSTSEC advisory resolved).
+- **Clippy**: zero warnings (pedantic + nursery). 2 redundant closures fixed
+  (method call references).
+
+### Wave 132d-f: Tower Atomic + Coordination Backend (July 4-5, 2026)
+
+grapheneGate enrollment. DataService → mesh.peers. Coordination dashboard.
+Deep debt: main.rs refactored, clippy zero, deny.toml evolved.
+
+#### Added
+- **grapheneGate**: Enrolled as `MeshNode` (Pixel 8a, mobile trust anchor,
+  ADB transport).
+- **`MeshPeer` struct**: `gate_id`, `status`, `transport`, `latency_ms`,
+  `capabilities` — models songBird `mesh.peers` response.
+- **`derive_mesh_peers()` function**: Offline fallback for mesh peer state.
+- **`/api/mesh-peers` endpoint**: Live mesh peer connectivity (via DataService).
+- **`/api/sporeprint` endpoint**: Ecosystem validation summary.
+- **6 `/api/coord/*` endpoints**: blurbs, waves, heads, fragos, topology, depot.
+  Read nestGate CAS coordination manifest from shared filesystem.
+- **Dashboard sections**: Mesh Peers, sporePrint, Physical Topology, K-Derm.
+- **`registration.rs` module**: Extracted from `main.rs` (announce + register, 115L).
+- **`DataUpdate::MeshPeersUpdated`**: Prepared for songBird SSE live push.
+
+#### Changed
+- **`main.rs`**: 784 → 671 lines (registration logic extracted).
+- **`deny.toml`**: Added exemptions for `ttf-parser` (RUSTSEC-2026-0192),
+  `quick-xml` (RUSTSEC-2026-0194, -0195) — transitive via egui/eframe chain.
+- **Test assertions**: Updated for 11-node topology (grapheneGate addition).
+- **`MeshPeer` derives**: Removed `Deserialize` (serialize-only for output).
+
 ### Wave 128: Topology Cutover + Deep Debt (June 28, 2026)
 
 Physical topology evolution and floating-point precision hardening.

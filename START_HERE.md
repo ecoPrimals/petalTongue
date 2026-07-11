@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: June 28, 2026 (Wave 128 — topology cutover: Flint H1 plasma membrane, sporeGate ephemeral compute, physical topology API, mul_add FMA evolution)
+**Updated**: July 11, 2026 (Wave 136b — hardened + converging, K-Derm diderm topology, manifest-driven handlers, coord_handlers extraction, 356 tests, cargo deny clean)
 
 ---
 
@@ -90,10 +90,11 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace --all-features           # 6,618+ tests
+cargo test --workspace --all-features           # 356+ workspace tests
 cargo clippy --workspace --all-features -- -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
+cargo deny check                                # Supply chain audit (clean)
 cargo llvm-cov --workspace --summary-only       # Coverage (~90% line)
 ```
 

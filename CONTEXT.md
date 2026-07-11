@@ -122,20 +122,28 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # 6,618+ tests, ~85-90% coverage
+cargo test --workspace --all-features     # 356+ workspace tests, ~85-90% coverage
 ```
 
 ## Current State
 
-Wave 128 Topology Cutover + Deep Debt (June 28, 2026). 360 tests (workspace),
-all passing. Major topology shift: Flint 2 H1 is now the plasma membrane (edge
-router), sporeGate is ephemeral compute (hot-pluggable). `MeshNode` gains
-`lan_ip: Option<&'static str>` for physical network layer. New
-`/api/physical-topology` endpoint returns edge router, backbone switch, bridge,
-port forwards, and network invariant. Dashboard gains Physical Topology panel.
-`ecosystem_manifest.toml` updated to Wave 128 with `[physical_topology]` section.
-14 multiply-add patterns evolved to `f64/f32::mul_add()` for FMA precision.
-11 public functions hardened with `#[must_use]`. KNOWN_DEBT audit: zero patterns.
+Wave 136b Hardened + Converging (July 11, 2026). 356 tests (workspace),
+all passing. Posture: all 8 stadial criteria clear, DNSSEC live (keyTag 2371,
+alg 13). K-Derm diderm topology visualization wired (`/api/topology-layers`
+renders all 5 layers with hardening controls). Handlers refactored:
+`coord_handlers.rs` extracted (192L), `handlers.rs` reduced from 817→693L.
+sporePrint and physical_topology handlers evolved from static hardcoding to
+manifest-driven discovery (`ecosystem_manifest.toml` parsed at runtime with
+`ECOSYSTEM_MANIFEST_PATH` env override). `crossbeam-epoch` advisory resolved.
+`cargo deny` fully clean (zero advisories or exemptions for advisory-free
+versions).
+
+Wave 132d–f Tower Atomic + Deep Debt (July 4–5, 2026). grapheneGate enrolled
+(Pixel 8a, portable trust anchor). DataService → songBird `mesh.peers` wired.
+Coordination backend: 6 `/api/coord/*` endpoints reading nestGate CAS manifest.
+`main.rs` refactored (extracted `registration.rs`). Clippy pedantic+nursery zero.
+`MeshPeersUpdated` variant prepared for SSE live push. 363→366 tests through the
+wave. K-Derm diderm topology model added (5 layers, hardening controls).
 
 Wave 124 GPU Compute Topology (June 22, 2026). `MeshNode` gains
 `gpu_target: Option<&'static str>`. `ecosystem_manifest.toml` created with GPU
