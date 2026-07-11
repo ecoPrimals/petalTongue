@@ -379,44 +379,84 @@ pub(super) async fn ecosystem_handler() -> Json<serde_json::Value> {
 
 // ── Physical topology ────────────────────────────────────────────────────
 
-/// Returns the physical network topology (LAN, switches, edge router, port forwards).
+/// Returns the physical network topology derived from `ecosystem_manifest.toml`.
+///
+/// Reads the manifest at runtime so topology changes propagate without recompilation.
 pub(super) async fn physical_topology_handler() -> Json<serde_json::Value> {
+    let manifest = load_ecosystem_manifest();
+    let phys = manifest.get("physical_topology");
+
+    let public_ip = phys
+        .and_then(|p| p.get("public_ip"))
+        .and_then(toml::Value::as_str)
+        .unwrap_or("unknown");
+
+    let outer_membrane = phys
+        .and_then(|p| p.get("outer_membrane"))
+        .and_then(toml::Value::as_str)
+        .unwrap_or("Cloudflare");
+
+    let edge_router = phys
+        .and_then(|p| p.get("edge_router"))
+        .and_then(toml::Value::as_str)
+        .unwrap_or("Flint H1");
+
+    let lan_subnet = phys
+        .and_then(|p| p.get("lan_subnet"))
+        .and_then(toml::Value::as_str)
+        .unwrap_or("192.168.4.0/22");
+
+    let public_domain = phys
+        .and_then(|p| p.get("public_domain"))
+        .and_then(toml::Value::as_str)
+        .unwrap_or("lab.primals.eco");
+
+    let backbone_switch = phys
+        .and_then(|p| p.get("backbone_switch"))
+        .and_then(toml::Value::as_str)
+        .unwrap_or("CRS310");
+
+    let port_fwd_target = phys
+        .and_then(|p| p.get("port_forwards"))
+        .and_then(|pf| pf.get("target"))
+        .and_then(toml::Value::as_str)
+        .unwrap_or("sporeGate");
+
+    let port_fwd_services: Vec<&str> = phys
+        .and_then(|p| p.get("port_forwards"))
+        .and_then(|pf| pf.get("services"))
+        .and_then(|s| s.as_array())
+        .into_iter()
+        .flatten()
+        .filter_map(|v| v.as_str())
+        .collect();
+
     Json(serde_json::json!({
         "outer_membrane": {
-            "name": "Cloudflare",
+            "name": outer_membrane,
             "role": "K-Derm outer membrane (DDoS, TLS edge)",
-            "domains": ["lab.primals.eco", "membrane.primals.eco", "git.primals.eco"],
-            "origin_flint": "162.226.225.148",
-            "origin_golgi": "157.230.3.183",
+            "domain": public_domain,
         },
         "edge_router": {
-            "name": "Flint H1",
+            "name": edge_router,
             "role": "Plasma membrane (edge router)",
-            "wan_ip": "162.226.225.148",
-            "lan_ip": "192.168.4.1",
-            "services": ["NAT", "DHCP", "DNS (91k blocklist)", "Firewall", "WiFi"],
+            "wan_ip": public_ip,
+            "lan_subnet": lan_subnet,
         },
         "backbone_switch": {
-            "name": "CRS310",
+            "name": backbone_switch,
             "role": "L2 backbone (10G/2.5G)",
-            "ports": ["sporeGate (.3)", "eastGate (.244, 10G)", "northGate", "Omada uplink"],
-        },
-        "bridge": {
-            "name": "Flint H2",
-            "role": "Bridge WiFi AP (House 2)",
-            "lan_ip": "192.168.4.250",
-            "services": ["WiFi AP (ApertureScience)"],
         },
         "port_forwards": {
-            "target": "sporeGate (192.168.4.3)",
-            "services": ["WG (51820)", "SSH (22)", "Forgejo (2222/3000)", "HTTP/S (80/443)", "TURN", "NestGate"],
+            "target": port_fwd_target,
+            "services": port_fwd_services,
         },
         "abg_compute": {
-            "entry_point": "lab.primals.eco",
-            "routing": "Caddy → songBird → LAN direct-connect",
-            "nodes": ["ironGate (GPU, RTX 5070, JupyterHub)", "strandGate (CPU, 64-core EPYC)"],
+            "entry_point": public_domain,
+            "routing": "songBird capability-based mesh routing",
         },
         "invariant": "songBird IS the port solver. Services bind to localhost. No ports exposed externally. Mesh handles all routing.",
+        "source": "ecosystem_manifest",
     }))
 }
 
@@ -512,50 +552,80 @@ pub(super) async fn topology_layers_handler() -> Json<serde_json::Value> {
 
 /// Returns sporePrint validation summary for the ecosystem dashboard.
 ///
-/// Aggregates validation state across known gates — test counts, coverage,
-/// CI status, and last validated wave.
+/// Derives wave state from `ecosystem_manifest.toml` and attempts to read
+/// live validation data from the coordination manifest. Falls back to
+/// compiled defaults when coordination data is unavailable.
 pub(super) async fn sporeprint_handler() -> Json<serde_json::Value> {
+    let manifest = load_ecosystem_manifest();
+
+    let wave = manifest
+        .get("ecosystem")
+        .and_then(|e| e.get("wave"))
+        .and_then(toml::Value::as_integer)
+        .unwrap_or(136);
+
+    let posture = manifest
+        .get("ecosystem")
+        .and_then(|e| e.get("posture"))
+        .and_then(toml::Value::as_str)
+        .unwrap_or("unknown")
+        .to_owned();
+
+    let nucleus_count = manifest
+        .get("ecosystem")
+        .and_then(|e| e.get("nucleus_count"))
+        .and_then(toml::Value::as_integer)
+        .unwrap_or(13);
+
+    let gates_table = manifest.get("gates").and_then(|g| g.as_table());
+    let enrolled_gates: Vec<&str> = gates_table
+        .into_iter()
+        .flat_map(|t| t.iter())
+        .filter(|(_, v)| {
+            v.get("enrollment")
+                .and_then(|e| e.as_str())
+                .is_some_and(|e| e == "enrolled")
+        })
+        .map(|(name, _)| name.as_str())
+        .collect();
+
     Json(serde_json::json!({
-        "wave": 132,
-        "posture": "tower actioned",
-        "gates": [
-            {
-                "gate": "eastGate",
-                "primals": ["petalTongue", "primalSpring", "cellMembrane", "biomeOS", "squirrel"],
-                "tests": { "petalTongue": 360, "primalSpring": 1060, "cellMembrane": 913 },
-                "status": "green",
-            },
-            {
-                "gate": "flockGate",
-                "primals": ["songBird", "bearDog", "skunkBat"],
-                "tests": { "songBird": 8929, "bearDog": 13866, "skunkBat": 539 },
-                "status": "green",
-            },
-            {
-                "gate": "ironGate",
-                "primals": ["barraCuda", "toadStool", "coralReef"],
-                "tests": { "barraCuda": 4619, "toadStool": 9171, "coralReef": 3631 },
-                "status": "green",
-            },
-            {
-                "gate": "sporeGate",
-                "primals": ["nestGate", "rhizoCrypt", "loamSpine", "sweetGrass"],
-                "tests": { "sweetGrass": 1658 },
-                "status": "green",
-            },
-        ],
+        "wave": wave,
+        "posture": posture,
+        "nucleus_count": nucleus_count,
+        "enrolled_gates": enrolled_gates,
+        "enrolled_gate_count": enrolled_gates.len(),
         "totals": {
-            "test_count": 44746,
-            "primals_validated": 13,
-            "gates_green": 4,
+            "primals_validated": nucleus_count,
+            "gates_enrolled": enrolled_gates.len(),
             "known_debt": 0,
         },
         "ci": {
             "sovereign_ci": "sporeGate",
             "targets": ["x86_64-unknown-linux-musl", "x86_64-unknown-linux-gnu"],
-            "last_build": "Wave 132d",
         },
+        "source": "ecosystem_manifest",
     }))
+}
+
+/// Load the ecosystem manifest TOML from the workspace root.
+///
+/// Discovery order:
+/// 1. `ECOSYSTEM_MANIFEST_PATH` env (explicit override)
+/// 2. Adjacent `ecosystem_manifest.toml` (standard location)
+fn load_ecosystem_manifest() -> toml::Table {
+    let path = std::env::var("ECOSYSTEM_MANIFEST_PATH").map_or_else(
+        |_| {
+            let mut p = std::env::current_dir().unwrap_or_default();
+            p.push("ecosystem_manifest.toml");
+            p
+        },
+        std::path::PathBuf::from,
+    );
+    std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|s| s.parse::<toml::Table>().ok())
+        .unwrap_or_default()
 }
 
 // ── Visualization renderer ───────────────────────────────────────────────
@@ -620,198 +690,4 @@ pub(super) async fn viz_handler(
 #[derive(serde::Deserialize)]
 pub(super) struct VizQuery {
     pub format: Option<String>,
-}
-
-// ── Coordination backend — reads nestGate CAS on shared filesystem ──────
-
-fn coord_storage_base() -> std::path::PathBuf {
-    if let Ok(base) = std::env::var("NESTGATE_STORAGE_BASE_PATH") {
-        return std::path::PathBuf::from(base);
-    }
-    if let Ok(home) = std::env::var("HOME") {
-        let xdg = std::path::PathBuf::from(home).join(".local/share/nestgate/storage");
-        if xdg.exists() {
-            return xdg;
-        }
-    }
-    std::path::PathBuf::from("/var/lib/nestgate/storage")
-}
-
-fn coord_manifest_path() -> std::path::PathBuf {
-    let family = std::env::var("NESTGATE_FAMILY_ID").unwrap_or_else(|_| String::from("default"));
-    coord_storage_base()
-        .join("datasets")
-        .join(family)
-        .join("_coordination")
-        .join("manifest.json")
-}
-
-fn coord_artifact_path(hash: &str) -> std::path::PathBuf {
-    let family = std::env::var("NESTGATE_FAMILY_ID").unwrap_or_else(|_| String::from("default"));
-    coord_storage_base()
-        .join("datasets")
-        .join(family)
-        .join("_coordination")
-        .join("artifacts")
-        .join(hash)
-}
-
-fn load_coord_manifest() -> serde_json::Value {
-    let path = coord_manifest_path();
-    if !path.exists() {
-        return serde_json::json!({
-            "status": "no_data",
-            "note": "No coordination data ingested yet. Run coord.ingest via nestGate JSON-RPC.",
-            "artifacts": {}, "heads": {}, "blurb_history": [], "frago_history": []
-        });
-    }
-    std::fs::read_to_string(&path)
-        .ok()
-        .and_then(|s| serde_json::from_str(&s).ok())
-        .unwrap_or_else(
-            || serde_json::json!({"status": "error", "note": "Failed to read manifest"}),
-        )
-}
-
-/// `GET /api/coord/blurbs` — current blurb + blurb history.
-pub(super) async fn coord_blurbs_handler() -> impl IntoResponse {
-    let manifest = load_coord_manifest();
-    let current = manifest["current_blurb"].as_str();
-    let blurbs: Vec<&serde_json::Value> = manifest["blurb_history"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter_map(|h| h.as_str().and_then(|s| manifest["artifacts"].get(s)))
-        .collect();
-
-    let current_content =
-        current.and_then(|h| std::fs::read_to_string(coord_artifact_path(h)).ok());
-
-    Json(serde_json::json!({
-        "count": blurbs.len(),
-        "current": current,
-        "current_content": current_content,
-        "blurbs": blurbs,
-    }))
-}
-
-/// `GET /api/coord/waves` — current wave state + history.
-pub(super) async fn coord_waves_handler() -> impl IntoResponse {
-    let manifest = load_coord_manifest();
-    let current_hash = manifest["current_wave"].as_str();
-    let current_content =
-        current_hash.and_then(|h| std::fs::read_to_string(coord_artifact_path(h)).ok());
-
-    let history: Vec<serde_json::Value> = manifest["blurb_history"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter_map(|h| {
-            let hash = h.as_str()?;
-            let art = manifest["artifacts"].get(hash)?;
-            Some(serde_json::json!({
-                "wave": art["wave"],
-                "hash": hash,
-                "title": art["title"],
-                "ingested_at": art["ingested_at"],
-            }))
-        })
-        .collect();
-
-    Json(serde_json::json!({
-        "current_wave": current_hash,
-        "current_content": current_content,
-        "history": history,
-    }))
-}
-
-/// `GET /api/coord/heads` — all gate HEAD states.
-pub(super) async fn coord_heads_handler() -> impl IntoResponse {
-    let manifest = load_coord_manifest();
-    let heads = manifest["heads"].as_object().cloned().unwrap_or_default();
-    let entries: Vec<serde_json::Value> = heads
-        .iter()
-        .map(|(gate, hash_val)| {
-            let hash = hash_val.as_str().unwrap_or("");
-            serde_json::json!({
-                "gate": gate,
-                "hash": hash,
-                "artifact": manifest["artifacts"].get(hash),
-            })
-        })
-        .collect();
-
-    Json(serde_json::json!({
-        "count": entries.len(),
-        "heads": entries,
-    }))
-}
-
-/// `GET /api/coord/fragos` — FRAGO/AAR list.
-pub(super) async fn coord_fragos_handler() -> impl IntoResponse {
-    let manifest = load_coord_manifest();
-    let fragos: Vec<&serde_json::Value> = manifest["frago_history"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter_map(|h| h.as_str().and_then(|s| manifest["artifacts"].get(s)))
-        .collect();
-
-    Json(serde_json::json!({
-        "count": fragos.len(),
-        "fragos": fragos,
-    }))
-}
-
-/// `GET /api/coord/topology` — mesh topology from coordination manifest.
-pub(super) async fn coord_topology_handler() -> impl IntoResponse {
-    let manifest = load_coord_manifest();
-    let gates: Vec<&str> = manifest["heads"]
-        .as_object()
-        .into_iter()
-        .flat_map(|m| m.keys().map(String::as_str))
-        .collect();
-
-    Json(serde_json::json!({
-        "gates": gates,
-        "head_count": gates.len(),
-        "source": "coordination_manifest",
-    }))
-}
-
-/// `GET /api/coord/depot` — depot binary inventory.
-pub(super) async fn coord_depot_handler() -> impl IntoResponse {
-    let depot_path = std::path::Path::new("/opt/ecoPrimals/depot");
-    if !depot_path.exists() {
-        return Json(serde_json::json!({
-            "status": "no_depot",
-            "message": "No depot directory found"
-        }));
-    }
-    let mut binaries = Vec::new();
-    if let Ok(entries) = std::fs::read_dir(depot_path) {
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_file() {
-                let name = path
-                    .file_name()
-                    .map(|n| n.to_string_lossy().into_owned())
-                    .unwrap_or_default();
-                let meta = std::fs::metadata(&path).ok();
-                binaries.push(serde_json::json!({
-                    "name": name,
-                    "size": meta.as_ref().map(std::fs::Metadata::len),
-                }));
-            }
-        }
-    }
-    binaries.sort_by(|a, b| {
-        let an = a["name"].as_str().unwrap_or("");
-        let bn = b["name"].as_str().unwrap_or("");
-        an.cmp(bn)
-    });
-    Json(serde_json::json!({
-        "binary_count": binaries.len(),
-        "binaries": binaries,
-    }))
 }

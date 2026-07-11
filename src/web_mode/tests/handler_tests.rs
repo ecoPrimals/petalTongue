@@ -238,11 +238,10 @@ async fn test_physical_topology_endpoint() {
         .unwrap();
     let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(v["edge_router"]["name"], "Flint H1");
-    assert_eq!(v["edge_router"]["wan_ip"], "162.226.225.148");
     assert_eq!(v["backbone_switch"]["name"], "CRS310");
     assert!(v["invariant"].as_str().unwrap().contains("songBird"));
-    let services = v["port_forwards"]["services"].as_array().unwrap();
-    assert!(services.len() >= 5);
+    assert_eq!(v["source"], "ecosystem_manifest");
+    assert_eq!(v["port_forwards"]["target"], "sporeGate");
 }
 
 #[tokio::test]
@@ -284,12 +283,12 @@ async fn test_sporeprint_endpoint() {
         .await
         .unwrap();
     let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    assert_eq!(v["wave"], 132);
+    assert!(v["wave"].as_i64().unwrap() >= 136);
     assert_eq!(v["totals"]["known_debt"], 0);
-    assert!(v["totals"]["test_count"].as_u64().unwrap() > 40000);
-    let gates = v["gates"].as_array().unwrap();
-    assert_eq!(gates.len(), 4);
     assert_eq!(v["ci"]["sovereign_ci"], "sporeGate");
+    assert_eq!(v["source"], "ecosystem_manifest");
+    assert!(v["enrolled_gate_count"].as_u64().unwrap() >= 5);
+    assert!(v["nucleus_count"].as_i64().unwrap() >= 13);
 }
 
 #[tokio::test]
