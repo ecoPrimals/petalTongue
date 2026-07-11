@@ -291,3 +291,25 @@ async fn test_sporeprint_endpoint() {
     assert_eq!(gates.len(), 4);
     assert_eq!(v["ci"]["sovereign_ci"], "sporeGate");
 }
+
+#[tokio::test]
+async fn test_topology_layers_endpoint() {
+    let resp = topology_layers_handler().await.into_response();
+    assert_eq!(resp.status(), 200);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(v["layer_count"], 5);
+    assert_eq!(v["architecture"], "diderm");
+    let layers = v["layers"].as_array().unwrap();
+    assert_eq!(layers[0]["name"], "Extracellular");
+    assert_eq!(layers[4]["name"], "Cytoplasm");
+    let hardening = &v["hardening"];
+    assert!(hardening["active_count"].as_u64().unwrap() >= 4);
+    assert!(hardening["total_count"].as_u64().unwrap() >= 7);
+    let controls = hardening["controls"].as_array().unwrap();
+    let dnssec = controls.iter().find(|c| c["id"] == "DNSSEC").unwrap();
+    assert_eq!(dnssec["status"], "active");
+    assert_eq!(dnssec["layer"], "Outer membrane");
+}

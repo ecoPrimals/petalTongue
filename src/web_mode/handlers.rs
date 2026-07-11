@@ -454,6 +454,60 @@ pub(super) async fn mesh_peers_handler(
     }))
 }
 
+// ── K-Derm topology layers (TOPO-VIS) ───────────────────────────────────
+
+/// Returns the K-Derm diderm layer topology for live visualization.
+///
+/// Renders all 5 layers with components, security properties, data flow,
+/// and current hardening control status (Wave 136b).
+pub(super) async fn topology_layers_handler() -> Json<serde_json::Value> {
+    use petal_tongue_core::gate_mesh;
+
+    let layers: Vec<serde_json::Value> = gate_mesh::KDERM_LAYERS
+        .iter()
+        .map(|layer| {
+            serde_json::json!({
+                "name": layer.name,
+                "role": layer.role,
+                "components": layer.components,
+                "path": layer.path,
+                "security": layer.security,
+                "data_flow": layer.data_flow,
+            })
+        })
+        .collect();
+
+    let controls: Vec<serde_json::Value> = gate_mesh::HARDENING_CONTROLS
+        .iter()
+        .map(|c| {
+            serde_json::json!({
+                "id": c.id,
+                "layer": c.layer,
+                "status": c.status,
+                "description": c.description,
+            })
+        })
+        .collect();
+
+    let active_count = gate_mesh::HARDENING_CONTROLS
+        .iter()
+        .filter(|c| c.status == gate_mesh::HardeningStatus::Active)
+        .count();
+
+    Json(serde_json::json!({
+        "layers": layers,
+        "layer_count": layers.len(),
+        "hardening": {
+            "controls": controls,
+            "active_count": active_count,
+            "total_count": controls.len(),
+        },
+        "architecture": "diderm",
+        "principle": "Defense in depth, not obscurity. Outer membrane data reinforces inner membrane.",
+        "wave": 136,
+    }))
+}
+
 // ── sporePrint validation summary ───────────────────────────────────────
 
 /// Returns sporePrint validation summary for the ecosystem dashboard.
@@ -575,8 +629,7 @@ fn coord_storage_base() -> std::path::PathBuf {
         return std::path::PathBuf::from(base);
     }
     if let Ok(home) = std::env::var("HOME") {
-        let xdg = std::path::PathBuf::from(home)
-            .join(".local/share/nestgate/storage");
+        let xdg = std::path::PathBuf::from(home).join(".local/share/nestgate/storage");
         if xdg.exists() {
             return xdg;
         }
@@ -615,7 +668,9 @@ fn load_coord_manifest() -> serde_json::Value {
     std::fs::read_to_string(&path)
         .ok()
         .and_then(|s| serde_json::from_str(&s).ok())
-        .unwrap_or_else(|| serde_json::json!({"status": "error", "note": "Failed to read manifest"}))
+        .unwrap_or_else(
+            || serde_json::json!({"status": "error", "note": "Failed to read manifest"}),
+        )
 }
 
 /// `GET /api/coord/blurbs` — current blurb + blurb history.
@@ -629,8 +684,8 @@ pub(super) async fn coord_blurbs_handler() -> impl IntoResponse {
         .filter_map(|h| h.as_str().and_then(|s| manifest["artifacts"].get(s)))
         .collect();
 
-    let current_content = current
-        .and_then(|h| std::fs::read_to_string(coord_artifact_path(h)).ok());
+    let current_content =
+        current.and_then(|h| std::fs::read_to_string(coord_artifact_path(h)).ok());
 
     Json(serde_json::json!({
         "count": blurbs.len(),
@@ -644,8 +699,8 @@ pub(super) async fn coord_blurbs_handler() -> impl IntoResponse {
 pub(super) async fn coord_waves_handler() -> impl IntoResponse {
     let manifest = load_coord_manifest();
     let current_hash = manifest["current_wave"].as_str();
-    let current_content = current_hash
-        .and_then(|h| std::fs::read_to_string(coord_artifact_path(h)).ok());
+    let current_content =
+        current_hash.and_then(|h| std::fs::read_to_string(coord_artifact_path(h)).ok());
 
     let history: Vec<serde_json::Value> = manifest["blurb_history"]
         .as_array()
@@ -714,7 +769,7 @@ pub(super) async fn coord_topology_handler() -> impl IntoResponse {
     let gates: Vec<&str> = manifest["heads"]
         .as_object()
         .into_iter()
-        .flat_map(|m| m.keys().map(|s| s.as_str()))
+        .flat_map(|m| m.keys().map(String::as_str))
         .collect();
 
     Json(serde_json::json!({
@@ -745,7 +800,7 @@ pub(super) async fn coord_depot_handler() -> impl IntoResponse {
                 let meta = std::fs::metadata(&path).ok();
                 binaries.push(serde_json::json!({
                     "name": name,
-                    "size": meta.as_ref().map(|m| m.len()),
+                    "size": meta.as_ref().map(std::fs::Metadata::len),
                 }));
             }
         }

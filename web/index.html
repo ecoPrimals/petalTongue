@@ -146,6 +146,26 @@
         </section>
 
         <section>
+            <h2>K-Derm Diderm Topology (Defense in Depth)</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <h3>Membrane Layers</h3>
+                    <div id="kderm-layers" style="font-size:0.8rem">
+                        <div class="empty-state"><p>Loading layers&hellip;</p></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Hardening Controls</h3>
+                    <div class="stat-row" id="hardening-stats">
+                        <div class="stat"><span class="stat-val" id="stat-hardened">-</span><span class="stat-label">Active</span></div>
+                        <div class="stat"><span class="stat-val" id="stat-hardening-total">-</span><span class="stat-label">Total</span></div>
+                    </div>
+                    <div id="hardening-controls"></div>
+                </div>
+            </div>
+        </section>
+
+        <section>
             <h2>Mesh Peers (songBird mesh.peers)</h2>
             <div class="grid-2">
                 <div class="card">
@@ -309,6 +329,11 @@
                 .then(renderMeshPeers)
                 .catch(() => {});
 
+            fetch('/api/topology-layers')
+                .then(r => r.json())
+                .then(renderKDermLayers)
+                .catch(() => {});
+
             fetch('/api/sporeprint')
                 .then(r => r.json())
                 .then(renderSporePrint)
@@ -396,6 +421,44 @@
             }).join('');
             document.getElementById('topo-port-forwards').innerHTML =
                 '<div style="font-size:0.75rem;color:var(--fg-dim)">Port forwards → ' + esc(pf.target || '?') + '</div>' + services;
+        }
+
+        function renderKDermLayers(data) {
+            var layers = data.layers || [];
+            var hardening = data.hardening || {};
+            var controls = hardening.controls || [];
+
+            document.getElementById('stat-hardened').textContent = hardening.active_count || 0;
+            document.getElementById('stat-hardening-total').textContent = hardening.total_count || 0;
+
+            var layerColors = ['var(--red)', 'var(--yellow)', 'var(--purple)', 'var(--blue)', 'var(--green)'];
+            var layerHtml = layers.map(function(l, i) {
+                var color = layerColors[i % layerColors.length];
+                var comps = (l.components || []).map(function(c) {
+                    return '<span class="cap">' + esc(c) + '</span>';
+                }).join(' ');
+                var secs = (l.security || []).map(function(s) {
+                    return '<span class="pill pill-ok" style="margin:0.1rem;font-size:0.65rem">' + esc(s) + '</span>';
+                }).join('');
+                return '<div style="border-left:3px solid ' + color + ';padding:0.4rem 0.6rem;margin-bottom:0.4rem">' +
+                    '<div style="font-weight:600;font-size:0.85rem">' + esc(l.name) + '</div>' +
+                    '<div style="font-size:0.75rem;color:var(--fg-dim)">' + esc(l.role) + '</div>' +
+                    '<div style="margin-top:0.2rem">' + comps + '</div>' +
+                    '<div style="margin-top:0.2rem">' + secs + '</div>' +
+                '</div>';
+            }).join('');
+            document.getElementById('kderm-layers').innerHTML = layerHtml;
+
+            var ctrlHtml = controls.map(function(c) {
+                var pill = c.status === 'active' ? '<span class="pill pill-ok">active</span>' :
+                           c.status === 'landed' ? '<span class="pill pill-info">landed</span>' :
+                           '<span class="pill pill-warn">' + esc(c.status) + '</span>';
+                return '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid var(--border)">' +
+                    '<div><span style="font-weight:500;font-size:0.8rem">' + esc(c.id) + '</span> ' + pill +
+                    '<div style="font-size:0.7rem;color:var(--fg-dim)">' + esc(c.description) + '</div></div>' +
+                '</div>';
+            }).join('');
+            document.getElementById('hardening-controls').innerHTML = ctrlHtml;
         }
 
         function renderMeshPeers(data) {
