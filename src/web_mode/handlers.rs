@@ -548,6 +548,20 @@ pub(super) async fn topology_layers_handler() -> Json<serde_json::Value> {
     }))
 }
 
+// ── Live topology (Neural API + mesh peers) ─────────────────────────────
+
+/// Returns live topology state from Neural API discovery.
+///
+/// When Neural API is available and has data, returns discovered primals,
+/// capability edges, and routing weights. Falls back to static mesh peer
+/// data when Neural API is unavailable. This is the TOPO-VIS primary endpoint.
+pub(super) async fn live_topology_handler(
+    State(service): State<Arc<DataService>>,
+) -> Json<serde_json::Value> {
+    let topo = service.live_topology();
+    Json(serde_json::to_value(&topo).unwrap_or_default())
+}
+
 // ── sporePrint validation summary ───────────────────────────────────────
 
 /// Returns sporePrint validation summary for the ecosystem dashboard.
