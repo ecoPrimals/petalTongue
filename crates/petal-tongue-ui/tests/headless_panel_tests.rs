@@ -224,6 +224,7 @@ fn graph_editor_many_nodes() {
                 edge_type: "conn".to_string(),
                 label: None,
                 capability: None,
+                weight: None,
                 metrics: None,
             });
         }

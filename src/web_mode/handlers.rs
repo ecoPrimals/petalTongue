@@ -246,6 +246,10 @@ pub(super) async fn snapshot_handler(State(service): State<Arc<DataService>>) ->
 ///
 /// Per PT-02 / `IPC_COMPLIANCE_MATRIX.md` v1.2: the browser receives live
 /// topology changes without polling.
+///
+/// Event types:
+/// - `topology`: `LiveTopology` payload (primals, edges, mesh peers, source)
+/// - `snapshot`: legacy `DataSnapshot` payload (primals + edges only)
 pub(super) async fn events_sse_handler(
     State(service): State<Arc<DataService>>,
 ) -> Sse<impl tokio_stream::Stream<Item = Result<Event, std::convert::Infallible>>> {
@@ -255,15 +259,22 @@ pub(super) async fn events_sse_handler(
     let stream = BroadcastStream::new(rx).filter_map(move |msg| {
         let service = Arc::clone(&service);
         match msg {
-            Ok(_update) => {
-                let snapshot = service.snapshot_sync();
-                match serde_json::to_string(&snapshot) {
-                    Ok(json) => Some(Ok(Event::default().data(json))),
-                    Err(e) => {
-                        tracing::warn!("SSE serialization error: {e}");
-                        None
+            Ok(update) => {
+                let event = match update {
+                    crate::data_service::DataUpdate::TopologyUpdated => {
+                        let topo = service.live_topology();
+                        serde_json::to_string(&topo)
+                            .ok()
+                            .map(|json| Event::default().event("topology").data(json))
                     }
-                }
+                    crate::data_service::DataUpdate::MeshPeersUpdated => {
+                        let topo = service.live_topology();
+                        serde_json::to_string(&topo)
+                            .ok()
+                            .map(|json| Event::default().event("topology").data(json))
+                    }
+                };
+                event.map(Ok)
             }
             Err(_lagged) => None,
         }

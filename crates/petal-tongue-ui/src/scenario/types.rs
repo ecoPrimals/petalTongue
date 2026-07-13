@@ -226,6 +226,7 @@ mod tests {
             edge_type: "test".to_owned(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         });
         assert_eq!(s.edge_count(), 1);

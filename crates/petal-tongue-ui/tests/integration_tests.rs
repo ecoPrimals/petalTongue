@@ -81,6 +81,7 @@ fn test_graph_with_edges() {
         edge_type: "capability".to_string(),
         label: Some("test-edge".to_string()),
         capability: None,
+        weight: None,
         metrics: None,
     };
 
@@ -279,6 +280,7 @@ fn test_edge_with_label() {
             edge_type: "data_transfer".to_string(),
             label: Some("12.5ms latency".to_string()),
             capability: None,
+            weight: None,
             metrics: None,
         });
     }
@@ -363,6 +365,7 @@ fn test_graph_stats() {
             edge_type: "capability".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         });
 
@@ -372,6 +375,7 @@ fn test_graph_stats() {
             edge_type: "capability".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         });
 
@@ -381,6 +385,7 @@ fn test_graph_stats() {
             edge_type: "capability".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         });
     }
@@ -423,6 +428,7 @@ fn test_remove_node_removes_edges() {
             edge_type: "capability".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         });
 
@@ -432,6 +438,7 @@ fn test_remove_node_removes_edges() {
             edge_type: "capability".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         });
     }

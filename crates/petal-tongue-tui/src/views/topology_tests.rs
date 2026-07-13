@@ -65,6 +65,7 @@ fn render_ascii_graph_with_topology_edges() {
         edge_type: "connection".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     }];
     let lines = render_ascii_graph(&primals, &topology);
@@ -130,6 +131,7 @@ fn count_edge_types_single_type() {
             edge_type: "connection".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         },
         TopologyEdge {
@@ -138,6 +140,7 @@ fn count_edge_types_single_type() {
             edge_type: "connection".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         },
     ];
@@ -154,6 +157,7 @@ fn count_edge_types_multiple_types() {
             edge_type: "connection".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         },
         TopologyEdge {
@@ -162,6 +166,7 @@ fn count_edge_types_multiple_types() {
             edge_type: "data".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         },
         TopologyEdge {
@@ -170,6 +175,7 @@ fn count_edge_types_multiple_types() {
             edge_type: "connection".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         },
     ];
@@ -245,6 +251,7 @@ fn force_directed_layout_two_nodes_one_edge() {
         edge_type: "conn".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     }];
     let positions = force_directed_layout(&primals, &topology, 70.0, 20.0, 20);
@@ -299,6 +306,7 @@ fn force_directed_layout_three_nodes() {
             edge_type: "e1".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         },
         TopologyEdge {
@@ -307,6 +315,7 @@ fn force_directed_layout_three_nodes() {
             edge_type: "e2".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         },
     ];

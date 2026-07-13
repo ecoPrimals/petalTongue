@@ -107,6 +107,7 @@ fn test_add_edge() {
         edge_type: "connection".to_string(),
         label: Some("test".to_string()),
         capability: None,
+        weight: None,
         metrics: None,
     };
 
@@ -124,6 +125,7 @@ fn test_add_edge_without_nodes() {
         edge_type: "connection".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     };
 
@@ -147,6 +149,7 @@ fn test_remove_edge() {
         edge_type: "connection".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     };
 
@@ -173,6 +176,7 @@ fn test_clear_graph() {
         edge_type: "connection".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     };
     graph.add_edge(edge);
@@ -219,6 +223,7 @@ fn test_neighbors() {
         edge_type: "connection".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     });
     graph.add_edge(TopologyEdge {
@@ -227,6 +232,7 @@ fn test_neighbors() {
         edge_type: "connection".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     });
 
@@ -252,6 +258,7 @@ fn test_layout_algorithm_force_directed() {
         edge_type: "connection".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     });
 
@@ -300,6 +307,7 @@ fn test_layout_algorithm_hierarchical() {
         edge_type: "parent".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     });
     graph.add_edge(TopologyEdge {
@@ -308,6 +316,7 @@ fn test_layout_algorithm_hierarchical() {
         edge_type: "parent".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     });
 
@@ -365,6 +374,7 @@ fn test_get_all_edges() {
         edge_type: "connection".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     };
     graph.add_edge(edge);
@@ -413,6 +423,7 @@ fn test_complex_topology() {
             edge_type: "connection".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         });
     }

@@ -61,6 +61,7 @@ fn create_test_graph() -> Arc<RwLock<GraphEngine>> {
         edge_type: "depends_on".to_string(),
         label: Some("Dependency".to_string()),
         capability: None,
+        weight: None,
         metrics: None,
     });
     g.add_edge(TopologyEdge {
@@ -69,6 +70,7 @@ fn create_test_graph() -> Arc<RwLock<GraphEngine>> {
         edge_type: "secures".to_string(),
         label: Some("Security".to_string()),
         capability: None,
+        weight: None,
         metrics: None,
     });
 
@@ -383,6 +385,7 @@ fn test_large_graph_rendering() -> Result<()> {
             edge_type: "connects".to_string(),
             label: Some(format!("Connection {i}")),
             capability: None,
+            weight: None,
             metrics: None,
         });
     }

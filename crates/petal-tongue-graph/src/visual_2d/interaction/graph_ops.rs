@@ -135,6 +135,7 @@ pub(super) fn create_edge(renderer: &Visual2DRenderer, from: PrimalId, to: Prima
         edge_type: "interactive".to_owned(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     });
 }

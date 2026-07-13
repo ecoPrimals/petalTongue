@@ -35,6 +35,7 @@ fn topology_edges_from_shared_capabilities(primals: &[PrimalInfo]) -> Vec<Topolo
                     edge_type: "capability".to_owned(),
                     label: None,
                     capability: Some((*cap).to_string()),
+                    weight: None,
                     metrics: None,
                 });
             }

@@ -44,6 +44,7 @@ fn test_add_edges() {
         edge_type: "test".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     });
 
@@ -62,6 +63,7 @@ fn test_remove_node() {
         edge_type: "test".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     });
 
@@ -84,6 +86,7 @@ fn test_neighbors() {
         edge_type: "test".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     });
     graph.add_edge(TopologyEdge {
@@ -92,6 +95,7 @@ fn test_neighbors() {
         edge_type: "test".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     });
 
@@ -112,6 +116,7 @@ fn test_force_directed_layout() {
         edge_type: "test".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     });
     graph.add_edge(TopologyEdge {
@@ -120,6 +125,7 @@ fn test_force_directed_layout() {
         edge_type: "test".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     });
 
@@ -179,6 +185,7 @@ fn test_graph_stats() {
         edge_type: "test".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     });
     graph.add_edge(TopologyEdge {
@@ -187,6 +194,7 @@ fn test_graph_stats() {
         edge_type: "test".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     });
 
@@ -209,6 +217,7 @@ fn test_hierarchical_layout() {
         edge_type: "test".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     });
     graph.add_edge(TopologyEdge {
@@ -217,6 +226,7 @@ fn test_hierarchical_layout() {
         edge_type: "test".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     });
 

@@ -123,6 +123,7 @@ impl VisualizationDataProvider for OfflineVisualizationProvider {
                 to: "offline-discovery-1".into(),
                 edge_type: "trust".to_owned(),
                 capability: None,
+                weight: None,
                 metrics: None,
                 label: Some("Cached".to_owned()),
             },
@@ -132,6 +133,7 @@ impl VisualizationDataProvider for OfflineVisualizationProvider {
                 edge_type: "orchestrates".to_owned(),
                 label: None,
                 capability: None,
+                weight: None,
                 metrics: None,
             },
         ])

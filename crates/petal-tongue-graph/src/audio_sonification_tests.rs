@@ -35,6 +35,7 @@ fn create_test_graph() -> Arc<RwLock<GraphEngine>> {
         edge_type: "api".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     });
 

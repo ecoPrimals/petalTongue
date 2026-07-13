@@ -193,6 +193,7 @@ impl E2ETestRunner {
                 edge_type: "self".to_string(),
                 label: None,
                 capability: None,
+                weight: None,
                 metrics: None,
             });
             steps_completed += 1;
@@ -343,6 +344,7 @@ impl E2ETestRunner {
                 edge_type: "test".to_string(),
                 label: Some("test edge".to_string()),
                 capability: None,
+                weight: None,
                 metrics: None,
             });
             if graph.edges().len() != 1 {

@@ -81,6 +81,7 @@ fn test_topology_response_serialization() {
             edge_type: "conn".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         }],
         mode: "live".to_string(),

@@ -102,6 +102,7 @@ mod tests {
             edge_type: "capability".to_string(),
             label: Some("test-label".to_string()),
             capability: None,
+            weight: None,
             metrics: None,
         };
 
@@ -119,6 +120,7 @@ mod tests {
             edge_type: "capability".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         };
 
@@ -161,6 +163,7 @@ mod tests {
             edge_type: "api_call".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         };
 
@@ -270,6 +273,7 @@ mod tests {
             edge_type: "capability".to_string(),
             label: Some("test".to_string()),
             capability: None,
+            weight: None,
             metrics: None,
         };
 
@@ -379,6 +383,7 @@ mod tests {
             edge_type: "connection".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         };
         assert_eq!(edge.edge_type, "connection");

@@ -154,6 +154,11 @@ pub struct TopologyEdge {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub capability: Option<String>,
 
+    /// Routing weight (0.0 = preferred, 1.0 = normal, >1.0 = expensive).
+    /// Derived from Neural API `routing_weights` or latency metrics.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub weight: Option<f64>,
+
     /// Connection metrics (biomeOS format)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub metrics: Option<ConnectionMetrics>,
@@ -464,6 +469,7 @@ mod tests {
                 edge_type: "connection".to_string(),
                 label: None,
                 capability: None,
+                weight: None,
                 metrics: None,
             }],
             timestamp: 100,

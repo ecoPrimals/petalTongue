@@ -31,6 +31,7 @@ mod visual_2d_tests {
             edge_type: "test".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         });
 
@@ -268,6 +269,7 @@ mod visual_2d_tests {
                 edge_type: "test".to_string(),
                 label: None,
                 capability: None,
+                weight: None,
                 metrics: None,
             });
         }
@@ -364,6 +366,7 @@ mod visual_2d_tests {
             edge_type: "connection".to_string(),
             label: Some("Edge 1-2".to_string()),
             capability: None,
+            weight: None,
             metrics: None,
         });
         graph.add_edge(TopologyEdge {
@@ -372,6 +375,7 @@ mod visual_2d_tests {
             edge_type: "connection".to_string(),
             label: Some("Edge 2-3".to_string()),
             capability: None,
+            weight: None,
             metrics: None,
         });
         graph.add_edge(TopologyEdge {
@@ -380,6 +384,7 @@ mod visual_2d_tests {
             edge_type: "connection".to_string(),
             label: Some("Edge 1-3".to_string()),
             capability: None,
+            weight: None,
             metrics: None,
         });
 

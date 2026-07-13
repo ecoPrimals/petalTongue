@@ -75,6 +75,7 @@ pub fn create_test_edge(from: &str, to: &str, edge_type: &str) -> TopologyEdge {
         edge_type: edge_type.to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     }
 }

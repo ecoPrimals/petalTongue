@@ -95,6 +95,7 @@ pub struct LiveEdge {
     pub to: String,
     pub edge_type: String,
     pub capability: Option<String>,
+    pub weight: Option<f64>,
 }
 
 /// A mesh peer from songBird/gate topology.
@@ -233,6 +234,13 @@ impl DataService {
     /// Synchronous snapshot for non-async contexts (SSE streams, etc.).
     ///
     /// Returns `None` if the graph lock is poisoned.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "public API for external consumers and TUI mode; tests exercise it"
+        )
+    )]
     pub fn snapshot_sync(&self) -> Option<DataSnapshot> {
         let graph = self
             .graph
@@ -299,6 +307,12 @@ impl DataService {
                         to: e.to.to_string(),
                         edge_type: e.edge_type.clone(),
                         capability: e.capability.clone(),
+                        weight: e.weight.or_else(|| {
+                            e.metrics
+                                .as_ref()
+                                .and_then(|m| m.avg_latency_ms)
+                                .map(|ms| ms / 100.0)
+                        }),
                     })
                     .collect();
                 (primals, edges)
@@ -552,6 +566,7 @@ mod tests {
                 edge_type: "connection".to_owned(),
                 label: None,
                 capability: None,
+                weight: None,
                 metrics: None,
             });
         }
@@ -718,6 +733,7 @@ mod tests {
                 edge_type: "api_call".to_owned(),
                 label: Some("invoke".to_owned()),
                 capability: None,
+                weight: None,
                 metrics: None,
             }],
             timestamp: 12345,

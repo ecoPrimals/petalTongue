@@ -173,6 +173,7 @@ fn test_update_from_topology() {
             edge_type: "connection".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         },
         TopologyEdge {
@@ -181,6 +182,7 @@ fn test_update_from_topology() {
             edge_type: "connection".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         },
     ];
@@ -320,6 +322,7 @@ fn test_update_from_topology_clears_old() {
         edge_type: "connection".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     }];
     view.update_from_topology(&edges);
