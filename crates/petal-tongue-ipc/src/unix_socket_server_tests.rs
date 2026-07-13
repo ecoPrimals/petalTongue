@@ -188,6 +188,7 @@ fn test_get_topology_with_nodes() {
         edge_type: "test".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     });
     graph.set_layout(LayoutAlgorithm::Circular);

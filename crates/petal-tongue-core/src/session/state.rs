@@ -309,6 +309,7 @@ mod tests {
             edge_type: "conn".to_owned(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         });
         state2.edges.push(TopologyEdge {
@@ -317,6 +318,7 @@ mod tests {
             edge_type: "conn".to_owned(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         });
         state1.merge_graph(&state2);

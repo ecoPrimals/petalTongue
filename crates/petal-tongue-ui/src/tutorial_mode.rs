@@ -161,6 +161,7 @@ impl TutorialMode {
                     edge_type: edge.edge_type,
                     label: None,
                     capability: None,
+                    weight: None,
                     metrics: None,
                 });
             }
@@ -299,6 +300,7 @@ impl TutorialMode {
             edge_type: "ipc.discovery".to_owned(),
             label: Some("discovers".to_owned()),
             capability: None,
+            weight: None,
             metrics: None,
         });
 
@@ -308,6 +310,7 @@ impl TutorialMode {
             edge_type: "ipc.trust".to_owned(),
             label: Some("authenticates".to_owned()),
             capability: None,
+            weight: None,
             metrics: None,
         });
 

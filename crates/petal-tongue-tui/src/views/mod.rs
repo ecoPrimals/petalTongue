@@ -334,6 +334,7 @@ mod tests {
                 edge_type: "conn".to_owned(),
                 label: None,
                 capability: None,
+                weight: None,
                 metrics: None,
             }])
             .await;
@@ -424,6 +425,7 @@ mod tests {
                     edge_type: "e1".to_owned(),
                     label: None,
                     capability: None,
+                    weight: None,
                     metrics: None,
                 },
                 petal_tongue_core::TopologyEdge {
@@ -432,6 +434,7 @@ mod tests {
                     edge_type: "e2".to_owned(),
                     label: None,
                     capability: None,
+                    weight: None,
                     metrics: None,
                 },
                 petal_tongue_core::TopologyEdge {
@@ -440,6 +443,7 @@ mod tests {
                     edge_type: "e3".to_owned(),
                     label: None,
                     capability: None,
+                    weight: None,
                     metrics: None,
                 },
                 petal_tongue_core::TopologyEdge {
@@ -448,6 +452,7 @@ mod tests {
                     edge_type: "e4".to_owned(),
                     label: None,
                     capability: None,
+                    weight: None,
                     metrics: None,
                 },
                 petal_tongue_core::TopologyEdge {
@@ -456,6 +461,7 @@ mod tests {
                     edge_type: "e5".to_owned(),
                     label: None,
                     capability: None,
+                    weight: None,
                     metrics: None,
                 },
                 petal_tongue_core::TopologyEdge {
@@ -464,6 +470,7 @@ mod tests {
                     edge_type: "e6".to_owned(),
                     label: None,
                     capability: None,
+                    weight: None,
                     metrics: None,
                 },
             ])

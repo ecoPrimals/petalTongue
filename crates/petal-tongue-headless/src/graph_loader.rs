@@ -82,6 +82,7 @@ fn load_scenario_file(graph: &Arc<RwLock<GraphEngine>>, path: &str) -> Result<()
                         .to_string(),
                     label: edge.get("label").and_then(|v| v.as_str()).map(String::from),
                     capability: None,
+                    weight: None,
                     metrics: None,
                 });
             }
@@ -174,6 +175,7 @@ fn load_demo_topology(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessEr
         edge_type: "monitors".to_owned(),
         label: Some("Health Monitoring".to_owned()),
         capability: None,
+        weight: None,
         metrics: None,
     });
     g.add_edge(TopologyEdge {
@@ -182,6 +184,7 @@ fn load_demo_topology(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessEr
         edge_type: "sends_data".to_owned(),
         label: Some("Encrypted Messages".to_owned()),
         capability: None,
+        weight: None,
         metrics: None,
     });
 

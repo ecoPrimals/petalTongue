@@ -89,6 +89,7 @@ fn update_from_topology_with_edges() {
             edge_type: "api_call".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         },
         TopologyEdge {
@@ -97,6 +98,7 @@ fn update_from_topology_with_edges() {
             edge_type: "capability".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         },
     ];
@@ -200,6 +202,7 @@ fn update_from_topology_flow_construction_and_metric_mapping() {
             edge_type: "conn".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         },
         TopologyEdge {
@@ -208,6 +211,7 @@ fn update_from_topology_flow_construction_and_metric_mapping() {
             edge_type: "conn".to_string(),
             label: None,
             capability: None,
+            weight: None,
             metrics: None,
         },
     ];

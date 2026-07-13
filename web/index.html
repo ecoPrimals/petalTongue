@@ -320,6 +320,15 @@
             document.getElementById('conn-status').textContent = 'live';
             document.getElementById('conn-status').className = 'pill pill-ok';
         };
+        es.addEventListener('topology', function(ev) {
+            eventCount++;
+            document.getElementById('sb-events').textContent = 'events: ' + eventCount;
+            try {
+                var data = JSON.parse(ev.data);
+                renderLiveTopology(data);
+                if (data.primals && data.primals.length) applySnapshot(data);
+            } catch(e) {}
+        });
         es.onmessage = function(ev) {
             eventCount++;
             document.getElementById('sb-events').textContent = 'events: ' + eventCount;
@@ -564,13 +573,18 @@
             if (!edges.length) {
                 edgesList.innerHTML = '<p style="color:var(--fg-dim);font-size:0.8rem">No capability edges discovered yet</p>';
             } else {
-                edgesList.innerHTML = '<table class="gate-table"><thead><tr><th>From</th><th>To</th><th>Type</th><th>Capability</th></tr></thead><tbody>' +
+                edgesList.innerHTML = '<table class="gate-table"><thead><tr><th>From</th><th>To</th><th>Type</th><th>Capability</th><th>Weight</th></tr></thead><tbody>' +
                     edges.map(function(e) {
+                        var wt = e.weight !== null && e.weight !== undefined ? e.weight.toFixed(2) : '-';
+                        var wtClass = e.weight === null || e.weight === undefined ? '' :
+                                      e.weight <= 0.5 ? 'color:var(--green)' :
+                                      e.weight <= 1.0 ? 'color:var(--yellow)' : 'color:var(--red)';
                         return '<tr>' +
                             '<td class="gate-id">' + esc(e.from) + '</td>' +
                             '<td class="gate-id">' + esc(e.to) + '</td>' +
                             '<td style="font-size:0.72rem;color:var(--fg-dim)">' + esc(e.edge_type) + '</td>' +
                             '<td><span class="cap">' + esc(e.capability || '-') + '</span></td>' +
+                            '<td style="font-weight:600;' + wtClass + '">' + wt + '</td>' +
                         '</tr>';
                     }).join('') +
                 '</tbody></table>';

@@ -314,6 +314,7 @@ mod tests {
                 edge_type: "connects".to_owned(),
                 label: None,
                 capability: None,
+                weight: None,
                 metrics: None,
             });
             g.add_edge(TopologyEdge {
@@ -322,6 +323,7 @@ mod tests {
                 edge_type: "ghost".to_owned(),
                 label: None,
                 capability: None,
+                weight: None,
                 metrics: None,
             });
             g.set_layout(LayoutAlgorithm::Circular);

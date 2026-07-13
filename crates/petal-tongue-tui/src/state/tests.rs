@@ -165,6 +165,7 @@ async fn test_topology_storage() {
         edge_type: "test".to_string(),
         label: None,
         capability: None,
+        weight: None,
         metrics: None,
     }];
     state.update_topology(edges).await;

@@ -278,6 +278,7 @@ mod tests {
                 edge_type: "test".to_owned(),
                 label: None,
                 capability: None,
+                weight: None,
                 metrics: None,
             });
         }

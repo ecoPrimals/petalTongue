@@ -143,6 +143,7 @@ impl VisualizationDataProvider for ScenarioVisualizationProvider {
                         edge_type: "coordination".to_owned(),
                         label: Some("Neural API".to_owned()),
                         capability: None,
+                        weight: None,
                         metrics: None,
                     });
                 }
@@ -158,6 +159,7 @@ impl VisualizationDataProvider for ScenarioVisualizationProvider {
                     edge_type: "peer".to_owned(),
                     label: Some("Peer connection".to_owned()),
                     capability: None,
+                    weight: None,
                     metrics: None,
                 });
             }

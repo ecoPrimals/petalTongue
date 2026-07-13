@@ -56,8 +56,11 @@ pub(super) fn parse_topology_edges(result: &Value) -> DiscoveryResult<Vec<Topolo
                 .as_str()
                 .unwrap_or("unknown")
                 .to_owned(),
-            capability: None,
-            label: None,
+            capability: conn["capability"].as_str().map(str::to_owned),
+            label: conn["label"].as_str().map(str::to_owned),
+            weight: conn["routing_weight"]
+                .as_f64()
+                .or_else(|| conn["weight"].as_f64()),
             metrics: None,
         });
     }
@@ -121,5 +124,22 @@ mod tests {
         let val = serde_json::json!({ "connections": [] });
         let edges = parse_topology_edges(&val).unwrap();
         assert!(edges.is_empty());
+    }
+
+    #[test]
+    fn parse_topology_edges_routing_weight() {
+        let val = serde_json::json!({
+            "connections": [
+                { "from": "a", "to": "b", "connection_type": "mesh", "routing_weight": 0.3 },
+                { "from": "b", "to": "c", "connection_type": "ipc", "capability": "sign.verify" },
+                { "from": "c", "to": "a", "connection_type": "relay", "weight": 1.5 }
+            ]
+        });
+        let edges = parse_topology_edges(&val).unwrap();
+        assert_eq!(edges.len(), 3);
+        assert!((edges[0].weight.unwrap() - 0.3).abs() < f64::EPSILON);
+        assert_eq!(edges[1].weight, None);
+        assert_eq!(edges[1].capability.as_deref(), Some("sign.verify"));
+        assert!((edges[2].weight.unwrap() - 1.5).abs() < f64::EPSILON);
     }
 }
