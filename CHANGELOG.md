@@ -6,6 +6,40 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 137b: Neural API Live + TOPO-VIS (July 13, 2026)
+
+Neural API live 24+ days on eastGate. Topology visualization consumes live
+discovery data. Routing weights propagated. SSE live push for real-time
+dashboard updates. Composition serving operational.
+
+#### Added
+- **`/api/topology/live` endpoint**: Returns live Neural API topology (primals,
+  capability edges with routing weights, mesh peers) with static fallback.
+- **`LiveTopology`, `LivePrimal`, `LiveEdge`, `LiveMeshPeer` types**: Typed
+  response structs in `data_service.rs` for the TOPO-VIS endpoint.
+- **`weight: Option<f64>` on `TopologyEdge`**: Routing cost field (0.0=preferred,
+  1.0=normal, >1.0=expensive). Extracted from Neural API `routing_weight`.
+- **Typed SSE events**: `event: topology` pushes `LiveTopology` payload to
+  connected browsers every 30s (replaces untyped snapshot events).
+- **Dashboard Live Topology panel**: Primals table, capability edges with
+  weight column (color-coded green/yellow/red), mesh overlay chips.
+- **`neural_api` in `/api/status`**: Reports whether Neural API is discovered.
+- **Composition serving (FP-PARITY Phase 1)**: Axum mounts external web bundles
+  at `/app/{name}/` with SPA fallback. `discover_compositions()` function.
+- **`PETALTONGUE_COMPOSITIONS` / `PETALTONGUE_COMPOSITIONS_DIR` env vars**:
+  Dynamic composition discovery configuration.
+
+#### Changed
+- **SSE handler**: Emits typed `event: topology` events (previously untyped).
+- **`status_handler`**: Now accepts `State<Arc<DataService>>` and reports
+  `neural_api` availability.
+- **Neural API parser**: Extracts `routing_weight`/`weight` + `capability` +
+  `label` from connection data (previously discarded).
+
+#### Fixed
+- Removed stale `#[expect(dead_code)]` from `has_neural_api()` (now production-used).
+- Removed stale `#[expect(dead_code)]` from `snapshot_sync()` (scoped to non-test).
+
 ### Wave 136b: Hardened + Converging (July 11, 2026)
 
 All 8 stadial criteria clear. DNSSEC live. K-Derm diderm reaffirmed.
