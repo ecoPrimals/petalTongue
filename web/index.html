@@ -194,6 +194,37 @@
         </section>
 
         <section>
+            <h2>Live Topology (Neural API)</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <h3>Discovery Source</h3>
+                    <div class="stat-row" id="topo-live-stats">
+                        <div class="stat"><span class="stat-val" id="stat-topo-source">--</span><span class="stat-label">Source</span></div>
+                        <div class="stat"><span class="stat-val" id="stat-topo-primals">0</span><span class="stat-label">Primals</span></div>
+                        <div class="stat"><span class="stat-val" id="stat-topo-edges">0</span><span class="stat-label">Edges</span></div>
+                        <div class="stat"><span class="stat-val" id="stat-topo-mesh">0</span><span class="stat-label">Mesh Peers</span></div>
+                    </div>
+                    <table class="gate-table" id="topo-primals-table">
+                        <thead><tr><th>Primal</th><th>Type</th><th>Health</th><th>Capabilities</th></tr></thead>
+                        <tbody id="topo-primals-tbody">
+                            <tr><td colspan="4" class="empty-state">Loading&hellip;</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card">
+                    <h3>Capability Edges (Routing Weights)</h3>
+                    <div id="topo-edges-list" style="font-size:0.8rem;max-height:18rem;overflow:auto">
+                        <p class="empty-state">Loading&hellip;</p>
+                    </div>
+                    <h4 style="margin-top:1rem;font-size:0.85rem;color:var(--accent)">Mesh Overlay</h4>
+                    <div id="topo-mesh-list" style="font-size:0.8rem;max-height:12rem;overflow:auto;margin-top:0.5rem">
+                        <p class="empty-state">Loading&hellip;</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
             <h2>sporePrint — Ecosystem Validation</h2>
             <div class="grid" id="sporeprint-grid">
                 <div class="empty-state"><p>Loading validation data&hellip;</p></div>
@@ -332,6 +363,11 @@
             fetch('/api/topology-layers')
                 .then(r => r.json())
                 .then(renderKDermLayers)
+                .catch(() => {});
+
+            fetch('/api/topology/live')
+                .then(r => r.json())
+                .then(renderLiveTopology)
                 .catch(() => {});
 
             fetch('/api/sporeprint')
@@ -488,6 +524,73 @@
                     '<td>' + caps + '</td>' +
                 '</tr>';
             }).join('');
+        }
+
+        function renderLiveTopology(data) {
+            var src = data.source || 'unknown';
+            var srcPill = src === 'neural_api'
+                ? '<span class="pill pill-ok">neural_api</span>'
+                : '<span class="pill pill-warn">static_fallback</span>';
+            document.getElementById('stat-topo-source').innerHTML = srcPill;
+            document.getElementById('stat-topo-primals').textContent = data.primal_count || 0;
+            document.getElementById('stat-topo-edges').textContent = data.edge_count || 0;
+            document.getElementById('stat-topo-mesh').textContent = data.mesh_peer_count || 0;
+
+            var primals = data.primals || [];
+            var tbody = document.getElementById('topo-primals-tbody');
+            if (!primals.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No Neural API primals yet (using mesh fallback)</td></tr>';
+            } else {
+                tbody.innerHTML = primals.map(function(p) {
+                    var hPill = p.health === 'Healthy' ? '<span class="pill pill-ok">healthy</span>' :
+                                p.health === 'Warning' ? '<span class="pill pill-warn">warning</span>' :
+                                p.health === 'Critical' ? '<span class="pill pill-err">critical</span>' :
+                                '<span class="pill pill-info">' + esc(p.health) + '</span>';
+                    var caps = (p.capabilities || []).slice(0, 4).map(function(c) {
+                        return '<span class="cap">' + esc(c) + '</span>';
+                    }).join(' ');
+                    if ((p.capabilities || []).length > 4) caps += ' <span class="cap">+' + (p.capabilities.length - 4) + '</span>';
+                    return '<tr>' +
+                        '<td class="gate-id">' + esc(p.name || p.id) + '</td>' +
+                        '<td style="font-size:0.75rem;color:var(--fg-dim)">' + esc(p.primal_type) + '</td>' +
+                        '<td>' + hPill + '</td>' +
+                        '<td>' + caps + '</td>' +
+                    '</tr>';
+                }).join('');
+            }
+
+            var edges = data.edges || [];
+            var edgesList = document.getElementById('topo-edges-list');
+            if (!edges.length) {
+                edgesList.innerHTML = '<p style="color:var(--fg-dim);font-size:0.8rem">No capability edges discovered yet</p>';
+            } else {
+                edgesList.innerHTML = '<table class="gate-table"><thead><tr><th>From</th><th>To</th><th>Type</th><th>Capability</th></tr></thead><tbody>' +
+                    edges.map(function(e) {
+                        return '<tr>' +
+                            '<td class="gate-id">' + esc(e.from) + '</td>' +
+                            '<td class="gate-id">' + esc(e.to) + '</td>' +
+                            '<td style="font-size:0.72rem;color:var(--fg-dim)">' + esc(e.edge_type) + '</td>' +
+                            '<td><span class="cap">' + esc(e.capability || '-') + '</span></td>' +
+                        '</tr>';
+                    }).join('') +
+                '</tbody></table>';
+            }
+
+            var meshPeers = data.mesh_peers || [];
+            var meshList = document.getElementById('topo-mesh-list');
+            if (!meshPeers.length) {
+                meshList.innerHTML = '<p style="color:var(--fg-dim)">No mesh peers</p>';
+            } else {
+                meshList.innerHTML = meshPeers.map(function(p) {
+                    var statusPill = p.status === 'Connected' ? '<span class="pill pill-ok">connected</span>' :
+                                     p.status === 'Relayed' ? '<span class="pill pill-info">relayed</span>' :
+                                     p.status === 'Pending' ? '<span class="pill pill-warn">pending</span>' :
+                                     '<span class="pill pill-err">' + esc(p.status) + '</span>';
+                    var latency = p.latency_ms !== null ? p.latency_ms + 'ms' : 'n/a';
+                    return '<span style="display:inline-block;margin:0.2rem 0.4rem;padding:0.2rem 0.5rem;background:var(--surface);border:1px solid var(--border);border-radius:0.3rem">' +
+                        esc(p.gate_id) + ' ' + statusPill + ' <span style="color:var(--fg-dim);font-size:0.7rem">' + esc(p.transport) + ' ' + latency + '</span></span>';
+                }).join('');
+            }
         }
 
         function renderSporePrint(data) {

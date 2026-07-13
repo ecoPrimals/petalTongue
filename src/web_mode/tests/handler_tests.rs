@@ -312,3 +312,22 @@ async fn test_topology_layers_endpoint() {
     assert_eq!(dnssec["status"], "active");
     assert_eq!(dnssec["layer"], "Outer membrane");
 }
+
+#[tokio::test]
+async fn test_live_topology_endpoint() {
+    let data_service = Arc::new(DataService::new());
+    let resp = live_topology_handler(State(data_service))
+        .await
+        .into_response();
+    assert_eq!(resp.status(), 200);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(v["source"], "static_fallback");
+    assert!(v["mesh_peer_count"].as_u64().unwrap() >= 5);
+    assert!(v["timestamp"].as_u64().unwrap() > 0);
+    let peers = v["mesh_peers"].as_array().unwrap();
+    assert!(!peers.is_empty());
+    assert!(peers.iter().any(|p| p["gate_id"] == "eastGate"));
+}

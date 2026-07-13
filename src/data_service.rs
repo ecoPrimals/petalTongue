@@ -61,6 +61,52 @@ pub struct DataSnapshot {
     pub timestamp: u64,
 }
 
+/// Live topology snapshot for TOPO-VIS visualization.
+///
+/// Combines Neural API discovery data with static mesh peer state.
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct LiveTopology {
+    /// Data source: `"neural_api"` or `"static_fallback"`
+    pub source: &'static str,
+    pub primal_count: usize,
+    pub edge_count: usize,
+    pub mesh_peer_count: usize,
+    pub primals: Vec<LivePrimal>,
+    pub edges: Vec<LiveEdge>,
+    pub mesh_peers: Vec<LiveMeshPeer>,
+    pub timestamp: u64,
+}
+
+/// A primal discovered via Neural API.
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct LivePrimal {
+    pub id: String,
+    pub name: String,
+    pub primal_type: String,
+    pub health: String,
+    pub capabilities: Vec<String>,
+    pub endpoint: String,
+}
+
+/// A topology edge (capability invocation path).
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct LiveEdge {
+    pub from: String,
+    pub to: String,
+    pub edge_type: String,
+    pub capability: Option<String>,
+}
+
+/// A mesh peer from songBird/gate topology.
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct LiveMeshPeer {
+    pub gate_id: String,
+    pub status: String,
+    pub transport: String,
+    pub latency_ms: Option<u32>,
+    pub capabilities: Vec<String>,
+}
+
 impl DataService {
     /// Create new data service
     pub fn new() -> Self {
@@ -220,6 +266,77 @@ impl DataService {
     #[must_use]
     pub fn mesh_peers(&self) -> Vec<petal_tongue_core::gate_mesh::MeshPeer> {
         petal_tongue_core::gate_mesh::derive_mesh_peers()
+    }
+
+    /// Get live topology for TOPO-VIS visualization.
+    ///
+    /// Returns live Neural API data (primals + edges) when available,
+    /// with static gate mesh data as fallback. This is the primary source
+    /// for the `/api/topology/live` endpoint.
+    pub fn live_topology(&self) -> LiveTopology {
+        let graph = self.graph.read().ok();
+        let has_api = self.neural_api.is_some();
+
+        let (primals, edges) = match graph {
+            Some(ref g) if !g.nodes().is_empty() => {
+                let primals: Vec<LivePrimal> = g
+                    .nodes()
+                    .iter()
+                    .map(|node| LivePrimal {
+                        id: node.info.id.to_string(),
+                        name: node.info.name.clone(),
+                        primal_type: node.info.primal_type.clone(),
+                        health: format!("{:?}", node.info.health),
+                        capabilities: node.info.capabilities.clone(),
+                        endpoint: node.info.endpoint.clone(),
+                    })
+                    .collect();
+                let edges: Vec<LiveEdge> = g
+                    .edges()
+                    .iter()
+                    .map(|e| LiveEdge {
+                        from: e.from.to_string(),
+                        to: e.to.to_string(),
+                        edge_type: e.edge_type.clone(),
+                        capability: e.capability.clone(),
+                    })
+                    .collect();
+                (primals, edges)
+            }
+            _ => (Vec::new(), Vec::new()),
+        };
+
+        let mesh_peers = self.mesh_peers();
+
+        LiveTopology {
+            source: if has_api && !primals.is_empty() {
+                "neural_api"
+            } else {
+                "static_fallback"
+            },
+            primal_count: primals.len(),
+            edge_count: edges.len(),
+            mesh_peer_count: mesh_peers.len(),
+            primals,
+            edges,
+            mesh_peers: mesh_peers
+                .into_iter()
+                .map(|p| LiveMeshPeer {
+                    gate_id: p.gate_id.to_owned(),
+                    status: format!("{:?}", p.status),
+                    transport: p.transport.to_owned(),
+                    latency_ms: if p.latency_ms == u32::MAX {
+                        None
+                    } else {
+                        Some(p.latency_ms)
+                    },
+                    capabilities: p.capabilities.iter().map(|&s| s.to_owned()).collect(),
+                })
+                .collect(),
+            timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_or(0, |d| d.as_secs()),
+        }
     }
 
     /// Check if Neural API is available.
