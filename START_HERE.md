@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: July 11, 2026 (Wave 136b — hardened + converging, K-Derm diderm topology, manifest-driven handlers, coord_handlers extraction, 356 tests, cargo deny clean)
+**Updated**: July 13, 2026 (Wave 137b — Neural API live, TOPO-VIS delivered, routing weights, SSE live push, composition serving, 365 tests, cargo deny clean)
 
 ---
 

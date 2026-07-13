@@ -127,6 +127,17 @@ cargo test --workspace --all-features     # 356+ workspace tests, ~85-90% covera
 
 ## Current State
 
+Wave 137b Neural API Live + TOPO-VIS (July 13, 2026). 365 tests (workspace),
+all passing. Neural API live 24+ days on eastGate. Live topology visualization
+fully wired: `/api/topology/live` returns discovered primals, capability edges
+with routing weights, and mesh peers from Neural API (static fallback when
+offline). SSE handler evolved to emit typed `event: topology` events — dashboard
+auto-updates every 30s. `TopologyEdge` gains `weight: Option<f64>` for routing
+cost representation (extracted from Neural API `routing_weight`). Composition
+serving operational (`/app/{name}/` with SPA fallback). `has_neural_api()`
+exposed in `/api/status` (dead_code annotation removed). Dashboard Live Topology
+panel: primals table, edges with color-coded weight column, mesh overlay chips.
+
 Wave 136b Hardened + Converging (July 11, 2026). 356 tests (workspace),
 all passing. Posture: all 8 stadial criteria clear, DNSSEC live (keyTag 2371,
 alg 13). K-Derm diderm topology visualization wired (`/api/topology-layers`

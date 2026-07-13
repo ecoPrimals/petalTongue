@@ -197,12 +197,13 @@ pub(super) async fn readiness_handler() -> impl IntoResponse {
     }))
 }
 
-pub(super) async fn status_handler() -> impl IntoResponse {
+pub(super) async fn status_handler(State(service): State<Arc<DataService>>) -> impl IntoResponse {
     Json(serde_json::json!({
         "status": "ok",
         "version": env!("CARGO_PKG_VERSION"),
         "mode": "web",
         "pure_rust": true,
+        "neural_api": service.has_neural_api(),
     }))
 }
 

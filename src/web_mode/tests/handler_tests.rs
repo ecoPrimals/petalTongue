@@ -10,8 +10,16 @@ use crate::data_service::DataService;
 
 #[tokio::test]
 async fn test_status_endpoint() {
-    let response = status_handler().await.into_response();
+    let data_service = Arc::new(DataService::new());
+    let response = status_handler(State(data_service)).await.into_response();
     assert_eq!(response.status(), 200);
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(v["status"], "ok");
+    assert_eq!(v["pure_rust"], true);
+    assert_eq!(v["neural_api"], false);
 }
 
 #[tokio::test]
@@ -42,7 +50,8 @@ async fn test_snapshot_endpoint() {
 
 #[tokio::test]
 async fn test_status_response_body() {
-    let response = status_handler().await.into_response();
+    let data_service = Arc::new(DataService::new());
+    let response = status_handler(State(data_service)).await.into_response();
     let body = axum::body::to_bytes(response.into_body(), usize::MAX)
         .await
         .unwrap();
