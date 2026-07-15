@@ -236,9 +236,11 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
                     |resp: &axum::http::Response<_>,
                      latency: std::time::Duration,
                      _span: &tracing::Span| {
+                        #[expect(clippy::cast_possible_truncation, reason = "latency ms fits in u64")]
+                        let latency_ms = latency.as_millis() as u64;
                         tracing::info!(
                             status = resp.status().as_u16(),
-                            latency_ms = latency.as_millis() as u64,
+                            latency_ms,
                             "response"
                         );
                     },

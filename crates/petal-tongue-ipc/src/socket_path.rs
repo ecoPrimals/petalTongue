@@ -33,7 +33,7 @@ use std::path::{Path, PathBuf};
 ///
 /// - **Explicit Override**: `PETALTONGUE_SOCKET` for custom paths
 /// - **XDG Compliant**: Uses `/run/user/<uid>/biomeos/` for secure sockets
-/// - **BIOMEOS_SOCKET_DIR**: Deployment override for `ProtectSystem=strict`
+/// - **`BIOMEOS_SOCKET_DIR`**: Deployment override for `ProtectSystem=strict`
 /// - **Parent Directory Creation**: Ensures socket parent directory exists
 pub fn get_petaltongue_socket_path() -> Result<PathBuf, SocketPathError> {
     let posture = crate::btsp::validate_insecure_guard()?;

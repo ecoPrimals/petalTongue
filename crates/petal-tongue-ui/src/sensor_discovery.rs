@@ -190,8 +190,7 @@ mod tests {
         let registry = Arc::new(RwLock::new(SensorRegistry::<SensorImpl>::new()));
         discover_all_sensors(Arc::clone(&registry)).await.unwrap();
 
-        let reg = registry.read().unwrap();
-        let stats = reg.stats();
+        let stats = registry.read().unwrap().stats();
         let _ = stats.total;
     }
 

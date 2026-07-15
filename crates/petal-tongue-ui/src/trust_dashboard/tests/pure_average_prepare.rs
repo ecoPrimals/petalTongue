@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+#![expect(clippy::float_cmp)]
 
 use super::super::compute::{average_trust_display, prepare_trust_display};
 use super::super::types::TrustSummary;

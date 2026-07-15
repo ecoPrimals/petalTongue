@@ -59,11 +59,13 @@ async fn test_e2e_visualization_pipeline() {
     assert_eq!(r["status"], "rendering");
     assert!(r["bindings_accepted"].as_u64().unwrap_or(0) > 0);
 
-    let viz_state = h.viz_state.read().unwrap();
-    let has_scene = viz_state
-        .grammar_scenes
-        .keys()
-        .any(|k| k.starts_with("e2e-session:"));
+    let has_scene = {
+        let viz_state = h.viz_state.read().unwrap();
+        viz_state
+            .grammar_scenes
+            .keys()
+            .any(|k| k.starts_with("e2e-session:"))
+    };
     assert!(has_scene, "expected grammar_scene for session e2e-session");
 }
 
@@ -119,26 +121,33 @@ async fn test_concurrent_sessions() {
     assert_eq!(resp_b.result.as_ref().unwrap()["session_id"], "session-b");
     assert_eq!(resp_b.result.as_ref().unwrap()["bindings_accepted"], 1);
 
-    let viz_state = h.viz_state.read().unwrap();
-    assert!(viz_state.sessions.contains_key("session-a"));
-    assert!(viz_state.sessions.contains_key("session-b"));
-
-    let session_a = viz_state.sessions.get("session-a").unwrap();
-    let session_b = viz_state.sessions.get("session-b").unwrap();
-
-    assert_eq!(session_a.title, "Session A");
-    assert_eq!(session_b.title, "Session B");
-    assert_eq!(session_a.bindings.len(), 1);
-    assert_eq!(session_b.bindings.len(), 1);
-
-    let has_ts = matches!(
-        &session_a.bindings[0],
-        petal_tongue_core::DataBinding::TimeSeries { .. }
-    );
-    let has_bar = matches!(
-        &session_b.bindings[0],
-        petal_tongue_core::DataBinding::Bar { .. }
-    );
+    let (has_session_a, has_session_b, title_a, title_b, bindings_a, bindings_b, has_ts, has_bar) = {
+        let viz_state = h.viz_state.read().unwrap();
+        let session_a = viz_state.sessions.get("session-a").unwrap();
+        let session_b = viz_state.sessions.get("session-b").unwrap();
+        (
+            viz_state.sessions.contains_key("session-a"),
+            viz_state.sessions.contains_key("session-b"),
+            session_a.title.clone(),
+            session_b.title.clone(),
+            session_a.bindings.len(),
+            session_b.bindings.len(),
+            matches!(
+                &session_a.bindings[0],
+                petal_tongue_core::DataBinding::TimeSeries { .. }
+            ),
+            matches!(
+                &session_b.bindings[0],
+                petal_tongue_core::DataBinding::Bar { .. }
+            ),
+        )
+    };
+    assert!(has_session_a);
+    assert!(has_session_b);
+    assert_eq!(title_a, "Session A");
+    assert_eq!(title_b, "Session B");
+    assert_eq!(bindings_a, 1);
+    assert_eq!(bindings_b, 1);
     assert!(has_ts, "session-a should have TimeSeries binding");
     assert!(has_bar, "session-b should have Bar binding");
 }
@@ -174,9 +183,14 @@ async fn test_render_scene_direct() {
     assert_eq!(r["status"], "scene_stored");
     assert!(r["nodes_accepted"].as_u64().unwrap_or(0) > 0);
 
-    let viz_state = h.viz_state.read().unwrap();
+    let has_scene = h
+        .viz_state
+        .read()
+        .unwrap()
+        .grammar_scenes
+        .contains_key("scene-session");
     assert!(
-        viz_state.grammar_scenes.contains_key("scene-session"),
+        has_scene,
         "expected grammar_scene for scene-session"
     );
 }
@@ -566,14 +580,15 @@ async fn test_barrick_baselines_full_pipeline() {
         "all bindings should be accepted"
     );
 
-    let viz_state = h.viz_state.read().unwrap();
-
-    // Verify grammar_scenes has entries for each binding
-    let scene_keys: Vec<&String> = viz_state
-        .grammar_scenes
-        .keys()
-        .filter(|k| k.starts_with("barrick-baselines:"))
-        .collect();
+    let scene_keys: Vec<String> = {
+        let viz_state = h.viz_state.read().unwrap();
+        viz_state
+            .grammar_scenes
+            .keys()
+            .filter(|k| k.starts_with("barrick-baselines:"))
+            .cloned()
+            .collect()
+    };
     assert_eq!(
         scene_keys.len(),
         binding_count,
@@ -584,10 +599,14 @@ async fn test_barrick_baselines_full_pipeline() {
     // Verify each scene has at least some primitives and exports to valid SVG
     let svg_compiler = SvgCompiler::new();
     for key in &scene_keys {
-        let compiled = viz_state
-            .grammar_scenes
-            .get(*key)
-            .unwrap_or_else(|| panic!("missing scene for {key}"));
+        let compiled = {
+            let viz_state = h.viz_state.read().unwrap();
+            viz_state
+                .grammar_scenes
+                .get(key)
+                .cloned()
+                .unwrap_or_else(|| panic!("missing scene for {key}"))
+        };
         assert!(
             compiled.scene.total_primitives() > 0,
             "{key}: scene should have >0 primitives, got {}",
@@ -631,7 +650,7 @@ async fn test_barrick_baselines_stream_recompile() {
     h.handle_request(req, &test_ctx()).await;
 
     // Verify initial scene exists
-    {
+    let initial_prims = {
         let viz_state = h.viz_state.read().unwrap();
         assert!(
             viz_state
@@ -639,11 +658,11 @@ async fn test_barrick_baselines_stream_recompile() {
                 .contains_key("stream-test:ts-stream"),
             "initial scene should exist"
         );
-        let initial_prims = viz_state.grammar_scenes["stream-test:ts-stream"]
+        viz_state.grammar_scenes["stream-test:ts-stream"]
             .scene
-            .total_primitives();
-        assert!(initial_prims > 0);
-    }
+            .total_primitives()
+    };
+    assert!(initial_prims > 0);
 
     // Send a stream update (append_point)
     let stream_req = JsonRpcRequest::new(
@@ -669,16 +688,20 @@ async fn test_barrick_baselines_stream_recompile() {
     assert_eq!(r["accepted"], true);
 
     // Verify scene was recompiled (should now have updated data)
-    let viz_state = h.viz_state.read().unwrap();
+    let primitive_count = {
+        let viz_state = h.viz_state.read().unwrap();
+        assert!(
+            viz_state
+                .grammar_scenes
+                .contains_key("stream-test:ts-stream"),
+            "scene should still exist after stream update"
+        );
+        viz_state.grammar_scenes["stream-test:ts-stream"]
+            .scene
+            .total_primitives()
+    };
     assert!(
-        viz_state
-            .grammar_scenes
-            .contains_key("stream-test:ts-stream"),
-        "scene should still exist after stream update"
-    );
-    let scene = &viz_state.grammar_scenes["stream-test:ts-stream"];
-    assert!(
-        scene.scene.total_primitives() > 0,
+        primitive_count > 0,
         "recompiled scene should have primitives"
     );
 }

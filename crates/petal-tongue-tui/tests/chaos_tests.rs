@@ -48,8 +48,8 @@ async fn test_chaos_rapid_view_switching() {
     logger.await.unwrap();
 
     // System should still be functional
-    let stats = state.stats().await;
-    assert_eq!(stats.log_count, 1000);
+    let view_stats = state.stats().await;
+    assert_eq!(view_stats.log_count, 1000);
 }
 
 /// Test extreme concurrent access
@@ -215,8 +215,8 @@ async fn test_chaos_capability_thrashing() {
     }
 
     // System should have registered capabilities
-    let stats = state.stats().await;
-    assert_eq!(stats.registered_capabilities, 50);
+    let view_stats = state.stats().await;
+    assert_eq!(view_stats.registered_capabilities, 50);
 }
 
 /// Test mixed operations chaos
@@ -277,7 +277,7 @@ async fn test_chaos_mixed_operations() {
     nav_task.await.unwrap();
 
     // System should still be functional
-    let stats = state.stats().await;
-    assert_eq!(stats.log_count, 1000); // Ring buffer limit
-    assert_eq!(stats.primal_count, 5);
+    let tui_metrics = state.stats().await;
+    assert_eq!(tui_metrics.log_count, 1000); // Ring buffer limit
+    assert_eq!(tui_metrics.primal_count, 5);
 }

@@ -134,6 +134,8 @@ impl Default for AppState {
 
 #[cfg(test)]
 mod tests {
+    #![expect(clippy::float_cmp)]
+
     use super::*;
     use petal_tongue_core::Modality;
 
@@ -161,6 +163,7 @@ mod tests {
         let graph = state.graph.read().expect("graph lock poisoned");
         assert_eq!(graph.nodes().len(), 0);
         assert_eq!(graph.edges().len(), 0);
+        drop(graph);
     }
 
     #[test]
@@ -171,6 +174,7 @@ mod tests {
         // Graph should use the same layout
         let graph = state.graph.read().expect("graph lock poisoned");
         assert_eq!(graph.get_layout(), LayoutAlgorithm::ForceDirected);
+        drop(graph);
     }
 
     #[test]

@@ -4,7 +4,7 @@
     clippy::expect_used,
     reason = "test code uses unwrap/expect for brevity"
 )]
-//! Integration tests for IpcServer.
+//! Integration tests for `IpcServer`.
 
 use petal_tongue_core::{Instance, InstanceId};
 use petal_tongue_ipc::server::{IpcServer, IpcTransport};

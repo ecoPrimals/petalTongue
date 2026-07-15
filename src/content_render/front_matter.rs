@@ -49,7 +49,7 @@ pub fn parse_front_matter(toml_str: &str) -> PageMeta {
     let weight = table
         .get("weight")
         .and_then(toml::Value::as_integer)
-        .map(|w| w as i32);
+        .and_then(|w| i32::try_from(w).ok());
 
     let mut taxonomies = HashMap::new();
     if let Some(tax_table) = table.get("taxonomies").and_then(|v| v.as_table()) {

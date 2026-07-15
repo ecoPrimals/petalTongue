@@ -70,6 +70,7 @@ fn chaos_render_empty_datasets() {
 }
 
 #[test]
+#[expect(clippy::cast_precision_loss)]
 fn chaos_timeseries_extreme_point_count() {
     let n = 100_000usize;
     let x_values: Vec<f64> = (0..n).map(|i| i as f64).collect();

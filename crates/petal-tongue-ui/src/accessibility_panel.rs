@@ -264,6 +264,8 @@ impl AccessibilityPanel {
 
 #[cfg(test)]
 mod tests {
+    #![expect(clippy::float_cmp)]
+
     use super::*;
 
     #[test]

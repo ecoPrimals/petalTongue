@@ -13,7 +13,7 @@ pub const HOVER_COLOR: egui::Color32 = egui::Color32::from_rgba_premultiplied(10
 pub const TRANSITION_DURATION_SECS: f64 = 0.35;
 
 /// Handle scroll-zoom and drag-pan on the camera (expanded view only).
-pub fn handle_camera_input(ui: &mut egui::Ui, response: &egui::Response, camera_id: egui::Id) {
+pub fn handle_camera_input(ui: &egui::Ui, response: &egui::Response, camera_id: egui::Id) {
     let mut cam: ViewCamera =
         ui.data_mut(|d| d.get_temp::<ViewCamera>(camera_id).unwrap_or_default());
 
@@ -41,7 +41,7 @@ pub fn handle_camera_input(ui: &mut egui::Ui, response: &egui::Response, camera_
 
 /// Like `handle_scene_interaction` but transforms hit-map queries through the camera.
 pub fn handle_scene_interaction_with_camera(
-    ui: &mut egui::Ui,
+    ui: &egui::Ui,
     response: &egui::Response,
     hit_map: &FrameHitMap,
     state_id: egui::Id,
@@ -121,7 +121,7 @@ pub fn handle_scene_interaction_with_camera(
 
 /// Process click and hover events against the hit map (tiled view).
 pub fn handle_scene_interaction(
-    ui: &mut egui::Ui,
+    ui: &egui::Ui,
     response: &egui::Response,
     hit_map: &FrameHitMap,
     state_id: egui::Id,
@@ -292,7 +292,7 @@ pub fn render_detail_strip(ui: &mut egui::Ui, state_id: egui::Id) {
 /// Check if a compiled binding is in a data-driven transition and render a
 /// fade overlay. Returns true if animation is still active and requires repaint.
 pub fn handle_transition_animation(
-    ui: &mut egui::Ui,
+    ui: &egui::Ui,
     response: &egui::Response,
     compiled: &petal_tongue_ipc::CompiledBinding,
     key: &str,

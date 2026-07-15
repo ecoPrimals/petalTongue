@@ -2,7 +2,7 @@
 //! Filesystem-direct content backend for local validation.
 //!
 //! Reads raw markdown from a content directory, renders through the
-//! DocumentNode pipeline, and serves the result. This mirrors what
+//! `DocumentNode` pipeline, and serves the result. This mirrors what
 //! `content-provider` does via content-provider IPC, but reads from disk directly.
 //!
 //! Usage: `petaltongue web --backend content-direct --docroot <content_dir>`
@@ -186,7 +186,7 @@ pub async fn content_direct_fallback(
     (axum::http::StatusCode::NOT_FOUND, "Not Found").into_response()
 }
 
-/// Render markdown content through the DocumentNode pipeline.
+/// Render markdown content through the `DocumentNode` pipeline.
 fn render_content(
     source: &str,
     path: &str,

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+#![expect(clippy::float_cmp)]
 
 use super::*;
 use petal_tongue_core::graph_builder::{GraphNode, NodeType, Vec2};
@@ -389,8 +390,8 @@ fn nodes_in_rect_with_camera_offset() {
     let canvas_size = [800.0, 600.0];
     let center_x = canvas_min[0] + canvas_size[0] / 2.0;
     let center_y = canvas_min[1] + canvas_size[1] / 2.0;
-    let screen_x = (0.0 - cam.x) * 1.0 + center_x;
-    let screen_y = (0.0 - cam.y) * 1.0 + center_y;
+    let screen_x = (0.0 - cam.x).mul_add(1.0, center_x);
+    let screen_y = (0.0 - cam.y).mul_add(1.0, center_y);
     let box_min = [screen_x - 20.0, screen_y - 20.0];
     let box_max = [screen_x + 20.0, screen_y + 20.0];
     let result = nodes_in_rect(box_min, box_max, &nodes, &cam, 1.0, canvas_min, canvas_size);

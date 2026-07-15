@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Live scientific visualization of IPC-pushed DataBindings.
+//! Live scientific visualization of IPC-pushed `DataBindings`.
 //!
 //! Reads compiled `grammar_scenes` from the shared `VisualizationState`,
 //! groups them by session, and renders each as a `SceneWidget` tile in a
@@ -183,7 +183,7 @@ fn render_expanded(
     }
 }
 
-/// Render all sessions as a tiled grid of SceneWidget tiles.
+/// Render all sessions as a tiled grid of `SceneWidget` tiles.
 fn render_tiled(
     ui: &mut egui::Ui,
     state: &VisualizationState,
@@ -259,7 +259,7 @@ fn render_tiled(
                         let anim_start: f64 = ui
                             .data_mut(|d| *d.get_temp_mut_or_insert_with(anim_id, || current_time));
                         let elapsed = ui.input(|i| i.time) - anim_start;
-                        let delayed = elapsed - global_idx as f64 * STAGGER_DELAY_SECS;
+                        let delayed = (global_idx as f64).mul_add(-STAGGER_DELAY_SECS, elapsed);
                         let opacity = if delayed <= 0.0 {
                             0.0_f32
                         } else {

@@ -27,7 +27,7 @@ impl Default for RetryPolicy {
 }
 
 impl RetryPolicy {
-    /// Exponential backoff for attempt (0-indexed), capped at max_delay.
+    /// Exponential backoff for attempt (0-indexed), capped at `max_delay`.
     #[must_use]
     pub fn delay_for_attempt(&self, attempt: u32) -> Duration {
         let exponent = i32::try_from(attempt).unwrap_or(i32::MAX);
@@ -36,7 +36,7 @@ impl RetryPolicy {
         delay.min(self.max_delay)
     }
 
-    /// True if attempt < max_attempts.
+    /// True if attempt < `max_attempts`.
     #[must_use]
     pub const fn should_retry(&self, attempt: u32) -> bool {
         attempt < self.max_attempts
@@ -67,6 +67,7 @@ impl Default for CircuitBreaker {
 }
 
 impl CircuitBreaker {
+    #[must_use]
     pub const fn new(failure_threshold: u32, recovery_timeout: Duration) -> Self {
         Self {
             state: CircuitState::Closed,
@@ -79,7 +80,7 @@ impl CircuitBreaker {
         }
     }
 
-    /// True if attempt allowed; may transition Open → HalfOpen when timeout elapsed.
+    /// True if attempt allowed; may transition Open → `HalfOpen` when timeout elapsed.
     pub fn can_attempt(&mut self) -> bool {
         match self.state {
             CircuitState::Closed | CircuitState::HalfOpen => true,
@@ -150,6 +151,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[expect(clippy::float_cmp)]
     fn retry_policy_default() {
         let p = RetryPolicy::default();
         assert_eq!(p.max_attempts, 3);

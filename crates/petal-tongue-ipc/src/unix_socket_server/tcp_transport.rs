@@ -17,10 +17,10 @@ use super::handshake::{is_btsp_json_announcement, is_phase3_cipher, try_phase3_u
 /// After a successful BTSP handshake with a non-null cipher, attempts
 /// Phase 3 transport switch to encrypted frame I/O.
 ///
-/// For JSON-line BTSP: the stream is split and wrapped in a BufReader
-/// **before** the handshake, and the same BufReader is carried through
+/// For JSON-line BTSP: the stream is split and wrapped in a `BufReader`
+/// **before** the handshake, and the same `BufReader` is carried through
 /// to Phase 3 negotiate + encrypted framing. This prevents byte loss
-/// from a transient BufReader that prefetches beyond the handshake
+/// from a transient `BufReader` that prefetches beyond the handshake
 /// (barraCuda Sprint 51b / coralReef Iter 90 pattern).
 pub(super) async fn handle_tcp_with_btsp(
     handlers: &RpcHandlers,
@@ -64,7 +64,7 @@ pub(super) async fn handle_tcp_with_btsp(
     Ok(())
 }
 
-/// TCP JSON-line BTSP: split first, BufReader survives through Phase 3.
+/// TCP JSON-line BTSP: split first, `BufReader` survives through Phase 3.
 async fn run_tcp_json_line_btsp(
     handlers: &RpcHandlers,
     stream: tokio::net::TcpStream,
@@ -113,7 +113,7 @@ async fn run_tcp_json_line_btsp(
     unix_socket_connection::handle_connection_split(handlers, buf_reader, pin_writer, ctx).await
 }
 
-/// TCP length-prefixed BTSP: handshake reads raw frames, no BufReader.
+/// TCP length-prefixed BTSP: handshake reads raw frames, no `BufReader`.
 async fn run_tcp_length_prefixed_btsp(
     handlers: &RpcHandlers,
     mut stream: tokio::net::TcpStream,

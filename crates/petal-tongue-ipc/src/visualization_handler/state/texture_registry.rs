@@ -24,7 +24,7 @@ pub struct TextureEntry {
     pub width: u32,
     pub height: u32,
     pub format: TextureFormat,
-    /// Raw pixel bytes (length = width * height * bytes_per_pixel).
+    /// Raw pixel bytes (length = width * height * `bytes_per_pixel`).
     /// Refcounted via `Bytes` for zero-copy sharing across renderers.
     pub data: Bytes,
     /// Monotonically increasing version; bumped on re-upload so renderers

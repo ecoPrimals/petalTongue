@@ -9,10 +9,11 @@ use petal_tongue_scene::scene_graph::SceneGraph;
 
 use crate::compile::{compile_scene_to_modality, scene_to_svg};
 
-/// Compile a grammar expression and data to a SceneGraph, returned as JSON.
+/// Compile a grammar expression and data to a `SceneGraph`, returned as JSON.
 ///
 /// Useful for springs that want to inspect or transform the scene graph
 /// before rendering.
+#[must_use]
 #[wasm_bindgen]
 pub fn compile_scene(grammar_json: &str, data_json: &str) -> String {
     let expr: GrammarExpr = match serde_json::from_str(grammar_json) {
@@ -38,10 +39,11 @@ pub fn compile_scene(grammar_json: &str, data_json: &str) -> String {
     }
 }
 
-/// Render a pre-built SceneGraph (as JSON) to SVG.
+/// Render a pre-built `SceneGraph` (as JSON) to SVG.
 ///
 /// Accepts the JSON output of `compile_scene` or any valid `SceneGraph`
 /// JSON, and renders it to SVG without recompilation.
+#[must_use]
 #[wasm_bindgen]
 pub fn render_scene(scene_json: &str) -> String {
     let scene: SceneGraph = match serde_json::from_str(scene_json) {
@@ -52,7 +54,8 @@ pub fn render_scene(scene_json: &str) -> String {
     scene_to_svg(&scene)
 }
 
-/// Render a pre-built SceneGraph to a specified modality.
+/// Render a pre-built `SceneGraph` to a specified modality.
+#[must_use]
 #[wasm_bindgen]
 pub fn render_scene_to_modality(scene_json: &str, modality: &str) -> String {
     let scene: SceneGraph = match serde_json::from_str(scene_json) {

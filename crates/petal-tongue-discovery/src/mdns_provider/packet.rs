@@ -132,6 +132,9 @@ fn collect_answer_records(data: &[u8], header: &DnsHeader) -> DiscoveryResult<Pa
 ///
 /// Extracts service information from DNS-SD response using proper DNS parsing.
 /// Parses PTR, SRV, TXT, and A records to build provider information.
+///
+/// # Errors
+/// Returns `DiscoveryError` if the packet cannot be parsed or is not a DNS response.
 pub fn parse_mdns_response(data: &[u8], addr: SocketAddr) -> DiscoveryResult<ProviderMetadata> {
     let header = DnsHeader::parse(data)?;
 

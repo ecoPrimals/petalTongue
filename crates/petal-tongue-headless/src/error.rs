@@ -57,8 +57,7 @@ mod tests {
             panic!("intentional poison");
         });
         let _ = h.join();
-        let poison_err = lock.write().unwrap_err();
-        let err: HeadlessError = poison_err.into();
+        let err: HeadlessError = lock.write().unwrap_err().into();
         assert!(matches!(err, HeadlessError::LockPoisoned(_)));
     }
 }

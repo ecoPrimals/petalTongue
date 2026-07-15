@@ -96,6 +96,7 @@ mod tests {
     }
 
     #[test]
+    #[expect(clippy::float_cmp, reason = "test: exact known pulse timing values")]
     fn from_commands_produces_correct_pulses() {
         let commands = vec![
             cmd(0.5, 0.1, [0.2, 0.3], HapticPattern::Pulse),
@@ -138,12 +139,12 @@ mod tests {
         let at_05 = seq.query_at(0.05);
         assert_eq!(at_05.len(), 1);
 
-        let at_1 = seq.query_at(0.1);
-        assert_eq!(at_1.len(), 1);
-        assert_eq!(at_1[0].pattern, HapticPattern::Sustained);
+        let at_second_pulse = seq.query_at(0.1);
+        assert_eq!(at_second_pulse.len(), 1);
+        assert_eq!(at_second_pulse[0].pattern, HapticPattern::Sustained);
 
-        let at_15 = seq.query_at(0.15);
-        assert_eq!(at_15.len(), 1);
+        let during_sustained = seq.query_at(0.15);
+        assert_eq!(during_sustained.len(), 1);
 
         let at_31 = seq.query_at(0.31);
         assert!(at_31.is_empty());
@@ -153,6 +154,7 @@ mod tests {
     }
 
     #[test]
+    #[expect(clippy::float_cmp, reason = "test: exact zero duration")]
     fn empty_sequence() {
         let seq = HapticSequence::from_commands(&[], &[]);
         assert!(seq.is_empty());

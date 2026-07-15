@@ -172,6 +172,7 @@ mod tests {
             .read()
             .expect("SAFETY: Lock poisoned - indicates panic in concurrent thread");
         assert_eq!(g.nodes().len(), 1);
+        drop(g);
     }
 
     #[test]
@@ -200,6 +201,7 @@ mod tests {
             .read()
             .expect("SAFETY: Lock poisoned - indicates panic in concurrent thread");
         assert_eq!(g.nodes().len(), 0);
+        drop(g);
     }
 
     #[cfg(feature = "offline-demo")]

@@ -30,6 +30,7 @@ impl SceneInteractionState {
         }
     }
 
+    #[must_use]
     pub fn is_selected(&self, data_id: &str) -> bool {
         self.selected_ids.iter().any(|id| id == data_id)
     }
@@ -67,6 +68,7 @@ impl ViewCamera {
     }
 
     /// Convert a screen-space point to scene-space, accounting for zoom + offset.
+    #[must_use]
     pub fn screen_to_scene(&self, screen_pt: egui::Pos2, widget_origin: egui::Pos2) -> egui::Pos2 {
         let local = screen_pt - widget_origin.to_vec2();
         egui::pos2(

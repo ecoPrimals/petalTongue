@@ -206,7 +206,7 @@ pub enum DataBinding {
         unit: String,
     },
     /// Linear genome/sequence annotation track (e.g., breseq genome overview,
-    /// EFM hypermutable sites, CryptKeeper burden map).
+    /// EFM hypermutable sites, `CryptKeeper` burden map).
     ///
     /// Renders as stacked horizontal bars where each segment represents an
     /// annotated region (gene, IS element, mutation) along a 1D coordinate axis.

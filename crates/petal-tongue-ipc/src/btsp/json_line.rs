@@ -1,18 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! JSON-line (newline-delimited) BTSP handshake relay.
 //!
-//! primalSpring sends ClientHello as `{"protocol":"btsp",...}\n` — a JSON line,
+//! primalSpring sends `ClientHello` as `{"protocol":"btsp",...}\n` — a JSON line,
 //! not a length-prefixed frame. When the accept loop detects this framing, the
 //! entire 4-step handshake must use JSON-line framing (not length-prefixed).
 //!
-//! Wire protocol (from PRIMALSPRING_PHASE45C_BTSP_DEFAULT_UPSTREAM_HANDOFF):
-//!   1. Read ClientHello line → extract `client_ephemeral_pub`
-//!   2. Call provider `btsp.session.create` → get session_token, server_ephemeral_pub, challenge
-//!   3. Write ServerHello line
-//!   4. Read ChallengeResponse line → extract response, preferred_cipher
+//! Wire protocol (from `PRIMALSPRING_PHASE45C_BTSP_DEFAULT_UPSTREAM_HANDOFF`):
+//!   1. Read `ClientHello` line → extract `client_ephemeral_pub`
+//!   2. Call provider `btsp.session.create` → get `session_token`, `server_ephemeral_pub`, challenge
+//!   3. Write `ServerHello` line
+//!   4. Read `ChallengeResponse` line → extract response, `preferred_cipher`
 //!   5. Call provider `btsp.session.verify`
 //!   6. Call provider `btsp.negotiate` (best-effort, non-fatal — Phase 3 cipher selection)
-//!   7. Write HandshakeComplete line (includes negotiated cipher or `"null"`)
+//!   7. Write `HandshakeComplete` line (includes negotiated cipher or `"null"`)
+
+use base64::Engine;
 
 use super::client::provider_call;
 use super::error::BtspHandshakeError;
@@ -82,7 +84,7 @@ fn json_str_or(val: &serde_json::Value, key: &str, alt: &str) -> String {
         .to_owned()
 }
 
-/// Exchange hello with provider: read ClientHello, create session, write ServerHello.
+/// Exchange hello with provider: read `ClientHello`, create session, write `ServerHello`.
 async fn exchange_hello_json_line<R, W>(
     reader: &mut R,
     writer: &mut W,
@@ -144,7 +146,7 @@ where
 
 /// Perform the full JSON-line BTSP handshake relay on a split stream.
 ///
-/// The ClientHello line has already been peeked (still in the `BufReader`
+/// The `ClientHello` line has already been peeked (still in the `BufReader`
 /// buffer) — this function consumes it via `read_line`, then continues the
 /// relay using JSON-line framing throughout.
 ///
@@ -201,7 +203,6 @@ where
         return Err(BtspHandshakeError::VerifyFailed { reason });
     }
 
-    use base64::Engine;
     let session_key = verify_result
         .get("session_key")
         .and_then(serde_json::Value::as_str)

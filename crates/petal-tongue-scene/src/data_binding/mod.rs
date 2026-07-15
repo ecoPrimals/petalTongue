@@ -386,6 +386,7 @@ impl DataBindingCompiler {
                             .unwrap_or_default();
                         let ring_idx = arc.get("ring").and_then(Value::as_u64).map_or_else(
                             || rings.iter().position(|r| r == ring_name).unwrap_or(0),
+                            #[expect(clippy::cast_possible_truncation, reason = "ring index fits in usize")]
                             |idx| idx as usize,
                         );
                         let start = arc.get("start_angle").and_then(Value::as_f64)?;

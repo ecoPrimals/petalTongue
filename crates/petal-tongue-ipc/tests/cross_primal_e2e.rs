@@ -3,7 +3,7 @@
 //! Cross-primal IPC end-to-end tests.
 //!
 //! Exercises the Unix socket JSON-RPC protocol between petalTongue's server
-//! and client using the real UnixSocketServer and JsonRpcClient.
+//! and client using the real `UnixSocketServer` and `JsonRpcClient`.
 
 use petal_tongue_core::graph_engine::GraphEngine;
 use petal_tongue_core::test_fixtures::env_test_helpers;
@@ -12,8 +12,8 @@ use std::sync::Arc;
 use std::sync::RwLock;
 use std::time::Duration;
 
-/// Spawn the real UnixSocketServer on a tempdir socket and return (tempdir, socket_path, server_handle).
-/// The server runs until the returned JoinHandle is dropped/aborted.
+/// Spawn the real `UnixSocketServer` on a tempdir socket and return (`tempdir`, `socket_path`, `server_handle`).
+/// The server runs until the returned `JoinHandle` is dropped/aborted.
 fn spawn_real_server() -> (
     tempfile::TempDir,
     std::path::PathBuf,

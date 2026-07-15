@@ -481,8 +481,14 @@ fn handle_texture_upload_success() {
     assert_eq!(r["texture_id"], "test-tex");
     assert_eq!(r["status"], "loaded");
 
-    let state = h.viz_state.read().unwrap();
-    let entry = state.texture_registry.get("test-tex").expect("registered");
+    let entry = {
+        let state = h.viz_state.read().unwrap();
+        state
+            .texture_registry
+            .get("test-tex")
+            .expect("registered")
+            .clone()
+    };
     assert_eq!(entry.width, 4);
     assert_eq!(entry.height, 4);
     assert_eq!(entry.data.len(), 64);
@@ -545,8 +551,14 @@ fn handle_texture_attach_success() {
     assert_eq!(r["texture_id"], "godot-fb");
     assert_eq!(r["status"], "attached");
 
-    let state = h.viz_state.read().unwrap();
-    let entry = state.texture_registry.get("godot-fb").expect("registered");
+    let entry = {
+        let state = h.viz_state.read().unwrap();
+        state
+            .texture_registry
+            .get("godot-fb")
+            .expect("registered")
+            .clone()
+    };
     assert_eq!(entry.width, 320);
     assert_eq!(entry.height, 240);
 }

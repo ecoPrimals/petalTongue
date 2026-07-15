@@ -85,8 +85,8 @@ impl VisualInversePipeline {
     /// Convert screen coordinates to world coordinates.
     ///
     /// Inverts the camera transform: `world = camera_pos + (screen - center) / zoom`
+    #[expect(clippy::cast_possible_truncation, reason = "screen coordinates: f32 sufficient")]
     fn screen_to_world(
-        &self,
         screen_x: f32,
         screen_y: f32,
         context: &InteractionContext,
@@ -127,7 +127,7 @@ impl VisualInversePipeline {
         context: &InteractionContext,
         plan: &RenderPlan,
     ) -> Option<DataRow> {
-        let (world_x, world_y) = self.screen_to_world(screen_x, screen_y, context);
+        let (world_x, world_y) = Self::screen_to_world(screen_x, screen_y, context);
 
         for panel in &plan.panels {
             if !panel
@@ -174,7 +174,8 @@ impl InversePipeline for VisualInversePipeline {
             _ => return None,
         };
 
-        let (world_x, world_y) = self.screen_to_world(screen_x, screen_y, context);
+        let (world_x, world_y) = Self::screen_to_world(screen_x, screen_y, context);
+        #[expect(clippy::cast_possible_truncation, reason = "screen coordinates: f32 sufficient")]
         let zoom = context.zoom as f32;
 
         self.hit_test(world_x, world_y, zoom).map_or_else(

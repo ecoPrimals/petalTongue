@@ -449,6 +449,7 @@ fn test_describe_node_audio_position_center() {
 }
 
 #[test]
+#[expect(clippy::cast_precision_loss)]
 fn test_activity_to_volume_formula() {
     let activity = |cap_count: usize| {
         let normalized = (cap_count as f32 / 10.0).min(1.0);

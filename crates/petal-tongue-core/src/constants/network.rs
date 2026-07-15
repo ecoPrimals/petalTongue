@@ -69,7 +69,7 @@ pub const DEFAULT_GPU_COMPUTE_ENDPOINT: &str = "tarpc://localhost:9001";
 pub const LEGACY_TMP_PREFIX: &str = "/tmp";
 
 /// Alternative runtime directory for ecosystem sockets.
-/// Searched after XDG_RUNTIME_DIR and /tmp when scanning for primals.
+/// Searched after `XDG_RUNTIME_DIR` and /tmp when scanning for primals.
 pub const ALTERNATIVE_RUN_DIR: &str = "/var/run/ecoPrimals";
 
 /// Default ecosystem runtime directory segment under `XDG_RUNTIME_DIR`.
@@ -90,7 +90,7 @@ pub const DEFAULT_DISCOVERY_SERVICE_SOCKET: &str = "discovery-service";
 /// Default legacy biomeOS socket name.
 pub const DEFAULT_BIOMEOS_LEGACY_SOCKET: &str = "biomeos";
 
-/// Ecosystem runtime directory segment under XDG_RUNTIME_DIR.
+/// Ecosystem runtime directory segment under `XDG_RUNTIME_DIR`.
 /// Override via `ECOSYSTEM_RUNTIME_DIR` for custom deployments.
 #[must_use]
 pub fn ecosystem_runtime_dir_name() -> Cow<'static, str> {

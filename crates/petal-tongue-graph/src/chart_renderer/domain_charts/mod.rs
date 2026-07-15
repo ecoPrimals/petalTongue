@@ -2,8 +2,8 @@
 //! Domain-aware chart renderers for scatter visualizations.
 //!
 //! Colors are selected from `DomainPalette` based on an optional domain hint.
-//! Legacy pre-SceneGraph renderers (heatmap, genome_track, circular_map,
-//! fieldmap, spectrum) have been removed — the SceneGraph grammar pipeline
+//! Legacy pre-SceneGraph renderers (heatmap, `genome_track`, `circular_map`,
+//! fieldmap, spectrum) have been removed — the `SceneGraph` grammar pipeline
 //! handles those modalities.
 
 mod types;

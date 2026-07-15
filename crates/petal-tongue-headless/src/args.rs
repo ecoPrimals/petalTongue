@@ -28,7 +28,7 @@ pub enum OutputMode {
     Png,
     /// HTML export (SVG wrapped in standalone HTML document) (PT-04)
     Html,
-    /// Export all baseline DataBindings as individual SVGs for validation
+    /// Export all baseline `DataBindings` as individual SVGs for validation
     Baselines,
 }
 

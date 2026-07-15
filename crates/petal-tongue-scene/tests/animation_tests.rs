@@ -294,6 +294,7 @@ fn animation_state_lerp_f32_complete() {
 }
 
 #[test]
+#[expect(clippy::float_cmp, reason = "test: exact known animation state values")]
 fn animation_state_clone() {
     let anim = Animation::fade_in("n", 1.0);
     let state = AnimationState::new(anim);

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Document modality compilers — DocumentNode tree to output formats.
+//! Document modality compilers — `DocumentNode` tree to output formats.
 //!
 //! These compilers produce multi-modal output from document content,
 //! mirroring the existing scene-graph compilers but for rich text content.
@@ -12,14 +12,16 @@ use crate::document::{DocumentNode, EntityRef, Inline, ListItem, NavSection, Pag
 
 use super::ModalityOutput;
 
-/// Compile a DocumentNode tree to HTML for sighted users.
+/// Compile a `DocumentNode` tree to HTML for sighted users.
+#[must_use]
 pub fn compile_to_html(doc: &DocumentNode) -> ModalityOutput {
     let mut buf = String::with_capacity(4096);
     render_html_node(doc, &mut buf);
     ModalityOutput::Svg(Bytes::from(buf))
 }
 
-/// Compile a DocumentNode tree to accessible text description (screen readers).
+/// Compile a `DocumentNode` tree to accessible text description (screen readers).
+#[must_use]
 pub fn compile_to_description(doc: &DocumentNode) -> ModalityOutput {
     let mut buf = String::with_capacity(2048);
     render_description_node(doc, &mut buf, 0);

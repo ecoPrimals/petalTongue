@@ -2,6 +2,7 @@
 #![allow(
     clippy::unwrap_used,
     clippy::expect_used,
+    clippy::significant_drop_tightening,
     reason = "test code uses unwrap/expect for brevity"
 )]
 //! Headless integration tests: multi-frame sequences, mode switching, and continuous rendering.

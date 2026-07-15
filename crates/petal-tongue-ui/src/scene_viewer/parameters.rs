@@ -7,6 +7,15 @@ use petal_tongue_scene::data_binding::DataBindingCompiler;
 use petal_tongue_scene::grammar::{CoordinateSystem, GeometryType, ScaleType};
 use petal_tongue_scene::render_plan::RenderPlan;
 
+#[derive(Clone, Debug)]
+struct ParamOverride {
+    geometry: GeometryType,
+    coordinate: CoordinateSystem,
+    x_scale: ScaleType,
+    y_scale: ScaleType,
+    dirty: bool,
+}
+
 /// Render a collapsible parameter strip for interactive exploration.
 /// Returns an overridden `RenderPlan` if the user has tweaked parameters,
 /// or `None` to use the default compiled plan.
@@ -38,22 +47,13 @@ pub fn render_parameter_strip(
 
     let override_id = egui::Id::new("param_override").with(key);
 
-    #[derive(Clone, Debug)]
-    struct ParamOverride {
-        geometry: GeometryType,
-        coordinate: CoordinateSystem,
-        x_scale: ScaleType,
-        y_scale: ScaleType,
-        dirty: bool,
-    }
-
     let orig = &compiled.grammar;
     let default_x_scale = orig
         .scales
         .iter()
         .find(|s| s.variable == "x")
         .map_or(ScaleType::Linear, |s| s.scale_type);
-    let default_y_scale = orig
+    let y_axis_scale = orig
         .scales
         .iter()
         .find(|s| s.variable == "y")
@@ -64,7 +64,7 @@ pub fn render_parameter_strip(
             geometry: orig.geometry,
             coordinate: orig.coordinate,
             x_scale: default_x_scale,
-            y_scale: default_y_scale,
+            y_scale: y_axis_scale,
             dirty: false,
         })
     });
@@ -175,12 +175,12 @@ pub fn render_parameter_strip(
                         .size(10.0)
                         .color(egui::Color32::from_gray(160)),
                 );
-                let current_ys = scale_options
+                let current_y_label = scale_options
                     .iter()
                     .find(|(_, s)| *s == params.y_scale)
                     .map_or("?", |(l, _)| l);
                 egui::ComboBox::from_id_salt(egui::Id::new("param_ys").with(key))
-                    .selected_text(current_ys)
+                    .selected_text(current_y_label)
                     .width(80.0)
                     .show_ui(ui, |ui| {
                         for (label, scale) in &scale_options {
@@ -199,7 +199,7 @@ pub fn render_parameter_strip(
                         geometry: orig.geometry,
                         coordinate: orig.coordinate,
                         x_scale: default_x_scale,
-                        y_scale: default_y_scale,
+                        y_scale: y_axis_scale,
                         dirty: false,
                     };
                     changed = true;
@@ -229,8 +229,8 @@ pub fn render_parameter_strip(
                 scale.scale_type = params.y_scale;
             }
         }
-        let compiler = GrammarCompiler::new();
-        let scene = compiler.compile(&grammar, &data);
+        let grammar_compiler = GrammarCompiler::new();
+        let scene = grammar_compiler.compile(&grammar, &data);
         RenderPlan::new(scene, grammar)
     })
 }

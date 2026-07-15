@@ -128,6 +128,7 @@ impl TutorialMode {
                             Self::populate_minimal_example(&mut graph);
                             graph.set_layout(layout);
                             graph.layout(100);
+                            drop(graph);
                             info!("✅ Tutorial data loaded (minimal example)");
                             return;
                         }
@@ -169,6 +170,7 @@ impl TutorialMode {
             // Apply layout
             graph.set_layout(layout);
             graph.layout(100);
+            drop(graph);
 
             info!("✅ Tutorial data loaded successfully");
             info!("🎓 Tutorial mode active - explore the sandbox!");

@@ -125,7 +125,7 @@ pub(super) fn compile_modality(
 /// Compile a `DataBinding` directly to the requested modality output.
 ///
 /// For `GameScene` and `Soundscape` bindings, produces rich semantic output
-/// (descriptions, sonification, haptics) that the generic SceneGraph path
+/// (descriptions, sonification, haptics) that the generic `SceneGraph` path
 /// cannot provide. For other binding types, delegates to `compile_modality`.
 pub(super) fn compile_binding_modality(
     binding: &DataBinding,

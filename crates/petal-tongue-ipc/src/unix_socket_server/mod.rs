@@ -20,11 +20,11 @@ use tracing::{debug, error, info, warn};
 /// Check if a UDS bind error is eligible for TCP fallback.
 ///
 /// Returns `true` when:
-/// - The error is `PermissionDenied` (EACCES — Android SELinux) AND
+/// - The error is `PermissionDenied` (EACCES — Android `SELinux`) AND
 /// - `PRIMAL_BIND_MODE` is `fallback`, `auto`, `tcp_only`, or `tcp`
 ///
 /// This enables graceful degradation on grapheneGate (Pixel 8) where
-/// SELinux denies UDS bind in `/data/local/tmp`. `deploy_pixel.sh`
+/// `SELinux` denies UDS bind in `/data/local/tmp`. `deploy_pixel.sh`
 /// exports `PRIMAL_BIND_MODE=fallback` to opt in.
 fn is_uds_fallback_eligible(error: &std::io::Error) -> bool {
     if error.kind() != std::io::ErrorKind::PermissionDenied {
@@ -223,7 +223,7 @@ impl UnixSocketServer {
     ///
     /// BTSP Phase 2: when `BtspHandshakeConfig` is available from the environment,
     /// every accepted connection must complete a handshake (delegated to the security provider)
-    /// before JSON-RPC is served. Development mode (no FAMILY_ID) skips handshake.
+    /// before JSON-RPC is served. Development mode (no `FAMILY_ID`) skips handshake.
     #[expect(
         clippy::too_many_lines,
         reason = "UDS server start: bind + fallback + accept loop"

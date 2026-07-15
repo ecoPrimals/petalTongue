@@ -447,6 +447,7 @@ mod tests {
     }
 
     #[test]
+    #[expect(clippy::float_cmp, reason = "test: exact known draw command values")]
     fn gpu_draw_command_circle_serialization() {
         let cmd = GpuDrawCommand::Circle {
             center: [100.0, 200.0],
@@ -470,6 +471,7 @@ mod tests {
     }
 
     #[test]
+    #[expect(clippy::float_cmp, reason = "test: exact known draw command values")]
     fn gpu_draw_command_polyline_serialization() {
         let cmd = GpuDrawCommand::Polyline {
             vertices: vec![[0.0, 0.0], [1.0, 1.0]],
@@ -496,6 +498,7 @@ mod tests {
     }
 
     #[test]
+    #[expect(clippy::float_cmp, reason = "test: exact known draw command values")]
     fn gpu_draw_command_fill_rect_serialization() {
         let cmd = GpuDrawCommand::FillRect {
             min: [10.0, 20.0],
@@ -535,6 +538,7 @@ mod tests {
     }
 
     #[test]
+    #[expect(clippy::float_cmp, reason = "test: exact known clear color value")]
     fn gpu_draw_command_clear_serialization() {
         let cmd = GpuDrawCommand::Clear {
             color: [0.1, 0.2, 0.3, 1.0],

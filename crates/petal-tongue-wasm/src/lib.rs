@@ -4,7 +4,7 @@
 //! Client-side WASM rendering module for petalTongue (WS-4).
 //!
 //! Compiles the Grammar of Graphics pipeline to `wasm32-unknown-unknown` so
-//! browsers can render DataBindings, grammars, dashboards, and scene graphs
+//! browsers can render `DataBindings`, grammars, dashboards, and scene graphs
 //! **without round-tripping to a petalTongue server**.  This is the foundation
 //! for offline sporePrint content and lithoSpore deployments.
 //!
@@ -69,6 +69,7 @@ pub fn init() {
 }
 
 /// Return the petalTongue WASM module version.
+#[must_use]
 #[wasm_bindgen]
 pub fn version() -> String {
     env!("CARGO_PKG_VERSION").to_string()

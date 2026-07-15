@@ -394,6 +394,7 @@ fn color_serialization_roundtrip() {
 }
 
 #[test]
+#[expect(clippy::float_cmp, reason = "test: exact known stroke style values")]
 fn stroke_style_serialization_roundtrip() {
     let s = StrokeStyle {
         color: Color::from_rgba8(255, 0, 0, 255),
@@ -543,6 +544,7 @@ fn primitive_mesh_empty_vertices() {
 }
 
 #[test]
+#[expect(clippy::float_cmp, reason = "test: exact known color channel values")]
 fn stroke_style_clone() {
     let s = StrokeStyle::default();
     let cloned = s;

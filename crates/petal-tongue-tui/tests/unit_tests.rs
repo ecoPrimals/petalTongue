@@ -210,10 +210,10 @@ mod state_tests {
         state.register_capability("songbird".to_string(), vec!["discovery".to_string()]);
         state.register_capability("toadstool".to_string(), vec!["compute".to_string()]);
 
-        let stats = state.stats().await;
-        assert_eq!(stats.view, View::Topology);
-        assert_eq!(stats.registered_capabilities, 2);
-        assert_eq!(stats.log_count, 0);
+        let view_stats = state.stats().await;
+        assert_eq!(view_stats.view, View::Topology);
+        assert_eq!(view_stats.registered_capabilities, 2);
+        assert_eq!(view_stats.log_count, 0);
     }
 }
 

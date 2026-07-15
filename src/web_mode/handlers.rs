@@ -342,6 +342,8 @@ pub(super) async fn gate_mesh_handler() -> Json<serde_json::Value> {
 pub(super) async fn ecosystem_handler() -> Json<serde_json::Value> {
     use petal_tongue_core::gate_mesh;
 
+    let manifest = load_ecosystem_manifest();
+
     let atomics: Vec<serde_json::Value> = gate_mesh::NUCLEUS_ATOMICS
         .iter()
         .map(|atomic| {
@@ -373,18 +375,42 @@ pub(super) async fn ecosystem_handler() -> Json<serde_json::Value> {
         })
         .collect();
 
+    let primary_gate = manifest
+        .get("compute")
+        .and_then(|c| c.get("primary_gate"))
+        .and_then(toml::Value::as_str)
+        .unwrap_or_else(|| {
+            gate_mesh::gpu_nodes()
+                .next()
+                .map_or("unknown", |n| n.id)
+        });
+
+    let wave = manifest
+        .get("ecosystem")
+        .and_then(|e| e.get("wave"))
+        .and_then(toml::Value::as_integer);
+
+    let posture = manifest
+        .get("ecosystem")
+        .and_then(|e| e.get("posture"))
+        .and_then(toml::Value::as_str);
+
+    let has_manifest = !manifest.is_empty();
+
     Json(serde_json::json!({
         "nucleus": atomics,
         "compute": {
             "gpu_nodes": gpu_nodes,
-            "primary_gate": "ironGate",
+            "primary_gate": primary_gate,
         },
         "metrics": {
             "total_primals": gate_mesh::nucleus_primal_count(),
             "total_atomics": gate_mesh::NUCLEUS_ATOMICS.len(),
             "gates_enrolled": gate_mesh::count_by_enrollment(gate_mesh::GateEnrollment::Enrolled),
             "gpu_capable": gate_mesh::gpu_nodes().count(),
-            "source": "static",
+            "wave": wave,
+            "posture": posture,
+            "source": if has_manifest { "ecosystem_manifest" } else { "static_fallback" },
         },
     }))
 }
@@ -481,8 +507,7 @@ pub(super) async fn physical_topology_handler() -> Json<serde_json::Value> {
 pub(super) async fn mesh_peers_handler(
     State(service): State<Arc<DataService>>,
 ) -> Json<serde_json::Value> {
-    let peers: Vec<serde_json::Value> = service
-        .mesh_peers()
+    let peers: Vec<serde_json::Value> = DataService::mesh_peers()
         .iter()
         .map(|p| {
             serde_json::json!({
@@ -501,8 +526,7 @@ pub(super) async fn mesh_peers_handler(
         "peers": peers,
         "connected_count": connected,
         "total_count": peers.len(),
-        "source": "static_derived",
-        "note": "Will be replaced by live songBird mesh.peers IPC when available",
+        "source": if service.has_neural_api() { "topology_enriched" } else { "static_derived" },
     }))
 }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Proprioception module tests
+#![expect(clippy::float_cmp)]
 
 use super::*;
 use crate::input_verification::InputModality;

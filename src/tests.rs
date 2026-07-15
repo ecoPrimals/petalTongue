@@ -475,7 +475,7 @@ fn test_subcommand_routing_headless_bind_resolution() {
     assert!(bind.is_none(), "default headless has no explicit bind");
 }
 
-/// UniBin v1.1: --port flag on headless resolves to 0.0.0.0:<port>
+/// `UniBin` v1.1: --port flag on headless resolves to 0.0.0.0:<port>
 #[test]
 fn test_cli_parse_headless_port_flag() {
     let cli = Cli::parse_from(["petaltongue", "headless", "--port", "9000"]);
@@ -486,7 +486,7 @@ fn test_cli_parse_headless_port_flag() {
     assert!(bind.is_none());
 }
 
-/// UniBin v1.1: --port flag on web resolves to 0.0.0.0:<port>
+/// `UniBin` v1.1: --port flag on web resolves to 0.0.0.0:<port>
 #[test]
 fn test_cli_parse_web_port_flag() {
     let cli = Cli::parse_from(["petaltongue", "web", "--port", "4000"]);
@@ -514,7 +514,7 @@ fn test_resolve_bind_precedence() {
     );
 }
 
-/// Config loading error path - same map_err as main() line 142
+/// Config loading error path - same `map_err` as `main()` line 142
 #[test]
 fn test_config_from_env_error_produces_app_error() {
     use petal_tongue_core::test_fixtures::env_test_helpers;
@@ -543,7 +543,7 @@ headless_port = 8080\n";
     let _ = std::fs::remove_file(&temp);
 }
 
-/// Result error handling path - exercises the Err branch in main() match result
+/// Result error handling path - exercises the Err branch in `main()` match result
 #[test]
 fn test_app_error_result_propagates() {
     let err = AppError::UiNotAvailable;

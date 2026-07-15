@@ -174,7 +174,7 @@ impl LocalHttpClient {
     ///
     /// Returns `HttpClientError` on invalid URI, serialization failure,
     /// network failure, timeout, or body read error.
-    pub async fn post_json<T: serde::Serialize>(
+    pub async fn post_json<T: serde::Serialize + Sync>(
         &self,
         url: &str,
         body: &T,
@@ -189,7 +189,7 @@ impl LocalHttpClient {
     ///
     /// Returns `HttpClientError` on invalid URI, serialization failure,
     /// network failure, timeout, or body read error.
-    pub async fn post_json_with_headers<T: serde::Serialize>(
+    pub async fn post_json_with_headers<T: serde::Serialize + Sync>(
         &self,
         url: &str,
         body: &T,

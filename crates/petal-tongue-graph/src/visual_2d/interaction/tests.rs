@@ -153,6 +153,7 @@ fn create_node_at_adds_to_graph() {
 
     let g = graph.read().expect("read graph");
     assert_eq!(g.nodes().len(), 1);
+    drop(g);
     assert_eq!(
         renderer
             .selected_node
@@ -183,6 +184,7 @@ fn create_edge_adds_connection() {
 
     let g = graph.read().expect("read graph");
     assert_eq!(g.edges().len(), 1);
+    drop(g);
 }
 
 #[test]
@@ -199,12 +201,14 @@ fn delete_node_removes_from_graph() {
     {
         let g = graph.read().expect("read graph");
         assert_eq!(g.nodes().len(), 1);
+        drop(g);
     }
 
     delete_node(&renderer, "interactive-node-1");
 
     let g = graph.read().expect("read graph");
     assert_eq!(g.nodes().len(), 0);
+    drop(g);
 }
 
 #[test]
@@ -233,6 +237,7 @@ fn create_edge_duplicate_skipped() {
 
     let g = graph.read().expect("read graph");
     assert_eq!(g.edges().len(), 1);
+    drop(g);
 }
 
 #[test]
@@ -261,6 +266,7 @@ fn create_edge_reverse_duplicate_skipped() {
 
     let g = graph.read().expect("read graph");
     assert_eq!(g.edges().len(), 1);
+    drop(g);
 }
 
 #[test]

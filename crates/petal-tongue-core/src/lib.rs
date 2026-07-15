@@ -103,7 +103,7 @@ pub use config::PetalTongueConfig;
 /// petalTongue errors.
 pub use error::PetalTongueError;
 
-/// OrExit trait for zero-panic validation binaries
+/// `OrExit` trait for zero-panic validation binaries
 pub use or_exit::OrExit;
 
 /// Visualization types

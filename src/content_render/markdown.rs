@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Markdown-to-`DocumentNode` compiler using `pulldown-cmark`.
 //!
-//! Handles the event-driven parsing of CommonMark + GFM extensions into a
+//! Handles the event-driven parsing of `CommonMark` + GFM extensions into a
 //! typed `DocumentNode` tree.
 
 use petal_tongue_scene::document::{DocumentNode, Inline, ListItem};

@@ -171,9 +171,11 @@ pub struct Sensory {
 
 #[cfg(test)]
 mod tests {
+    #![expect(clippy::float_cmp)]
+
     use super::*;
     use crate::scenario::config::UiConfig;
-    use crate::scenario::ecosystem::{Ecosystem, Position, PrimalDefinition};
+    use crate::scenario::ecosystem::{Ecosystem, Position, PrimalDefinition, PrimalMetrics};
     use crate::scenario::sensory::SensoryConfig;
 
     fn minimal_scenario() -> Scenario {
@@ -208,7 +210,7 @@ mod tests {
             confidence: 100,
             position: Position { x: 0.0, y: 0.0 },
             capabilities: vec![],
-            metrics: Default::default(),
+            metrics: PrimalMetrics::default(),
             proprioception: None,
             data_bindings: vec![],
             threshold_ranges: vec![],
@@ -273,7 +275,7 @@ mod tests {
             confidence: 100,
             position: Position { x: 0.0, y: 0.0 },
             capabilities: vec![],
-            metrics: Default::default(),
+            metrics: PrimalMetrics::default(),
             proprioception: None,
             data_bindings: vec![],
             threshold_ranges: vec![],

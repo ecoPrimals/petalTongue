@@ -13,6 +13,7 @@ use petal_tongue_discovery::HangHealthCheckProvider;
 use petal_tongue_discovery::HealthStatus;
 use petal_tongue_discovery::KnownVisualizationProvider;
 use petal_tongue_discovery::UnixSocketProvider;
+#[cfg(feature = "cache")]
 use petal_tongue_discovery::cache::ProviderCache;
 use petal_tongue_discovery::capability_parse::parse_capabilities_from_response;
 #[cfg(feature = "test-fixtures")]
@@ -25,6 +26,7 @@ use petal_tongue_discovery::errors::{DiscoveryError, DiscoveryResult};
 use petal_tongue_discovery::parse_mdns_response;
 use serde_json::json;
 use std::net::SocketAddr;
+#[cfg(feature = "cache")]
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -77,6 +79,7 @@ async fn chaos_concurrent_demo_provider_registration() {
     assert!(result.failures.is_empty());
 }
 
+#[cfg(feature = "cache")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn chaos_cache_invalidation_under_load() {
     let cache: Arc<ProviderCache<Vec<u8>>> = Arc::new(ProviderCache::new(16));

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Dashboard and batch DataBinding rendering for the WASM API.
+//! Dashboard and batch `DataBinding` rendering for the WASM API.
 
 use wasm_bindgen::prelude::*;
 
@@ -29,6 +29,7 @@ use crate::compile::scene_to_svg;
 /// ```
 ///
 /// Pass empty string for `config_json` to use defaults.
+#[must_use]
 #[wasm_bindgen]
 pub fn render_dashboard(bindings_json: &str, config_json: &str) -> String {
     let bindings: Vec<DataBinding> = match serde_json::from_str(bindings_json) {
@@ -56,6 +57,7 @@ pub fn render_dashboard(bindings_json: &str, config_json: &str) -> String {
 /// Each element is `{"id": "...", "svg": "...", "label": "..."}`.
 /// Useful when the caller wants to position panels with CSS rather than
 /// using the built-in dashboard grid.
+#[must_use]
 #[wasm_bindgen]
 pub fn render_bindings(bindings_json: &str, domain: &str) -> String {
     let bindings: Vec<DataBinding> = match serde_json::from_str(bindings_json) {
@@ -97,6 +99,10 @@ fn parse_dashboard_config(json: &str) -> DashboardConfig {
         "vertical" => DashboardLayout::Vertical,
         "horizontal" => DashboardLayout::Horizontal,
         _ => DashboardLayout::Grid {
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "max_columns is a small UI layout value; values beyond usize::MAX are unrealistic"
+            )]
             max_columns: v
                 .get("max_columns")
                 .and_then(serde_json::Value::as_u64)

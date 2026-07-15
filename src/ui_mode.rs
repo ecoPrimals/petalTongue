@@ -4,7 +4,7 @@
 //! Platform dependencies: wayland-sys, x11-sys (acceptable for ecoBud)
 //! This is the 1 mode (out of 5) that has platform dependencies
 //!
-//! **IPC / PT-06:** The UniBin `petaltongue ui` path uses `PetalTongueApp::new_with_shared_graph`
+//! **IPC / PT-06:** The `UniBin` `petaltongue ui` path uses `PetalTongueApp::new_with_shared_graph`
 //! without spawning [`petal_tongue_ipc::UnixSocketServer`], so there is no JSON-RPC UDS or
 //! PT-06 `callback_tx` here. For IPC with push delivery, run `petaltongue server` or the
 //! standalone `petal-tongue` UI binary (which starts [`petal_tongue_ipc::UnixSocketServer`] in `main`).
@@ -254,8 +254,8 @@ mod tests {
         assert_eq!(parts[1], "Universal Representation System");
     }
 
-    /// Exercises the Eframe error path used in run_ui_blocking when eframe::run_native fails.
-    /// Same map_err pattern as run_ui_blocking line 97.
+    /// Exercises the Eframe error path used in `run_ui_blocking` when `eframe::run_native` fails.
+    /// Same `map_err` pattern as `run_ui_blocking` line 97.
     #[test]
     fn test_eframe_error_creation() {
         let err = AppError::Eframe("display failed".to_owned());
@@ -286,8 +286,8 @@ mod tests {
         // This just verifies the function signature compiles
     }
 
-    /// Exercises the TaskPanic error path used in run() when spawn_blocking panics.
-    /// Same map_err pattern as run() line 42.
+    /// Exercises the `TaskPanic` error path used in `run()` when `spawn_blocking` panics.
+    /// Same `map_err` pattern as `run()` line 42.
     #[tokio::test]
     #[cfg(feature = "ui")]
     async fn test_run_task_panic_error_path() {

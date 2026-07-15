@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! OrExit trait for zero-panic validation binaries.
+//! `OrExit` trait for zero-panic validation binaries.
 //!
 //! Extends `Result` and `Option` with `or_exit(context)` to log errors and exit cleanly.
 

@@ -18,6 +18,7 @@ impl GrammarCompiler {
     /// The render plan wraps the scene graph with panel bounds, axis metadata,
     /// and optional Tufte constraint results. Modality compilers and the
     /// interaction engine consume the plan for inverse transforms.
+    #[must_use]
     pub fn compile_plan(
         &self,
         expr: &GrammarExpr,

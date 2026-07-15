@@ -53,6 +53,9 @@ pub enum Commands {
 }
 
 /// Parse CLI arguments (for testing)
+///
+/// # Errors
+/// Returns a `clap::Error` if the arguments cannot be parsed.
 #[cfg(test)]
 pub fn parse_args(args: &[&str]) -> std::result::Result<Commands, clap::Error> {
     let cli = Cli::try_parse_from(args)?;

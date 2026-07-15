@@ -4,7 +4,7 @@
     clippy::expect_used,
     reason = "test code uses unwrap/expect for brevity"
 )]
-//! Integration tests for JsonRpcClient semantic methods and fallback paths.
+//! Integration tests for `JsonRpcClient` semantic methods and fallback paths.
 
 use petal_tongue_ipc::JsonRpcClient;
 use std::time::Duration;

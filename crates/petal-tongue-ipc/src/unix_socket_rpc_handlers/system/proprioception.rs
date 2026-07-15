@@ -2,7 +2,7 @@
 //! `proprioception.get` JSON-RPC handler.
 //!
 //! Returns a synthetic proprioception snapshot usable by composition scripts
-//! in all modes (server, live, ui). In server mode frame_rate is 0.0 and
+//! in all modes (server, live, ui). In server mode `frame_rate` is 0.0 and
 //! window dimensions are absent — compositions use this to detect headless
 //! deployments while still receiving a valid JSON structure.
 
@@ -12,7 +12,7 @@ use serde_json::json;
 
 /// Handle `proprioception.get`: return a proprioception snapshot.
 ///
-/// Fields consumed by composition scripts (nucleus_composition_lib.sh):
+/// Fields consumed by composition scripts (`nucleus_composition_lib.sh`):
 /// - `frame_rate` (f64): 0.0 in server/headless, real FPS when UI is live
 /// - `active_scenes` (u64): number of active visualization sessions
 /// - `user_interactivity` (str): "none" / "active"

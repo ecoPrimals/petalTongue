@@ -59,6 +59,10 @@ pub struct SandboxEdge {
 }
 
 /// Load sandbox scenario from file
+///
+/// # Errors
+///
+/// Returns an error if the sandbox directory, scenario file, or JSON parsing fails.
 pub fn load_sandbox_scenario(name: &str) -> Result<SandboxScenario, SandboxError> {
     let sandbox_path = find_sandbox_dir()?;
     let scenario_file = sandbox_path.join("scenarios").join(format!("{name}.json"));
@@ -158,6 +162,10 @@ pub fn list_sandbox_scenarios() -> Vec<String> {
 ///
 /// Loads `sandbox/scenarios/simple.json`. Returns error if file not found—
 /// callers should use `TutorialMode::populate_minimal_example` for graceful degradation.
+///
+/// # Errors
+///
+/// Returns an error if the default scenario file cannot be loaded.
 pub fn get_default_scenario() -> Result<SandboxScenario, SandboxError> {
     load_sandbox_scenario("simple")
 }

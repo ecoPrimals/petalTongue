@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Server-side BTSP handshake (delegates crypto to the security provider).
 
+use base64::Engine;
+
 use super::client::provider_call;
 use super::error::BtspHandshakeError;
 use super::framing::{read_frame, write_frame};
@@ -149,7 +151,6 @@ where
         return Err(BtspHandshakeError::VerifyFailed { reason });
     }
 
-    use base64::Engine;
     let session_key = verify
         .get("session_key")
         .and_then(serde_json::Value::as_str)

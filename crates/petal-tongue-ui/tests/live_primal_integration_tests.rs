@@ -2,13 +2,14 @@
 #![allow(
     clippy::unwrap_used,
     clippy::expect_used,
+    clippy::significant_drop_tightening,
     reason = "test code uses unwrap/expect for brevity"
 )]
 //! Integration tests exercising the full sensor → subscriber → visualization pipeline.
 //!
 //! These tests verify the wiring between petalTongue components without requiring
 //! live primals. For testing with real biomeOS/ludoSpring, see the archive for
-//! LIVE_TESTING documentation.
+//! `LIVE_TESTING` documentation.
 
 use petal_tongue_core::{DataBinding, KeyModifiersIpc, SensorEventBatch, SensorEventIpc};
 use petal_tongue_ipc::{

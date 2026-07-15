@@ -220,6 +220,7 @@ mod tests {
         let g = graph.read().unwrap();
         assert!(g.nodes().len() >= 3, "demo should load 3+ primals");
         assert!(g.edges().len() >= 2, "demo should load 2+ edges");
+        drop(g);
     }
 
     #[test]
@@ -252,6 +253,7 @@ mod tests {
         let g = graph.read().unwrap();
         assert_eq!(g.nodes().len(), 2);
         assert_eq!(g.edges().len(), 1);
+        drop(g);
     }
 
     #[test]
@@ -310,6 +312,7 @@ mod tests {
             1,
             "node with missing name/domain should be skipped"
         );
+        drop(g);
     }
 
     #[test]
@@ -335,6 +338,7 @@ mod tests {
             1,
             "edge without from/to should be skipped, valid edge should remain"
         );
+        drop(g);
     }
 
     #[test]

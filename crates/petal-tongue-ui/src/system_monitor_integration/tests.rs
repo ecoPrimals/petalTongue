@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+#![expect(clippy::float_cmp)]
 
 use super::*;
 use crate::tool_integration::{ToolCapability, ToolPanel};
@@ -253,8 +254,7 @@ fn test_system_monitor_status_message_format() {
     assert!(msg.starts_with("CPU:"));
     assert!(msg.contains("MEM:"));
     assert!(msg.contains('%'));
-    let parts: Vec<&str> = msg.split('|').collect();
-    assert_eq!(parts.len(), 2);
+    assert_eq!(msg.split('|').count(), 2);
 }
 
 #[test]

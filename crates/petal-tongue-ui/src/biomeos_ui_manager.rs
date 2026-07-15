@@ -286,6 +286,10 @@ impl BiomeOSUIRPC {
     }
 
     /// Show device panel
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the manager lock cannot be acquired.
     pub async fn show_device_panel(&self) -> Result<()> {
         {
             let mut manager = self.manager.write().await;
@@ -295,6 +299,10 @@ impl BiomeOSUIRPC {
     }
 
     /// Show primal panel
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the manager lock cannot be acquired.
     pub async fn show_primal_panel(&self) -> Result<()> {
         {
             let mut manager = self.manager.write().await;
@@ -304,6 +312,10 @@ impl BiomeOSUIRPC {
     }
 
     /// Show niche designer
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the manager lock cannot be acquired.
     pub async fn show_niche_designer(&self) -> Result<()> {
         {
             let mut manager = self.manager.write().await;
@@ -313,6 +325,10 @@ impl BiomeOSUIRPC {
     }
 
     /// Get device list
+    ///
+    /// # Errors
+    ///
+    /// Propagates errors from the underlying device provider.
     pub async fn get_devices(&self) -> Result<Vec<Device>> {
         let manager = self.manager.read().await;
         if manager.offline_mode {
@@ -334,6 +350,10 @@ impl BiomeOSUIRPC {
     }
 
     /// Get primal list
+    ///
+    /// # Errors
+    ///
+    /// Propagates errors from the underlying primal provider.
     pub async fn get_primals_extended(&self) -> Result<Vec<Primal>> {
         let manager = self.manager.read().await;
         if manager.offline_mode {
@@ -355,6 +375,10 @@ impl BiomeOSUIRPC {
     }
 
     /// Get niche templates
+    ///
+    /// # Errors
+    ///
+    /// Propagates errors from the underlying niche template provider.
     pub async fn get_niche_templates(&self) -> Result<Vec<NicheTemplate>> {
         let manager = self.manager.read().await;
         if manager.offline_mode {
@@ -376,6 +400,10 @@ impl BiomeOSUIRPC {
     }
 
     /// Refresh all data
+    ///
+    /// # Errors
+    ///
+    /// Propagates errors from the manager refresh operation.
     pub async fn refresh(&self) -> Result<()> {
         let mut manager = self.manager.write().await;
         manager.refresh().await

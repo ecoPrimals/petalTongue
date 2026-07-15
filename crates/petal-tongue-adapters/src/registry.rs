@@ -334,6 +334,7 @@ mod tests {
     #[test]
     fn test_registry_generic_fallback_all_value_types() {
         use petal_tongue_core::property::PropertyValue;
+        use std::collections::HashMap;
 
         let registry = AdapterRegistry::new();
         let ctx = egui::Context::default();
@@ -344,7 +345,7 @@ mod tests {
                 registry.render_property("b", &PropertyValue::Boolean(true), ui);
                 registry.render_property("b2", &PropertyValue::Boolean(false), ui);
                 registry.render_property("null", &PropertyValue::Null, ui);
-                registry.render_property("obj", &PropertyValue::Object(Default::default()), ui);
+                registry.render_property("obj", &PropertyValue::Object(HashMap::new()), ui);
                 registry.render_property("arr", &PropertyValue::Array(vec![]), ui);
             });
         });

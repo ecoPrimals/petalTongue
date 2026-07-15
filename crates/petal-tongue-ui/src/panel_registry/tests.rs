@@ -3,7 +3,6 @@
 
 #[cfg(test)]
 #[expect(
-    clippy::module_inception,
     clippy::redundant_pub_crate,
     reason = "test support module reuses parent name for convenience"
 )]

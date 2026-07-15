@@ -5,6 +5,8 @@ use super::handlers::*;
 
 use std::sync::Arc;
 
+use base64::Engine as _;
+
 use axum::{Router, routing::get};
 
 use crate::data_service::DataService;
@@ -279,7 +281,6 @@ async fn test_content_backend_resolve_via_tcp() {
         let req: serde_json::Value = serde_json::from_str(&line).unwrap();
         assert_eq!(req["method"], "content.resolve");
 
-        use base64::Engine as _;
         let resp = serde_json::json!({
             "jsonrpc": "2.0",
             "result": {

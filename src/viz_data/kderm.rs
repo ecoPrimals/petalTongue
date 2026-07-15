@@ -296,7 +296,8 @@ pub fn build_kderm_relay_animation() -> Sequence {
     let mut animations = Vec::new();
 
     for (i, &(relay_id, from_node, to_node)) in steps.iter().enumerate() {
-        let delay = i as f64 * 1.2;
+        #[expect(clippy::cast_precision_loss)]
+        let delay = (i as f64).mul_add(1.2, 0.0);
 
         animations.push(Animation {
             target: AnimationTarget::Scale {

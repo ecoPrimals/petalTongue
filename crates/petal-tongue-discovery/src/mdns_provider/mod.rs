@@ -60,6 +60,9 @@ impl MdnsVisualizationProvider {
     /// Discover visualization providers on the local network
     ///
     /// Uses UDP multicast to query for `_visualization-provider._tcp.local` services.
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError::MdnsError` if the multicast socket cannot be created.
     pub async fn discover() -> DiscoveryResult<Vec<Self>> {
         tracing::info!("Starting mDNS discovery for visualization providers...");
 

@@ -463,6 +463,7 @@ mod tests {
     }
 
     #[test]
+    #[expect(clippy::cast_precision_loss)]
     fn test_badge_angle_formula() {
         let angle_for = |i: usize, n: usize| (i as f32) * std::f32::consts::TAU / (n as f32);
         assert!((angle_for(0, 4) - 0.0).abs() < f32::EPSILON);

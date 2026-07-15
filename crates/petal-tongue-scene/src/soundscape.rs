@@ -419,6 +419,10 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "test: f64::EPSILON is safely within f32 range"
+    )]
     fn mono_mixdown() {
         let samples = StereoSamples {
             left: vec![1.0, 0.0],

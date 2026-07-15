@@ -487,11 +487,11 @@ fn ribocipher_prefix_constant_is_correct() {
 
 #[tokio::test]
 async fn strip_ribocipher_prefix_removes_signal_bytes() {
+    use tokio::io::AsyncBufReadExt;
     let data = b"\xEC\x01{\"jsonrpc\":\"2.0\",\"method\":\"health\",\"id\":1}\n";
     let mut reader = tokio::io::BufReader::new(&data[..]);
     strip_ribocipher_prefix(&mut reader).await;
 
-    use tokio::io::AsyncBufReadExt;
     let mut remaining = Vec::new();
     reader.read_until(b'\n', &mut remaining).await.unwrap();
     assert!(
@@ -502,11 +502,11 @@ async fn strip_ribocipher_prefix_removes_signal_bytes() {
 
 #[tokio::test]
 async fn strip_ribocipher_prefix_leaves_plain_json_untouched() {
+    use tokio::io::AsyncBufReadExt;
     let data = b"{\"jsonrpc\":\"2.0\",\"method\":\"health\",\"id\":1}\n";
     let mut reader = tokio::io::BufReader::new(&data[..]);
     strip_ribocipher_prefix(&mut reader).await;
 
-    use tokio::io::AsyncBufReadExt;
     let mut remaining = Vec::new();
     reader.read_until(b'\n', &mut remaining).await.unwrap();
     assert!(
@@ -517,11 +517,11 @@ async fn strip_ribocipher_prefix_leaves_plain_json_untouched() {
 
 #[tokio::test]
 async fn strip_ribocipher_prefix_leaves_btsp_binary_untouched() {
+    use tokio::io::AsyncBufReadExt;
     let data = b"\x00\x00\x00\x10some_btsp_frame_data";
     let mut reader = tokio::io::BufReader::new(&data[..]);
     strip_ribocipher_prefix(&mut reader).await;
 
-    use tokio::io::AsyncBufReadExt;
     let buf = reader.fill_buf().await.unwrap();
     assert_eq!(
         buf[0], 0x00,
@@ -567,8 +567,8 @@ async fn ribocipher_prefix_then_health_returns_enriched_response() {
     );
 }
 
-/// Wave 86 P2: verify health.liveness via handle_connection_split (post-peek path).
-/// This simulates the exact code path after UdsHandshakeOutcome::PlainJsonRpc
+/// Wave 86 P2: verify health.liveness via `handle_connection_split` (post-peek path).
+/// This simulates the exact code path after `UdsHandshakeOutcome::PlainJsonRpc`
 /// routes a buffered reader to the NDJSON handler.
 #[tokio::test]
 async fn health_liveness_via_connection_split_returns_alive() {

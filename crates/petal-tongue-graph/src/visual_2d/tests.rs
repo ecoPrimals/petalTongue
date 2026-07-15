@@ -249,6 +249,7 @@ mod visual_2d_tests {
         let graph_read = graph.read().expect("lock poisoned");
         assert_eq!(graph_read.nodes().len(), 0);
         assert_eq!(graph_read.edges().len(), 0);
+        drop(graph_read);
     }
 
     #[test]
@@ -393,6 +394,7 @@ mod visual_2d_tests {
 
         let graph_read = graph_arc.read().expect("lock poisoned");
         assert_eq!(graph_read.edges().len(), 3);
+        drop(graph_read);
     }
 
     #[test]
@@ -425,6 +427,7 @@ mod visual_2d_tests {
 
         let graph_read = graph_arc.read().expect("lock poisoned");
         assert_eq!(graph_read.nodes().len(), 3);
+        drop(graph_read);
     }
 
     #[test]

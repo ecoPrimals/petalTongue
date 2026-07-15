@@ -164,7 +164,7 @@ fn read_section_meta(index_path: &std::path::Path, dir_name: &str) -> (String, i
     let weight = tbl
         .get("weight")
         .and_then(toml::Value::as_integer)
-        .map_or(999, |w| w as i32);
+        .map_or(999, |w| i32::try_from(w).unwrap_or(999));
 
     (title, weight)
 }

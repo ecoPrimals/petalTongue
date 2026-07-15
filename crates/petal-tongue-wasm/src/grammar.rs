@@ -12,6 +12,7 @@ use crate::compile::{compile_scene_to_modality, scene_to_svg};
 ///
 /// Accepts JSON strings for both the grammar expression and the data array.
 /// Returns an SVG string, or an error message prefixed with "Error:".
+#[must_use]
 #[wasm_bindgen]
 pub fn render_grammar(grammar_json: &str, data_json: &str) -> String {
     let expr: GrammarExpr = match serde_json::from_str(grammar_json) {
@@ -37,6 +38,7 @@ pub fn render_grammar(grammar_json: &str, data_json: &str) -> String {
 /// Render a grammar expression to a specified output modality.
 ///
 /// Supported modalities: `"svg"` (default), `"description"`, `"terminal"`.
+#[must_use]
 #[wasm_bindgen]
 pub fn render_grammar_to_modality(grammar_json: &str, data_json: &str, modality: &str) -> String {
     let expr: GrammarExpr = match serde_json::from_str(grammar_json) {

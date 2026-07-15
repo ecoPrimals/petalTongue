@@ -274,6 +274,8 @@ impl Default for MetricsPanelFactory {
 
 #[cfg(test)]
 mod tests {
+    #![expect(clippy::float_cmp)]
+
     use super::*;
     use crate::panels::metrics_panel_display::format_uptime;
     use std::time::Duration;

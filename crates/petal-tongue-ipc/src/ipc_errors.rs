@@ -68,7 +68,7 @@ impl IpcErrorPhase {
         matches!(self, Self::Timeout(_))
     }
 
-    /// Returns true when JsonRpcError with code -32601 (method not found).
+    /// Returns true when `JsonRpcError` with code -32601 (method not found).
     #[must_use]
     pub const fn is_method_not_found(&self) -> bool {
         matches!(
@@ -82,6 +82,7 @@ impl IpcErrorPhase {
 ///
 /// Looks for `response["error"]["code"]` (as i64) and `response["error"]["message"]` (as string).
 /// Returns `None` if the structure is missing or invalid.
+#[must_use]
 pub fn extract_rpc_error(response: &Value) -> Option<(i64, String)> {
     let error = response.get("error")?;
     let code = error.get("code")?.as_i64()?;
