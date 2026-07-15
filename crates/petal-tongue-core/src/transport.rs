@@ -212,14 +212,19 @@ impl std::fmt::Display for TransportEndpoint {
     }
 }
 
-/// A connected transport stream — either UDS or TCP.
+/// A connected transport stream — platform-appropriate local IPC or TCP.
 ///
 /// Implements `AsyncRead` + `AsyncWrite` via delegation to the inner stream.
+/// On Unix: UDS (filesystem-authenticated). On Windows: Named Pipes.
 #[derive(Debug)]
 pub enum TransportStream {
-    /// Unix domain socket connection.
+    /// Unix domain socket connection (Unix only).
+    #[cfg(unix)]
     Uds(tokio::net::UnixStream),
-    /// TCP connection.
+    /// Named pipe connection (Windows only).
+    #[cfg(windows)]
+    NamedPipe(tokio::net::windows::named_pipe::NamedPipeClient),
+    /// TCP connection (all platforms).
     Tcp(tokio::net::TcpStream),
 }
 
@@ -230,7 +235,10 @@ impl tokio::io::AsyncRead for TransportStream {
         buf: &mut tokio::io::ReadBuf<'_>,
     ) -> std::task::Poll<std::io::Result<()>> {
         match self.get_mut() {
+            #[cfg(unix)]
             Self::Uds(s) => std::pin::Pin::new(s).poll_read(cx, buf),
+            #[cfg(windows)]
+            Self::NamedPipe(s) => std::pin::Pin::new(s).poll_read(cx, buf),
             Self::Tcp(s) => std::pin::Pin::new(s).poll_read(cx, buf),
         }
     }
@@ -243,7 +251,10 @@ impl tokio::io::AsyncWrite for TransportStream {
         buf: &[u8],
     ) -> std::task::Poll<std::io::Result<usize>> {
         match self.get_mut() {
+            #[cfg(unix)]
             Self::Uds(s) => std::pin::Pin::new(s).poll_write(cx, buf),
+            #[cfg(windows)]
+            Self::NamedPipe(s) => std::pin::Pin::new(s).poll_write(cx, buf),
             Self::Tcp(s) => std::pin::Pin::new(s).poll_write(cx, buf),
         }
     }
@@ -253,7 +264,10 @@ impl tokio::io::AsyncWrite for TransportStream {
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<std::io::Result<()>> {
         match self.get_mut() {
+            #[cfg(unix)]
             Self::Uds(s) => std::pin::Pin::new(s).poll_flush(cx),
+            #[cfg(windows)]
+            Self::NamedPipe(s) => std::pin::Pin::new(s).poll_flush(cx),
             Self::Tcp(s) => std::pin::Pin::new(s).poll_flush(cx),
         }
     }
@@ -263,7 +277,10 @@ impl tokio::io::AsyncWrite for TransportStream {
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<std::io::Result<()>> {
         match self.get_mut() {
+            #[cfg(unix)]
             Self::Uds(s) => std::pin::Pin::new(s).poll_shutdown(cx),
+            #[cfg(windows)]
+            Self::NamedPipe(s) => std::pin::Pin::new(s).poll_shutdown(cx),
             Self::Tcp(s) => std::pin::Pin::new(s).poll_shutdown(cx),
         }
     }
@@ -296,10 +313,7 @@ pub async fn connect_transport(
 
 async fn connect_direct(endpoint: &TransportEndpoint) -> Result<TransportStream, TransportError> {
     match endpoint {
-        TransportEndpoint::Uds { path } => {
-            let stream = tokio::net::UnixStream::connect(path).await?;
-            Ok(TransportStream::Uds(stream))
-        }
+        TransportEndpoint::Uds { path } => connect_local(path).await,
         TransportEndpoint::Tcp { host, port } => {
             let stream = tokio::net::TcpStream::connect(format!("{host}:{port}")).await?;
             Ok(TransportStream::Tcp(stream))
@@ -308,6 +322,44 @@ async fn connect_direct(endpoint: &TransportEndpoint) -> Result<TransportStream,
             message: "internal error: connect_direct called for mesh relay endpoint".to_owned(),
         }),
     }
+}
+
+/// Connect via platform-appropriate local IPC.
+///
+/// Unix: connects to the UDS path directly.
+/// Windows: derives a Named Pipe name from the socket path and connects via
+/// `NamedPipeClient`. Convention: last path component with `.sock` stripped,
+/// prefixed with `\\.\pipe\ecoPrimals-`.
+#[cfg(unix)]
+async fn connect_local(path: &std::path::Path) -> Result<TransportStream, TransportError> {
+    let stream = tokio::net::UnixStream::connect(path).await?;
+    Ok(TransportStream::Uds(stream))
+}
+
+#[cfg(windows)]
+#[expect(
+    clippy::unused_async,
+    reason = "async signature required for platform parity with Unix connect_local"
+)]
+async fn connect_local(path: &std::path::Path) -> Result<TransportStream, TransportError> {
+    let pipe_name = uds_path_to_pipe_name(path);
+    let client = tokio::net::windows::named_pipe::ClientOptions::new()
+        .open(&pipe_name)
+        .map_err(TransportError::Io)?;
+    Ok(TransportStream::NamedPipe(client))
+}
+
+/// Derive a Windows Named Pipe name from a Unix socket path.
+///
+/// Convention follows songBird reference implementation:
+/// `/run/user/1000/biomeos/petaltongue.sock` → `\\.\pipe\ecoPrimals-petaltongue`
+#[cfg(windows)]
+fn uds_path_to_pipe_name(path: &std::path::Path) -> String {
+    let stem = path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unknown");
+    format!(r"\\.\pipe\ecoPrimals-{stem}")
 }
 
 async fn connect_mesh_relay(

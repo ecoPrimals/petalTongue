@@ -29,7 +29,7 @@ pub(super) fn process_exists(pid: u32) -> bool {
 
     #[cfg(not(unix))]
     {
-        std::path::Path::new(&format!("/proc/{}", pid)).exists()
+        std::path::Path::new(&format!("/proc/{pid}")).exists()
     }
 }
 

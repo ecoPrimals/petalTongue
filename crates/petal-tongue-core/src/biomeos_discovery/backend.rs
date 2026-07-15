@@ -34,12 +34,10 @@ pub struct BiomeOsBackend {
 }
 
 impl BiomeOsBackend {
-    /// Create a new biomeOS discovery backend
-    pub fn new(socket_path: impl Into<String>) -> Self {
+    /// Create a new biomeOS discovery backend from a socket path.
+    pub fn new(socket_path: impl Into<std::path::PathBuf>) -> Self {
         Self {
-            client: BiomeOsClient {
-                socket_path: socket_path.into(),
-            },
+            client: BiomeOsClient::from_socket_path(socket_path),
         }
     }
 
