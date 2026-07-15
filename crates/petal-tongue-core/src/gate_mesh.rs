@@ -120,9 +120,9 @@ pub const GATES: &[MeshNode] = &[
         zone: "backbone",
         lan_ip: None,
         wg_ip: None,
-        enrollment: GateEnrollment::Sovereign,
-        nucleus_count: 0,
-        role: "Hobby (Windows, RTX 5090)",
+        enrollment: GateEnrollment::Enrolled,
+        nucleus_count: 14,
+        role: "Windows mesh target (RTX 5090, songBird ready)",
         kderm_layer: "Public",
         gpu_target: Some("sm_120"),
         x: 650.0,
@@ -226,6 +226,20 @@ pub const GATES: &[MeshNode] = &[
         x: 750.0,
         y: 500.0,
     },
+    MeshNode {
+        id: "westGate",
+        label: "westGate",
+        zone: "house2",
+        lan_ip: None,
+        wg_ip: None,
+        enrollment: GateEnrollment::Offline,
+        nucleus_count: 0,
+        role: "ZFS cold storage (AlphaFold data)",
+        kderm_layer: "Offline",
+        gpu_target: None,
+        x: 850.0,
+        y: 500.0,
+    },
 ];
 
 /// VPS/infrastructure nodes (always enrolled).
@@ -318,10 +332,10 @@ mod tests {
 
     #[test]
     fn topology_consistency() {
-        assert_eq!(GATES.len(), 10);
+        assert_eq!(GATES.len(), 11);
         assert_eq!(VPS_NODES.len(), 1);
         assert_eq!(WG_LINKS.len(), 7);
-        assert_eq!(all_nodes().count(), 11);
+        assert_eq!(all_nodes().count(), 12);
     }
 
     #[test]
@@ -585,6 +599,7 @@ pub fn derive_mesh_peers() -> Vec<MeshPeer> {
             let (status, transport, latency) = match node.id {
                 "eastGate" => (PeerStatus::Connected, "local", 0),
                 "sporeGate" | "ironGate" => (PeerStatus::Connected, "LAN direct", 1),
+                "northGate" => (PeerStatus::Pending, "LAN direct (mesh pending)", 1),
                 "flockGate" => (PeerStatus::Relayed, "WG via golgi", 32),
                 "grapheneGate" => (PeerStatus::Connected, "ADB USB", 0),
                 "golgi" => (PeerStatus::Connected, "WG overlay", 11),
@@ -594,6 +609,7 @@ pub fn derive_mesh_peers() -> Vec<MeshPeer> {
             let capabilities: &'static [&'static str] = match node.id {
                 "sporeGate" => &["mesh.hub", "ci.build", "git.serve"],
                 "ironGate" => &["compute.gpu", "jupyter.serve"],
+                "northGate" => &["compute.gpu", "mesh.windows"],
                 "flockGate" => &["http.proxy", "security.advisory"],
                 "grapheneGate" => &["trust.anchor", "cellular.relay"],
                 "golgi" => &["wg.relay", "cascade.timer"],

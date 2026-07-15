@@ -127,6 +127,13 @@ cargo test --workspace --all-features     # 356+ workspace tests, ~85-90% covera
 
 ## Current State
 
+Wave 139b Public + Sovereign (July 14, 2026). 365 tests (workspace), all
+passing. northGate enrolled (Windows mesh target, songBird cross-compile ready).
+westGate added (offline ZFS cold storage). Ecosystem manifest updated to Wave
+139b — posture "public + sovereign", live surfaces declared, identity web and
+sign-verify-on-fetch reflected. Gate mesh: 11 GATES + 1 VPS = 12 nodes total,
+7 enrolled. 3 live surfaces confirmed (primals.eco, footprint, live.primals.eco).
+
 Wave 137b Neural API Live + TOPO-VIS (July 13, 2026). 365 tests (workspace),
 all passing. Neural API live 24+ days on eastGate. Live topology visualization
 fully wired: `/api/topology/live` returns discovered primals, capability edges
