@@ -273,7 +273,7 @@ impl DataService {
     /// When songBird IPC is available, this will query live peer state.
     #[must_use]
     pub fn mesh_peers(&self) -> Vec<petal_tongue_core::gate_mesh::MeshPeer> {
-        petal_tongue_core::gate_mesh::derive_mesh_peers()
+        petal_tongue_core::gate_mesh::derive_mesh_peers(petal_tongue_core::gate_mesh::all_nodes())
     }
 
     /// Get live topology for TOPO-VIS visualization.
