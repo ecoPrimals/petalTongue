@@ -3,11 +3,11 @@
 #
 # This manifest describes the ecosystem topology from petalTongue's perspective.
 # It is used for visualization layout, dashboard composition, and capability routing.
-# Updated per Wave 140a (Tangibles Pivot, 42 repos, CAC formalized).
+# Updated per Wave 141a (Silicon Atheism adoption, cross-arch transport).
 
 [ecosystem]
 name = "ecoPrimals"
-wave = 140
+wave = 141
 nucleus_count = 14
 atomics = 4
 posture = "public + sovereign (tangibles pivot)"
