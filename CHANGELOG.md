@@ -6,6 +6,36 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 141a: Silicon Atheism Adoption (July 15, 2026)
+
+Cross-architecture transport for petalTongue. `petal-tongue-core` compiles for
+Windows (`x86_64-pc-windows-gnu`) and Android (`aarch64-linux-android`).
+Dependencies bumped to latest. All scenario tests passing.
+
+#### Added
+- **`TransportStream::NamedPipe`**: Windows Named Pipe variant behind
+  `#[cfg(windows)]` using `tokio::net::windows::named_pipe::NamedPipeClient`.
+- **`connect_local()`**: platform-dispatched local IPC (UDS on Unix, Named Pipe
+  on Windows). Pipe name derived via songBird convention
+  (`\\.\pipe\ecoPrimals-{stem}`).
+- **`BiomeOsClient::from_socket_path()`**: constructor wrapping socket path as
+  `TransportEndpoint::Uds` (auto-adapts to Named Pipe on Windows).
+
+#### Changed
+- **`TransportStream::Uds`**: gated behind `#[cfg(unix)]`.
+- **`BiomeOsClient`**: evolved from raw `tokio::net::UnixStream` to
+  `connect_transport()` via `TransportEndpoint`.
+- **`process_exists()`**: non-Unix returns `true` (conservative) instead of
+  probing non-existent `/proc`.
+- **Dependencies**: clap 4.5→4.6, tokio 1.50→1.52, serde_json→1.0.150,
+  tracing-subscriber→0.3.23, zeroize→1.9.
+
+#### Fixed
+- **`gpu-compute-pipeline.json`**: `"health"` field was string `"Healthy"` where
+  `u8` expected; fixed to numeric `100` with proper `"status"` field.
+
+---
+
 ### Wave 140a: Tangibles Pivot (July 15, 2026)
 
 Posture: PUBLIC + SOVEREIGN. TANGIBLES PIVOT. protoKarya to the wider world.

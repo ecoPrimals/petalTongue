@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: July 15, 2026 (Wave 140a — manifest-driven handlers, gonzales refactored, full workspace clippy pedantic+nursery clean, 42 repos, 45 depot binaries, 162 scenarios)
+**Updated**: July 15, 2026 (Wave 141a — cross-architecture transport, deps current, all scenarios passing, full clippy+deny clean)
 
 ---
 

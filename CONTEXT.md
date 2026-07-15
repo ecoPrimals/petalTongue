@@ -127,18 +127,22 @@ cargo test --workspace --all-features     # 366+ workspace tests, ~85-90% covera
 
 ## Current State
 
-Wave 140a Tangibles Pivot (July 15, 2026). 366 tests (workspace), all passing.
-Full workspace clippy clean (pedantic + nursery, zero warnings across all 16
-crates). Gonzales chart scenes refactored from monolithic 918L file into 4-file
-module directory (ic50.rs, pk_decay.rs, tissue_lattice.rs, hormesis.rs + mod.rs).
-ecosystem_handler evolved to manifest-driven (reads wave/posture/primary_gate
-from ecosystem_manifest.toml, static fallback). mesh_peers_handler reports
-"topology_enriched" when Neural API live. ~200 clippy annotations resolved
-across workspace: doc backticks, #[must_use], cast annotations,
-significant_drop_tightening, similar_names, needless_collect. Ecosystem at 42
-repos, 45 depot binaries across 4 architectures, 162 spring scenarios (1194
-tests). Content-Addressed Convergence (CAC) pattern formalized. OS Atheism
-Phase 1 shipped.
+Wave 141a Silicon Atheism Adoption (July 15, 2026). 366 tests (workspace), all
+passing. Cross-architecture transport: `petal-tongue-core` compiles for
+`x86_64-pc-windows-gnu` and `aarch64-linux-android`. `TransportStream` gains
+platform-gated `Uds` (Unix) and `NamedPipe` (Windows) variants.
+`BiomeOsClient` evolved from raw `UnixStream` to `TransportEndpoint`-based
+connection. Dependencies bumped (tokio 1.52, clap 4.6, serde_json 1.0.150).
+GPU compute scenario test fixed (stale "Healthy" string → proper u8 health
+field). `process_exists()` cross-platform (no `/proc` on Windows). Full
+workspace clippy pedantic+nursery clean. cargo deny clean. All files <800L.
+
+Wave 140a Tangibles Pivot (July 15, 2026). Gonzales chart scenes refactored
+from monolithic 918L file into 4-file module directory. ecosystem_handler
+evolved to manifest-driven. ~200 clippy annotations resolved. Ecosystem at 42
+repos, 45 depot binaries, 4 architectures, 162 spring scenarios (1194 tests).
+Content-Addressed Convergence (CAC) pattern formalized. OS Atheism Phase 1
+shipped.
 
 Wave 139b Public + Sovereign (July 14, 2026). 365 tests (workspace), all
 passing. northGate enrolled (Windows mesh target, songBird cross-compile ready).
