@@ -45,7 +45,7 @@
           "compute.dispatch.physics",
           "compute.status"
         ],
-        "health": "Healthy",
+        "status": "healthy", "health": 100,
         "last_seen": 1750636800
       },
       {
@@ -60,7 +60,7 @@
           "shader.compile.multi",
           "shader.validate"
         ],
-        "health": "Healthy",
+        "status": "healthy", "health": 100,
         "last_seen": 1750636800
       },
       {
@@ -74,7 +74,7 @@
           "workload.schedule",
           "workload.cancel"
         ],
-        "health": "Healthy",
+        "status": "healthy", "health": 100,
         "last_seen": 1750636800
       },
       {
@@ -88,7 +88,7 @@
           "visualization.render.scene",
           "visualization.render.dashboard"
         ],
-        "health": "Healthy",
+        "status": "healthy", "health": 100,
         "last_seen": 1750636800
       }
     ],
