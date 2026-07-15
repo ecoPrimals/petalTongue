@@ -340,8 +340,8 @@ mod tests {
 
     #[test]
     fn enrollment_counts() {
-        assert_eq!(count_by_enrollment(GateEnrollment::Enrolled), 6);
-        assert_eq!(mesh_active_count(), 7);
+        assert_eq!(count_by_enrollment(GateEnrollment::Enrolled), 7);
+        assert_eq!(mesh_active_count(), 8);
     }
 
     #[test]

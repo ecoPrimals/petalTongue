@@ -33,7 +33,7 @@ fn test_viz_registry_discover_with_entity_graph() {
         reg.available().contains(&"entity-graph"),
         "should discover entity-graph with JSON file"
     );
-    assert_eq!(reg.list().len(), 4, "should have 4 visualizations total");
+    assert_eq!(reg.list().len(), 8, "should have 8 visualizations total");
 }
 
 #[test]

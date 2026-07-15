@@ -305,7 +305,7 @@ fn gate_mesh_status_returns_topology() {
     let resp = get_gate_mesh_status(&h, serde_json::json!(1));
     let r = resp.result.expect("gate.mesh.status should succeed");
     let gates = r["gates"].as_array().expect("gates array");
-    assert_eq!(gates.len(), 11, "10 gates + 1 VPS node");
+    assert_eq!(gates.len(), 12, "11 gates + 1 VPS node");
     let links = r["links"].as_array().expect("links array");
     assert_eq!(links.len(), 7, "7 WireGuard links");
     assert_eq!(r["enrolled_count"], 7);
