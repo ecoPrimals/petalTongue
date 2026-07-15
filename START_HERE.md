@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: July 15, 2026 (Wave 140a — tangibles pivot, Gonzales chart scenes, 42 repos, 45 depot binaries, 162 scenarios, cargo deny clean)
+**Updated**: July 15, 2026 (Wave 140a — manifest-driven handlers, gonzales refactored, full workspace clippy pedantic+nursery clean, 42 repos, 45 depot binaries, 162 scenarios)
 
 ---
 
@@ -90,8 +90,8 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace --all-features           # 356+ workspace tests
-cargo clippy --workspace --all-features -- -D warnings
+cargo test --workspace --all-features           # 366+ workspace tests
+cargo clippy --workspace --all-targets -- -W clippy::pedantic -W clippy::nursery -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
 cargo deny check                                # Supply chain audit (clean)

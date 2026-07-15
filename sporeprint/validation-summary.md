@@ -1,7 +1,7 @@
 +++
 title = "petalTongue Validation Summary"
-description = "Universal user interface primal — 356 workspace tests, 56 IPC methods, 18 crates, 7 modes, pure Rust"
-date = 2026-07-11
+description = "Universal user interface primal — 366 workspace tests, 56 IPC methods, 18 crates, 7 modes, pure Rust"
+date = 2026-07-15
 
 [taxonomies]
 primals = ["petaltongue"]
@@ -11,7 +11,7 @@ springs = []
 ## Status
 
 - **v1.6.6** — workspace edition 2024, `forbid(unsafe_code)`
-- **356 workspace tests** passing, 0 failed (unit + integration + doc + property)
+- **366 workspace tests** passing, 0 failed (unit + integration + doc + property)
 - **56 IPC methods** across 10 domain categories (health, identity, auth,
   capabilities, visualization, interaction, audio, UI, motor, BTSP, gate mesh)
 - **18 workspace crates** (core, IPC, graph, scene, discovery, adapters,
@@ -62,7 +62,7 @@ springs = []
 - **Pure Rust**: `pure_rust = true`, `c_dependencies = []`
 - **musl targets**: `x86_64-unknown-linux-musl`, `aarch64-unknown-linux-musl`
 - **plasmidBin**: `manifest.toml` v1.6.6, `checksums.toml` (BLAKE3), `seed_fingerprint`
-- **CI**: fmt, clippy (`-D warnings`), test, doc — all green
+- **CI**: fmt, clippy (pedantic + nursery, `-D warnings`), test, doc — all green
 - **Stale socket hygiene**: unconditional `unlink()` before `bind()`, PID file,
   Drop cleanup
 

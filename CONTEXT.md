@@ -122,19 +122,23 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # 356+ workspace tests, ~85-90% coverage
+cargo test --workspace --all-features     # 366+ workspace tests, ~85-90% coverage
 ```
 
 ## Current State
 
-Wave 140a Tangibles Pivot (July 15, 2026). 374 tests (workspace), all passing.
-Gonzales Interactive Explorer chart scenes delivered: IC50 dose-response (Hill
-equation), PK decay (two-compartment), tissue lattice (spatial viability), and
-hormesis (biphasic). VizRegistry extended with 4 new slugs + animations. Ecosystem
-at 42 repos, 45 depot binaries across 4 architectures, 162 spring scenarios (1194
-tests). Content-Addressed Convergence (CAC) pattern formalized. OS Atheism Phase 1
-shipped. Cross-Platform Parity AAR absorbed (11 primals blocked on Phase 2
-transport abstraction).
+Wave 140a Tangibles Pivot (July 15, 2026). 366 tests (workspace), all passing.
+Full workspace clippy clean (pedantic + nursery, zero warnings across all 16
+crates). Gonzales chart scenes refactored from monolithic 918L file into 4-file
+module directory (ic50.rs, pk_decay.rs, tissue_lattice.rs, hormesis.rs + mod.rs).
+ecosystem_handler evolved to manifest-driven (reads wave/posture/primary_gate
+from ecosystem_manifest.toml, static fallback). mesh_peers_handler reports
+"topology_enriched" when Neural API live. ~200 clippy annotations resolved
+across workspace: doc backticks, #[must_use], cast annotations,
+significant_drop_tightening, similar_names, needless_collect. Ecosystem at 42
+repos, 45 depot binaries across 4 architectures, 162 spring scenarios (1194
+tests). Content-Addressed Convergence (CAC) pattern formalized. OS Atheism
+Phase 1 shipped.
 
 Wave 139b Public + Sovereign (July 14, 2026). 365 tests (workspace), all
 passing. northGate enrolled (Windows mesh target, songBird cross-compile ready).

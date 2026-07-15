@@ -9,9 +9,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Wave 140a: Tangibles Pivot (July 15, 2026)
 
 Posture: PUBLIC + SOVEREIGN. TANGIBLES PIVOT. protoKarya to the wider world.
-Gonzales Interactive Explorer chart scenes delivered. Ecosystem at 42 repos,
-45 depot binaries, 4 architectures. Content-Addressed Convergence (CAC) pattern
-formalized. Cross-Platform Parity AAR absorbed.
+Gonzales Interactive Explorer chart scenes delivered and refactored into modular
+directory. Full workspace clippy pedantic+nursery clean (zero warnings, 16
+crates). Manifest-driven handlers evolved. Ecosystem at 42 repos, 45 depot
+binaries, 4 architectures. Content-Addressed Convergence (CAC) formalized.
 
 #### Added
 - **Gonzales IC50 scene** (`gonzales-ic50`): Sigmoidal dose-response using 4PL
@@ -34,6 +35,15 @@ formalized. Cross-Platform Parity AAR absorbed.
   new fields: `repos`, `depot_binaries`, `depot_architectures`,
   `spring_scenarios`, `spring_tests`, `depot_signing`,
   `content_addressed_convergence`.
+- **gonzales.rs refactor**: monolithic 918L file split into `gonzales/` module
+  directory (ic50.rs, pk_decay.rs, tissue_lattice.rs, hormesis.rs, mod.rs).
+- **ecosystem_handler**: reads wave/posture/primary_gate from
+  ecosystem_manifest.toml at runtime, static fallback when unavailable.
+- **mesh_peers_handler**: reports `"source": "topology_enriched"` when Neural
+  API is live vs `"static_derived"`.
+- **Workspace clippy clean**: pedantic + nursery, zero warnings across all 16
+  crates (~200 annotations: doc backticks, #[must_use], cast annotations,
+  significant_drop_tightening, float_cmp, similar_names, needless_collect).
 
 ### Wave 139b: Public + Sovereign (July 14, 2026)
 
