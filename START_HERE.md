@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: July 13, 2026 (Wave 137b — Neural API live, TOPO-VIS delivered, routing weights, SSE live push, composition serving, 365 tests, cargo deny clean)
+**Updated**: July 14, 2026 (Wave 139b — public + sovereign, northGate enrolled, westGate added, 3 live surfaces, 365 tests, cargo deny clean)
 
 ---
 

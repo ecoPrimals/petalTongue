@@ -6,6 +6,27 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 139b: Public + Sovereign (July 14, 2026)
+
+Posture shift to PUBLIC + SOVEREIGN. northGate mesh enrollment unblocked
+(songBird Windows cross-compile shipped). westGate added to topology.
+Ecosystem manifest evolved to Wave 139b.
+
+#### Added
+- **westGate** in gate mesh: ZFS cold storage (AlphaFold data), Offline.
+- **`live_surfaces`** in `ecosystem_manifest.toml`: declares 3 live URLs.
+- **`sign_verify_on_fetch`** and **`identity_web`** in manifest security section.
+
+#### Changed
+- **northGate**: enrollment `Sovereign` → `Enrolled`, role "Windows mesh target
+  (RTX 5090, songBird ready)", `nucleus_count` 0 → 14.
+- **northGate mesh peer**: status `Pending` with capabilities `[compute.gpu,
+  mesh.windows]`, transport "LAN direct (mesh pending)".
+- **Ecosystem manifest**: wave 136 → 139, posture "public + sovereign",
+  compositions adds `tideGlass`, gate entries for northGate + westGate.
+- **Test assertions**: `enrolled_count` 6→7, `total_count` 11→12,
+  `gates_enrolled` 6→7, GATES.len() 10→11, all_nodes() 11→12.
+
 ### Wave 137b: Neural API Live + TOPO-VIS (July 13, 2026)
 
 Neural API live 24+ days on eastGate. Topology visualization consumes live

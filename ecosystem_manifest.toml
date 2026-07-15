@@ -3,16 +3,17 @@
 #
 # This manifest describes the ecosystem topology from petalTongue's perspective.
 # It is used for visualization layout, dashboard composition, and capability routing.
-# Updated per Wave 136b (DNSSEC live, K-Derm diderm reaffirmed, footPrint composition).
+# Updated per Wave 139b (Public + Sovereign, live surfaces restored, northGate enrolled).
 
 [ecosystem]
 name = "ecoPrimals"
-wave = 136
-nucleus_count = 13
+wave = 139
+nucleus_count = 14
 atomics = 4
-posture = "hardened + converging"
+posture = "public + sovereign"
 glacial_criteria_clear = 8
-compositions = ["footPrint"]
+compositions = ["footPrint", "tideGlass"]
+live_surfaces = ["primals.eco", "primals.eco/footprint/", "live.primals.eco"]
 
 [security]
 dnssec = true
@@ -20,6 +21,8 @@ dnssec_keytag = 2371
 dnssec_algorithm = 13
 outer_membrane = "Cloudflare"
 architecture = "diderm"
+sign_verify_on_fetch = true
+identity_web = ["ORCID", "Keyoxide", "JSON-LD"]
 
 [physical_topology]
 edge_router = "Flint H1"
@@ -88,10 +91,15 @@ quorum_phase = 1
 cascade_interval_min = 15
 
 [gates.northGate]
-enrollment = "sovereign"
-role = "Hobby (Windows, RTX 5090)"
+enrollment = "enrolled"
+role = "Windows mesh target (RTX 5090, songBird ready)"
 gpu_target = "sm_120"
 gpu_device = "RTX 5090"
+platform = "x86_64-pc-windows-msvc"
+
+[gates.westGate]
+enrollment = "offline"
+role = "ZFS cold storage (AlphaFold data)"
 
 [compute]
 primary_gate = "ironGate"
