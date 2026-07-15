@@ -39,16 +39,14 @@ use std::path::PathBuf;
 /// - **No Hardcoding**: Never assume a specific UID
 /// - **Capability-Based**: Use for socket paths, not authentication
 #[must_use]
+#[cfg_attr(
+    not(unix),
+    expect(
+        clippy::missing_const_for_fn,
+        reason = "not const on Unix (calls rustix::process::getuid)"
+    )
+)]
 pub fn get_current_uid() -> u32 {
-    // rustix::process::getuid() is a safe wrapper around the getuid syscall.
-    // No unsafe code needed - this is pure Rust with the same functionality.
-    //
-    // Benefits of rustix:
-    // - 100% safe Rust (no unsafe blocks)
-    // - Type-safe wrappers for Unix syscalls
-    // - Better error handling
-    // - Zero-cost abstractions
-
     #[cfg(unix)]
     {
         rustix::process::getuid().as_raw()
@@ -56,7 +54,6 @@ pub fn get_current_uid() -> u32 {
 
     #[cfg(not(unix))]
     {
-        // On Windows, UID concept doesn't exist; return 0 (system/administrator)
         0
     }
 }
@@ -72,6 +69,13 @@ pub fn get_current_uid() -> u32 {
 /// - **macOS**: ✅ Supported
 /// - **Windows**: ❌ Returns 0 (not applicable)
 #[must_use]
+#[cfg_attr(
+    not(unix),
+    expect(
+        clippy::missing_const_for_fn,
+        reason = "not const on Unix (calls rustix::process::geteuid)"
+    )
+)]
 pub fn get_current_euid() -> u32 {
     #[cfg(unix)]
     {
