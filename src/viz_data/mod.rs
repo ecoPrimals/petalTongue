@@ -7,6 +7,7 @@
 
 pub mod entity_graph;
 pub mod gate_mesh;
+pub mod gonzales;
 pub mod kderm;
 pub mod nucleus;
 
@@ -18,6 +19,11 @@ use std::path::{Path, PathBuf};
 
 pub use entity_graph::{build_entity_graph_scene, load_entity_graph};
 pub use gate_mesh::{build_enrollment_animation, build_gate_mesh_scene};
+pub use gonzales::{
+    build_hormesis_scene, build_hormesis_sweep_animation, build_ic50_scene,
+    build_ic50_sweep_animation, build_pk_decay_animation, build_pk_decay_scene,
+    build_tissue_diffusion_animation, build_tissue_lattice_scene,
+};
 pub use kderm::{build_kderm_relay_animation, build_kderm_scene};
 pub use nucleus::{build_nucleus_expand_animation, build_nucleus_scene};
 
@@ -101,6 +107,59 @@ impl VizRegistry {
             },
         );
 
+        // Gonzales Interactive Explorer chart scenes
+        entries.insert(
+            "gonzales-ic50".to_owned(),
+            VizEntry {
+                slug: "gonzales-ic50".to_owned(),
+                title: "IC\u{2085}\u{2080} Dose-Response".to_owned(),
+                description:
+                    "Sigmoidal dose-response curve (4-parameter logistic Hill equation)"
+                        .to_owned(),
+                data_source: None,
+                has_animation: true,
+            },
+        );
+
+        entries.insert(
+            "gonzales-pk-decay".to_owned(),
+            VizEntry {
+                slug: "gonzales-pk-decay".to_owned(),
+                title: "PK Decay (Two-Compartment)".to_owned(),
+                description:
+                    "Pharmacokinetic elimination: distribution (α) and elimination (β) phases"
+                        .to_owned(),
+                data_source: None,
+                has_animation: true,
+            },
+        );
+
+        entries.insert(
+            "gonzales-tissue-lattice".to_owned(),
+            VizEntry {
+                slug: "gonzales-tissue-lattice".to_owned(),
+                title: "Tissue Lattice Viability".to_owned(),
+                description:
+                    "Spatial cell-state grid showing drug diffusion and viability heterogeneity"
+                        .to_owned(),
+                data_source: None,
+                has_animation: true,
+            },
+        );
+
+        entries.insert(
+            "gonzales-hormesis".to_owned(),
+            VizEntry {
+                slug: "gonzales-hormesis".to_owned(),
+                title: "Hormesis (Biphasic Response)".to_owned(),
+                description:
+                    "Biphasic dose-response: low-dose stimulation, high-dose inhibition (J-curve)"
+                        .to_owned(),
+                data_source: None,
+                has_animation: true,
+            },
+        );
+
         Self { entries }
     }
 
@@ -131,6 +190,10 @@ impl VizRegistry {
             "gate-mesh" => Some(build_gate_mesh_scene()),
             "kderm-topology" => Some(build_kderm_scene()),
             "nucleus-composition" => Some(build_nucleus_scene()),
+            "gonzales-ic50" => Some(build_ic50_scene()),
+            "gonzales-pk-decay" => Some(build_pk_decay_scene()),
+            "gonzales-tissue-lattice" => Some(build_tissue_lattice_scene()),
+            "gonzales-hormesis" => Some(build_hormesis_scene()),
             _ => None,
         }
     }
@@ -145,6 +208,10 @@ impl VizRegistry {
             "gate-mesh" => Some(build_enrollment_animation()),
             "kderm-topology" => Some(build_kderm_relay_animation()),
             "nucleus-composition" => Some(build_nucleus_expand_animation("nest-atomic")),
+            "gonzales-ic50" => Some(build_ic50_sweep_animation()),
+            "gonzales-pk-decay" => Some(build_pk_decay_animation()),
+            "gonzales-tissue-lattice" => Some(build_tissue_diffusion_animation()),
+            "gonzales-hormesis" => Some(build_hormesis_sweep_animation()),
             _ => None,
         }
     }

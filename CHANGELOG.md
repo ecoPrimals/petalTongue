@@ -6,6 +6,35 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 140a: Tangibles Pivot (July 15, 2026)
+
+Posture: PUBLIC + SOVEREIGN. TANGIBLES PIVOT. protoKarya to the wider world.
+Gonzales Interactive Explorer chart scenes delivered. Ecosystem at 42 repos,
+45 depot binaries, 4 architectures. Content-Addressed Convergence (CAC) pattern
+formalized. Cross-Platform Parity AAR absorbed.
+
+#### Added
+- **Gonzales IC50 scene** (`gonzales-ic50`): Sigmoidal dose-response using 4PL
+  Hill equation. IC50 annotation, axis labels, sweep animation.
+- **Gonzales PK Decay scene** (`gonzales-pk-decay`): Two-compartment
+  pharmacokinetic elimination showing α (distribution) and β (elimination)
+  phases. Half-life annotation, 3-curve legend, sequential reveal animation.
+- **Gonzales Tissue Lattice scene** (`gonzales-tissue-lattice`): 12×12 spatial
+  cell-state grid with radial drug diffusion model. Color-coded viability
+  (green/yellow/red), scale legend, diffusion animation.
+- **Gonzales Hormesis scene** (`gonzales-hormesis`): Biphasic dose-response
+  showing low-dose stimulation and high-dose inhibition (J-curve). Baseline
+  reference, zone annotations, sweep animation.
+- **VizRegistry**: 4 new slugs registered (`gonzales-ic50`, `gonzales-pk-decay`,
+  `gonzales-tissue-lattice`, `gonzales-hormesis`) with scene + animation builders.
+- **9 unit tests** for pharmacological math models and scene structure validation.
+
+#### Changed
+- **Ecosystem manifest**: wave 139 → 140, posture adds "tangibles pivot",
+  new fields: `repos`, `depot_binaries`, `depot_architectures`,
+  `spring_scenarios`, `spring_tests`, `depot_signing`,
+  `content_addressed_convergence`.
+
 ### Wave 139b: Public + Sovereign (July 14, 2026)
 
 Posture shift to PUBLIC + SOVEREIGN. northGate mesh enrollment unblocked

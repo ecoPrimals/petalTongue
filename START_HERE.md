@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: July 14, 2026 (Wave 139b — public + sovereign, northGate enrolled, westGate added, 3 live surfaces, 365 tests, cargo deny clean)
+**Updated**: July 15, 2026 (Wave 140a — tangibles pivot, Gonzales chart scenes, 42 repos, 45 depot binaries, 162 scenarios, cargo deny clean)
 
 ---
 
