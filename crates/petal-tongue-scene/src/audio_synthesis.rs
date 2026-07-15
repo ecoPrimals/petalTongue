@@ -165,7 +165,8 @@ mod tests {
         let samples = synth.synthesize(&p);
         #[expect(
             clippy::cast_sign_loss,
-            reason = "test: duration * sample_rate is non-negative"
+            clippy::cast_possible_truncation,
+            reason = "test: duration * sample_rate is a small known integer"
         )]
         let expected = (0.1 * 44100.0) as usize;
         assert_eq!(samples.len(), expected);
@@ -180,6 +181,7 @@ mod tests {
     }
 
     #[test]
+    #[expect(clippy::float_cmp, reason = "test: exact known frequency values")]
     fn provenance_map_register_and_query() {
         let mut map = AudioProvenanceMap::new();
         map.register(

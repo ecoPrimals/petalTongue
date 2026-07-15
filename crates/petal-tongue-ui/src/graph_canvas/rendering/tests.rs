@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+#![expect(clippy::float_cmp)]
 
 use super::geometry::{
     arrow_geometry, edge_color_rgb, edge_stroke_width, grid_color_alpha, grid_line_positions,

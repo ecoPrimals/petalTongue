@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #![allow(clippy::expect_used, reason = "test assertions")]
 
-//! Tier 2 SVG validation: compile representative DataBindings through the
-//! full primal pipeline (DataBindingCompiler → GrammarCompiler → SvgCompiler)
+//! Tier 2 SVG validation: compile representative `DataBindings` through the
+//! full primal pipeline (`DataBindingCompiler` → `GrammarCompiler` → `SvgCompiler`)
 //! and assert structural SVG validity.
 //!
 //! These tests are hermetic — all data is inline, no cross-workspace deps.

@@ -331,6 +331,7 @@ fn velocity_direction(vx: f64, vy: f64) -> &'static str {
         clippy::cast_sign_loss,
         reason = "rem_euclid(8.0) guarantees [0, 8) — always non-negative"
     )]
+    #[expect(clippy::cast_possible_truncation, reason = "octant index fits in usize")]
     let octant = raw.rem_euclid(8.0) as usize;
     DIRS[octant.min(7)]
 }
@@ -467,7 +468,7 @@ fn describe_soundscape(label: &str, definition: &serde_json::Value) -> String {
     desc
 }
 
-/// Convert a GameScene to audio sonification parameters.
+/// Convert a `GameScene` to audio sonification parameters.
 ///
 /// Entities become tones: position → stereo pan, entity type → frequency
 /// range, health → amplitude. This lets a blind user "hear" the battlefield.
@@ -524,7 +525,7 @@ pub fn sonify_game_scene(scene_json: &serde_json::Value) -> Vec<AudioParam> {
     params
 }
 
-/// Convert a GameScene to haptic commands.
+/// Convert a `GameScene` to haptic commands.
 ///
 /// Entities become haptic pulses: position → spatial location on device,
 /// health → intensity, entity type → pattern. Combat events get stronger

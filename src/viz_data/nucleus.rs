@@ -111,9 +111,11 @@ pub fn build_nucleus_scene() -> SceneGraph {
             .with_label(layer.label);
 
         for (ci, comp) in layer.components.iter().enumerate() {
+            #[expect(clippy::cast_precision_loss)]
+            let y = (ci as f64).mul_add(16.0, layer.y + 18.0);
             node.primitives.push(Primitive::Text {
                 x: layer.x + layer.width - 15.0,
-                y: layer.y + 18.0 + (ci as f64 * 16.0),
+                y,
                 content: (*comp).to_owned(),
                 font_size: 11.0,
                 color: Color::from_rgba8(186, 194, 222, 220),
@@ -139,9 +141,11 @@ pub fn build_nucleus_scene() -> SceneGraph {
     ];
 
     for (i, step) in tls_steps.iter().enumerate() {
+        #[expect(clippy::cast_precision_loss)]
+        let y = (i as f64).mul_add(28.0, 220.0);
         let text = Primitive::Text {
             x: 180.0,
-            y: 220.0 + (i as f64 * 28.0),
+            y,
             content: (*step).to_owned(),
             font_size: 11.0,
             color: Color::from_rgba8(166, 227, 161, 240),
@@ -181,7 +185,8 @@ pub fn build_nucleus_expand_animation(layer_id: &str) -> Sequence {
     let mut animations = Vec::new();
 
     for (i, &lid) in layers[..=target_idx].iter().rev().enumerate() {
-        let delay = i as f64 * 0.3;
+        #[expect(clippy::cast_precision_loss)]
+        let delay = (i as f64).mul_add(0.3, 0.0);
         animations.push(Animation {
             target: AnimationTarget::Scale {
                 node_id: lid.to_owned(),
@@ -205,7 +210,8 @@ pub fn build_nucleus_expand_animation(layer_id: &str) -> Sequence {
     }
 
     for (i, &lid) in layers[..=target_idx].iter().rev().enumerate() {
-        let delay = (layers.len() as f64 * 0.3) + (i as f64 * 0.15);
+        #[expect(clippy::cast_precision_loss)]
+        let delay = (layers.len() as f64).mul_add(0.3, (i as f64).mul_add(0.15, 0.0));
         animations.push(Animation {
             target: AnimationTarget::Scale {
                 node_id: lid.to_owned(),

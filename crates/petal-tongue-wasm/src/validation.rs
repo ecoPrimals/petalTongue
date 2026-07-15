@@ -21,6 +21,7 @@ use crate::compile::all_tufte_constraints;
 ///   ]
 /// }
 /// ```
+#[must_use]
 #[wasm_bindgen]
 pub fn validate_grammar(grammar_json: &str, data_json: &str) -> String {
     let expr: GrammarExpr = match serde_json::from_str(grammar_json) {

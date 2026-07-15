@@ -202,6 +202,9 @@ impl PrimalDefinition {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::scenario::config::UiConfig;
+    use crate::scenario::sensory::SensoryConfig;
+    use crate::scenario::types::NeuralApiConfig;
     use crate::scenario::ecosystem::{Position, PrimalMetrics as ScenarioMetrics};
 
     #[test]
@@ -252,7 +255,7 @@ mod tests {
             description: "Test scenario".to_owned(),
             version: "1.0.0".to_owned(),
             mode: "test".to_owned(),
-            ui_config: Default::default(),
+            ui_config: UiConfig::default(),
             ecosystem: crate::scenario::ecosystem::Ecosystem {
                 primals: vec![
                     PrimalDefinition {
@@ -265,7 +268,7 @@ mod tests {
                         confidence: 90,
                         position: Position { x: 0.0, y: 0.0 },
                         capabilities: vec![],
-                        metrics: Default::default(),
+                        metrics: ScenarioMetrics::default(),
                         proprioception: None,
                         data_bindings: vec![],
                         threshold_ranges: vec![],
@@ -280,15 +283,15 @@ mod tests {
                         confidence: 85,
                         position: Position { x: 100.0, y: 100.0 },
                         capabilities: vec![],
-                        metrics: Default::default(),
+                        metrics: ScenarioMetrics::default(),
                         proprioception: None,
                         data_bindings: vec![],
                         threshold_ranges: vec![],
                     },
                 ],
             },
-            neural_api: Default::default(),
-            sensory_config: Default::default(),
+            neural_api: NeuralApiConfig::default(),
+            sensory_config: SensoryConfig::default(),
             edges: vec![],
         };
 

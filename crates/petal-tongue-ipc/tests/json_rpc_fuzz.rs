@@ -41,7 +41,7 @@ fn json_params_strategy() -> impl Strategy<Value = Value> {
 }
 
 /// Strategy for JSON result values - excludes Null to avoid roundtrip loss
-/// (JSON "result": null deserializes as Option::None, not Some(Null)).
+/// (JSON "result": null deserializes as `Option::None`, not `Some(Null)`).
 fn json_result_strategy() -> impl Strategy<Value = Value> {
     let leaf = prop_oneof![
         any::<bool>().prop_map(Value::Bool),
@@ -57,7 +57,7 @@ fn json_result_strategy() -> impl Strategy<Value = Value> {
     })
 }
 
-/// Strategy for valid JsonRpcRequest construction.
+/// Strategy for valid `JsonRpcRequest` construction.
 fn json_rpc_request_strategy() -> impl Strategy<Value = JsonRpcRequest> {
     (
         "[a-zA-Z][a-zA-Z0-9_.]{0,64}",
@@ -72,7 +72,7 @@ fn json_rpc_request_strategy() -> impl Strategy<Value = JsonRpcRequest> {
         })
 }
 
-/// Strategy for valid JsonRpcResponse construction.
+/// Strategy for valid `JsonRpcResponse` construction.
 fn json_rpc_response_strategy() -> impl Strategy<Value = JsonRpcResponse> {
     prop_oneof![
         // Success response (use json_result_strategy to avoid Some(Null) roundtrip loss)

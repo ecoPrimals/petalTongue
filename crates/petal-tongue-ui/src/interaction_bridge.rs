@@ -169,6 +169,8 @@ impl Default for EguiInteractionBridge {
 
 #[cfg(test)]
 mod tests {
+    #![expect(clippy::float_cmp)]
+
     use petal_tongue_core::interaction::DataObjectId;
 
     use super::*;

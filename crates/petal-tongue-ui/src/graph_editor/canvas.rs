@@ -366,6 +366,8 @@ impl GraphCanvas {
 
 #[cfg(test)]
 mod tests {
+    #![expect(clippy::float_cmp)]
+
     use super::{Graph, GraphEdge, GraphNode};
     use super::{
         GraphCanvas, editor_arrow_vertices, editor_edge_stroke_width, editor_grid_params,

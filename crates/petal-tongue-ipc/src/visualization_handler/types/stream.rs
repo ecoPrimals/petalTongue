@@ -102,6 +102,7 @@ mod tests {
     }
 
     #[test]
+    #[expect(clippy::float_cmp)]
     fn stream_operation_set_value_roundtrip() {
         let op = StreamOperation::SetValue { value: 42.5 };
         let json = serde_json::to_string(&op).expect("serialize");

@@ -187,8 +187,9 @@ impl FlowerAnimation {
         .to_string()
     }
 
-    /// Expose generate_ascii for testing all state branches (Glowing, Reaching).
+    /// Expose `generate_ascii` for testing all state branches (`Glowing`, `Reaching`).
     #[cfg(test)]
+    #[must_use]
     pub fn generate_ascii_for_state(state: FlowerState) -> String {
         Self::generate_ascii(state)
     }

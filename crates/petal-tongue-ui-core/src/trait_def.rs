@@ -294,7 +294,7 @@ mod tests {
 
     /// PT-04 product validation: end-to-end HTML export pipeline.
     ///
-    /// Exercises wrap_svg_in_html → validate → write → read-back → structural check.
+    /// Exercises `wrap_svg_in_html` → validate → write → read-back → structural check.
     #[test]
     fn pt04_html_export_product_validation() {
         let sample_svg = concat!(

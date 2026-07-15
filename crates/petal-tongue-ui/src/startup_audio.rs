@@ -4,7 +4,7 @@
 //! Plays signature audio tone followed by startup music when petalTongue launches.
 //!
 //! Architecture:
-//! 1. Signature Tone: Pure Rust generation via AudioCanvas
+//! 1. Signature Tone: Pure Rust generation via `AudioCanvas`
 //! 2. Startup Music: Embedded MP3 decoded with symphonia (pure Rust)
 //! 3. Fallback: External file if embedded not available
 //!
@@ -38,7 +38,7 @@ pub enum StartupAudioError {
     },
 }
 
-/// Play audio samples via AudioCanvas (direct /dev/snd access).
+/// Play audio samples via `AudioCanvas` (direct /dev/snd access).
 fn play_audio_pure_rust(samples: &[f32]) -> Result<(), StartupAudioError> {
     use crate::audio_canvas::AudioCanvas;
 

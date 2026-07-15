@@ -29,7 +29,7 @@ pub struct GraphEdge {
     pub source: String,
     /// Target node ID.
     pub target: String,
-    /// Relationship label (e.g. "validates", "depends_on").
+    /// Relationship label (e.g. "validates", "`depends_on`").
     pub relation: String,
     /// Whether this edge is an inverse/back-reference.
     pub inverse: bool,
@@ -72,6 +72,7 @@ fn relation_color(relation: &str) -> Color {
 }
 
 /// Fruchterman-Reingold-style force-directed layout.
+#[expect(clippy::cast_precision_loss, reason = "layout math on small node counts")]
 fn force_layout(
     nodes: &[GraphNode],
     edges: &[GraphEdge],
@@ -98,7 +99,7 @@ fn force_layout(
     let iterations = 80;
 
     for iter in 0..iterations {
-        let temp = 0.1 * width * (1.0 - iter as f64 / iterations as f64);
+        let temp = 0.1 * width * (1.0 - f64::from(iter) / f64::from(iterations));
         let mut displacements = vec![(0.0f64, 0.0f64); n];
 
         for i in 0..n {
@@ -177,7 +178,7 @@ pub fn build_entity_graph_scene(graph: &EntityGraph) -> SceneGraph {
         };
 
         let edge_prim = Primitive::Line {
-            points: vec![[sx, sy], [tx, ty]],
+            points: vec![(sx, sy).into(), (tx, ty).into()],
             stroke: StrokeStyle {
                 color: relation_color(&edge.relation),
                 width: 1.2,
@@ -188,10 +189,10 @@ pub fn build_entity_graph_scene(graph: &EntityGraph) -> SceneGraph {
             data_id: Some(format!("edge-{i}")),
         };
 
-        let edge_node = SceneNode::new(format!("edge-{i}"))
+        let edge_scene_node = SceneNode::new(format!("edge-{i}"))
             .with_primitive(edge_prim)
             .with_opacity(0.7);
-        scene.add_node(edge_node, "edges");
+        scene.add_node(edge_scene_node, "edges");
     }
 
     let nodes_group = SceneNode::new("nodes").with_label("Ecosystem entities");
@@ -264,6 +265,7 @@ fn build_legend(width: f64) -> SceneNode {
         .with_label("Legend");
 
     for (i, (kind, label)) in kinds.iter().enumerate() {
+        #[expect(clippy::cast_precision_loss)]
         let y = (i as f64).mul_add(18.0, 5.0);
         legend.primitives.push(Primitive::Point {
             x: 8.0,

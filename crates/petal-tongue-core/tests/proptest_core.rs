@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Property-based tests for core data types: BoundingBox, DataObjectId, FilterExpr.
+//! Property-based tests for core data types: `BoundingBox`, `DataObjectId`, `FilterExpr`.
 
 #![allow(
     clippy::unwrap_used,
@@ -11,7 +11,7 @@ use petal_tongue_core::interaction::{BoundingBox, DataObjectId, FilterExpr};
 use proptest::prelude::*;
 use serde_json::Value;
 
-/// Strategy for simple JSON values (used in FilterExpr and DataObjectId).
+/// Strategy for simple JSON values (used in `FilterExpr` and `DataObjectId`).
 fn json_value_strategy() -> impl Strategy<Value = Value> {
     let leaf = prop_oneof![
         Just(Value::Null),
@@ -28,7 +28,7 @@ fn json_value_strategy() -> impl Strategy<Value = Value> {
     })
 }
 
-/// Strategy for FilterExpr with limited depth.
+/// Strategy for `FilterExpr` with limited depth.
 fn filter_expr_strategy() -> impl Strategy<Value = FilterExpr> {
     let leaf = prop_oneof![
         ("[a-z][a-z0-9_]{0,16}", json_value_strategy())

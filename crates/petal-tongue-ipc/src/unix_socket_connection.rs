@@ -27,7 +27,7 @@ pub enum ConnectionError {
 /// `AsyncRead + AsyncWrite` implementor.
 ///
 /// Uses `Vec<u8>` + `serde_json::from_slice` instead of `String` + `from_str`
-/// to avoid a redundant UTF-8 validation pass (serde_json validates internally).
+/// to avoid a redundant UTF-8 validation pass (`serde_json` validates internally).
 pub async fn handle_connection<S>(
     handler: &RpcHandlers,
     stream: S,

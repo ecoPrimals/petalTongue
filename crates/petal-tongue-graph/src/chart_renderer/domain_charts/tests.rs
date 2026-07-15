@@ -448,6 +448,7 @@ fn spectrum_lengths_single_point() {
 }
 
 #[test]
+#[expect(clippy::float_cmp)]
 fn scatter3d_bands_x_y_preserved() {
     let x = vec![10.0, 20.0];
     let y = vec![30.0, 40.0];

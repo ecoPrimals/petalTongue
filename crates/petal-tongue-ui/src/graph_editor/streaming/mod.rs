@@ -173,6 +173,8 @@ impl Default for StreamHandler {
 
 #[cfg(test)]
 mod tests {
+    #![expect(clippy::float_cmp)]
+
     use super::*;
     use std::time::Duration;
 

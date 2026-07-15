@@ -229,6 +229,7 @@ mod tests {
     }
 
     #[test]
+    #[expect(clippy::float_cmp)]
     fn test_telemetry_metrics_clone() {
         let m = TelemetryMetrics {
             total_primals: 2,

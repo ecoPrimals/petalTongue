@@ -4,17 +4,18 @@
 
 use super::RpcHandlers;
 use crate::json_rpc::{JsonRpcRequest, JsonRpcResponse, error_codes};
+use base64::Engine;
 use petal_tongue_scene::soundscape::{Soundscape, synthesize_soundscape};
 use serde_json::json;
 
 /// Handle `audio.synthesize`: synthesize a soundscape definition to stereo PCM.
 ///
 /// Params:
-/// - `definition`: Soundscape JSON (layers, duration, master_amplitude, etc.)
+/// - `definition`: Soundscape JSON (layers, duration, `master_amplitude`, etc.)
 /// - `format` (optional): `"metadata"` (default) returns sample stats,
 ///   `"wav_base64"` returns full WAV as base64.
 ///
-/// Returns sample_rate, channels, duration_secs, num_samples, and optionally wav_base64.
+/// Returns `sample_rate`, channels, `duration_secs`, `num_samples`, and optionally `wav_base64`.
 pub fn handle_audio_synthesize(
     _handlers: &RpcHandlers,
     mut req: JsonRpcRequest,
@@ -114,7 +115,6 @@ fn encode_wav_base64(
     }
     writer.finalize()?;
 
-    use base64::Engine;
     let wav_bytes = buf.into_inner();
     Ok(base64::engine::general_purpose::STANDARD.encode(&wav_bytes))
 }
@@ -170,6 +170,7 @@ mod tests {
 
     #[test]
     fn synthesize_wav_base64() {
+        use base64::Engine;
         let h = test_handlers();
         let req = JsonRpcRequest::new(
             "audio.synthesize",
@@ -194,7 +195,6 @@ mod tests {
         let r = resp.result.expect("result");
         let b64 = r["wav_base64"].as_str().expect("wav_base64 string");
         assert!(!b64.is_empty());
-        use base64::Engine;
         let decoded = base64::engine::general_purpose::STANDARD
             .decode(b64)
             .expect("valid base64");

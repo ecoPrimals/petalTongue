@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! DataBinding rendering entry points for the WASM API.
+//! `DataBinding` rendering entry points for the WASM API.
 
 use wasm_bindgen::prelude::*;
 
@@ -19,6 +19,7 @@ use crate::compile::{compile_scene_to_modality, scene_to_svg};
 /// * `binding_json` - JSON string of a single `DataBinding`
 /// * `domain` - Optional domain hint (e.g. `"ecology"`, `"health"`).
 ///   Pass empty string for default.
+#[must_use]
 #[wasm_bindgen]
 pub fn render_binding(binding_json: &str, domain: &str) -> String {
     let binding: DataBinding = match serde_json::from_str(binding_json) {
@@ -42,6 +43,7 @@ pub fn render_binding(binding_json: &str, domain: &str) -> String {
 /// Render a single data binding to a specified modality.
 ///
 /// Supported modalities: `"svg"` (default), `"description"`, `"terminal"`.
+#[must_use]
 #[wasm_bindgen]
 pub fn render_binding_to_modality(binding_json: &str, domain: &str, modality: &str) -> String {
     let binding: DataBinding = match serde_json::from_str(binding_json) {
@@ -69,6 +71,7 @@ pub fn render_binding_to_modality(binding_json: &str, domain: &str, modality: &s
 ///
 /// `thresholds_json` is a JSON array of `ThresholdRange` objects:
 /// `[{"label":"normal","min":0.0,"max":50.0,"status":"normal"}, ...]`
+#[must_use]
 #[wasm_bindgen]
 pub fn render_binding_with_thresholds(
     binding_json: &str,

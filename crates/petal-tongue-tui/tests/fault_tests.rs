@@ -27,8 +27,8 @@ async fn test_fault_empty_primals() {
     let primals = state.get_primals().await;
     assert_eq!(primals.len(), 0);
 
-    let stats = state.stats().await;
-    assert_eq!(stats.primal_count, 0);
+    let view_stats = state.stats().await;
+    assert_eq!(view_stats.primal_count, 0);
 }
 
 /// Test handling of empty topology

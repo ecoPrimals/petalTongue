@@ -56,10 +56,10 @@ async fn test_complete_dashboard_workflow() {
     }
 
     // 5. Verify state
-    let stats = state.stats().await;
-    assert_eq!(stats.primal_count, 2);
-    assert_eq!(stats.topology_edge_count, 1);
-    assert_eq!(stats.log_count, 5);
+    let view_stats = state.stats().await;
+    assert_eq!(view_stats.primal_count, 2);
+    assert_eq!(view_stats.topology_edge_count, 1);
+    assert_eq!(view_stats.log_count, 5);
 
     // 6. Navigate to different views
     state.set_view(View::Topology).await;
@@ -183,11 +183,9 @@ async fn test_log_streaming_workflow() {
     assert_eq!(logs.len(), 100);
 
     // Verify log sources are distributed
-    let songbird_logs: Vec<_> = logs
+    assert!(logs
         .iter()
-        .filter(|log| log.source.as_deref() == Some("songbird"))
-        .collect();
-    assert!(!songbird_logs.is_empty());
+        .any(|log| log.source.as_deref() == Some("songbird")));
 
     // Continue streaming (test ring buffer)
     for i in 100..1500 {

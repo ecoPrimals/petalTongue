@@ -254,7 +254,7 @@ mod tests {
     fn test_retry_policy_default() {
         let policy = RetryPolicy::default();
         assert_eq!(policy.max_attempts, 3);
-        assert_eq!(policy.backoff_factor, 2.0);
+        assert!((policy.backoff_factor - 2.0).abs() < f64::EPSILON);
         assert!(policy.jitter);
     }
 

@@ -375,6 +375,7 @@ mod tests {
     }
 
     #[test]
+    #[expect(clippy::float_cmp)]
     fn config_default_nested_values() {
         let config = Config::default();
 
@@ -567,6 +568,7 @@ mod tests {
     }
 
     #[test]
+    #[expect(clippy::float_cmp)]
     fn thresholds_config_default_values() {
         let thresholds = ThresholdsConfig::default();
 
@@ -589,6 +591,7 @@ mod tests {
     }
 
     #[test]
+    #[expect(clippy::float_cmp)]
     fn config_serde_roundtrip() {
         let original = Config::default();
         let json = serde_json::to_string(&original).unwrap();

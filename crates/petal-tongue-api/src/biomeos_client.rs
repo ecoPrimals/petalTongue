@@ -131,7 +131,7 @@ impl BiomeOSClient {
         #[cfg(any(test, feature = "test-fixtures"))]
         if self.offline_mode {
             tracing::debug!("offline mode — returning cached sample primals");
-            return Ok(self.offline_cached_primals());
+            return Ok(Self::offline_cached_primals());
         }
         #[cfg(not(any(test, feature = "test-fixtures")))]
         if self.offline_mode {
@@ -189,7 +189,7 @@ impl BiomeOSClient {
         #[cfg(any(test, feature = "test-fixtures"))]
         if self.offline_mode {
             tracing::debug!("offline mode — returning cached sample topology");
-            return Ok(self.offline_cached_topology());
+            return Ok(Self::offline_cached_topology());
         }
         #[cfg(not(any(test, feature = "test-fixtures")))]
         if self.offline_mode {
@@ -236,7 +236,7 @@ impl BiomeOSClient {
     /// Cached sample primals for offline/degraded mode (test/dev only).
     /// Gated behind `test-fixtures` feature. Production builds return error when `offline_mode` is set.
     #[cfg(any(test, feature = "test-fixtures"))]
-    fn offline_cached_primals(&self) -> Vec<PrimalInfo> {
+    fn offline_cached_primals() -> Vec<PrimalInfo> {
         let now = chrono::Utc::now().timestamp().cast_unsigned();
         vec![
             PrimalInfo {
@@ -319,7 +319,7 @@ impl BiomeOSClient {
     /// Cached sample topology for offline/degraded mode (test/dev only).
     /// Gated behind `test-fixtures` feature.
     #[cfg(any(test, feature = "test-fixtures"))]
-    fn offline_cached_topology(&self) -> Vec<TopologyEdge> {
+    fn offline_cached_topology() -> Vec<TopologyEdge> {
         vec![
             TopologyEdge {
                 from: "primal-alpha".into(),

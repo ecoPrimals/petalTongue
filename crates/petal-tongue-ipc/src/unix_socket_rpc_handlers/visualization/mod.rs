@@ -532,11 +532,17 @@ pub fn handle_scene_verify(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonR
         );
     }
 
-    let state = handlers
-        .viz_state
-        .read()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-    let Some(compiled) = state.grammar_scenes.get(session_id) else {
+    let cloned_scene = {
+        let state = handlers
+            .viz_state
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state
+            .grammar_scenes
+            .get(session_id)
+            .map(|compiled| compiled.scene.clone())
+    };
+    let Some(scene) = cloned_scene else {
         return JsonRpcResponse::error(
             req.id,
             error_codes::INVALID_PARAMS,
@@ -544,7 +550,7 @@ pub fn handle_scene_verify(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonR
         );
     };
 
-    let canonical = match serde_json::to_vec(&compiled.scene) {
+    let canonical = match serde_json::to_vec(&scene) {
         Ok(c) => c,
         Err(e) => {
             return JsonRpcResponse::error(

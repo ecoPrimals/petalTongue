@@ -301,11 +301,12 @@ fn test_load_graph_response_parsing() {
 fn test_list_graphs_empty_response() {
     let response = json!({"graphs": []});
     let graphs = response.get("graphs").and_then(|v| v.as_array()).unwrap();
-    let metadata: Vec<GraphMetadata> = graphs
-        .iter()
-        .filter_map(|g| serde_json::from_value(g.clone()).ok())
-        .collect();
-    assert!(metadata.is_empty());
+    assert!(
+        graphs
+            .iter()
+            .find_map(|g| serde_json::from_value::<GraphMetadata>(g.clone()).ok())
+            .is_none()
+    );
 }
 
 #[test]

@@ -66,7 +66,7 @@ pub enum CentralView {
     /// The default graph topology renderer.
     #[default]
     Graph,
-    /// Live scientific visualization of IPC-pushed DataBindings.
+    /// Live scientific visualization of IPC-pushed `DataBindings`.
     /// An optional session filter narrows to a single binding's expanded view.
     SceneViewer {
         /// When `Some`, show a single binding full-size; when `None`, show the tiled grid.

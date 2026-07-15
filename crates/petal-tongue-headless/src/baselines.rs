@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Baseline DataBinding export for Barrick Lab tools validation.
+//! Baseline `DataBinding` export for Barrick Lab tools validation.
 
 use crate::args::Args;
 use crate::error::HeadlessError;
 use std::path::Path;
 
-/// Export all baseline DataBindings as individual SVGs for human review.
+/// Export all baseline `DataBindings` as individual SVGs for human review.
 pub fn render_baselines(args: &Args) -> Result<(), HeadlessError> {
     use petal_tongue_scene::compiler::GrammarCompiler;
     use petal_tongue_scene::data_binding::DataBindingCompiler;
@@ -59,7 +59,7 @@ pub fn render_baselines(args: &Args) -> Result<(), HeadlessError> {
     Ok(())
 }
 
-/// All baseline DataBindings for Barrick Lab tools validation.
+/// All baseline `DataBindings` for Barrick Lab tools validation.
 #[expect(
     clippy::too_many_lines,
     reason = "headless baseline catalog: many representative DataBinding fixtures in one table"

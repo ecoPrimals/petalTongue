@@ -15,10 +15,10 @@ pub const XDG_RUNTIME_DIR: &str = "XDG_RUNTIME_DIR";
 /// Ecosystem runtime directory segment under [`XDG_RUNTIME_DIR`].
 pub const ECOSYSTEM_RUNTIME_DIR: &str = "ECOSYSTEM_RUNTIME_DIR";
 
-/// BiomeOS socket directory override (family-scoped socket layout).
+/// `BiomeOS` socket directory override (family-scoped socket layout).
 pub const BIOMEOS_SOCKET_DIR: &str = "BIOMEOS_SOCKET_DIR";
 
-/// BiomeOS family identifier for scoped sockets and BTSP.
+/// `BiomeOS` family identifier for scoped sockets and BTSP.
 pub const FAMILY_ID: &str = "FAMILY_ID";
 
 /// petalTongue-scoped alias for [`FAMILY_ID`].

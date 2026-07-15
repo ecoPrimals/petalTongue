@@ -6,6 +6,7 @@ use crate::biomeos_integration::{Device, DeviceStatus, DeviceType};
 use egui::{Color32, RichText, Ui};
 
 /// Get icon for device type
+#[must_use]
 pub const fn device_icon(device_type: DeviceType) -> &'static str {
     match device_type {
         DeviceType::GPU => "🎮",

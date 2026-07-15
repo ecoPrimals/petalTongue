@@ -307,7 +307,7 @@ async fn create_wrong_id_server(socket_path: &str) -> anyhow::Result<tokio::task
     Ok(handle)
 }
 
-/// Mock server: topology.get returns -32601, get_topology returns empty array
+/// Mock server: topology.get returns -32601, `get_topology` returns empty array
 async fn create_topology_fallback_server(
     socket_path: &str,
 ) -> anyhow::Result<tokio::task::JoinHandle<()>> {

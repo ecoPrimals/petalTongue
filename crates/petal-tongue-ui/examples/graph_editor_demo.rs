@@ -12,6 +12,7 @@ use anyhow::Result;
 use petal_tongue_ui::graph_editor::{
     DependencyType, Graph, GraphEdge, GraphEditorService, GraphNode, StreamHandler,
 };
+use petal_tongue_ui::graph_editor::rpc_methods::AddNodeRequest;
 use tracing::{Level, info};
 
 #[tokio::main]
@@ -116,7 +117,6 @@ async fn main() -> Result<()> {
     };
 
     // First add the graph to the service
-    use petal_tongue_ui::graph_editor::rpc_methods::AddNodeRequest;
     for node in graph.get_nodes() {
         service
             .add_node(AddNodeRequest {
@@ -188,11 +188,13 @@ async fn main() -> Result<()> {
         // Progress updates
         for progress in [25, 50, 75] {
             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+            #[expect(clippy::cast_precision_loss, reason = "demo progress percentage to f32")]
+            let progress_fraction = progress as f32 / 100.0;
             stream_handler
                 .send_progress(
                     "demo-graph".to_string(),
                     node_id.clone(),
-                    progress as f32 / 100.0,
+                    progress_fraction,
                     format!("Processing... {progress}%"),
                 )
                 .await?;

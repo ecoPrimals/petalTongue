@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Minimal SceneGraph → egui painting for converged render path.
+//! Minimal `SceneGraph` → egui painting for converged render path.
 //!
 //! This mirrors the painting logic in `petal-tongue-ui/src/scene_bridge/paint`
-//! so that `draw_channel` can render SceneGraph primitives without depending
+//! so that `draw_channel` can render `SceneGraph` primitives without depending
 //! on `petal-tongue-ui` (which would create a circular dependency).
 
 use egui::{Color32, Painter, Pos2, Rect, Rounding, Stroke, Vec2};
@@ -23,7 +23,7 @@ fn to_egui_stroke(s: &StrokeStyle) -> Stroke {
     Stroke::new(s.width, to_color32(s.color))
 }
 
-const fn anchor_to_align2(anchor: &AnchorPoint) -> egui::Align2 {
+const fn anchor_to_align2(anchor: AnchorPoint) -> egui::Align2 {
     match anchor {
         AnchorPoint::TopLeft => egui::Align2::LEFT_TOP,
         AnchorPoint::TopCenter => egui::Align2::CENTER_TOP,
@@ -117,7 +117,7 @@ fn paint_primitive(painter: &Painter, prim: &Primitive, transform: &Transform2D,
         } => {
             let pos = world_to_screen(transform, offset, *x, *y);
             let font = egui::FontId::proportional(*font_size as f32);
-            let align = anchor_to_align2(anchor);
+            let align = anchor_to_align2(*anchor);
             let text_color = to_color32(*color);
             painter.text(pos, align, content, font, text_color);
         }
@@ -319,7 +319,7 @@ pub fn draw_binding_via_scene(
     let scene_h = (max_y - min_y).max(1.0);
 
     let avail_w = ui.available_width().min(500.0);
-    let scale = avail_w as f64 / scene_w;
+    let scale = f64::from(avail_w) / scene_w;
     let display_h = (scene_h * scale) as f32;
     let display_h = display_h.clamp(60.0, 400.0);
 

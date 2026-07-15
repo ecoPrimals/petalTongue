@@ -303,6 +303,8 @@ pub(crate) struct EdgeDrawState {
 
 #[cfg(test)]
 mod tests {
+    #![expect(clippy::float_cmp)]
+
     use super::*;
     use petal_tongue_core::graph_builder::GraphEdge;
 

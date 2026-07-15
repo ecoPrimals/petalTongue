@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Gate mesh topology scene — WireGuard overlay, enrollment status, NUCLEUS health.
+//! Gate mesh topology scene — `WireGuard` overlay, enrollment status, NUCLEUS health.
 //!
 //! Consumes shared topology data from `petal_tongue_core::gate_mesh` and renders
-//! it as a scene graph with enrollment color coding and WireGuard link overlays.
+//! it as a scene graph with enrollment color coding and `WireGuard` link overlays.
 
 use petal_tongue_core::gate_mesh::{self, GateEnrollment, MeshNode};
 use petal_tongue_scene::animation::{Animation, AnimationTarget, Easing, Sequence};
@@ -242,7 +242,7 @@ pub fn build_gate_mesh_scene() -> SceneGraph {
     for (i, status) in statuses.iter().enumerate() {
         let lx = 30.0;
         #[expect(clippy::cast_precision_loss)]
-        let ly = height - 100.0 + (i as f64) * 18.0;
+        let ly = (i as f64).mul_add(18.0, height - 100.0);
         let dot = Primitive::Point {
             x: lx,
             y: ly,
@@ -282,7 +282,8 @@ pub fn build_enrollment_animation() -> Sequence {
     let mut animations = Vec::new();
 
     for (i, gate_id) in targets.iter().enumerate() {
-        let delay = i as f64 * 1.5;
+        #[expect(clippy::cast_precision_loss)]
+        let delay = (i as f64).mul_add(1.5, 0.0);
 
         animations.push(Animation {
             target: AnimationTarget::Opacity {

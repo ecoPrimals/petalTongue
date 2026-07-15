@@ -82,10 +82,15 @@ fn chaos_registry_lock_poison_recovery() {
         panic!("intentional poison");
     });
     assert!(handle.join().is_err());
-    let recovered = reg
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-    assert_eq!(recovered.count(), 0);
+    assert_eq!(
+        {
+            let recovered = reg
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            recovered.count()
+        },
+        0
+    );
 }
 
 #[test]

@@ -228,7 +228,11 @@ impl PrimalInfo {
             .get(PROP_TRUST_LEVEL)
             .and_then(crate::property::PropertyValue::as_number)
             .map(|n| {
-                #[expect(clippy::cast_sign_loss, reason = "trust level is always 0-3")]
+                #[expect(
+                    clippy::cast_sign_loss,
+                    clippy::cast_possible_truncation,
+                    reason = "trust level is always 0-3"
+                )]
                 let level = n as u8;
                 level
             })

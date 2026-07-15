@@ -4,7 +4,7 @@
     clippy::expect_used,
     reason = "test code uses unwrap/expect for brevity"
 )]
-//! Integration tests for socket_path.
+//! Integration tests for `socket_path`.
 
 use petal_tongue_ipc::socket_path;
 use std::path::Path;

@@ -21,7 +21,7 @@ pub fn format_device_count_display(count: usize) -> String {
     format!("Discovered {count} devices:")
 }
 
-const fn health_color(health: &PrimalHealthStatus) -> Color {
+const fn health_color(health: PrimalHealthStatus) -> Color {
     match health {
         PrimalHealthStatus::Healthy => Color::Green,
         PrimalHealthStatus::Warning => Color::Yellow,
@@ -30,7 +30,7 @@ const fn health_color(health: &PrimalHealthStatus) -> Color {
     }
 }
 
-const fn health_label(health: &PrimalHealthStatus) -> &'static str {
+const fn health_label(health: PrimalHealthStatus) -> &'static str {
     match health {
         PrimalHealthStatus::Healthy => "Healthy",
         PrimalHealthStatus::Warning => "Warning",
@@ -121,8 +121,8 @@ fn render_device_list(frame: &mut Frame, area: Rect, primals: &Arc<Vec<PrimalInf
 
         let max_display = 10;
         for primal in primals.iter().take(max_display) {
-            let color = health_color(&primal.health);
-            let status = health_label(&primal.health);
+            let color = health_color(primal.health);
+            let status = health_label(primal.health);
             items.push(ListItem::new(Line::from(vec![
                 Span::styled("📱 ", Style::default().fg(Color::Cyan)),
                 Span::raw(&primal.name),
@@ -215,19 +215,19 @@ mod tests {
 
     #[test]
     fn health_color_healthy_is_green() {
-        assert_eq!(health_color(&PrimalHealthStatus::Healthy), Color::Green);
+        assert_eq!(health_color(PrimalHealthStatus::Healthy), Color::Green);
     }
 
     #[test]
     fn health_color_critical_is_red() {
-        assert_eq!(health_color(&PrimalHealthStatus::Critical), Color::Red);
+        assert_eq!(health_color(PrimalHealthStatus::Critical), Color::Red);
     }
 
     #[test]
     fn health_label_covers_all_variants() {
-        assert_eq!(health_label(&PrimalHealthStatus::Healthy), "Healthy");
-        assert_eq!(health_label(&PrimalHealthStatus::Warning), "Warning");
-        assert_eq!(health_label(&PrimalHealthStatus::Critical), "Critical");
-        assert_eq!(health_label(&PrimalHealthStatus::Unknown), "Unknown");
+        assert_eq!(health_label(PrimalHealthStatus::Healthy), "Healthy");
+        assert_eq!(health_label(PrimalHealthStatus::Warning), "Warning");
+        assert_eq!(health_label(PrimalHealthStatus::Critical), "Critical");
+        assert_eq!(health_label(PrimalHealthStatus::Unknown), "Unknown");
     }
 }

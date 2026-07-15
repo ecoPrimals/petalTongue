@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Content rendering pipeline — markdown + TOML front matter to DocumentNode.
+//! Content rendering pipeline — markdown + TOML front matter to `DocumentNode`.
 //!
 //! Parses raw markdown with TOML `+++` front matter into a typed
 //! `DocumentNode` tree that can be compiled to any output modality

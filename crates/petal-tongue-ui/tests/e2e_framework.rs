@@ -2,6 +2,7 @@
 #![allow(
     clippy::unwrap_used,
     clippy::expect_used,
+    clippy::significant_drop_tightening,
     reason = "test code uses unwrap/expect for brevity"
 )]
 //! End-to-End Test Framework
@@ -79,6 +80,10 @@ impl E2ETestRunner {
     }
 
     /// Run all E2E tests
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any E2E test step fails.
     pub async fn run_all(&mut self) -> Result<()> {
         tracing::info!("Starting E2E test suite");
 
@@ -353,12 +358,11 @@ impl E2ETestRunner {
             steps_completed += 1;
 
             // Step 3: Verify edge exists
-            let edges: Vec<_> = graph
+            if !graph
                 .edges()
                 .iter()
-                .filter(|e| e.from == "node1" && e.to == "node2")
-                .collect();
-            if edges.is_empty() {
+                .any(|e| e.from == "node1" && e.to == "node2")
+            {
                 return Err(anyhow::anyhow!("Edge not found"));
             }
             steps_completed += 1;

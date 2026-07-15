@@ -127,8 +127,11 @@ impl InputAdapter for PointerAdapter {
             target: InteractionTarget::Region { bounds },
         } = &result.intent
         {
-            self.last_hover_x = bounds.x_min as f32;
-            self.last_hover_y = bounds.y_min as f32;
+            #[expect(clippy::cast_possible_truncation, reason = "screen coordinates: f32 sufficient")]
+            {
+                self.last_hover_x = bounds.x_min as f32;
+                self.last_hover_y = bounds.y_min as f32;
+            }
         }
     }
 }

@@ -90,6 +90,8 @@ pub fn prepare_metrics_panel_display(
 
 #[cfg(test)]
 mod tests {
+    #![expect(clippy::float_cmp)]
+
     use super::*;
     use crate::panels::metrics_panel::{NeuralApiStats, SystemStats};
 

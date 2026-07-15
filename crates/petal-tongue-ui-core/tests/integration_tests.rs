@@ -159,7 +159,7 @@ fn test_canvas_ui_integration() -> Result<()> {
     Ok(())
 }
 
-/// Product-level PT-04 validation: GraphEngine → SvgUI → `ExportFormat::Html` → disk round-trip.
+/// Product-level PT-04 validation: `GraphEngine` → `SvgUI` → `ExportFormat::Html` → disk round-trip.
 ///
 /// Ensures the full HTML export pipeline matches `wrap_svg_in_html` / `validate_standalone_html_export`
 /// and produces a well-formed standalone document with embedded topology SVG.

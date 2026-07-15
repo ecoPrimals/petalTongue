@@ -300,6 +300,7 @@ mod tests {
     }
 
     #[test]
+    #[expect(clippy::float_cmp, reason = "test: exact known entity default values")]
     fn game_entity_defaults() {
         let json = r#"{"id": "e1", "entity_type": "enemy", "position": [5.0, 10.0]}"#;
         let entity: GameEntity = serde_json::from_str(json).unwrap();

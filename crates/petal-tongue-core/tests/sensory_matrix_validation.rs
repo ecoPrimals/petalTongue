@@ -81,7 +81,7 @@ fn scenario_blind_keyboard_audio() {
 
 /// Scenario 2: Deaf user experiences content via haptic + visual.
 ///
-/// Input: pointer + keyboard. Output: visual_gui + haptic (no audio).
+/// Input: pointer + keyboard. Output: `visual_gui` + haptic (no audio).
 #[test]
 fn scenario_deaf_haptic_visual() {
     let input = InputCapabilitySet {
@@ -109,7 +109,7 @@ fn scenario_deaf_haptic_visual() {
 
 /// Scenario 3: Motor-impaired user interacts via single switch scanning.
 ///
-/// Input: switch only. Output: visual_gui + audio + description.
+/// Input: switch only. Output: `visual_gui` + audio + description.
 #[test]
 fn scenario_motor_impaired_switch() {
     let input = InputCapabilitySet {
@@ -229,7 +229,7 @@ fn scenario_audio_inverse_pipeline_resolves() {
     }
 }
 
-/// Scenario 7: Toadstool sensor events are valid SensorEvent variants.
+/// Scenario 7: Toadstool sensor events are valid `SensorEvent` variants.
 ///
 /// Type-level validation that all sensor event variants Toadstool will
 /// emit can be constructed and classified correctly.
@@ -408,13 +408,13 @@ fn matrix_from_runtime_discovery() {
     );
 }
 
-/// Validates InputModality::Agent display formatting.
+/// Validates `InputModality::Agent` display formatting.
 #[test]
 fn agent_input_modality_display() {
     assert_eq!(format!("{}", InputModality::Agent), "agent");
 }
 
-/// Validates that SensoryCapabilityMatrix serializes to JSON.
+/// Validates that `SensoryCapabilityMatrix` serializes to JSON.
 #[test]
 fn matrix_json_roundtrip() {
     let matrix = SensoryCapabilityMatrix::for_agent();

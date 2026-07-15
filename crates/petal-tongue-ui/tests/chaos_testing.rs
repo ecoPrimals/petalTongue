@@ -2,6 +2,7 @@
 #![allow(
     clippy::unwrap_used,
     clippy::expect_used,
+    clippy::significant_drop_tightening,
     missing_docs,
     reason = "test code uses unwrap/expect for brevity"
 )]
@@ -75,6 +76,10 @@ impl ChaosTestRunner {
     }
 
     /// Run all chaos scenarios
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any chaos scenario fails.
     pub fn run_all(&mut self) -> Result<()> {
         tracing::info!("Starting chaos test suite");
 

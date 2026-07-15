@@ -87,9 +87,10 @@ mod tests {
             let _g = mutex.lock().unwrap();
             panic!("poison");
         });
-        let result = mutex.lock();
-        assert!(result.is_err());
-        let err: UiCoreError = result.unwrap_err().into();
+        let err: UiCoreError = match mutex.lock() {
+            Ok(_) => panic!("expected poison error"),
+            Err(e) => e.into(),
+        };
         assert!(err.to_string().contains("poisoned"));
     }
 }

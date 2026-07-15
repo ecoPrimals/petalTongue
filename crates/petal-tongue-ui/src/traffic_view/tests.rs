@@ -5,6 +5,7 @@ use super::{
     ColorScheme, TrafficFlow, TrafficIntent, TrafficMetrics, TrafficView, bezier_control_points,
     calculate_flow_color, calculate_flow_width, prepare_flow_detail, primal_lane_layout,
 };
+use std::collections::HashMap;
 
 #[test]
 fn test_traffic_view_creation() {
@@ -206,7 +207,7 @@ fn test_set_primals() {
             last_seen: 0,
             endpoints: None,
             metadata: None,
-            properties: Default::default(),
+            properties: HashMap::default(),
         },
         PrimalInfo {
             id: PrimalId::from("p2"),
@@ -218,7 +219,7 @@ fn test_set_primals() {
             last_seen: 0,
             endpoints: None,
             metadata: None,
-            properties: Default::default(),
+            properties: HashMap::default(),
         },
     ];
     view.set_primals(primals);
@@ -465,7 +466,7 @@ fn test_set_primals_clears_old() {
         last_seen: 0,
         endpoints: None,
         metadata: None,
-        properties: Default::default(),
+        properties: HashMap::default(),
     }]);
     assert_eq!(view.primal_count(), 1);
 
@@ -479,7 +480,7 @@ fn test_set_primals_clears_old() {
         last_seen: 0,
         endpoints: None,
         metadata: None,
-        properties: Default::default(),
+        properties: HashMap::default(),
     }]);
     assert_eq!(view.primal_count(), 1);
 }

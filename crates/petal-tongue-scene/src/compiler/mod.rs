@@ -33,6 +33,7 @@ impl GrammarCompiler {
     }
 
     /// Compile grammar expression and data, then evaluate Tufte constraints.
+    #[must_use]
     pub fn compile_with_constraints(
         &self,
         expr: &GrammarExpr,

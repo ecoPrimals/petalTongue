@@ -4,6 +4,7 @@
 #![allow(
     clippy::unwrap_used,
     clippy::expect_used,
+    clippy::float_cmp,
     reason = "test code uses unwrap/expect for brevity"
 )]
 

@@ -307,7 +307,9 @@ pub fn compile_geometry(
                     let end_rad = end_deg.to_radians() - std::f64::consts::FRAC_PI_2;
 
                     #[expect(clippy::cast_sign_loss, reason = "clamped to non-negative")]
+                    #[expect(clippy::cast_possible_truncation, reason = "grid indices fit in usize")]
                     let ring = ring_idx.max(0.0) as usize;
+                    #[expect(clippy::cast_precision_loss, reason = "ring count well within f64 precision")]
                     let r = (ring as f64 + 1.0).mul_add(ring_spacing, base_radius);
 
                     let fill = categorical_color(palette, i);
@@ -317,6 +319,7 @@ pub fn compile_geometry(
                         clippy::cast_sign_loss,
                         reason = "abs + ceil + max(8) is non-negative"
                     )]
+                    #[expect(clippy::cast_possible_truncation, reason = "sample count well within usize")]
                     let n_samples = ((end_rad - start_rad).abs() * 20.0).ceil().max(8.0) as usize;
                     let mut poly_pts = Vec::with_capacity(n_samples * 2 + 2);
                     let r_inner = r - arc_thickness / 2.0;

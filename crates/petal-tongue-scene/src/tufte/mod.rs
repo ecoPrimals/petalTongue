@@ -192,6 +192,7 @@ pub struct TufteReport {
 impl TufteReport {
     /// Evaluate all constraints and produce a report.
     /// `data` is optional raw data for constraints that need category counts (e.g. color).
+    #[must_use]
     pub fn evaluate_all(
         constraints: &[TufteConstraintImpl],
         primitives: &[Primitive],

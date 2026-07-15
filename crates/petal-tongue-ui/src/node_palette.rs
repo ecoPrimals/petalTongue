@@ -300,32 +300,32 @@ mod tests {
     #[test]
     fn test_search_filter_empty_shows_all() {
         let palette = NodePalette::new();
-        let filtered: Vec<_> = palette
-            .node_types
-            .iter()
-            .filter(|info| {
-                palette.search.is_empty()
-                    || info
-                        .name
-                        .to_lowercase()
-                        .contains(&palette.search.to_lowercase())
-                    || info
-                        .description
-                        .to_lowercase()
-                        .contains(&palette.search.to_lowercase())
-            })
-            .collect();
-        assert_eq!(filtered.len(), 4);
+        assert_eq!(
+            palette
+                .node_types
+                .iter()
+                .filter(|info| {
+                    palette.search.is_empty()
+                        || info
+                            .name
+                            .to_lowercase()
+                            .contains(&palette.search.to_lowercase())
+                        || info
+                            .description
+                            .to_lowercase()
+                            .contains(&palette.search.to_lowercase())
+                })
+                .count(),
+            4
+        );
     }
 
     #[test]
     fn test_search_filter_nonexistent_returns_empty() {
         let mut palette = NodePalette::new();
         palette.search = "xyznonexistent123".to_owned();
-        let filtered: Vec<_> = palette
-            .node_types
-            .iter()
-            .filter(|info| {
+        assert!(
+            !palette.node_types.iter().any(|info| {
                 info.name
                     .to_lowercase()
                     .contains(&palette.search.to_lowercase())
@@ -334,7 +334,6 @@ mod tests {
                         .to_lowercase()
                         .contains(&palette.search.to_lowercase())
             })
-            .collect();
-        assert!(filtered.is_empty());
+        );
     }
 }

@@ -6,7 +6,7 @@
 )]
 //! JSON-RPC over Unix socket integration tests.
 //!
-//! Uses a mock Unix socket server to exercise BiomeOSJsonRpcClient paths.
+//! Uses a mock Unix socket server to exercise `BiomeOSJsonRpcClient` paths.
 
 use petal_tongue_api::BiomeOSJsonRpcClient;
 use petal_tongue_core::PrimalHealthStatus;
@@ -15,7 +15,7 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixListener;
 
 /// Spawn a mock JSON-RPC server that responds with the given result value.
-/// Returns (socket_path, _temp_dir) - keep temp_dir alive for socket to exist.
+/// Returns (`socket_path`, `_temp_dir`) - keep `temp_dir` alive for socket to exist.
 fn spawn_mock_jsonrpc_server_with_result(
     result: serde_json::Value,
 ) -> (std::path::PathBuf, TempDir) {

@@ -272,7 +272,7 @@ impl DataService {
     /// Currently returns statically derived peers from the gate topology.
     /// When songBird IPC is available, this will query live peer state.
     #[must_use]
-    pub fn mesh_peers(&self) -> Vec<petal_tongue_core::gate_mesh::MeshPeer> {
+    pub fn mesh_peers() -> Vec<petal_tongue_core::gate_mesh::MeshPeer> {
         petal_tongue_core::gate_mesh::derive_mesh_peers(petal_tongue_core::gate_mesh::all_nodes())
     }
 
@@ -282,10 +282,9 @@ impl DataService {
     /// with static gate mesh data as fallback. This is the primary source
     /// for the `/api/topology/live` endpoint.
     pub fn live_topology(&self) -> LiveTopology {
-        let graph = self.graph.read().ok();
         let has_api = self.neural_api.is_some();
 
-        let (primals, edges) = match graph {
+        let (primals, edges) = match self.graph.read().ok() {
             Some(ref g) if !g.nodes().is_empty() => {
                 let primals: Vec<LivePrimal> = g
                     .nodes()
@@ -320,7 +319,7 @@ impl DataService {
             _ => (Vec::new(), Vec::new()),
         };
 
-        let mesh_peers = self.mesh_peers();
+        let mesh_peers = Self::mesh_peers();
 
         LiveTopology {
             source: if has_api && !primals.is_empty() {
@@ -692,8 +691,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_mesh_peers_returns_peers() {
-        let service = DataService::new();
-        let peers = service.mesh_peers();
+        let peers = DataService::mesh_peers();
         assert!(peers.len() >= 6);
         assert!(peers.iter().any(|p| p.gate_id == "eastGate"));
         assert!(peers.iter().any(|p| p.gate_id == "ironGate"));

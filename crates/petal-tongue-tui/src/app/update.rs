@@ -174,7 +174,7 @@ async fn refresh_topology(tui: &mut RichTUI) -> Result<(), TuiError> {
 /// Full refresh is triggered by the `r` key or external events.
 /// This hook runs on the tick interval for lightweight status polling
 /// when connected to an ecosystem (non-standalone mode).
-async fn refresh_data(tui: &mut RichTUI) -> Result<(), TuiError> {
+async fn refresh_data(tui: &RichTUI) -> Result<(), TuiError> {
     if !tui.state().is_standalone().await {
         // Reserved for lightweight periodic status updates.
     }
@@ -262,7 +262,7 @@ mod tests {
         let views = View::all();
         for i in 0..views.len() {
             let action = parse_key_event(KeyEvent::new(
-                KeyCode::Char(char::from_digit((i + 1) as u32, 10).unwrap()),
+                KeyCode::Char(char::from_digit(u32::try_from(i + 1).unwrap(), 10).unwrap()),
                 KeyModifiers::NONE,
             ));
             if let KeyAction::SwitchView(idx) = action {
@@ -434,7 +434,7 @@ mod tests {
         let views = View::all();
         for i in 0..views.len() {
             let key = KeyEvent::new(
-                KeyCode::Char(char::from_digit((i + 1) as u32, 10).unwrap()),
+                KeyCode::Char(char::from_digit(u32::try_from(i + 1).unwrap(), 10).unwrap()),
                 KeyModifiers::NONE,
             );
             let action = parse_key_event(key);

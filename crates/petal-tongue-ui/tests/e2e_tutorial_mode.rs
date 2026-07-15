@@ -2,6 +2,7 @@
 #![allow(
     clippy::unwrap_used,
     clippy::expect_used,
+    clippy::significant_drop_tightening,
     reason = "test code uses unwrap/expect for brevity"
 )]
 //! E2E Tests for Tutorial Mode
@@ -300,13 +301,11 @@ fn test_e2e_tutorial_provides_working_example() {
     );
 
     // Should include diverse primal types
-    let primal_types: Vec<&str> = graph
+    let unique_types: std::collections::HashSet<_> = graph
         .nodes()
         .iter()
         .map(|n| n.info.primal_type.as_str())
         .collect();
-
-    let unique_types: std::collections::HashSet<_> = primal_types.into_iter().collect();
     assert!(
         unique_types.len() >= 2,
         "Tutorial should show diverse primal types"

@@ -107,9 +107,9 @@ async fn test_stats() {
     state.set_view(View::Primals).await;
     state.register_capability("songbird".to_string(), vec!["discovery".to_string()]);
 
-    let stats = state.stats().await;
-    assert_eq!(stats.view, View::Primals);
-    assert_eq!(stats.registered_capabilities, 1);
+    let view_stats = state.stats().await;
+    assert_eq!(view_stats.view, View::Primals);
+    assert_eq!(view_stats.registered_capabilities, 1);
 }
 
 #[tokio::test]
@@ -210,10 +210,10 @@ async fn test_tui_stats_fields() {
             message: "test".to_string(),
         })
         .await;
-    let stats = state.stats().await;
-    assert_eq!(stats.view, View::Logs);
-    assert_eq!(stats.log_count, 1);
-    assert_eq!(stats.topology_edge_count, 0);
+    let view_stats = state.stats().await;
+    assert_eq!(view_stats.view, View::Logs);
+    assert_eq!(view_stats.log_count, 1);
+    assert_eq!(view_stats.topology_edge_count, 0);
 }
 
 #[test]

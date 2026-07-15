@@ -15,6 +15,7 @@
 //! provider by capability, never by primal name.
 
 use axum::response::{Html, IntoResponse};
+use base64::Engine as _;
 use std::sync::Arc;
 
 /// Typed errors for the content backend RPC layer.
@@ -242,7 +243,6 @@ impl ContentBackendClient {
             .and_then(|v| v.as_str())
             .unwrap_or("application/octet-stream");
 
-        use base64::Engine as _;
         let bytes = base64::engine::general_purpose::STANDARD.decode(content_b64)?;
 
         Ok(Some((bytes, mime.to_owned())))

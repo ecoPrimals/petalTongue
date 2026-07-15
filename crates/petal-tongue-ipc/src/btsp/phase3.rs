@@ -41,7 +41,7 @@ impl SessionKeys {
     ///
     /// Per ecosystem standard (W81):
     /// - `salt = client_nonce || server_nonce`
-    /// - `ikm  = handshake_key` (session_key from `btsp.session.verify`)
+    /// - `ikm  = handshake_key` (`session_key` from `btsp.session.verify`)
     /// - `info = "btsp-session-v1-c2s"` → client-to-server key
     /// - `info = "btsp-session-v1-s2c"` → server-to-client key
     pub fn derive(

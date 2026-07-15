@@ -170,7 +170,7 @@ mod tests {
             physical_key: None,
             pressed: false,
             repeat: false,
-            modifiers: Default::default(),
+            modifiers: egui::Modifiers::default(),
         });
         let _ = ctx.run(raw, |_ctx| {});
         let events = collect_sensor_events(&ctx);

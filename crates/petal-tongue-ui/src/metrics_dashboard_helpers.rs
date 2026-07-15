@@ -211,6 +211,8 @@ pub fn format_uptime_display(uptime_secs: u64) -> String {
 
 #[cfg(test)]
 mod tests {
+    #![expect(clippy::float_cmp)]
+
     use super::*;
     use petal_tongue_core::{NeuralApiMetrics, SystemResourceMetrics};
 

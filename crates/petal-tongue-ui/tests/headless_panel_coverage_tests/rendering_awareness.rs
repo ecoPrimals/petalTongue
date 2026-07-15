@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+#![expect(clippy::significant_drop_tightening, reason = "RwLock read guards in integration tests")]
 
 use petal_tongue_core::PanelKind;
 use petal_tongue_ui::headless_harness::HeadlessHarness;

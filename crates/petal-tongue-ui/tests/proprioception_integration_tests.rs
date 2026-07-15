@@ -2,6 +2,7 @@
 #![allow(
     clippy::unwrap_used,
     clippy::expect_used,
+    clippy::significant_drop_tightening,
     reason = "test code uses unwrap/expect for brevity"
 )]
 //! Integration tests for SAME DAVE proprioception system

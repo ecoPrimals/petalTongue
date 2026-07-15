@@ -64,7 +64,7 @@ struct Cli {
     #[arg(long, default_value = "pretty")]
     log_format: String,
 
-    /// Family namespace for multi-gate deployments (also settable via FAMILY_ID env)
+    /// Family namespace for multi-gate deployments (also settable via `FAMILY_ID` env)
     #[arg(long, env = "FAMILY_ID")]
     family_id: Option<String>,
 
@@ -111,7 +111,7 @@ enum Commands {
     /// as a fallback for any path not matched by the API routes. This enables
     /// sovereign static site serving (sporePrint, Zola builds, etc.).
     Web {
-        /// TCP port (UniBin standard: `--port` binds `0.0.0.0:PORT`)
+        /// TCP port (`UniBin` standard: `--port` binds `0.0.0.0:PORT`)
         #[arg(long)]
         port: Option<u16>,
 
@@ -162,7 +162,7 @@ enum Commands {
 
     /// Run headless API server (Pure Rust! ✅)
     Headless {
-        /// TCP port (UniBin standard: `--port` binds `0.0.0.0:PORT`)
+        /// TCP port (`UniBin` standard: `--port` binds `0.0.0.0:PORT`)
         #[arg(long)]
         port: Option<u16>,
 
@@ -177,7 +177,7 @@ enum Commands {
 
     /// Run IPC server (Unix socket JSON-RPC) without display
     ///
-    /// Socket path priority: subcommand --socket > global --socket > PETALTONGUE_SOCKET env > XDG default
+    /// Socket path priority: subcommand --socket > global --socket > `PETALTONGUE_SOCKET` env > XDG default
     Server {
         /// TCP port for newline-delimited JSON-RPC (optional, UDS always active)
         #[arg(long)]
@@ -187,7 +187,7 @@ enum Commands {
         #[arg(long, env = "PETALTONGUE_IPC_HOST")]
         bind: Option<String>,
 
-        /// Unix domain socket path override (or set PETALTONGUE_SOCKET env var)
+        /// Unix domain socket path override (or set `PETALTONGUE_SOCKET` env var)
         #[arg(long, env = "PETALTONGUE_SOCKET")]
         socket: Option<String>,
     },
@@ -210,7 +210,7 @@ enum Commands {
         #[arg(long, env = "PETALTONGUE_IPC_HOST")]
         bind: Option<String>,
 
-        /// Unix domain socket path override (or set PETALTONGUE_SOCKET env var)
+        /// Unix domain socket path override (or set `PETALTONGUE_SOCKET` env var)
         #[arg(long, env = "PETALTONGUE_SOCKET")]
         socket: Option<String>,
     },
@@ -625,7 +625,7 @@ fn discover_compositions() -> Vec<web_mode::CompositionMount> {
         .collect()
 }
 
-/// Resolve bind address from `--bind` (explicit), `--port` (UniBin standard), or config default.
+/// Resolve bind address from `--bind` (explicit), `--port` (`UniBin` standard), or config default.
 fn resolve_bind(
     bind: Option<String>,
     port: Option<u16>,

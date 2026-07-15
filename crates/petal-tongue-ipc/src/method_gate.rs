@@ -118,7 +118,7 @@ impl CallerContext {
 pub enum ConnectionOrigin {
     /// Local Unix domain socket (trusted).
     Unix,
-    /// TCP from loopback address (127.0.0.1 / ::1).
+    /// TCP from loopback address (127.0.0.1 / `::1`).
     Loopback,
     /// TCP from a non-loopback address.
     Remote,

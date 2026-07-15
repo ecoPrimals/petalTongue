@@ -178,9 +178,7 @@ mod tests {
             panic!("poison for test");
         });
         let _ = handle.join();
-        let result = mutex.lock();
-        let poison_err = result.unwrap_err();
-        let app_err: AppError = poison_err.into();
+        let app_err: AppError = mutex.lock().unwrap_err().into();
         assert!(matches!(app_err, AppError::GraphLockPoisoned(_)));
         assert!(app_err.to_string().contains("Graph lock poisoned"));
         assert!(app_err.to_string().contains("poison"));
