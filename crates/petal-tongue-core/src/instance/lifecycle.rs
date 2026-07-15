@@ -18,18 +18,21 @@ pub(super) fn current_timestamp() -> u64 {
         .as_secs()
 }
 
-/// Check if a process exists
+/// Check if a process exists.
+///
+/// On Unix: probes `/proc/{pid}` (Linux) which is always available.
+/// On non-Unix: conservatively returns `true` (assume process is alive)
+/// to avoid false-positive stale instance cleanup.
 pub(super) fn process_exists(pid: u32) -> bool {
     #[cfg(unix)]
     {
-        // rustix 0.38+ Signal::from_raw(0) returns None because 0 is not a
-        // real signal. Use /proc on Linux for process existence check instead.
         std::path::Path::new(&format!("/proc/{pid}")).exists()
     }
 
     #[cfg(not(unix))]
     {
-        std::path::Path::new(&format!("/proc/{pid}")).exists()
+        let _ = pid;
+        true
     }
 }
 
