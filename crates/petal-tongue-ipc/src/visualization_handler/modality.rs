@@ -199,7 +199,9 @@ mod tests {
         let (output, format) = compile_modality(&scene, "svg");
         assert_eq!(format, "svg");
         assert!(output.is_string());
-        let s = output.as_str().unwrap();
+        let s = output
+            .as_str()
+            .expect("svg modality output should be a string");
         assert!(s.contains("<svg"));
     }
 
@@ -265,7 +267,9 @@ mod tests {
         let (output, format) = compile_modality(&scene, "unknown-modality");
         assert_eq!(format, "svg");
         assert!(output.is_string());
-        let s = output.as_str().unwrap();
+        let s = output
+            .as_str()
+            .expect("unknown modality fallback should produce svg string");
         assert!(s.contains("<svg"));
     }
 
@@ -283,7 +287,9 @@ mod tests {
         let (output, format) = compile_modality(&scene, "html");
         assert_eq!(format, "html");
         assert!(output.is_string());
-        let s = output.as_str().unwrap();
+        let s = output
+            .as_str()
+            .expect("html modality output should be a string");
         assert!(
             s.contains("<!DOCTYPE html>"),
             "should be full HTML document"
@@ -302,7 +308,9 @@ mod tests {
         let scene = minimal_scene();
         let (output, format) = compile_binding_modality(&binding, &scene, "description");
         assert_eq!(format, "description");
-        let desc = output.as_str().unwrap();
+        let desc = output
+            .as_str()
+            .expect("game scene description should be a string");
         assert!(desc.contains("Hero"), "should mention entities");
         assert!(desc.contains("Goblin"), "should mention enemies");
         assert!(desc.contains("health"), "should report health");
@@ -314,7 +322,9 @@ mod tests {
         let scene = minimal_scene();
         let (output, format) = compile_binding_modality(&binding, &scene, "audio");
         assert_eq!(format, "audio");
-        let params = output.as_array().unwrap();
+        let params = output
+            .as_array()
+            .expect("game scene audio should be a json array");
         assert_eq!(params.len(), 2, "one tone per entity");
     }
 
@@ -324,7 +334,9 @@ mod tests {
         let scene = minimal_scene();
         let (output, format) = compile_binding_modality(&binding, &scene, "haptic");
         assert_eq!(format, "haptic");
-        let cmds = output.as_array().unwrap();
+        let cmds = output
+            .as_array()
+            .expect("game scene haptic should be a json array");
         assert_eq!(cmds.len(), 2, "one pulse per entity");
     }
 
@@ -334,7 +346,9 @@ mod tests {
         let scene = minimal_scene();
         let (output, format) = compile_binding_modality(&binding, &scene, "description");
         assert_eq!(format, "description");
-        let desc = output.as_str().unwrap();
+        let desc = output
+            .as_str()
+            .expect("soundscape description should be a string");
         assert!(desc.contains("Forest"));
         assert!(desc.contains("wind"));
     }
@@ -345,7 +359,9 @@ mod tests {
         let scene = minimal_scene();
         let (output, format) = compile_binding_modality(&binding, &scene, "haptic");
         assert_eq!(format, "haptic");
-        let cmds = output.as_array().unwrap();
+        let cmds = output
+            .as_array()
+            .expect("soundscape haptic should be a json array");
         assert_eq!(cmds.len(), 1, "one haptic per layer");
     }
 
@@ -366,6 +382,11 @@ mod tests {
             format, "svg",
             "non-GameScene/Soundscape should fall through"
         );
-        assert!(output.as_str().unwrap().contains("<svg"));
+        assert!(
+            output
+                .as_str()
+                .expect("timeseries svg fallback should be a string")
+                .contains("<svg")
+        );
     }
 }

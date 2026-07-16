@@ -371,27 +371,30 @@ mod tests {
     }
 
     #[test]
-    fn render_baselines_to_temp_dir() {
-        let dir = tempfile::tempdir().unwrap();
+    fn render_baselines_to_temp_dir() -> Result<(), HeadlessError> {
+        let dir = tempfile::tempdir()?;
         let out = dir.path().join("test_baselines");
         let args = Args {
             mode: OutputMode::Baselines,
-            output: Some(out.to_str().unwrap().to_owned()),
+            output: Some(
+                out.to_str()
+                    .expect("temp path is valid UTF-8")
+                    .to_owned(),
+            ),
             width: 800,
             height: 600,
             scenario: None,
             demo: false,
         };
-        render_baselines(&args).unwrap();
+        render_baselines(&args)?;
         assert!(out.exists(), "output directory should be created");
-        let files: Vec<_> = std::fs::read_dir(&out)
-            .unwrap()
+        let files: Vec<_> = std::fs::read_dir(&out)?
             .filter_map(std::result::Result::ok)
             .collect();
         assert!(!files.is_empty(), "should export at least one SVG");
         for entry in &files {
             let name = entry.file_name();
-            let name = name.to_str().unwrap();
+            let name = name.to_str().expect("file name is valid UTF-8");
             assert!(
                 std::path::Path::new(name)
                     .extension()
@@ -399,6 +402,7 @@ mod tests {
                 "all exports should be SVGs"
             );
         }
+        Ok(())
     }
 
     #[test]

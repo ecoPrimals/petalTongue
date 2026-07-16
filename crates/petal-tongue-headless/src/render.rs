@@ -127,15 +127,16 @@ mod tests {
     }
 
     #[test]
-    fn render_svg_to_file() {
-        let dir = tempfile::tempdir().unwrap();
+    fn render_svg_to_file() -> Result<(), HeadlessError> {
+        let dir = tempfile::tempdir()?;
         let path = dir.path().join("test.svg");
         let graph = empty_graph();
-        let args = test_args_with_output(Some(path.to_str().unwrap()));
+        let args = test_args_with_output(Some(path.to_str().expect("temp path is valid UTF-8")));
         assert!(render_svg(graph, &args).is_ok());
         assert!(path.exists());
-        let content = std::fs::read_to_string(&path).unwrap();
+        let content = std::fs::read_to_string(&path)?;
         assert!(content.contains("<svg"), "should be valid SVG");
+        Ok(())
     }
 
     #[test]
@@ -146,13 +147,14 @@ mod tests {
     }
 
     #[test]
-    fn render_json_to_file() {
-        let dir = tempfile::tempdir().unwrap();
+    fn render_json_to_file() -> Result<(), HeadlessError> {
+        let dir = tempfile::tempdir()?;
         let path = dir.path().join("test.json");
         let graph = empty_graph();
-        let args = test_args_with_output(Some(path.to_str().unwrap()));
+        let args = test_args_with_output(Some(path.to_str().expect("temp path is valid UTF-8")));
         assert!(render_json(graph, &args).is_ok());
         assert!(path.exists());
+        Ok(())
     }
 
     #[test]
@@ -163,23 +165,25 @@ mod tests {
     }
 
     #[test]
-    fn render_dot_to_file() {
-        let dir = tempfile::tempdir().unwrap();
+    fn render_dot_to_file() -> Result<(), HeadlessError> {
+        let dir = tempfile::tempdir()?;
         let path = dir.path().join("test.dot");
         let graph = empty_graph();
-        let args = test_args_with_output(Some(path.to_str().unwrap()));
+        let args = test_args_with_output(Some(path.to_str().expect("temp path is valid UTF-8")));
         assert!(render_dot(graph, &args).is_ok());
         assert!(path.exists());
+        Ok(())
     }
 
     #[test]
-    fn render_png_to_file() {
-        let dir = tempfile::tempdir().unwrap();
+    fn render_png_to_file() -> Result<(), HeadlessError> {
+        let dir = tempfile::tempdir()?;
         let path = dir.path().join("test.png");
         let graph = empty_graph();
-        let args = test_args_with_output(Some(path.to_str().unwrap()));
+        let args = test_args_with_output(Some(path.to_str().expect("temp path is valid UTF-8")));
         assert!(render_png(graph, &args).is_ok());
         assert!(path.exists());
+        Ok(())
     }
 
     #[test]
@@ -190,12 +194,13 @@ mod tests {
     }
 
     #[test]
-    fn render_html_to_file() {
-        let dir = tempfile::tempdir().unwrap();
+    fn render_html_to_file() -> Result<(), HeadlessError> {
+        let dir = tempfile::tempdir()?;
         let path = dir.path().join("test.html");
         let graph = empty_graph();
-        let args = test_args_with_output(Some(path.to_str().unwrap()));
+        let args = test_args_with_output(Some(path.to_str().expect("temp path is valid UTF-8")));
         assert!(render_html(graph, &args).is_ok());
         assert!(path.exists());
+        Ok(())
     }
 }

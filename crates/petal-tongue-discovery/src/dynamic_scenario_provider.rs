@@ -281,9 +281,10 @@ impl VisualizationDataProvider for DynamicScenarioProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::Result;
 
     #[test]
-    fn test_dynamic_scenario_minimal() {
+    fn test_dynamic_scenario_minimal() -> Result<()> {
         let json = r#"{
             "name": "Minimal Test",
             "version": "1.0.0",
@@ -300,9 +301,9 @@ mod tests {
         }"#;
 
         let temp_file = std::env::temp_dir().join("test_dynamic_minimal.json");
-        std::fs::write(&temp_file, json).unwrap();
+        std::fs::write(&temp_file, json)?;
 
-        let provider = DynamicScenarioProvider::from_file(&temp_file).unwrap();
+        let provider = DynamicScenarioProvider::from_file(&temp_file)?;
         assert_eq!(provider.name(), Some("Minimal Test"));
 
         let version = provider
@@ -316,10 +317,11 @@ mod tests {
         assert_eq!(provider.primals[0].name, "TEST");
 
         std::fs::remove_file(&temp_file).ok();
+        Ok(())
     }
 
     #[test]
-    fn test_dynamic_scenario_unknown_fields() {
+    fn test_dynamic_scenario_unknown_fields() -> Result<()> {
         // Test that unknown fields are captured
         let json = r#"{
             "name": "Unknown Fields Test",
@@ -338,9 +340,9 @@ mod tests {
         }"#;
 
         let temp_file = std::env::temp_dir().join("test_dynamic_unknown.json");
-        std::fs::write(&temp_file, json).unwrap();
+        std::fs::write(&temp_file, json)?;
 
-        let provider = DynamicScenarioProvider::from_file(&temp_file).unwrap();
+        let provider = DynamicScenarioProvider::from_file(&temp_file)?;
         let primal = &provider.primals[0];
 
         // Unknown fields should be in properties
@@ -348,10 +350,11 @@ mod tests {
         assert!(primal.properties.contains_key("tier"));
 
         std::fs::remove_file(&temp_file).ok();
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_dynamic_provider_interface() {
+    async fn test_dynamic_provider_interface() -> Result<()> {
         let json = r#"{
             "name": "Interface Test",
             "ecosystem": {
@@ -373,28 +376,29 @@ mod tests {
         }"#;
 
         let temp_file = std::env::temp_dir().join("test_dynamic_interface.json");
-        std::fs::write(&temp_file, json).unwrap();
+        std::fs::write(&temp_file, json)?;
 
-        let provider = DynamicScenarioProvider::from_file(&temp_file).unwrap();
+        let provider = DynamicScenarioProvider::from_file(&temp_file)?;
 
         // Test VisualizationDataProvider interface
-        let primals = provider.get_primals().await.unwrap();
+        let primals = provider.get_primals().await?;
         assert_eq!(primals.len(), 2);
 
-        let topology = provider.get_topology().await.unwrap();
+        let topology = provider.get_topology().await?;
         assert!(!topology.is_empty()); // Should have ring mesh
 
-        let health = provider.health_check().await.unwrap();
+        let health = provider.health_check().await?;
         assert!(health.contains("2 primals"));
 
         let metadata = provider.get_metadata();
         assert!(metadata.name.contains("Interface Test"));
 
         std::fs::remove_file(&temp_file).ok();
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_dynamic_topology_with_nucleus() {
+    async fn test_dynamic_topology_with_nucleus() -> Result<()> {
         let json = r#"{
             "ecosystem": {
                 "primals": [
@@ -404,28 +408,30 @@ mod tests {
             }
         }"#;
         let temp_file = std::env::temp_dir().join("test_dynamic_nucleus.json");
-        std::fs::write(&temp_file, json).unwrap();
-        let provider = DynamicScenarioProvider::from_file(&temp_file).unwrap();
-        let topology = provider.get_topology().await.unwrap();
+        std::fs::write(&temp_file, json)?;
+        let provider = DynamicScenarioProvider::from_file(&temp_file)?;
+        let topology = provider.get_topology().await?;
         assert_eq!(topology.len(), 1);
         assert_eq!(topology[0].edge_type, "coordination");
         std::fs::remove_file(&temp_file).ok();
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_dynamic_health_without_name() {
+    async fn test_dynamic_health_without_name() -> Result<()> {
         let json = r#"{"ecosystem": {"primals": []}}"#;
         let temp_file = std::env::temp_dir().join("test_dynamic_no_name.json");
-        std::fs::write(&temp_file, json).unwrap();
-        let provider = DynamicScenarioProvider::from_file(&temp_file).unwrap();
-        let health = provider.health_check().await.unwrap();
+        std::fs::write(&temp_file, json)?;
+        let provider = DynamicScenarioProvider::from_file(&temp_file)?;
+        let health = provider.health_check().await?;
         assert!(health.contains("Dynamic Scenario"));
         assert!(health.contains("0 primals"));
         std::fs::remove_file(&temp_file).ok();
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_dynamic_status_variants() {
+    async fn test_dynamic_status_variants() -> Result<()> {
         let json = r#"{
             "ecosystem": {
                 "primals": [
@@ -436,13 +442,14 @@ mod tests {
             }
         }"#;
         let temp_file = std::env::temp_dir().join("test_dynamic_status.json");
-        std::fs::write(&temp_file, json).unwrap();
-        let provider = DynamicScenarioProvider::from_file(&temp_file).unwrap();
-        let primals = provider.get_primals().await.unwrap();
+        std::fs::write(&temp_file, json)?;
+        let provider = DynamicScenarioProvider::from_file(&temp_file)?;
+        let primals = provider.get_primals().await?;
         assert!(matches!(primals[0].health, PrimalHealthStatus::Warning));
         assert!(matches!(primals[1].health, PrimalHealthStatus::Critical));
         assert!(matches!(primals[2].health, PrimalHealthStatus::Unknown));
         std::fs::remove_file(&temp_file).ok();
+        Ok(())
     }
 
     #[test]
@@ -461,9 +468,9 @@ mod tests {
     }
 
     #[test]
-    fn test_dynamic_from_file_invalid_json() {
+    fn test_dynamic_from_file_invalid_json() -> Result<()> {
         let temp_file = std::env::temp_dir().join("test_dynamic_invalid.json");
-        std::fs::write(&temp_file, "not valid json {{{").unwrap();
+        std::fs::write(&temp_file, "not valid json {{{")?;
         let result = DynamicScenarioProvider::from_file(&temp_file);
         std::fs::remove_file(&temp_file).ok();
         assert!(result.is_err());
@@ -472,12 +479,13 @@ mod tests {
                 e.to_string().contains("ScenarioParseError") || e.to_string().contains("parse")
             );
         }
+        Ok(())
     }
 
     #[test]
-    fn test_dynamic_from_file_missing_ecosystem() {
+    fn test_dynamic_from_file_missing_ecosystem() -> Result<()> {
         let temp_file = std::env::temp_dir().join("test_dynamic_no_eco.json");
-        std::fs::write(&temp_file, r#"{"name": "x"}"#).unwrap();
+        std::fs::write(&temp_file, r#"{"name": "x"}"#)?;
         let result = DynamicScenarioProvider::from_file(&temp_file);
         std::fs::remove_file(&temp_file).ok();
         assert!(result.is_err());
@@ -486,12 +494,13 @@ mod tests {
                 e.to_string().contains("ecosystem") || e.to_string().contains("ScenarioParseError")
             );
         }
+        Ok(())
     }
 
     #[test]
-    fn test_dynamic_from_file_missing_primals() {
+    fn test_dynamic_from_file_missing_primals() -> Result<()> {
         let temp_file = std::env::temp_dir().join("test_dynamic_no_primals.json");
-        std::fs::write(&temp_file, r#"{"ecosystem": {}}"#).unwrap();
+        std::fs::write(&temp_file, r#"{"ecosystem": {}}"#)?;
         let result = DynamicScenarioProvider::from_file(&temp_file);
         std::fs::remove_file(&temp_file).ok();
         assert!(result.is_err());
@@ -500,29 +509,31 @@ mod tests {
                 e.to_string().contains("primals") || e.to_string().contains("ScenarioParseError")
             );
         }
+        Ok(())
     }
 
     #[test]
-    fn test_dynamic_from_file_primal_not_object() {
+    fn test_dynamic_from_file_primal_not_object() -> Result<()> {
         let temp_file = std::env::temp_dir().join("test_dynamic_primal_not_obj.json");
         std::fs::write(
             &temp_file,
             r#"{"ecosystem": {"primals": ["not an object"]}}"#,
-        )
-        .unwrap();
+        )?;
         let result = DynamicScenarioProvider::from_file(&temp_file);
         std::fs::remove_file(&temp_file).ok();
         assert!(result.is_err());
+        Ok(())
     }
 
     #[test]
-    fn test_dynamic_get_field() {
+    fn test_dynamic_get_field() -> Result<()> {
         let json = r#"{"name": "F", "ecosystem": {"primals": []}}"#;
         let temp_file = std::env::temp_dir().join("test_dynamic_get_field.json");
-        std::fs::write(&temp_file, json).unwrap();
-        let provider = DynamicScenarioProvider::from_file(&temp_file).unwrap();
+        std::fs::write(&temp_file, json)?;
+        let provider = DynamicScenarioProvider::from_file(&temp_file)?;
         assert!(provider.get_field("name").is_some());
         assert!(provider.get_field("nonexistent").is_none());
         std::fs::remove_file(&temp_file).ok();
+        Ok(())
     }
 }

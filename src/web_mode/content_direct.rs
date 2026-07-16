@@ -483,7 +483,9 @@ mod tests {
     fn build_response_sets_content_type() {
         let resp = build_response(b"hello".to_vec(), "text/plain", 0);
         assert_eq!(
-            resp.headers().get(header::CONTENT_TYPE).unwrap(),
+            resp.headers()
+                .get(header::CONTENT_TYPE)
+                .expect("content-type header should be set"),
             "text/plain"
         );
     }
@@ -494,9 +496,9 @@ mod tests {
         let cc = resp
             .headers()
             .get(header::CACHE_CONTROL)
-            .unwrap()
+            .expect("cache-control header should be set when cache_ttl is nonzero")
             .to_str()
-            .unwrap();
+            .expect("cache-control header should be valid UTF-8");
         assert!(
             cc.contains("max-age=3600"),
             "expected max-age=3600, got {cc}"
@@ -512,10 +514,10 @@ mod tests {
 
     #[test]
     fn resolve_content_path_direct_md() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().expect("create temp dir");
         let content = dir.path().join("content");
-        std::fs::create_dir(&content).unwrap();
-        std::fs::write(content.join("about.md"), "# About").unwrap();
+        std::fs::create_dir(&content).expect("create content dir");
+        std::fs::write(content.join("about.md"), "# About").expect("write about.md");
 
         let state = ContentDirectState {
             content_dir: content,
@@ -525,18 +527,19 @@ mod tests {
             viz_registry: crate::viz_data::VizRegistry::discover(None),
         };
 
-        let resolved = state.resolve_content_path("/about");
-        assert!(resolved.is_some(), "should resolve about.md");
-        assert!(resolved.unwrap().ends_with("about.md"));
+        let resolved = state
+            .resolve_content_path("/about")
+            .expect("should resolve about.md");
+        assert!(resolved.ends_with("about.md"));
     }
 
     #[test]
     fn resolve_content_path_index_md() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().expect("create temp dir");
         let content = dir.path().join("content");
         let section = content.join("docs");
-        std::fs::create_dir_all(&section).unwrap();
-        std::fs::write(section.join("_index.md"), "# Docs").unwrap();
+        std::fs::create_dir_all(&section).expect("create docs section dir");
+        std::fs::write(section.join("_index.md"), "# Docs").expect("write docs _index.md");
 
         let state = ContentDirectState {
             content_dir: content,
@@ -552,10 +555,10 @@ mod tests {
 
     #[test]
     fn resolve_content_path_root_index() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().expect("create temp dir");
         let content = dir.path().join("content");
-        std::fs::create_dir(&content).unwrap();
-        std::fs::write(content.join("_index.md"), "# Home").unwrap();
+        std::fs::create_dir(&content).expect("create content dir");
+        std::fs::write(content.join("_index.md"), "# Home").expect("write root _index.md");
 
         let state = ContentDirectState {
             content_dir: content,
@@ -571,9 +574,9 @@ mod tests {
 
     #[test]
     fn resolve_content_path_not_found() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().expect("create temp dir");
         let content = dir.path().join("content");
-        std::fs::create_dir(&content).unwrap();
+        std::fs::create_dir(&content).expect("create content dir");
 
         let state = ContentDirectState {
             content_dir: content,
@@ -588,11 +591,11 @@ mod tests {
 
     #[test]
     fn resolve_static_path_found() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().expect("create temp dir");
         let static_dir = dir.path().join("static");
         let css_dir = static_dir.join("css");
-        std::fs::create_dir_all(&css_dir).unwrap();
-        std::fs::write(css_dir.join("main.css"), "body {}").unwrap();
+        std::fs::create_dir_all(&css_dir).expect("create css dir");
+        std::fs::write(css_dir.join("main.css"), "body {}").expect("write main.css");
 
         let state = ContentDirectState {
             content_dir: dir.path().to_path_buf(),

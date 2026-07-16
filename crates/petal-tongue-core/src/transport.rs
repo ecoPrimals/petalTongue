@@ -420,55 +420,61 @@ mod tests {
     use crate::test_fixtures::env_test_helpers;
 
     #[test]
-    fn serialize_uds() {
+    fn serialize_uds() -> Result<(), Box<dyn std::error::Error>> {
         let ep = TransportEndpoint::uds("/run/user/1000/biomeos/petaltongue.sock");
-        let json = serde_json::to_string(&ep).unwrap();
+        let json = serde_json::to_string(&ep)?;
         assert!(json.contains("\"transport\":\"uds\""));
         assert!(json.contains("petaltongue.sock"));
+        Ok(())
     }
 
     #[test]
-    fn serialize_tcp() {
+    fn serialize_tcp() -> Result<(), Box<dyn std::error::Error>> {
         let ep = TransportEndpoint::tcp("127.0.0.1", 9100);
-        let json = serde_json::to_string(&ep).unwrap();
+        let json = serde_json::to_string(&ep)?;
         assert!(json.contains("\"transport\":\"tcp\""));
         assert!(json.contains("\"port\":9100"));
+        Ok(())
     }
 
     #[test]
-    fn serialize_mesh_relay() {
+    fn serialize_mesh_relay() -> Result<(), Box<dyn std::error::Error>> {
         let ep = TransportEndpoint::MeshRelay {
             peer_id: "strandgate".into(),
             capability: "security".into(),
         };
-        let json = serde_json::to_string(&ep).unwrap();
+        let json = serde_json::to_string(&ep)?;
         assert!(json.contains("\"transport\":\"mesh_relay\""));
         assert!(json.contains("\"peer_id\":\"strandgate\""));
+        Ok(())
     }
 
     #[test]
-    fn deserialize_uds() {
+    fn deserialize_uds() -> Result<(), Box<dyn std::error::Error>> {
         let json = r#"{"transport":"uds","path":"/tmp/biomeos/test.sock"}"#;
-        let ep: TransportEndpoint = serde_json::from_str(json).unwrap();
+        let ep: TransportEndpoint = serde_json::from_str(json)?;
         assert_eq!(ep, TransportEndpoint::uds("/tmp/biomeos/test.sock"));
+        Ok(())
     }
 
     #[test]
-    fn deserialize_tcp() {
+    fn deserialize_tcp() -> Result<(), Box<dyn std::error::Error>> {
         let json = r#"{"transport":"tcp","host":"192.168.1.1","port":7700}"#;
-        let ep: TransportEndpoint = serde_json::from_str(json).unwrap();
+        let ep: TransportEndpoint = serde_json::from_str(json)?;
         assert_eq!(ep, TransportEndpoint::tcp("192.168.1.1", 7700));
+        Ok(())
     }
 
     #[test]
-    fn deserialize_mesh_relay() {
+    fn deserialize_mesh_relay() -> Result<(), Box<dyn std::error::Error>> {
         let json = r#"{"transport":"mesh_relay","peer_id":"eastgate","capability":"content"}"#;
-        let ep: TransportEndpoint = serde_json::from_str(json).unwrap();
+        let ep: TransportEndpoint = serde_json::from_str(json)?;
         assert!(matches!(ep, TransportEndpoint::MeshRelay { .. }));
+        Ok(())
     }
 
     #[test]
-    fn roundtrip_all_variants() {
+    fn roundtrip_all_variants() -> Result<(), Box<dyn std::error::Error>> {
         let endpoints = vec![
             TransportEndpoint::uds("/run/membrane/petaltongue.sock"),
             TransportEndpoint::tcp("0.0.0.0", 3000),
@@ -478,10 +484,11 @@ mod tests {
             },
         ];
         for ep in &endpoints {
-            let json = serde_json::to_string(ep).unwrap();
-            let parsed: TransportEndpoint = serde_json::from_str(&json).unwrap();
+            let json = serde_json::to_string(ep)?;
+            let parsed: TransportEndpoint = serde_json::from_str(&json)?;
             assert_eq!(&parsed, ep, "roundtrip failed for {ep}");
         }
+        Ok(())
     }
 
     #[test]
@@ -511,20 +518,23 @@ mod tests {
     }
 
     #[test]
-    fn from_env_unset() {
+    fn from_env_unset() -> Result<(), Box<dyn std::error::Error>> {
         env_test_helpers::with_env_vars(&[("TRANSPORT_ENDPOINT", None)], || {
-            let result = TransportEndpoint::from_env().unwrap();
+            let result = TransportEndpoint::from_env()?;
             assert!(result.is_none());
-        });
+            Ok(())
+        })
     }
 
     #[test]
-    fn from_env_valid_uds() {
+    fn from_env_valid_uds() -> Result<(), Box<dyn std::error::Error>> {
         let json = r#"{"transport":"uds","path":"/tmp/biomeos/test.sock"}"#;
         env_test_helpers::with_env_vars(&[("TRANSPORT_ENDPOINT", Some(json))], || {
-            let ep = TransportEndpoint::from_env().unwrap().unwrap();
+            let ep = TransportEndpoint::from_env()?
+                .expect("TRANSPORT_ENDPOINT should be set to valid UDS JSON");
             assert_eq!(ep, TransportEndpoint::uds("/tmp/biomeos/test.sock"));
-        });
+            Ok(())
+        })
     }
 
     #[test]
@@ -551,10 +561,16 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn connect_transport_mesh_relay_uses_discovered_config() {
+    async fn connect_transport_mesh_relay_uses_discovered_config(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         clear_mesh_relay_config();
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let port = listener.local_addr().unwrap().port();
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind ephemeral TCP listener");
+        let port = listener
+            .local_addr()
+            .expect("listener local address")
+            .port();
         let accept = tokio::spawn(async move {
             listener.accept().await.ok();
         });
@@ -567,11 +583,14 @@ mod tests {
             peer_id: "strandgate".into(),
             capability: "content".into(),
         };
-        let stream = connect_transport(&ep).await.unwrap();
+        let stream = connect_transport(&ep)
+            .await
+            .expect("connect via discovered mesh relay config");
         assert!(matches!(stream, TransportStream::Tcp(_)));
 
         accept.abort();
         clear_mesh_relay_config();
+        Ok(())
     }
 
     #[tokio::test]

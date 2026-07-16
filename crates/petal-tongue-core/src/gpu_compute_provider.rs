@@ -368,10 +368,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_discover_toadstool_with_manifest_in_temp_dir() {
-        let temp = tempfile::tempdir().unwrap();
+    async fn test_discover_toadstool_with_manifest_in_temp_dir(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let temp = tempfile::tempdir()?;
         let discovery_dir = temp.path().join("ecoPrimals").join("discovery");
-        std::fs::create_dir_all(&discovery_dir).unwrap();
+        std::fs::create_dir_all(&discovery_dir)?;
 
         let manifest = serde_json::json!({
             "id": "test-gpu-compute",
@@ -379,15 +380,19 @@ mod tests {
             "capabilities": ["gpu.dispatch", "display"]
         });
         let manifest_path = discovery_dir.join("gpu-compute.json");
-        std::fs::write(&manifest_path, serde_json::to_string(&manifest).unwrap()).unwrap();
+        std::fs::write(&manifest_path, serde_json::to_string(&manifest)?)?;
 
-        let runtime_dir = temp.path().to_str().unwrap().to_owned();
+        let runtime_dir = temp
+            .path()
+            .to_str()
+            .expect("temp directory path should be valid UTF-8")
+            .to_owned();
         let provider = crate::test_fixtures::env_test_helpers::with_env_var_async(
             "XDG_RUNTIME_DIR",
             &runtime_dir,
-            || async { GpuComputeProvider::new().await.unwrap() },
+            || async { GpuComputeProvider::new().await },
         )
-        .await;
+        .await?;
 
         assert!(provider.is_available().await);
         assert!(
@@ -395,10 +400,12 @@ mod tests {
                 .capabilities()
                 .contains(&ComputeCapability::LayoutComputation)
         );
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_cpu_fallback_lifecycle_init_available_shutdown() {
+    async fn test_cpu_fallback_lifecycle_init_available_shutdown(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let mut provider = CPUFallbackCompute::new();
 
         assert!(
@@ -406,24 +413,26 @@ mod tests {
             "CPU fallback always available"
         );
 
-        provider.initialize().await.unwrap();
+        provider.initialize().await?;
         assert!(provider.is_available().await, "Available after init");
 
-        provider.shutdown().await.unwrap();
+        provider.shutdown().await?;
         assert!(
             provider.is_available().await,
             "CPU fallback still available after shutdown"
         );
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_toadstool_creation() {
-        let provider = GpuComputeProvider::new().await.unwrap();
+    async fn test_toadstool_creation() -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let provider = GpuComputeProvider::new().await?;
         assert_eq!(provider.name(), "GPU Compute Provider");
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_toadstool_without_discovery() {
+    async fn test_toadstool_without_discovery() -> std::result::Result<(), Box<dyn std::error::Error>> {
         use crate::test_fixtures::env_test_helpers;
 
         let provider = env_test_helpers::with_env_vars_removed_async(
@@ -433,10 +442,11 @@ mod tests {
                 "GPU_COMPUTE_ENDPOINT",
                 "XDG_RUNTIME_DIR",
             ],
-            || async { GpuComputeProvider::new().await.unwrap() },
+            || async { GpuComputeProvider::new().await },
         )
-        .await;
+        .await?;
         assert!(!provider.is_available().await);
+        Ok(())
     }
 
     #[tokio::test]
@@ -560,6 +570,9 @@ mod tests {
             crate::constants::DEFAULT_GPU_COMPUTE_ENDPOINT
         );
         assert_eq!(info.capabilities.len(), 1);
-        assert_eq!(info.metadata.get("version").unwrap(), "1.0.0");
+        assert_eq!(
+            info.metadata.get("version").expect("version metadata key"),
+            "1.0.0"
+        );
     }
 }
