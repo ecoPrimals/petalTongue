@@ -95,9 +95,30 @@ pub fn data_dir() -> Result<PathBuf, DirError> {
         ))
     }
 
-    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+    #[cfg(target_os = "android")]
     {
-        // For unknown platforms, try HOME as a best-effort fallback
+        // Android: app-specific internal storage provided by the host via env,
+        // or Context.getFilesDir() equivalent. The host JNI layer should set
+        // PETALTONGUE_DATA_DIR. Fallback to standard Android app data path.
+        if let Ok(data) = std::env::var("PETALTONGUE_DATA_DIR") {
+            return Ok(PathBuf::from(data));
+        }
+        // Standard app internal storage (set by Android runtime)
+        if let Ok(data) = std::env::var("ANDROID_DATA") {
+            return Ok(PathBuf::from(data));
+        }
+        // Hardcoded fallback — host should always provide the path
+        Ok(PathBuf::from("/data/local/tmp"))
+    }
+
+    #[cfg(not(any(
+        target_os = "linux",
+        target_os = "macos",
+        target_os = "windows",
+        target_os = "android"
+    )))]
+    {
+        // For unknown platforms (iOS, WASM, consoles), try HOME as best-effort
         if let Ok(home) = std::env::var("HOME") {
             return Ok(PathBuf::from(home).join(".local").join("share"));
         }
@@ -114,6 +135,7 @@ pub fn data_dir() -> Result<PathBuf, DirError> {
 /// - **Linux**: `$XDG_CONFIG_HOME` or `$HOME/.config`
 /// - **macOS**: `$HOME/Library/Application Support` (same as `data_dir` on macOS)
 /// - **Windows**: Same as `data_dir()` (config and data are not separated on Windows)
+/// - **Android**: Same as `data_dir()` (no separate config vs data on mobile)
 ///
 /// # Examples
 ///
@@ -157,9 +179,20 @@ pub fn config_dir() -> Result<PathBuf, DirError> {
         data_dir()
     }
 
-    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+    #[cfg(target_os = "android")]
     {
-        // Fallback for unknown platforms
+        // Android: config and data share the same app-internal directory
+        data_dir()
+    }
+
+    #[cfg(not(any(
+        target_os = "linux",
+        target_os = "macos",
+        target_os = "windows",
+        target_os = "android"
+    )))]
+    {
+        // Fallback for unknown platforms (iOS, consoles)
         if let Ok(home) = std::env::var("HOME") {
             return Ok(PathBuf::from(home).join(".config"));
         }
@@ -212,7 +245,22 @@ pub fn runtime_dir() -> Result<PathBuf, DirError> {
         Ok(PathBuf::from("C:\\Windows\\Temp"))
     }
 
-    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+    #[cfg(target_os = "android")]
+    {
+        // Android: no persistent runtime dir; use app cache or /data/local/tmp.
+        // TCP transport means we don't need a UDS runtime directory.
+        if let Ok(cache) = std::env::var("PETALTONGUE_CACHE_DIR") {
+            return Ok(PathBuf::from(cache));
+        }
+        Ok(PathBuf::from("/data/local/tmp"))
+    }
+
+    #[cfg(not(any(
+        target_os = "linux",
+        target_os = "macos",
+        target_os = "windows",
+        target_os = "android"
+    )))]
     Err(DirError::new(
         "Runtime directory not available on this platform",
     ))

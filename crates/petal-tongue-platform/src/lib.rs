@@ -58,6 +58,7 @@
 pub mod config;
 pub mod lifecycle;
 pub mod runtime;
+pub mod ws_bridge;
 
 #[allow(unsafe_code)]
 pub mod ffi;
@@ -65,3 +66,4 @@ pub mod ffi;
 pub use config::{EmbedConfig, Platform, PlatformConfig};
 pub use lifecycle::{PlatformEvent, PlatformLifecycle};
 pub use runtime::EmbeddedRuntime;
+pub use ws_bridge::{WsBridgeConfig, WsBridgeHandle, spawn_ws_bridge};
