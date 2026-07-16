@@ -52,6 +52,7 @@ pub mod lifecycle;
 pub mod metrics; // System metrics (CPU, memory, Neural API stats)
 pub mod or_exit; // OrExit trait for zero-panic validation binaries
 pub mod platform_dirs; // Pure Rust directory resolution (zero deps!)
+pub mod platform_metrics; // Platform metrics trait (Phase 2 abstraction over /proc)
 pub mod primal_types;
 pub mod property; // Generic property system
 pub mod proprioception;
@@ -132,6 +133,12 @@ pub use metrics::{
     CpuHistory, MemoryHistory, NeuralApiMetrics, SystemMetrics, SystemResourceMetrics,
     ThresholdLevel,
 };
+
+/// Platform metrics trait (Phase 2: abstraction over #[cfg] gating)
+pub use platform_metrics::{PlatformMetrics, ResourceSnapshot, StubMetrics};
+
+#[cfg(target_os = "linux")]
+pub use platform_metrics::LinuxProcMetrics;
 
 /// Graph builder types (Visual graph construction - Neural API Phase 4)
 pub use graph_builder::{
