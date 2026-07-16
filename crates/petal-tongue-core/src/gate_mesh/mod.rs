@@ -1,27 +1,30 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Gate mesh topology — shared canonical data.
+//! Gate mesh topology — types, traits, and offline fallback data.
 //!
-//! Offline fallback for the gate mesh topology. Both the visualization
-//! scene builder and the `gate.mesh.status` IPC handler consume this data.
+//! ## Architecture
+//!
+//! Types and traits are always available. Static topology data (compile-time
+//! snapshots of gate IPs, NUCLEUS assignments, WG links) is gated behind the
+//! `offline-topology` feature. Production code should consume topology through
+//! the [`MeshTopologySource`] trait; the static fallback is one implementation.
 //!
 //! **Authoritative source**: `ecosystem_manifest.toml` `[gates.*]` section,
-//! specifically `wg_ip`, `zone`, and `roles` fields. The constants below
-//! (`GATES`, `VPS_NODES`) are compile-time snapshots for offline rendering
-//! when the manifest is unavailable.
-//!
-//! At runtime, prefer live state from `gate.mesh.live` capability discovery
-//! or the manifest reader (`EcosystemManifest::mesh_ip_for()`).
+//! `gate.mesh.live` capability discovery, or songBird `mesh.peers` IPC.
 
 pub mod kderm;
+#[cfg(feature = "offline-topology")]
 pub mod nucleus;
 pub mod peers;
 
 pub use kderm::{HardeningControl, HardeningStatus, KDermLayer, HARDENING_CONTROLS, KDERM_LAYERS};
+#[cfg(feature = "offline-topology")]
 pub use nucleus::{
     NucleusAtomic, NucleusPrimal, META_ATOMIC, NEST_ATOMIC, NODE_ATOMIC, NUCLEUS_ATOMICS,
     TOWER_ATOMIC, nucleus_primal_count,
 };
-pub use peers::{MeshPeer, PeerStatus, derive_mesh_peers};
+pub use peers::{MeshPeer, PeerStatus};
+#[cfg(feature = "offline-topology")]
+pub use peers::derive_mesh_peers;
 
 use serde::{Deserialize, Serialize};
 
@@ -84,6 +87,44 @@ pub struct MeshNode {
     pub y: f64,
 }
 
+/// Trait for runtime mesh topology resolution.
+///
+/// Production implementations query songBird `mesh.peers`, biomeOS orchestrator,
+/// or `ecosystem_manifest.toml`. The `offline-topology` feature provides a
+/// static compile-time fallback via [`StaticMeshTopology`].
+pub trait MeshTopologySource: Send + Sync {
+    /// All known gate/VPS nodes.
+    fn nodes(&self) -> Vec<&'static MeshNode>;
+    /// Known WireGuard overlay links between nodes.
+    fn links(&self) -> Vec<&'static MeshLink>;
+    /// Count of nodes matching a given enrollment status.
+    fn count_by_enrollment(&self, status: GateEnrollment) -> usize {
+        self.nodes()
+            .iter()
+            .filter(|n| n.enrollment == status)
+            .count()
+    }
+    /// Count of nodes that are mesh-active (enrolled or `MeshLive`).
+    fn mesh_active_count(&self) -> usize {
+        self.nodes()
+            .iter()
+            .filter(|n| {
+                matches!(
+                    n.enrollment,
+                    GateEnrollment::Enrolled | GateEnrollment::MeshLive
+                )
+            })
+            .count()
+    }
+    /// Nodes with GPU compute capability.
+    fn gpu_nodes(&self) -> Vec<&'static MeshNode> {
+        self.nodes()
+            .into_iter()
+            .filter(|n| n.gpu_target.is_some())
+            .collect()
+    }
+}
+
 /// A `WireGuard` link between mesh nodes.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MeshLink {
@@ -95,7 +136,27 @@ pub struct MeshLink {
     pub latency_ms: u32,
 }
 
+/// Static mesh topology source — wraps compile-time gate data.
+///
+/// Available only with the `offline-topology` feature. Production deployments
+/// should prefer live topology from songBird or `ecosystem_manifest.toml`.
+#[cfg(feature = "offline-topology")]
+#[derive(Debug, Clone, Copy, Default)]
+pub struct StaticMeshTopology;
+
+#[cfg(feature = "offline-topology")]
+impl MeshTopologySource for StaticMeshTopology {
+    fn nodes(&self) -> Vec<&'static MeshNode> {
+        all_nodes().collect()
+    }
+
+    fn links(&self) -> Vec<&'static MeshLink> {
+        WG_LINKS.iter().collect()
+    }
+}
+
 /// Static gate topology (offline fallback).
+#[cfg(feature = "offline-topology")]
 pub const GATES: &[MeshNode] = &[
     MeshNode {
         id: "sporeGate",
@@ -254,6 +315,7 @@ pub const GATES: &[MeshNode] = &[
 ];
 
 /// VPS/infrastructure nodes (always enrolled).
+#[cfg(feature = "offline-topology")]
 pub const VPS_NODES: &[MeshNode] = &[MeshNode {
     id: "golgi",
     label: "golgi (hub)",
@@ -270,6 +332,7 @@ pub const VPS_NODES: &[MeshNode] = &[MeshNode {
 }];
 
 /// Known `WireGuard` overlay links.
+#[cfg(feature = "offline-topology")]
 pub const WG_LINKS: &[MeshLink] = &[
     MeshLink {
         from: "golgi",
@@ -309,17 +372,20 @@ pub const WG_LINKS: &[MeshLink] = &[
 ];
 
 /// All mesh nodes (gates + VPS).
+#[cfg(feature = "offline-topology")]
 pub fn all_nodes() -> impl Iterator<Item = &'static MeshNode> {
     GATES.iter().chain(VPS_NODES.iter())
 }
 
 /// Count of nodes matching a given enrollment status.
+#[cfg(feature = "offline-topology")]
 #[must_use]
 pub fn count_by_enrollment(status: GateEnrollment) -> usize {
     all_nodes().filter(|n| n.enrollment == status).count()
 }
 
 /// Count of nodes that are at least mesh-live (enrolled or `mesh_live`).
+#[cfg(feature = "offline-topology")]
 #[must_use]
 pub fn mesh_active_count() -> usize {
     all_nodes()
@@ -333,6 +399,7 @@ pub fn mesh_active_count() -> usize {
 }
 
 /// Nodes with GPU compute capability.
+#[cfg(feature = "offline-topology")]
 pub fn gpu_nodes() -> impl Iterator<Item = &'static MeshNode> {
     all_nodes().filter(|n| n.gpu_target.is_some())
 }
@@ -374,8 +441,21 @@ mod tests {
 
     #[test]
     fn serialization_roundtrip() {
-        let json = serde_json::to_string(&GATES[0]).unwrap();
+        let json = serde_json::to_string(&GATES[0]).expect("serialize gate");
         assert!(json.contains("sporeGate"));
         assert!(json.contains("enrolled"));
+    }
+
+    #[test]
+    fn static_mesh_topology_trait() {
+        let source = StaticMeshTopology;
+        assert_eq!(source.nodes().len(), 12);
+        assert_eq!(source.links().len(), 7);
+        assert_eq!(
+            source.count_by_enrollment(GateEnrollment::Enrolled),
+            7
+        );
+        assert_eq!(source.mesh_active_count(), 8);
+        assert_eq!(source.gpu_nodes().len(), 2);
     }
 }

@@ -9,6 +9,16 @@ use petal_tongue_scene::transform::Transform2D;
 use serde::Deserialize;
 use std::collections::HashMap;
 
+const EDGE_STROKE_WIDTH: f32 = 1.2;
+const NODE_RADIUS_PRIMAL: f64 = 10.0;
+const NODE_RADIUS_SPRING: f64 = 8.0;
+const NODE_RADIUS_COMPOSITION: f64 = 9.0;
+const NODE_RADIUS_DEFAULT: f64 = 7.0;
+const NODE_LABEL_OFFSET_Y: f64 = 12.0;
+const NODE_LABEL_FONT_SIZE: f64 = 9.0;
+const LEGEND_X_OFFSET_FROM_RIGHT: f64 = 140.0;
+const LEGEND_ROW_SPACING: f64 = 18.0;
+
 /// A node in the entity-graph.json format.
 #[derive(Debug, Deserialize)]
 pub struct GraphNode {
@@ -181,7 +191,7 @@ pub fn build_entity_graph_scene(graph: &EntityGraph) -> SceneGraph {
             points: vec![(sx, sy).into(), (tx, ty).into()],
             stroke: StrokeStyle {
                 color: relation_color(&edge.relation),
-                width: 1.2,
+                width: EDGE_STROKE_WIDTH,
                 cap: LineCap::Round,
                 join: LineJoin::Round,
             },
@@ -204,10 +214,10 @@ pub fn build_entity_graph_scene(graph: &EntityGraph) -> SceneGraph {
         };
         let color = kind_color(&gn.kind);
         let radius = match gn.kind.as_str() {
-            "primal" => 10.0,
-            "spring" => 8.0,
-            "composition" => 9.0,
-            _ => 7.0,
+            "primal" => NODE_RADIUS_PRIMAL,
+            "spring" => NODE_RADIUS_SPRING,
+            "composition" => NODE_RADIUS_COMPOSITION,
+            _ => NODE_RADIUS_DEFAULT,
         };
 
         let circle = Primitive::Point {
@@ -226,9 +236,9 @@ pub fn build_entity_graph_scene(graph: &EntityGraph) -> SceneGraph {
 
         let label = Primitive::Text {
             x,
-            y: y + radius + 12.0,
+            y: y + radius + NODE_LABEL_OFFSET_Y,
             content: gn.display.clone(),
-            font_size: 9.0,
+            font_size: NODE_LABEL_FONT_SIZE,
             color: Color::from_rgba8(205, 214, 244, 255),
             anchor: AnchorPoint::TopCenter,
             bold: false,
@@ -261,12 +271,12 @@ fn build_legend(width: f64) -> SceneNode {
     ];
 
     let mut legend = SceneNode::new("legend")
-        .with_transform(Transform2D::translate(width - 140.0, 10.0))
+        .with_transform(Transform2D::translate(width - LEGEND_X_OFFSET_FROM_RIGHT, 10.0))
         .with_label("Legend");
 
     for (i, (kind, label)) in kinds.iter().enumerate() {
         #[expect(clippy::cast_precision_loss)]
-        let y = (i as f64).mul_add(18.0, 5.0);
+        let y = (i as f64).mul_add(LEGEND_ROW_SPACING, 5.0);
         legend.primitives.push(Primitive::Point {
             x: 8.0,
             y: y + 4.0,

@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: July 16, 2026 (Wave 141b — platform embedding layer, cross-architecture transport, deps current, all scenarios passing, full clippy+deny clean)
+**Updated**: July 16, 2026 (Wave 142b — Phase 2 abstraction over gating, deep debt eliminated, platform embedding, 6,511 tests, zero clippy warnings)
 
 ---
 

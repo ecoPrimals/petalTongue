@@ -66,61 +66,70 @@ pub fn parse_args(args: &[&str]) -> std::result::Result<Commands, clap::Error> {
 mod tests {
     use super::*;
 
+    type ParseTestResult = Result<(), clap::Error>;
+
     #[test]
-    fn test_parse_list() {
-        let cmd = parse_args(&["petaltongue", "list"]).unwrap();
+    fn test_parse_list() -> ParseTestResult {
+        let cmd = parse_args(&["petaltongue", "list"])?;
         assert!(matches!(cmd, Commands::List));
+        Ok(())
     }
 
     #[test]
-    fn test_parse_status() {
-        let cmd = parse_args(&["petaltongue", "status"]).unwrap();
+    fn test_parse_status() -> ParseTestResult {
+        let cmd = parse_args(&["petaltongue", "status"])?;
         assert!(matches!(cmd, Commands::Status));
+        Ok(())
     }
 
     #[test]
-    fn test_parse_show() {
-        let cmd = parse_args(&["petaltongue", "show", "abc-123"]).unwrap();
+    fn test_parse_show() -> ParseTestResult {
+        let cmd = parse_args(&["petaltongue", "show", "abc-123"])?;
         match &cmd {
             Commands::Show { instance_id } => assert_eq!(instance_id, "abc-123"),
             _ => panic!("Expected Show command"),
         }
+        Ok(())
     }
 
     #[test]
-    fn test_parse_gc() {
-        let cmd = parse_args(&["petaltongue", "gc"]).unwrap();
+    fn test_parse_gc() -> ParseTestResult {
+        let cmd = parse_args(&["petaltongue", "gc"])?;
         match &cmd {
             Commands::Gc { force } => assert!(!*force),
             _ => panic!("Expected Gc command"),
         }
+        Ok(())
     }
 
     #[test]
-    fn test_parse_gc_force() {
-        let cmd = parse_args(&["petaltongue", "gc", "--force"]).unwrap();
+    fn test_parse_gc_force() -> ParseTestResult {
+        let cmd = parse_args(&["petaltongue", "gc", "--force"])?;
         match &cmd {
             Commands::Gc { force } => assert!(*force),
             _ => panic!("Expected Gc command"),
         }
+        Ok(())
     }
 
     #[test]
-    fn test_parse_ping() {
-        let cmd = parse_args(&["petaltongue", "ping", "uuid-here"]).unwrap();
+    fn test_parse_ping() -> ParseTestResult {
+        let cmd = parse_args(&["petaltongue", "ping", "uuid-here"])?;
         match &cmd {
             Commands::Ping { instance_id } => assert_eq!(instance_id, "uuid-here"),
             _ => panic!("Expected Ping command"),
         }
+        Ok(())
     }
 
     #[test]
-    fn test_parse_raise() {
-        let cmd = parse_args(&["petaltongue", "raise", "inst-id"]).unwrap();
+    fn test_parse_raise() -> ParseTestResult {
+        let cmd = parse_args(&["petaltongue", "raise", "inst-id"])?;
         match &cmd {
             Commands::Raise { instance_id } => assert_eq!(instance_id, "inst-id"),
             _ => panic!("Expected Raise command"),
         }
+        Ok(())
     }
 
     #[test]
@@ -151,12 +160,13 @@ mod tests {
     }
 
     #[test]
-    fn test_gc_subcommand_with_force_flag() {
-        let cmd = parse_args(&["petaltongue", "gc", "-f"]).unwrap();
+    fn test_gc_subcommand_with_force_flag() -> ParseTestResult {
+        let cmd = parse_args(&["petaltongue", "gc", "-f"])?;
         match &cmd {
             Commands::Gc { force } => assert!(*force),
             _ => panic!("Expected Gc command"),
         }
+        Ok(())
     }
 
     #[test]
@@ -172,58 +182,65 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_args_show_with_empty_id() {
-        let cmd = parse_args(&["petaltongue", "show", ""]).unwrap();
+    fn test_parse_args_show_with_empty_id() -> ParseTestResult {
+        let cmd = parse_args(&["petaltongue", "show", ""])?;
         match &cmd {
             Commands::Show { instance_id } => assert_eq!(instance_id, ""),
             _ => panic!("Expected Show command"),
         }
+        Ok(())
     }
 
     #[test]
-    fn test_parse_args_raise_with_uuid() {
+    fn test_parse_args_raise_with_uuid() -> ParseTestResult {
         let uuid = "550e8400-e29b-41d4-a716-446655440000";
-        let cmd = parse_args(&["petaltongue", "raise", uuid]).unwrap();
+        let cmd = parse_args(&["petaltongue", "raise", uuid])?;
         match &cmd {
             Commands::Raise { instance_id } => assert_eq!(instance_id, uuid),
             _ => panic!("Expected Raise command"),
         }
+        Ok(())
     }
 
     #[test]
-    fn test_parse_args_ping_with_short_prefix() {
-        let cmd = parse_args(&["petaltongue", "ping", "550e"]).unwrap();
+    fn test_parse_args_ping_with_short_prefix() -> ParseTestResult {
+        let cmd = parse_args(&["petaltongue", "ping", "550e"])?;
         match &cmd {
             Commands::Ping { instance_id } => assert_eq!(instance_id, "550e"),
             _ => panic!("Expected Ping command"),
         }
+        Ok(())
     }
 
     #[test]
-    fn test_run_command_dispatch_list() {
-        let cmd = parse_args(&["petaltongue", "list"]).unwrap();
+    fn test_run_command_dispatch_list() -> ParseTestResult {
+        let cmd = parse_args(&["petaltongue", "list"])?;
         assert!(matches!(cmd, Commands::List));
+        Ok(())
     }
 
     #[test]
-    fn test_run_command_dispatch_status() {
-        let cmd = parse_args(&["petaltongue", "status"]).unwrap();
+    fn test_run_command_dispatch_status() -> ParseTestResult {
+        let cmd = parse_args(&["petaltongue", "status"])?;
         assert!(matches!(cmd, Commands::Status));
+        Ok(())
     }
 
     #[test]
-    fn test_cli_struct_has_command_field() {
-        let cli = Cli::try_parse_from(["petaltongue", "list"]).unwrap();
+    fn test_cli_struct_has_command_field() -> ParseTestResult {
+        let cli = Cli::try_parse_from(["petaltongue", "list"])?;
         assert!(matches!(cli.command, Commands::List));
+        Ok(())
     }
 
     #[test]
-    fn test_show_subcommand_accepts_instance_id_arg() {
-        let cmd = parse_args(&["petaltongue", "show", "my-instance-123"]).unwrap();
+    fn test_show_subcommand_accepts_instance_id_arg() -> ParseTestResult {
+        let cmd = parse_args(&["petaltongue", "show", "my-instance-123"])?;
         match &cmd {
             Commands::Show { instance_id } => assert_eq!(instance_id, "my-instance-123"),
             _ => panic!("Expected Show"),
         }
+        Ok(())
     }
 
     #[test]
@@ -263,27 +280,30 @@ mod tests {
     }
 
     #[test]
-    fn test_json_output_format() {
-        let cmd = parse_args(&["petaltongue", "list"]).unwrap();
+    fn test_json_output_format() -> ParseTestResult {
+        let cmd = parse_args(&["petaltongue", "list"])?;
         assert!(matches!(cmd, Commands::List));
+        Ok(())
     }
 
     #[test]
-    fn test_all_subcommands_parse() {
-        let list = parse_args(&["petaltongue", "list"]).unwrap();
+    fn test_all_subcommands_parse() -> ParseTestResult {
+        let list = parse_args(&["petaltongue", "list"])?;
         assert!(matches!(list, Commands::List));
 
-        let status = parse_args(&["petaltongue", "status"]).unwrap();
+        let status = parse_args(&["petaltongue", "status"])?;
         assert!(matches!(status, Commands::Status));
 
-        let gc = parse_args(&["petaltongue", "gc"]).unwrap();
+        let gc = parse_args(&["petaltongue", "gc"])?;
         assert!(matches!(gc, Commands::Gc { .. }));
+        Ok(())
     }
 
     #[test]
-    fn test_show_subcommand_error_handling() {
-        let cmd = parse_args(&["petaltongue", "show", "nonexistent-uuid-xxxx"]).unwrap();
+    fn test_show_subcommand_error_handling() -> ParseTestResult {
+        let cmd = parse_args(&["petaltongue", "show", "nonexistent-uuid-xxxx"])?;
         assert!(matches!(cmd, Commands::Show { .. }));
+        Ok(())
     }
 
     #[test]

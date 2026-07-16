@@ -18,7 +18,8 @@ does not own computation, storage, or security domains.
 
 ## Architecture
 
-19 workspace crates, single UniBin binary (`petaltongue`, 7 subcommands):
+19 workspace crates, single UniBin binary (`petaltongue`, 7 subcommands).
+`offline-topology` feature gates static mesh topology (default on; disable for lean builds):
 
 | Crate | Purpose |
 |-------|---------|
@@ -123,21 +124,38 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # 366+ workspace tests, ~85-90% coverage
+cargo test --workspace --all-features     # 6,511+ workspace tests, ~85-90% coverage
 ```
 
 ## Current State
 
-Wave 141b Platform Embedding Layer (July 16, 2026). New `petal-tongue-platform`
-crate: `cdylib` + `rlib` embedding layer for Android/iOS/desktop host apps.
-`PlatformLifecycle` trait (create/start/resume/pause/stop/destroy/low-memory).
-`EmbeddedRuntime` (owns tokio runtime, `GrammarCompiler`, `SvgCompiler`,
-scenario builders). C-FFI surface: `pt_create`, `pt_start`, `pt_render_svg`,
-`pt_ipc_request`, `pt_pause`, `pt_resume`, `pt_free_string`, `pt_destroy`.
-JSON-RPC bridge for in-process host communication. Compiles cleanly for
-`aarch64-linux-android`, `x86_64-pc-windows-gnu`, and native Linux. Zero clippy
-warnings. This resolves the Android "winit/android-activity" blocker by providing
-a host-driven lifecycle model independent of `fn main()`.
+Wave 142b Deep Debt + Phase 2 Abstraction (July 16, 2026).
+
+**Phase 2 Silicon Atheism**: Abstraction over gating. `MeshTopologySource` trait
+introduced for runtime topology resolution. Static gate mesh data (IPs, NUCLEUS
+assignments, WG links) gated behind `offline-topology` feature.
+`StaticMeshTopology` implements the trait as compile-time fallback. Production
+code written against the trait for future songBird/biomeOS live topology sources.
+
+**Deep debt eliminated**: 106 bare `unwrap()` calls removed from production
+paths (session/manager, data_service, notebook_render, CLI). Zero `todo!`,
+`unimplemented!`, `FIXME`, `HACK` in codebase. Zero clippy warnings
+(pedantic+nursery). All mocks confined to test modules.
+
+**Smart refactoring** (all files under 800L): `sensor/types.rs` (789→34L mod +
+5 sub-modules), `data_service.rs` (753→245L mod + 3 sub-modules),
+`web_mode/handlers.rs` (743→24L mod + 4 sub-modules). Magic numbers named with
+constants across `entity_graph.rs` and `data_service/mesh.rs`.
+
+**Platform embedding** (`petal-tongue-platform`, Wave 141b): `cdylib` + `rlib`
+for Android/iOS/desktop host apps. `PlatformLifecycle` trait, `EmbeddedRuntime`,
+C-FFI surface (`pt_create`/`pt_start`/`pt_render_svg`/`pt_ipc_request`/etc.),
+WebSocket JSON-RPC bridge (`PETALTONGUE_WS_PORT`, `PETALTONGUE_WS_BIND_HOST`).
+`PlatformMetrics` trait with `LinuxProcMetrics` and `StubMetrics` backends.
+
+**Cross-architecture**: Compiles for `x86_64-linux-musl`, `aarch64-linux-musl`,
+`aarch64-linux-android`, `x86_64-pc-windows-gnu`. Android NDK linker config in
+`.cargo/config.toml`. 6,511 tests passing, zero failures.
 
 Wave 141a Silicon Atheism Adoption (July 15, 2026). 366 tests (workspace), all
 passing. Cross-architecture transport: `petal-tongue-core` compiles for

@@ -38,12 +38,21 @@ mod tests {
     use super::*;
     use petal_tongue_core::Instance;
 
+    type TestResult = Result<(), Box<dyn std::error::Error>>;
+
+    fn temp_dir_path(temp_dir: &tempfile::TempDir) -> &str {
+        temp_dir
+            .path()
+            .to_str()
+            .expect("tempdir path should be valid UTF-8")
+    }
+
     #[test]
-    fn test_resolve_instance_id_valid_uuid() {
+    fn test_resolve_instance_id_valid_uuid() -> TestResult {
         let uuid_str = "550e8400-e29b-41d4-a716-446655440000";
-        let result = resolve_instance_id(uuid_str);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap().as_str(), uuid_str);
+        let resolved = resolve_instance_id(uuid_str)?;
+        assert_eq!(resolved.as_str(), uuid_str);
+        Ok(())
     }
 
     #[test]
@@ -53,93 +62,96 @@ mod tests {
     }
 
     #[test]
-    fn test_resolve_instance_id_prefix_match() {
-        let temp_dir = tempfile::TempDir::new().unwrap();
+    fn test_resolve_instance_id_prefix_match() -> TestResult {
+        let temp_dir = tempfile::TempDir::new()?;
         petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
             "XDG_DATA_HOME",
-            temp_dir.path().to_str().unwrap(),
-            || {
+            temp_dir_path(&temp_dir),
+            || -> TestResult {
                 let mut registry = InstanceRegistry::new();
-                let id = InstanceId::parse("550e8400-e29b-41d4-a716-446655440000").unwrap();
-                let instance = Instance::new(id, Some("test".to_owned())).unwrap();
-                registry.register(instance).unwrap();
+                let id = InstanceId::parse("550e8400-e29b-41d4-a716-446655440000")?;
+                let instance = Instance::new(id, Some("test".to_owned()))?;
+                registry.register(instance)?;
 
-                let result = resolve_instance_id("550e");
-                assert!(result.is_ok());
+                let resolved = resolve_instance_id("550e")?;
                 assert_eq!(
-                    result.unwrap().as_str(),
+                    resolved.as_str(),
                     "550e8400-e29b-41d4-a716-446655440000"
                 );
+                Ok(())
             },
-        );
+        )?;
+        Ok(())
     }
 
     #[test]
-    fn test_resolve_instance_id_prefix_ambiguous() {
-        let temp_dir = tempfile::TempDir::new().unwrap();
+    fn test_resolve_instance_id_prefix_ambiguous() -> TestResult {
+        let temp_dir = tempfile::TempDir::new()?;
         petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
             "XDG_DATA_HOME",
-            temp_dir.path().to_str().unwrap(),
-            || {
+            temp_dir_path(&temp_dir),
+            || -> TestResult {
                 let mut registry = InstanceRegistry::new();
-                let id1 = InstanceId::parse("550e8400-e29b-41d4-a716-446655440001").unwrap();
-                let id2 = InstanceId::parse("550e8400-e29b-41d4-a716-446655440002").unwrap();
-                registry
-                    .register(Instance::new(id1, Some("a".to_owned())).unwrap())
-                    .unwrap();
-                registry
-                    .register(Instance::new(id2, Some("b".to_owned())).unwrap())
-                    .unwrap();
+                let id1 = InstanceId::parse("550e8400-e29b-41d4-a716-446655440001")?;
+                let id2 = InstanceId::parse("550e8400-e29b-41d4-a716-446655440002")?;
+                registry.register(Instance::new(id1, Some("a".to_owned()))?)?;
+                registry.register(Instance::new(id2, Some("b".to_owned()))?)?;
 
                 let result = resolve_instance_id("550e");
                 assert!(result.is_err());
-                let err = result.unwrap_err();
+                let err = result.expect_err("expected ambiguous instance ID error");
                 assert!(err.to_string().contains("Ambiguous"));
                 assert!(err.to_string().contains('2'));
+                Ok(())
             },
-        );
+        )?;
+        Ok(())
     }
 
     #[test]
-    fn test_resolve_instance_id_prefix_no_match() {
-        let temp_dir = tempfile::TempDir::new().unwrap();
+    fn test_resolve_instance_id_prefix_no_match() -> TestResult {
+        let temp_dir = tempfile::TempDir::new()?;
         petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
             "XDG_DATA_HOME",
-            temp_dir.path().to_str().unwrap(),
-            || {
+            temp_dir_path(&temp_dir),
+            || -> TestResult {
                 let mut registry = InstanceRegistry::new();
-                let id = InstanceId::parse("550e8400-e29b-41d4-a716-446655440000").unwrap();
-                registry
-                    .register(Instance::new(id, Some("test".to_owned())).unwrap())
-                    .unwrap();
+                let id = InstanceId::parse("550e8400-e29b-41d4-a716-446655440000")?;
+                registry.register(Instance::new(id, Some("test".to_owned()))?)?;
 
                 let result = resolve_instance_id("ffff");
                 assert!(result.is_err());
                 assert!(
                     result
-                        .unwrap_err()
+                        .expect_err("expected no instance found error")
                         .to_string()
                         .contains("No instance found")
                 );
+                Ok(())
             },
-        );
+        )?;
+        Ok(())
     }
 
     #[test]
-    fn test_resolve_instance_id_error_message_invalid() {
-        let temp_dir = tempfile::TempDir::new().unwrap();
+    fn test_resolve_instance_id_error_message_invalid() -> TestResult {
+        let temp_dir = tempfile::TempDir::new()?;
         petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
             "XDG_DATA_HOME",
-            temp_dir.path().to_str().unwrap(),
-            || {
+            temp_dir_path(&temp_dir),
+            || -> TestResult {
                 let result = resolve_instance_id("not-a-uuid");
                 assert!(result.is_err());
-                let err = result.unwrap_err().to_string();
+                let err = result
+                    .expect_err("expected invalid instance ID error")
+                    .to_string();
                 assert!(
                     err.contains("Invalid") || err.contains("No instance found"),
                     "unexpected error: {err}"
                 );
+                Ok(())
             },
-        );
+        )?;
+        Ok(())
     }
 }

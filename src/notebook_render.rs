@@ -301,12 +301,13 @@ article.notebook > header h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 #[cfg(test)]
 mod tests {
     #![allow(
-        clippy::unwrap_used,
         clippy::expect_used,
-        reason = "test code uses unwrap/expect for brevity"
+        reason = "test code uses expect for brevity"
     )]
 
     use super::*;
+
+    type TestResult = Result<(), Box<dyn std::error::Error>>;
 
     fn minimal_notebook(title: Option<&str>) -> serde_json::Value {
         let mut metadata = serde_json::json!({});
@@ -340,10 +341,10 @@ mod tests {
     }
 
     #[test]
-    fn renders_minimal_notebook() {
-        let json = serde_json::to_vec(&minimal_notebook(Some("Test Title"))).unwrap();
+    fn renders_minimal_notebook() -> TestResult {
+        let json = serde_json::to_vec(&minimal_notebook(Some("Test Title")))?;
         let config = NotebookRenderConfig::default();
-        let html = render_notebook(&json, &config).expect("should render");
+        let html = render_notebook(&json, &config).ok_or("should render")?;
 
         assert!(html.contains("<!DOCTYPE html>"));
         assert!(html.contains("<title>Test Title</title>"));
@@ -351,37 +352,41 @@ mod tests {
         assert!(html.contains("<h1>Hello</h1>"));
         assert!(html.contains("print(&#39;hi&#39;)") || html.contains("print('hi')"));
         assert!(html.contains("hi\n") || html.contains("hi"));
+        Ok(())
     }
 
     #[test]
-    fn strip_sources_hides_code() {
-        let json = serde_json::to_vec(&minimal_notebook(None)).unwrap();
+    fn strip_sources_hides_code() -> TestResult {
+        let json = serde_json::to_vec(&minimal_notebook(None))?;
         let config = NotebookRenderConfig {
             strip_sources: true,
         };
-        let html = render_notebook(&json, &config).expect("should render");
+        let html = render_notebook(&json, &config).ok_or("should render")?;
 
         assert!(
             !html.contains("class=\"nb-code\""),
             "code source div should be hidden"
         );
         assert!(html.contains("nb-stream"), "outputs should still appear");
+        Ok(())
     }
 
     #[test]
-    fn untitled_notebook_uses_fallback() {
-        let json = serde_json::to_vec(&minimal_notebook(None)).unwrap();
+    fn untitled_notebook_uses_fallback() -> TestResult {
+        let json = serde_json::to_vec(&minimal_notebook(None))?;
         let config = NotebookRenderConfig::default();
-        let html = render_notebook(&json, &config).expect("should render");
+        let html = render_notebook(&json, &config).ok_or("should render")?;
 
         assert!(html.contains("<title>Notebook</title>"));
+        Ok(())
     }
 
     #[test]
-    fn rejects_old_nbformat() {
+    fn rejects_old_nbformat() -> TestResult {
         let nb = serde_json::json!({ "nbformat": 3, "cells": [] });
-        let json = serde_json::to_vec(&nb).unwrap();
+        let json = serde_json::to_vec(&nb)?;
         assert!(render_notebook(&json, &NotebookRenderConfig::default()).is_none());
+        Ok(())
     }
 
     #[test]
@@ -390,7 +395,7 @@ mod tests {
     }
 
     #[test]
-    fn renders_execute_result_html() {
+    fn renders_execute_result_html() -> TestResult {
         let nb = serde_json::json!({
             "nbformat": 4,
             "nbformat_minor": 5,
@@ -410,17 +415,18 @@ mod tests {
                 }]
             }]
         });
-        let json = serde_json::to_vec(&nb).unwrap();
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        let json = serde_json::to_vec(&nb)?;
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("<table><tr><td>1</td></tr></table>"));
         assert!(
             !html.contains("fallback"),
             "HTML output takes priority over text/plain"
         );
+        Ok(())
     }
 
     #[test]
-    fn renders_image_output() {
+    fn renders_image_output() -> TestResult {
         let nb = serde_json::json!({
             "nbformat": 4,
             "nbformat_minor": 5,
@@ -436,13 +442,14 @@ mod tests {
                 }]
             }]
         });
-        let json = serde_json::to_vec(&nb).unwrap();
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        let json = serde_json::to_vec(&nb)?;
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("data:image/png;base64,iVBORw0KGgo="));
+        Ok(())
     }
 
     #[test]
-    fn renders_error_output() {
+    fn renders_error_output() -> TestResult {
         let nb = serde_json::json!({
             "nbformat": 4,
             "nbformat_minor": 5,
@@ -459,14 +466,15 @@ mod tests {
                 }]
             }]
         });
-        let json = serde_json::to_vec(&nb).unwrap();
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        let json = serde_json::to_vec(&nb)?;
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("nb-error"));
         assert!(html.contains("ZeroDivisionError"));
+        Ok(())
     }
 
     #[test]
-    fn renders_raw_cell() {
+    fn renders_raw_cell() -> TestResult {
         let nb = serde_json::json!({
             "nbformat": 4,
             "nbformat_minor": 5,
@@ -477,28 +485,30 @@ mod tests {
                 "metadata": {}
             }]
         });
-        let json = serde_json::to_vec(&nb).unwrap();
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        let json = serde_json::to_vec(&nb)?;
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("nb-raw"));
         assert!(html.contains("&lt;content&gt;"));
+        Ok(())
     }
 
     #[test]
-    fn escapes_title_html() {
+    fn escapes_title_html() -> TestResult {
         let nb = serde_json::json!({
             "nbformat": 4,
             "nbformat_minor": 5,
             "metadata": { "title": "<script>alert('xss')</script>" },
             "cells": []
         });
-        let json = serde_json::to_vec(&nb).unwrap();
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        let json = serde_json::to_vec(&nb)?;
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(!html.contains("<script>"), "title must be escaped");
         assert!(html.contains("&lt;script&gt;"));
+        Ok(())
     }
 
     #[test]
-    fn detects_language_from_kernelspec() {
+    fn detects_language_from_kernelspec() -> TestResult {
         let nb = serde_json::json!({
             "nbformat": 4,
             "nbformat_minor": 5,
@@ -512,26 +522,28 @@ mod tests {
                 "outputs": []
             }]
         });
-        let json = serde_json::to_vec(&nb).unwrap();
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        let json = serde_json::to_vec(&nb)?;
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("language-rust"));
+        Ok(())
     }
 
     #[test]
-    fn dark_mode_css_present() {
+    fn dark_mode_css_present() -> TestResult {
         let nb = serde_json::json!({
             "nbformat": 4,
             "nbformat_minor": 5,
             "metadata": {},
             "cells": []
         });
-        let json = serde_json::to_vec(&nb).unwrap();
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        let json = serde_json::to_vec(&nb)?;
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("prefers-color-scheme: dark"));
+        Ok(())
     }
 
     #[test]
-    fn empty_code_cell_skipped() {
+    fn empty_code_cell_skipped() -> TestResult {
         let nb = serde_json::json!({
             "nbformat": 4,
             "nbformat_minor": 5,
@@ -543,16 +555,17 @@ mod tests {
                 "outputs": []
             }]
         });
-        let json = serde_json::to_vec(&nb).unwrap();
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        let json = serde_json::to_vec(&nb)?;
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(
             !html.contains("class=\"nb-code\""),
             "empty code cells should not render"
         );
+        Ok(())
     }
 
     #[test]
-    fn render_jpeg_output() {
+    fn render_jpeg_output() -> TestResult {
         let nb = serde_json::json!({
             "nbformat": 4, "nbformat_minor": 5, "metadata": {},
             "cells": [{
@@ -563,13 +576,14 @@ mod tests {
                 }]
             }]
         });
-        let json = serde_json::to_vec(&nb).unwrap();
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        let json = serde_json::to_vec(&nb)?;
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("data:image/jpeg;base64,AAAA"));
+        Ok(())
     }
 
     #[test]
-    fn render_svg_output() {
+    fn render_svg_output() -> TestResult {
         let nb = serde_json::json!({
             "nbformat": 4, "nbformat_minor": 5, "metadata": {},
             "cells": [{
@@ -580,13 +594,14 @@ mod tests {
                 }]
             }]
         });
-        let json = serde_json::to_vec(&nb).unwrap();
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        let json = serde_json::to_vec(&nb)?;
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("<svg>"));
+        Ok(())
     }
 
     #[test]
-    fn render_text_plain_only_output() {
+    fn render_text_plain_only_output() -> TestResult {
         let nb = serde_json::json!({
             "nbformat": 4, "nbformat_minor": 5, "metadata": {},
             "cells": [{
@@ -597,13 +612,14 @@ mod tests {
                 }]
             }]
         });
-        let json = serde_json::to_vec(&nb).unwrap();
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        let json = serde_json::to_vec(&nb)?;
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("42"));
+        Ok(())
     }
 
     #[test]
-    fn language_from_language_info() {
+    fn language_from_language_info() -> TestResult {
         let nb = serde_json::json!({
             "nbformat": 4, "nbformat_minor": 5,
             "metadata": { "language_info": { "name": "julia" } },
@@ -612,16 +628,17 @@ mod tests {
                 "outputs": []
             }]
         });
-        let json = serde_json::to_vec(&nb).unwrap();
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        let json = serde_json::to_vec(&nb)?;
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(
             html.contains("julia"),
             "should annotate with language_info.name"
         );
+        Ok(())
     }
 
     #[test]
-    fn unknown_cell_type_ignored() {
+    fn unknown_cell_type_ignored() -> TestResult {
         let nb = serde_json::json!({
             "nbformat": 4, "nbformat_minor": 5, "metadata": {},
             "cells": [{
@@ -631,13 +648,14 @@ mod tests {
                 "outputs": []
             }]
         });
-        let json = serde_json::to_vec(&nb).unwrap();
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        let json = serde_json::to_vec(&nb)?;
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(!html.contains("ignored"));
+        Ok(())
     }
 
     #[test]
-    fn raw_cell_rendered() {
+    fn raw_cell_rendered() -> TestResult {
         let nb = serde_json::json!({
             "nbformat": 4, "nbformat_minor": 5, "metadata": {},
             "cells": [{
@@ -647,10 +665,11 @@ mod tests {
                 "outputs": []
             }]
         });
-        let json = serde_json::to_vec(&nb).unwrap();
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).unwrap();
+        let json = serde_json::to_vec(&nb)?;
+        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("nb-raw"));
         assert!(html.contains("raw &lt;content&gt;"));
+        Ok(())
     }
 
     #[test]
@@ -659,11 +678,12 @@ mod tests {
     }
 
     #[test]
-    fn nbformat_3_rejected() {
+    fn nbformat_3_rejected() -> TestResult {
         let nb = serde_json::json!({
             "nbformat": 3, "nbformat_minor": 0, "metadata": {}, "cells": []
         });
-        let json = serde_json::to_vec(&nb).unwrap();
+        let json = serde_json::to_vec(&nb)?;
         assert!(render_notebook(&json, &NotebookRenderConfig::default()).is_none());
+        Ok(())
     }
 }

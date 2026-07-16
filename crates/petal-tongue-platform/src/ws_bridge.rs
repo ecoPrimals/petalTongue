@@ -43,10 +43,10 @@ impl Default for WsBridgeConfig {
             .and_then(|v| v.parse().ok())
             .unwrap_or(DEFAULT_WS_PORT);
 
-        Self {
-            bind_host: "127.0.0.1".to_owned(),
-            port,
-        }
+        let bind_host = std::env::var("PETALTONGUE_WS_BIND_HOST")
+            .unwrap_or_else(|_| "127.0.0.1".to_owned());
+
+        Self { bind_host, port }
     }
 }
 
