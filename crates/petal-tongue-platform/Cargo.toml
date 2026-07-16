@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+[lints.rust]
+# This crate contains a C-FFI module which inherently requires unsafe.
+# All unsafe is confined to ffi.rs; other modules deny(unsafe_code).
+unsafe_code = "allow"
+missing_docs = "warn"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+unwrap_used = "warn"
+expect_used = "warn"
+
+[package]
+name = "petal-tongue-platform"
+description = "Platform embedding layer for petalTongue — cdylib + lifecycle abstraction for Android, iOS, and future targets"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["visualization", "ffi", "mobile", "embedding", "platform"]
+categories = ["visualization", "api-bindings"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+petal-tongue-core = { path = "../petal-tongue-core" }
+petal-tongue-scene = { path = "../petal-tongue-scene" }
+petal-tongue-ui-core = { path = "../petal-tongue-ui-core" }
+petal-tongue-types = { path = "../petal-tongue-types" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "sync"] }
+tracing = { workspace = true }
+
+[dev-dependencies]

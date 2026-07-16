@@ -19,6 +19,7 @@ members = [
     "crates/petal-tongue-types",     # Portable data types (WASM-compatible)
     "crates/petal-tongue-scene",     # Declarative scene graph + modality compilers
     "crates/petal-tongue-wasm",      # Client WASM rendering module
+    "crates/petal-tongue-platform",  # Platform embedding layer (Android/iOS cdylib)
     "crates/doom-core",              # Doom integration for platform testing
     # BingoCube is now a standalone tool at bingoCube/
     # (it has its own workspace with core, adapters, demos)

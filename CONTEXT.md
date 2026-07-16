@@ -18,7 +18,7 @@ does not own computation, storage, or security domains.
 
 ## Architecture
 
-18 workspace crates, single UniBin binary (`petaltongue`, 7 subcommands):
+19 workspace crates, single UniBin binary (`petaltongue`, 7 subcommands):
 
 | Crate | Purpose |
 |-------|---------|
@@ -27,6 +27,7 @@ does not own computation, storage, or security domains.
 | `petal-tongue-scene` | Declarative scene graph, modality compilers |
 | `petal-tongue-graph` | Chart rendering, sonification |
 | `petal-tongue-animation` | Manim-style animation system |
+| `petal-tongue-platform` | Platform embedding layer (Android/iOS cdylib, C-FFI, lifecycle) |
 | `petal-tongue-ui` | Native GUI (egui/eframe), feature-gated |
 | `petal-tongue-tui` | Terminal UI (ratatui) |
 | `petal-tongue-ui-core` | Pure Rust abstract UI (text, SVG, canvas) |
@@ -126,6 +127,17 @@ cargo test --workspace --all-features     # 366+ workspace tests, ~85-90% covera
 ```
 
 ## Current State
+
+Wave 141b Platform Embedding Layer (July 16, 2026). New `petal-tongue-platform`
+crate: `cdylib` + `rlib` embedding layer for Android/iOS/desktop host apps.
+`PlatformLifecycle` trait (create/start/resume/pause/stop/destroy/low-memory).
+`EmbeddedRuntime` (owns tokio runtime, `GrammarCompiler`, `SvgCompiler`,
+scenario builders). C-FFI surface: `pt_create`, `pt_start`, `pt_render_svg`,
+`pt_ipc_request`, `pt_pause`, `pt_resume`, `pt_free_string`, `pt_destroy`.
+JSON-RPC bridge for in-process host communication. Compiles cleanly for
+`aarch64-linux-android`, `x86_64-pc-windows-gnu`, and native Linux. Zero clippy
+warnings. This resolves the Android "winit/android-activity" blocker by providing
+a host-driven lifecycle model independent of `fn main()`.
 
 Wave 141a Silicon Atheism Adoption (July 15, 2026). 366 tests (workspace), all
 passing. Cross-architecture transport: `petal-tongue-core` compiles for
