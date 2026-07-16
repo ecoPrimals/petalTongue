@@ -19,7 +19,7 @@ base64 = { workspace = true }
 blake3 = { workspace = true }
 bytes = { workspace = true }
 hound = { workspace = true }
-petal-tongue-core = { path = "../petal-tongue-core" }
+petal-tongue-core = { path = "../petal-tongue-core", features = ["offline-topology"] }
 petal-tongue-scene = { path = "../petal-tongue-scene" }
 petal-tongue-ui-core = { path = "../petal-tongue-ui-core" }
 tokio = { workspace = true, features = ["net", "io-util", "sync", "macros", "rt"] }

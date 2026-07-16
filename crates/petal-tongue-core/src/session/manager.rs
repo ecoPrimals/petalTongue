@@ -284,8 +284,6 @@ impl SessionManager {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used, reason = "test code")]
-
     use super::*;
     use crate::instance::InstanceId;
     use crate::session::state::SessionState;
@@ -296,86 +294,96 @@ mod tests {
 
     #[test]
     fn with_session_path_creates_parent_directories() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().expect("create temp dir");
         let path = session_path_in(&dir, "session.ron");
-        assert!(!path.parent().unwrap().exists());
+        assert!(!path.parent().expect("session path has parent").exists());
 
-        SessionManager::with_session_path(path.clone()).unwrap();
+        SessionManager::with_session_path(path.clone()).expect("create session manager");
 
-        assert!(path.parent().unwrap().exists());
+        assert!(path.parent().expect("session path has parent").exists());
     }
 
     #[test]
     fn session_path_returns_correct_path() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().expect("create temp dir");
         let path = session_path_in(&dir, "sess.ron");
-        let manager = SessionManager::with_session_path(path.clone()).unwrap();
+        let manager = SessionManager::with_session_path(path.clone()).expect("create session manager");
 
         assert_eq!(manager.session_path(), path.as_path());
     }
 
     #[test]
     fn load_or_create_creates_new_state_when_missing() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().expect("create temp dir");
         let path = session_path_in(&dir, "new.ron");
-        let mut manager = SessionManager::with_session_path(path.clone()).unwrap();
+        let mut manager = SessionManager::with_session_path(path.clone()).expect("create session manager");
         let instance_id = InstanceId::new();
 
         assert!(manager.current_state().is_none());
         assert!(!path.exists());
 
-        manager.load_or_create(instance_id.clone()).unwrap();
+        manager
+            .load_or_create(instance_id.clone())
+            .expect("load or create session");
 
         assert!(manager.current_state().is_some());
         assert!(manager.is_dirty());
-        assert_eq!(manager.current_state().unwrap().instance_id, instance_id);
+        assert_eq!(manager.current_state().expect("session state loaded").instance_id, instance_id);
     }
 
     #[test]
     fn load_or_create_save_reload_roundtrip() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().expect("create temp dir");
         let path = session_path_in(&dir, "roundtrip.ron");
         let instance_id = InstanceId::new();
 
-        let mut manager = SessionManager::with_session_path(path.clone()).unwrap();
-        manager.load_or_create(instance_id.clone()).unwrap();
+        let mut manager = SessionManager::with_session_path(path.clone()).expect("create session manager");
+        manager
+            .load_or_create(instance_id.clone())
+            .expect("load or create session");
         manager
             .current_state_mut()
-            .unwrap()
+            .expect("mutable session state")
             .add_metadata("marker", "saved");
-        manager.save().unwrap();
+        manager.save().expect("save session");
         assert!(path.exists());
 
-        let mut manager2 = SessionManager::with_session_path(path).unwrap();
-        manager2.load_or_create(instance_id).unwrap();
+        let mut manager2 = SessionManager::with_session_path(path).expect("create session manager");
+        manager2
+            .load_or_create(instance_id)
+            .expect("load or create session");
 
         assert!(!manager2.is_dirty());
         assert_eq!(
-            manager2.current_state().unwrap().metadata.get("marker"),
+            manager2.current_state().expect("session state loaded").metadata.get("marker"),
             Some(&"saved".to_owned())
         );
     }
 
     #[test]
     fn current_state_none_until_loaded() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().expect("create temp dir");
         let path = session_path_in(&dir, "state.ron");
-        let mut manager = SessionManager::with_session_path(path).unwrap();
+        let mut manager = SessionManager::with_session_path(path).expect("create session manager");
 
         assert!(manager.current_state().is_none());
 
-        manager.load_or_create(InstanceId::new()).unwrap();
+        manager
+            .load_or_create(InstanceId::new())
+            .expect("load or create session");
 
         assert!(manager.current_state().is_some());
     }
 
     #[test]
     fn current_state_mut_marks_dirty() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().expect("create temp dir");
         let path = session_path_in(&dir, "mut.ron");
-        let mut manager = SessionManager::with_session_path(path).unwrap();
-        manager.load_or_create(InstanceId::new()).unwrap();
-        manager.save().unwrap();
+        let mut manager = SessionManager::with_session_path(path).expect("create session manager");
+        manager
+            .load_or_create(InstanceId::new())
+            .expect("load or create session");
+        manager.save().expect("save session");
         assert!(!manager.is_dirty());
 
         let _ = manager.current_state_mut();
@@ -385,11 +393,13 @@ mod tests {
 
     #[test]
     fn update_state_replaces_and_marks_dirty() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().expect("create temp dir");
         let path = session_path_in(&dir, "update.ron");
-        let mut manager = SessionManager::with_session_path(path).unwrap();
-        manager.load_or_create(InstanceId::new()).unwrap();
-        manager.save().unwrap();
+        let mut manager = SessionManager::with_session_path(path).expect("create session manager");
+        manager
+            .load_or_create(InstanceId::new())
+            .expect("load or create session");
+        manager.save().expect("save session");
 
         let mut replacement = SessionState::new(InstanceId::new());
         replacement.add_metadata("replaced", "yes");
@@ -397,18 +407,20 @@ mod tests {
 
         assert!(manager.is_dirty());
         assert_eq!(
-            manager.current_state().unwrap().metadata.get("replaced"),
+            manager.current_state().expect("session state loaded").metadata.get("replaced"),
             Some(&"yes".to_owned())
         );
     }
 
     #[test]
     fn mark_dirty_and_unsaved_change_aliases() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().expect("create temp dir");
         let path = session_path_in(&dir, "dirty.ron");
-        let mut manager = SessionManager::with_session_path(path).unwrap();
-        manager.load_or_create(InstanceId::new()).unwrap();
-        manager.save().unwrap();
+        let mut manager = SessionManager::with_session_path(path).expect("create session manager");
+        manager
+            .load_or_create(InstanceId::new())
+            .expect("load or create session");
+        manager.save().expect("save session");
         assert!(!manager.is_dirty());
         assert!(!manager.has_unsaved_changes());
 
@@ -420,30 +432,36 @@ mod tests {
 
     #[test]
     fn save_clears_dirty_and_fails_without_state() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().expect("create temp dir");
         let path = session_path_in(&dir, "save.ron");
-        let mut manager = SessionManager::with_session_path(path.clone()).unwrap();
+        let mut manager = SessionManager::with_session_path(path.clone()).expect("create session manager");
 
         let no_state = manager.save();
         assert!(matches!(no_state, Err(SessionError::NoState)));
 
-        manager.load_or_create(InstanceId::new()).unwrap();
+        manager
+            .load_or_create(InstanceId::new())
+            .expect("load or create session");
         assert!(manager.is_dirty());
-        manager.save().unwrap();
+        manager.save().expect("save session");
         assert!(!manager.is_dirty());
         assert!(path.exists());
     }
 
     #[test]
     fn auto_save_if_needed_skips_when_clean() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().expect("create temp dir");
         let path = session_path_in(&dir, "autosave.ron");
-        let mut manager = SessionManager::with_session_path(path).unwrap();
-        manager.load_or_create(InstanceId::new()).unwrap();
-        manager.save().unwrap();
+        let mut manager = SessionManager::with_session_path(path).expect("create session manager");
+        manager
+            .load_or_create(InstanceId::new())
+            .expect("load or create session");
+        manager.save().expect("save session");
         assert!(!manager.is_dirty());
 
-        let saved = manager.auto_save_if_needed().unwrap();
+        let saved = manager
+            .auto_save_if_needed()
+            .expect("auto save if needed");
 
         assert!(!saved);
         assert!(!manager.is_dirty());
@@ -451,15 +469,19 @@ mod tests {
 
     #[test]
     fn set_auto_save_interval_enforces_minimum_one() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().expect("create temp dir");
         let path = session_path_in(&dir, "interval.ron");
-        let mut manager = SessionManager::with_session_path(path).unwrap();
-        manager.load_or_create(InstanceId::new()).unwrap();
-        manager.save().unwrap();
+        let mut manager = SessionManager::with_session_path(path).expect("create session manager");
+        manager
+            .load_or_create(InstanceId::new())
+            .expect("load or create session");
+        manager.save().expect("save session");
         manager.mark_dirty();
         manager.set_auto_save_interval(0);
 
-        let saved = manager.auto_save_if_needed().unwrap();
+        let saved = manager
+            .auto_save_if_needed()
+            .expect("auto save if needed");
 
         assert!(
             !saved,
@@ -469,38 +491,43 @@ mod tests {
 
     #[test]
     fn export_import_roundtrip() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().expect("create temp dir");
         let session_path = session_path_in(&dir, "main.ron");
         let export_path = dir.path().join("export.ron");
-        let mut manager = SessionManager::with_session_path(session_path).unwrap();
+        let mut manager =
+            SessionManager::with_session_path(session_path).expect("create session manager");
         let instance_id = InstanceId::new();
-        manager.load_or_create(instance_id.clone()).unwrap();
+        manager
+            .load_or_create(instance_id.clone())
+            .expect("load or create session");
         manager
             .current_state_mut()
-            .unwrap()
+            .expect("mutable session state")
             .add_metadata("exported", "value");
-        manager.save().unwrap();
+        manager.save().expect("save session");
 
-        manager.export(&export_path).unwrap();
+        manager.export(&export_path).expect("export session");
         assert!(export_path.exists());
 
-        let mut manager2 = SessionManager::with_session_path(dir.path().join("other.ron")).unwrap();
-        manager2.import(&export_path).unwrap();
+        let mut manager2 =
+            SessionManager::with_session_path(dir.path().join("other.ron"))
+                .expect("create session manager");
+        manager2.import(&export_path).expect("import session");
 
         assert!(manager2.is_dirty());
-        assert_eq!(manager2.current_state().unwrap().instance_id, instance_id);
+        assert_eq!(manager2.current_state().expect("session state loaded").instance_id, instance_id);
         assert_eq!(
-            manager2.current_state().unwrap().metadata.get("exported"),
+            manager2.current_state().expect("session state loaded").metadata.get("exported"),
             Some(&"value".to_owned())
         );
     }
 
     #[test]
     fn export_without_state_returns_no_state() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().expect("create temp dir");
         let path = session_path_in(&dir, "no-export.ron");
         let export_path = dir.path().join("out.ron");
-        let manager = SessionManager::with_session_path(path).unwrap();
+        let manager = SessionManager::with_session_path(path).expect("create session manager");
 
         let result = manager.export(&export_path);
 

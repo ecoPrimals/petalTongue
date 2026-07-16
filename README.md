@@ -85,13 +85,14 @@ petaltongue
 - **Zero-copy state management** -- Arc-wrapped shared state
 - **Centralized configurable constants** -- all timeouts, ports env-overridable
 
-### Crates (18)
+### Crates (19)
 
 | Crate | Purpose |
 |-------|---------|
 | `petal-tongue-core` | Graph engine, capabilities, config, interaction engine, sensory matrix, data bindings, UUI glossary |
 | `petal-tongue-types` | Portable data types (`DataBinding`, `ThresholdRange`) — WASM-compatible, serde-only |
 | `petal-tongue-scene` | Scene graph, animation, grammar compiler, DataBinding compiler, dashboard layout, Tufte constraints, modality compilers, physics bridge |
+| `petal-tongue-platform` | Platform embedding layer — cdylib + lifecycle abstraction for Android/iOS/desktop host apps |
 | `petal-tongue-wasm` | Client-side WASM rendering — grammar→SVG pipeline for offline-capable browser UIs |
 | `petal-tongue-graph` | Domain-aware chart renderers, 2D rendering, audio sonification |
 | `petal-tongue-ui` | Desktop display (egui/eframe), panels, scenarios, biomeOS |
@@ -114,12 +115,12 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 6,618+ passing, 0 failures (`--all-features`) |
+| Tests | 6,500+ passing, 0 failures (`--all-features`) |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (`--all-features`, pedantic + nursery; `#[expect]` with reasons) |
 | Docs | `cargo doc --workspace --no-deps` zero warnings |
 | Coverage | ~85% line (llvm-cov), 90% target |
-| Unsafe | `#![forbid(unsafe_code)]` unconditional on all 18 crates + UniBin root, zero C deps |
+| Unsafe | `#![forbid(unsafe_code)]` on 18 crates + UniBin root; `petal-tongue-platform` allows unsafe in `ffi.rs` only (C-FFI boundary) |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
 | BTSP Phase 3 | Full encrypted transport (ChaCha20-Poly1305 AEAD); HKDF-SHA256 key derivation; 13/13 ecosystem parity |
 | Files | All production files under 800 LOC (smart domain refactoring, 57+ modules) |
@@ -149,7 +150,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 6,618+ tests
+cargo test --workspace --all-features        # 6,500+ tests
 cargo clippy --workspace --all-features -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
@@ -217,7 +218,8 @@ Sprint handoffs at `infra/wateringHole/handoffs/`.
 - Discover capabilities at runtime, never hardcode primal names
 - Pure Rust, edition 2024, `async`/`await`, `Arc`/`RwLock`
 - Typed error handling (`thiserror`, no `anyhow` in production); `deny(unwrap_used, expect_used)` with `#[expect]` for justified suppressions
-- `#![forbid(unsafe_code)]` unconditional on all crates
+- `#![forbid(unsafe_code)]` on all crates except `petal-tongue-platform` (C-FFI boundary, confined to `ffi.rs`)
+- Static topology data gated behind `offline-topology` feature; production code uses `MeshTopologySource` trait
 - Semantic method naming (`domain.operation`)
 - JSON-RPC 2.0 REQUIRED for inter-primal IPC, tarpc MAY for Rust-to-Rust hot paths, HTTP for external access only
 - All production files under 800 lines (smart domain refactoring, not mechanical splitting)

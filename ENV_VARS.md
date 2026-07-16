@@ -852,7 +852,43 @@ Before deploying to production:
 
 ---
 
-**Last Updated**: June 19, 2026 (Wave 116 — gate mesh status, capability-based network defaults, offline-mode evolution)  
+## Platform Embedding (Wave 141b+)
+
+### **PETALTONGUE_WS_PORT**
+**Type**: Integer (port number)  
+**Default**: `8765`  
+**Required**: No  
+**Example**: `PETALTONGUE_WS_PORT=9876`
+
+Port for the WebSocket JSON-RPC bridge in `petal-tongue-platform`. Used by
+`footPrint` compositions and network clients to communicate with embedded
+petalTongue instances without going through C-FFI.
+
+---
+
+### **PETALTONGUE_WS_BIND_HOST**
+**Type**: String (IP address)  
+**Default**: `127.0.0.1` (loopback only)  
+**Required**: No  
+**Example**: `PETALTONGUE_WS_BIND_HOST=0.0.0.0`
+
+Bind host for the WebSocket bridge. Set to `0.0.0.0` for network-accessible
+embedded instances (e.g., when `footPrint` connects from another host).
+
+---
+
+### **PETALTONGUE_DATA_DIR**
+**Type**: String (directory path)  
+**Default**: `$XDG_DATA_HOME/petaltongue` (Linux), `$ANDROID_DATA/petaltongue` (Android)  
+**Required**: No  
+**Example**: `PETALTONGUE_DATA_DIR=/data/local/tmp/petaltongue`
+
+Override data directory for platform-agnostic session/config storage. Primarily
+used on Android where standard XDG paths are unavailable.
+
+---
+
+**Last Updated**: July 16, 2026 (Wave 142b — platform embedding WebSocket bridge, offline-topology feature)  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 
