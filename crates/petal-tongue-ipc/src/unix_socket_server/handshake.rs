@@ -2,13 +2,17 @@
 
 use crate::unix_socket_connection;
 use crate::unix_socket_rpc_handlers::RpcHandlers;
+#[cfg(unix)]
 use std::sync::Arc;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
+#[cfg(unix)]
+use tracing::warn;
 
 /// Outcome of UDS BTSP handshake classification.
 ///
 /// Distinguishes plain JSON-RPC (filesystem-authenticated, should be served)
 /// from actual handshake failures (should be rejected).
+#[cfg(unix)]
 pub(super) enum UdsHandshakeOutcome {
     /// BTSP handshake completed successfully.
     Authenticated(crate::btsp::HandshakeResult),
@@ -68,6 +72,7 @@ pub(super) fn is_btsp_json_announcement(buf: &[u8]) -> bool {
 /// post-handshake message is expected to be `btsp.negotiate` with a
 /// `client_nonce`. If negotiate succeeds, the connection transitions to
 /// encrypted frame I/O (Phase 3). Otherwise it falls back to NDJSON.
+#[cfg(unix)]
 pub(super) async fn handle_uds_with_btsp(
     handlers: &RpcHandlers,
     stream: tokio::net::UnixStream,
@@ -130,6 +135,7 @@ pub(super) async fn handle_uds_with_btsp(
 }
 
 /// Run the BTSP handshake on a UDS connection, classifying and dispatching.
+#[cfg(unix)]
 async fn run_uds_handshake(
     buf_reader: &mut tokio::io::BufReader<tokio::net::unix::OwnedReadHalf>,
     writer: &mut tokio::net::unix::OwnedWriteHalf,

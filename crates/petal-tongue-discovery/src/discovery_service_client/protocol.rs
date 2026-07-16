@@ -2,10 +2,10 @@
 //! JSON-RPC wire protocol: request/response framing and socket I/O.
 
 use crate::errors::{DiscoveryError, DiscoveryResult};
+use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::UnixStream;
 
 use super::DiscoveryServiceClient;
 
@@ -35,13 +35,17 @@ impl DiscoveryServiceClient {
         use petal_tongue_core::constants::discovery_timeouts;
         let connect_timeout = discovery_timeouts::DISCOVERY_SERVICE_CONNECT_TIMEOUT;
 
+        let endpoint = TransportEndpoint::uds(&self.socket_path);
         let stream =
-            match tokio::time::timeout(connect_timeout, UnixStream::connect(&self.socket_path))
+            match tokio::time::timeout(connect_timeout, connect_transport(&endpoint))
                 .await
             {
                 Ok(Ok(stream)) => stream,
                 Ok(Err(e)) => {
-                    return Err(DiscoveryError::Io(e));
+                    return Err(DiscoveryError::Io(std::io::Error::new(
+                        std::io::ErrorKind::ConnectionRefused,
+                        e.to_string(),
+                    )));
                 }
                 Err(_) => {
                     return Err(DiscoveryError::ConnectionTimeout {
@@ -50,7 +54,7 @@ impl DiscoveryServiceClient {
                 }
             };
 
-        let (reader, mut writer) = stream.into_split();
+        let (reader, mut writer) = tokio::io::split(stream);
         let mut reader = BufReader::new(reader);
 
         let write_timeout = discovery_timeouts::DISCOVERY_SERVICE_WRITE_TIMEOUT;

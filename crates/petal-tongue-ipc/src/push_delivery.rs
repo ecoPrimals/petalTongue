@@ -133,6 +133,7 @@ mod tests {
     use tokio::io::AsyncBufReadExt;
 
     #[tokio::test]
+    #[cfg(unix)]
     async fn push_delivery_to_unix_socket() {
         let dir = tempfile::tempdir().expect("tempdir");
         let sock_path = dir.path().join("test-push.sock");

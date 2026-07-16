@@ -284,14 +284,15 @@ async fn send_jsonrpc_unix(
     socket_path: &str,
     request: &serde_json::Value,
 ) -> Result<serde_json::Value, ComputeBridgeError> {
+    use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
     use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-    use tokio::net::UnixStream;
 
-    let stream = UnixStream::connect(socket_path)
+    let endpoint = TransportEndpoint::uds(socket_path);
+    let stream = connect_transport(&endpoint)
         .await
-        .map_err(ComputeBridgeError::Connect)?;
+        .map_err(|e| ComputeBridgeError::Connect(std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string())))?;
 
-    let (reader, mut writer) = stream.into_split();
+    let (reader, mut writer) = tokio::io::split(stream);
 
     let mut payload = serde_json::to_vec(request).map_err(ComputeBridgeError::Serialize)?;
     payload.push(b'\n');

@@ -271,18 +271,18 @@ impl ProvenanceTrioClient {
         method: &str,
         params: Value,
     ) -> Result<Value, ProvenanceRpcError> {
+        use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
         use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-        use tokio::net::UnixStream;
 
-        let stream =
-            UnixStream::connect(socket)
-                .await
-                .map_err(|e| ProvenanceRpcError::Connect {
-                    path: socket.to_owned(),
-                    source: e,
-                })?;
+        let endpoint = TransportEndpoint::uds(socket);
+        let stream = connect_transport(&endpoint).await.map_err(|e| {
+            ProvenanceRpcError::Connect {
+                path: socket.to_owned(),
+                source: std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string()),
+            }
+        })?;
 
-        let (reader, mut writer) = stream.into_split();
+        let (reader, mut writer) = tokio::io::split(stream);
 
         let request = json!({
             "jsonrpc": "2.0",

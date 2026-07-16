@@ -50,6 +50,7 @@ pub async fn register_with_discovery_service(
 /// works fine if the Neural API is unavailable.
 pub async fn announce_to_neural_api() {
     use petal_tongue_core::capability_names::primal_names;
+    use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
     use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
     let family = std::env::var(petal_tongue_core::constants::FAMILY_ID)
@@ -86,12 +87,14 @@ pub async fn announce_to_neural_api() {
         "id": 1,
     });
 
+    let endpoint = TransportEndpoint::uds(&socket);
     let Ok(mut stream) = tokio::time::timeout(
         std::time::Duration::from_millis(500),
-        tokio::net::UnixStream::connect(&socket),
+        connect_transport(&endpoint),
     )
     .await
-    .unwrap_or(Err(std::io::ErrorKind::TimedOut.into())) else {
+    .unwrap_or_else(|_| Err(petal_tongue_core::transport::TransportError::Io(std::io::ErrorKind::TimedOut.into())))
+    else {
         tracing::debug!(
             socket,
             "Neural API not reachable — skipping primal.announce"
@@ -106,8 +109,7 @@ pub async fn announce_to_neural_api() {
         return;
     }
 
-    let (reader, _) = stream.into_split();
-    let mut reader = BufReader::new(reader);
+    let mut reader = BufReader::new(&mut stream);
     let mut line = String::new();
     if let Ok(Ok(_)) = tokio::time::timeout(
         std::time::Duration::from_secs(2),

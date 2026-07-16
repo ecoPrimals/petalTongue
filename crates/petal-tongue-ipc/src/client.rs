@@ -5,10 +5,10 @@
 
 use crate::protocol::{IpcCommand, IpcResponse};
 use petal_tongue_core::InstanceId;
+use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::UnixStream;
 
 /// IPC client for communicating with instances
 pub struct IpcClient {
@@ -44,12 +44,12 @@ impl IpcClient {
     ///
     /// Returns error if connection fails or communication error occurs
     pub async fn send(&self, command: IpcCommand) -> Result<IpcResponse, IpcClientError> {
-        // Connect to socket
-        let stream = UnixStream::connect(&self.socket_path)
+        let endpoint = TransportEndpoint::uds(&self.socket_path);
+        let stream = connect_transport(&endpoint)
             .await
             .map_err(|e| IpcClientError::ConnectionError(format!("Failed to connect: {e}")))?;
 
-        let (reader, mut writer) = stream.into_split();
+        let (reader, mut writer) = tokio::io::split(stream);
         let mut reader = BufReader::new(reader);
 
         let mut buf = serde_json::to_vec(&command)

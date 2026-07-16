@@ -80,8 +80,8 @@ impl NetworkBackend {
         sample_rate: u32,
     ) -> std::result::Result<(), NetworkAudioError> {
         use base64::{Engine as _, engine::general_purpose};
+        use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
         use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-        use tokio::net::UnixStream;
 
         let pcm_bytes: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
         let encoded = general_purpose::STANDARD.encode(&pcm_bytes);
@@ -98,9 +98,10 @@ impl NetworkBackend {
             "id": 1
         });
 
-        let mut stream = UnixStream::connect(socket_path)
+        let endpoint = TransportEndpoint::uds(socket_path);
+        let mut stream = connect_transport(&endpoint)
             .await
-            .map_err(NetworkAudioError::Connect)?;
+            .map_err(|e| NetworkAudioError::Connect(std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string())))?;
 
         let payload = format!(
             "{}\n",
@@ -118,8 +119,7 @@ impl NetworkBackend {
             source: e,
         })?;
 
-        let (reader, _) = stream.into_split();
-        let mut reader = BufReader::new(reader);
+        let mut reader = BufReader::new(&mut stream);
         let mut line = String::new();
         reader
             .read_line(&mut line)

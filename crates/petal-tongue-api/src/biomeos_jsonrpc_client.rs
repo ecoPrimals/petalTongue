@@ -24,8 +24,8 @@ use petal_tongue_core::{PrimalInfo, TopologyEdge};
 use petal_tongue_ipc::socket_path::discover_primal_socket;
 use serde_json::{Value, json};
 use std::path::PathBuf;
+use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::UnixStream;
 use tracing::{debug, info};
 
 /// `BiomeOS` JSON-RPC client (TRUE PRIMAL architecture)
@@ -116,10 +116,11 @@ impl BiomeOSJsonRpcClient {
 
     /// Check if `BiomeOS` is available
     pub async fn is_available(&self) -> bool {
+        let endpoint = TransportEndpoint::uds(&self.socket_path);
         matches!(
             tokio::time::timeout(
                 std::time::Duration::from_millis(100),
-                UnixStream::connect(&self.socket_path),
+                connect_transport(&endpoint),
             )
             .await,
             Ok(Ok(_))
@@ -190,8 +191,8 @@ impl BiomeOSJsonRpcClient {
 
     /// Send a JSON-RPC request
     async fn send_request(&self, request: &Value) -> Result<Value, BiomeOsClientError> {
-        // Connect to BiomeOS
-        let mut stream = UnixStream::connect(&self.socket_path).await.map_err(|e| {
+        let endpoint = TransportEndpoint::uds(&self.socket_path);
+        let stream = connect_transport(&endpoint).await.map_err(|e| {
             BiomeOsClientError::Connect(format!(
                 "Failed to connect to BiomeOS at {}\n\
                     \n\
@@ -204,21 +205,20 @@ impl BiomeOSJsonRpcClient {
             ))
         })?;
 
-        // Send request (line-delimited JSON-RPC)
+        let (mut reader_half, mut writer) = tokio::io::split(stream);
+
         let request_str =
             serde_json::to_string(request).map_err(|e| BiomeOsClientError::Parse(e.to_string()))?;
-        stream
+        writer
             .write_all(format!("{request_str}\n").as_bytes())
             .await
             .map_err(|e| BiomeOsClientError::Io(e.to_string()))?;
-        stream
+        writer
             .flush()
             .await
             .map_err(|e| BiomeOsClientError::Io(e.to_string()))?;
 
-        // Read response
-        let (reader, _) = stream.into_split();
-        let mut reader = BufReader::new(reader);
+        let mut reader = BufReader::new(&mut reader_half);
         let mut response_line = String::new();
 
         reader

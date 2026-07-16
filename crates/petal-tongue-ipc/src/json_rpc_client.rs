@@ -31,13 +31,13 @@
 use crate::json_rpc::{JsonRpcRequest, JsonRpcResponse};
 use bytes::Bytes;
 use petal_tongue_core::PrimalInfo;
+use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
 use serde_json::Value;
 use std::path::Path;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 use thiserror::Error;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::UnixStream;
 use tokio::time::timeout;
 use tracing::trace;
 
@@ -270,7 +270,8 @@ impl JsonRpcClient {
     }
 
     async fn send_request(&self, request: &JsonRpcRequest) -> JsonRpcResult<JsonRpcResponse> {
-        let stream = timeout(self.timeout, UnixStream::connect(&self.socket_path))
+        let endpoint = TransportEndpoint::uds(&self.socket_path);
+        let stream = timeout(self.timeout, connect_transport(&endpoint))
             .await
             .map_err(|_| {
                 JsonRpcClientError::Timeout(format!(
@@ -285,7 +286,7 @@ impl JsonRpcClient {
                 ))
             })?;
 
-        let (reader, mut writer) = stream.into_split();
+        let (reader, mut writer) = tokio::io::split(stream);
         let mut reader = BufReader::new(reader);
 
         let mut request_bytes = serde_json::to_vec(request)
@@ -329,7 +330,8 @@ impl JsonRpcClient {
     }
 
     async fn send_request_no_response(&self, request: &JsonRpcRequest) -> JsonRpcResult<()> {
-        let stream = timeout(self.timeout, UnixStream::connect(&self.socket_path))
+        let endpoint = TransportEndpoint::uds(&self.socket_path);
+        let stream = timeout(self.timeout, connect_transport(&endpoint))
             .await
             .map_err(|_| {
                 JsonRpcClientError::Timeout(format!(
@@ -344,7 +346,7 @@ impl JsonRpcClient {
                 ))
             })?;
 
-        let (_reader, mut writer) = stream.into_split();
+        let (_reader, mut writer) = tokio::io::split(stream);
         let mut request_bytes = serde_json::to_vec(request)
             .map_err(|e| JsonRpcClientError::Serialization(format!("Serialize request: {e}")))?;
         request_bytes.push(b'\n');

@@ -42,7 +42,9 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use thiserror::Error;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::{TcpListener, TcpStream, UnixListener, UnixStream};
+use tokio::net::{TcpListener, TcpStream};
+#[cfg(unix)]
+use tokio::net::{UnixListener, UnixStream};
 use tokio::sync::mpsc;
 use tracing::{debug, error, info, warn};
 
@@ -93,17 +95,22 @@ impl IpcServer {
     ///
     /// Returns error only if BOTH Unix and TCP fail
     pub async fn start(instance: &Instance) -> Result<Self, IpcServerError> {
-        // Phase 1: Try Unix sockets (optimal path)
-        if let Ok(server) = Self::start_unix(instance).await {
-            info!("✅ petalTongue IPC: Unix domain socket");
-            return Ok(server);
-        }
+        #[cfg(unix)]
+        {
+            if let Ok(server) = Self::start_unix(instance).await {
+                info!("✅ petalTongue IPC: Unix domain socket");
+                return Ok(server);
+            }
 
-        // Phase 2: Detect why Unix failed
-        if is_platform_constrained() {
-            info!("🔍 Platform constraints detected, adapting to TCP");
-        } else {
-            warn!("⚠️ Unix socket failed, falling back to TCP");
+            if is_platform_constrained() {
+                info!("🔍 Platform constraints detected, adapting to TCP");
+            } else {
+                warn!("⚠️ Unix socket failed, falling back to TCP");
+            }
+        }
+        #[cfg(not(unix))]
+        {
+            info!("Non-Unix platform: using TCP transport directly");
         }
 
         // Phase 3: Adapt to TCP
@@ -120,6 +127,7 @@ impl IpcServer {
     }
 
     /// Start Unix domain socket server (Phase 1)
+    #[cfg(unix)]
     #[expect(
         clippy::unused_async,
         reason = "async for UnixListener::incoming and spawned tasks"
@@ -240,6 +248,7 @@ impl Drop for IpcServer {
 }
 
 /// Spawn Unix socket listener task
+#[cfg(unix)]
 fn spawn_unix_listener(
     listener: UnixListener,
     command_tx: mpsc::UnboundedSender<(IpcCommand, mpsc::UnboundedSender<IpcResponse>)>,
@@ -307,6 +316,7 @@ fn spawn_tcp_listener(
 }
 
 /// Handle a single Unix socket connection
+#[cfg(unix)]
 async fn handle_unix_connection(
     stream: UnixStream,
     command_tx: mpsc::UnboundedSender<(IpcCommand, mpsc::UnboundedSender<IpcResponse>)>,
@@ -486,6 +496,6 @@ pub enum IpcServerError {
     ChannelClosed,
 }
 
-#[cfg(test)]
+#[cfg(all(test, unix))]
 #[path = "server_tests.rs"]
 mod tests;
