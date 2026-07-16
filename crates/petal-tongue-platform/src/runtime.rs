@@ -1,0 +1,465 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//! Embedded runtime: owns the tokio executor, scene compilation, and IPC client.
+//!
+//! This is the core of `petal-tongue-platform`. The host application interacts
+//! exclusively through [`EmbeddedRuntime`] (Rust) or the C-FFI layer (`ffi.rs`).
+
+use std::sync::Arc;
+use tokio::runtime::Runtime;
+use tokio::sync::RwLock;
+use tracing::{info, warn};
+
+use petal_tongue_core::scenario_builder::ScenarioBuilder;
+use petal_tongue_core::scenarios::{
+    AirSpringCropCoefficientScenario, AirSpringDroughtIndexScenario, AirSpringET0Scenario,
+    AirSpringRichardsPDEScenario, GroundSpringAndersonLocalizationScenario,
+    GroundSpringSeismicScenario, GroundSpringSensorDriftScenario,
+    GroundSpringSpectralReconstructionScenario,
+};
+use petal_tongue_scene::modality::SvgCompiler;
+use petal_tongue_scene::{
+    DataBindingCompiler, GrammarCompiler, ModalityCompiler, ModalityOutput, SceneGraph,
+};
+
+use crate::config::{EmbedConfig, PlatformConfig};
+use crate::lifecycle::{PlatformError, PlatformEvent, PlatformLifecycle, RuntimeState};
+
+/// Callback type for platform events sent back to the host.
+pub type EventCallback = Box<dyn Fn(PlatformEvent) + Send + Sync>;
+
+/// The embedded runtime that drives petalTongue from within a host application.
+///
+/// Owns:
+/// - A tokio multi-thread runtime (configurable worker count)
+/// - The grammar/scene compilation pipeline
+/// - SVG rendering via `SvgCompiler`
+/// - An event callback for pushing results to the host
+///
+/// Does **not** own:
+/// - The OS event loop (that belongs to the host)
+/// - GPU surfaces (host passes raw handles if needed)
+pub struct EmbeddedRuntime {
+    state: RuntimeState,
+    config: EmbedConfig,
+    tokio_rt: Option<Runtime>,
+    compiler: Arc<GrammarCompiler>,
+    svg_compiler: Arc<SvgCompiler>,
+    scene_cache: Arc<RwLock<Option<SceneGraph>>>,
+    event_callback: Option<EventCallback>,
+    builders: Vec<Box<dyn ScenarioBuilder>>,
+}
+
+impl EmbeddedRuntime {
+    /// Create a new runtime in the [`RuntimeState::Created`] state.
+    ///
+    /// # Errors
+    /// Returns [`PlatformError::Runtime`] if the tokio runtime cannot be built.
+    pub fn new(config: EmbedConfig) -> Result<Self, PlatformError> {
+        let tokio_rt = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(2)
+            .enable_all()
+            .thread_name("pt-platform")
+            .build()
+            .map_err(|e| PlatformError::Runtime(format!("tokio init failed: {e}")))?;
+
+        Ok(Self {
+            state: RuntimeState::Created,
+            config,
+            tokio_rt: Some(tokio_rt),
+            compiler: Arc::new(GrammarCompiler::new()),
+            svg_compiler: Arc::new(SvgCompiler::new()),
+            scene_cache: Arc::new(RwLock::new(None)),
+            event_callback: None,
+            builders: Self::builtin_builders(),
+        })
+    }
+
+    /// Register a callback for events emitted by the runtime.
+    pub fn set_event_callback(&mut self, cb: EventCallback) {
+        self.event_callback = Some(cb);
+    }
+
+    /// Start the runtime (connect transport, begin discovery).
+    ///
+    /// # Errors
+    /// Returns [`PlatformError::InvalidState`] if not in `Created` or `Stopped` state.
+    pub fn start(&mut self) -> Result<(), PlatformError> {
+        match self.state {
+            RuntimeState::Created | RuntimeState::Stopped => {}
+            other => {
+                return Err(PlatformError::InvalidState {
+                    current: other,
+                    attempted: "start".to_owned(),
+                });
+            }
+        }
+
+        info!(
+            platform = %self.config.platform,
+            "petalTongue platform runtime starting"
+        );
+
+        self.state = RuntimeState::Running;
+        self.emit_event(PlatformEvent::StateChanged(RuntimeState::Running));
+        Ok(())
+    }
+
+    /// Stop the runtime (disconnect transport, flush state).
+    ///
+    /// # Errors
+    /// Returns [`PlatformError::InvalidState`] if not in a stoppable state.
+    pub fn stop(&mut self) -> Result<(), PlatformError> {
+        match self.state {
+            RuntimeState::Running | RuntimeState::Paused => {}
+            other => {
+                return Err(PlatformError::InvalidState {
+                    current: other,
+                    attempted: "stop".to_owned(),
+                });
+            }
+        }
+
+        info!("petalTongue platform runtime stopping");
+        self.state = RuntimeState::Stopped;
+        self.emit_event(PlatformEvent::StateChanged(RuntimeState::Stopped));
+        Ok(())
+    }
+
+    /// Render a named scenario/scene to SVG.
+    ///
+    /// # Arguments
+    /// * `builder_id` — scenario builder identifier (e.g. `"airspring.et0"`)
+    /// * `scene_name` — scene within that builder (e.g. `"daily_et0"`)
+    ///
+    /// # Errors
+    /// Returns error if scenario is unknown or compilation fails.
+    pub fn render_svg(
+        &self,
+        builder_id: &str,
+        scene_name: &str,
+    ) -> Result<String, PlatformError> {
+        if self.state != RuntimeState::Running {
+            return Err(PlatformError::InvalidState {
+                current: self.state,
+                attempted: "render_svg".to_owned(),
+            });
+        }
+
+        let scene_graph = self.compile_scene(builder_id, scene_name)?;
+        let output = self.svg_compiler.compile(&scene_graph);
+
+        match output {
+            ModalityOutput::Svg(bytes) => String::from_utf8(bytes.to_vec()).map_err(|e| {
+                PlatformError::Runtime(format!("SVG output is not valid UTF-8: {e}"))
+            }),
+            _ => Err(PlatformError::Runtime(
+                "SvgCompiler did not produce SVG output".to_owned(),
+            )),
+        }
+    }
+
+    /// Render a `DataBinding` directly to SVG (for host-provided data).
+    ///
+    /// # Errors
+    /// Returns error if compilation fails.
+    pub fn render_binding_svg(
+        &self,
+        binding_json: &str,
+        domain: Option<&str>,
+    ) -> Result<String, PlatformError> {
+        if self.state != RuntimeState::Running {
+            return Err(PlatformError::InvalidState {
+                current: self.state,
+                attempted: "render_binding_svg".to_owned(),
+            });
+        }
+
+        let binding: petal_tongue_core::DataBinding =
+            serde_json::from_str(binding_json).map_err(|e| {
+                PlatformError::Serialization(format!("invalid DataBinding JSON: {e}"))
+            })?;
+
+        let (expr, data) = DataBindingCompiler::compile(&binding, domain);
+        let scene_graph = self.compiler.compile(&expr, &data);
+        let output = self.svg_compiler.compile(&scene_graph);
+
+        match output {
+            ModalityOutput::Svg(bytes) => String::from_utf8(bytes.to_vec()).map_err(|e| {
+                PlatformError::Runtime(format!("SVG output is not valid UTF-8: {e}"))
+            }),
+            _ => Err(PlatformError::Runtime(
+                "SvgCompiler did not produce SVG output".to_owned(),
+            )),
+        }
+    }
+
+    /// Compile a scene graph from a named scenario builder and scene.
+    ///
+    /// # Errors
+    /// Returns error if the builder or scene name is unknown.
+    pub fn compile_scene(
+        &self,
+        builder_id: &str,
+        scene_name: &str,
+    ) -> Result<SceneGraph, PlatformError> {
+        let builder = self
+            .builders
+            .iter()
+            .find(|b| b.id() == builder_id)
+            .ok_or_else(|| {
+                PlatformError::Config(format!("unknown scenario builder: {builder_id}"))
+            })?;
+
+        let vis_scene = builder.build_scene(scene_name).ok_or_else(|| {
+            PlatformError::Config(format!(
+                "unknown scene '{scene_name}' in builder '{builder_id}'"
+            ))
+        })?;
+
+        let domain = &vis_scene.metadata.domain;
+        let domain_ref = if domain.is_empty() {
+            None
+        } else {
+            Some(domain.as_str())
+        };
+
+        // Compile the first binding (primary visualization for the scene).
+        // Multi-binding scenes compose at the host layer via multiple render calls.
+        let binding = vis_scene.bindings.first().ok_or_else(|| {
+            PlatformError::Config(format!(
+                "scene '{scene_name}' in builder '{builder_id}' has no data bindings"
+            ))
+        })?;
+
+        let (expr, data) = DataBindingCompiler::compile(binding, domain_ref);
+        let scene_graph = self.compiler.compile(&expr, &data);
+        Ok(scene_graph)
+    }
+
+    /// List all available scenario builders and their scenes.
+    #[must_use]
+    pub fn list_scenarios(&self) -> Vec<ScenarioInfo> {
+        self.builders
+            .iter()
+            .map(|b| ScenarioInfo {
+                id: b.id().to_owned(),
+                name: b.name().to_owned(),
+                domain: b.domain().to_owned(),
+                scenes: b.available_scenes(),
+            })
+            .collect()
+    }
+
+    /// Process a JSON-RPC request string, returning the JSON response.
+    ///
+    /// This enables the host to use the same protocol as network clients.
+    ///
+    /// # Errors
+    /// Returns error if the request is malformed or processing fails.
+    pub fn ipc_request(&self, json: &str) -> Result<String, PlatformError> {
+        if self.state != RuntimeState::Running {
+            return Err(PlatformError::InvalidState {
+                current: self.state,
+                attempted: "ipc_request".to_owned(),
+            });
+        }
+
+        let request: serde_json::Value = serde_json::from_str(json).map_err(|e| {
+            PlatformError::Serialization(format!("invalid JSON-RPC request: {e}"))
+        })?;
+
+        let method = request
+            .get("method")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("");
+
+        let response = match method {
+            "pt.render_svg" => {
+                let builder_id = request
+                    .pointer("/params/builder_id")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or("airspring.et0");
+                let scene_name = request
+                    .pointer("/params/scene_name")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or("daily_et0");
+
+                match self.render_svg(builder_id, scene_name) {
+                    Ok(svg) => serde_json::json!({
+                        "jsonrpc": "2.0",
+                        "id": request.get("id"),
+                        "result": { "svg": svg }
+                    }),
+                    Err(e) => Self::error_response(&request, -32000, &e.to_string()),
+                }
+            }
+            "pt.render_binding" => {
+                let binding_json = request
+                    .pointer("/params/binding")
+                    .map(std::string::ToString::to_string)
+                    .unwrap_or_default();
+                let domain = request
+                    .pointer("/params/domain")
+                    .and_then(serde_json::Value::as_str);
+
+                match self.render_binding_svg(&binding_json, domain) {
+                    Ok(svg) => serde_json::json!({
+                        "jsonrpc": "2.0",
+                        "id": request.get("id"),
+                        "result": { "svg": svg }
+                    }),
+                    Err(e) => Self::error_response(&request, -32000, &e.to_string()),
+                }
+            }
+            "pt.state" => serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": request.get("id"),
+                "result": { "state": format!("{:?}", self.state) }
+            }),
+            "pt.scenarios" => {
+                let list = self.list_scenarios();
+                serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": request.get("id"),
+                    "result": { "scenarios": list }
+                })
+            }
+            _ => Self::error_response(&request, -32601, &format!("unknown method: {method}")),
+        };
+
+        serde_json::to_string(&response).map_err(|e| {
+            PlatformError::Serialization(format!("failed to serialize response: {e}"))
+        })
+    }
+
+    /// Current runtime state.
+    #[must_use]
+    pub const fn state(&self) -> RuntimeState {
+        self.state
+    }
+
+    /// Reference to the embed configuration.
+    #[must_use]
+    pub const fn config(&self) -> &EmbedConfig {
+        &self.config
+    }
+
+    fn emit_event(&self, event: PlatformEvent) {
+        if let Some(ref cb) = self.event_callback {
+            cb(event);
+        }
+    }
+
+    fn error_response(
+        request: &serde_json::Value,
+        code: i64,
+        message: &str,
+    ) -> serde_json::Value {
+        serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": request.get("id"),
+            "error": { "code": code, "message": message }
+        })
+    }
+
+    fn builtin_builders() -> Vec<Box<dyn ScenarioBuilder>> {
+        vec![
+            Box::new(AirSpringET0Scenario),
+            Box::new(AirSpringRichardsPDEScenario),
+            Box::new(AirSpringCropCoefficientScenario),
+            Box::new(AirSpringDroughtIndexScenario),
+            Box::new(GroundSpringSeismicScenario),
+            Box::new(GroundSpringAndersonLocalizationScenario),
+            Box::new(GroundSpringSensorDriftScenario),
+            Box::new(GroundSpringSpectralReconstructionScenario),
+        ]
+    }
+}
+
+/// Info about an available scenario builder (for JSON serialization).
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct ScenarioInfo {
+    /// Unique builder identifier (e.g. `"airspring.et0"`).
+    pub id: String,
+    /// Human-readable builder name.
+    pub name: String,
+    /// Domain for palette selection (e.g. `"agriculture"`).
+    pub domain: String,
+    /// Available scene names within this builder.
+    pub scenes: Vec<String>,
+}
+
+impl PlatformLifecycle for EmbeddedRuntime {
+    fn on_create(&mut self, config: EmbedConfig) -> Result<(), PlatformError> {
+        self.config = config;
+        info!(platform = %self.config.platform, "lifecycle: on_create");
+        Ok(())
+    }
+
+    fn on_start(&mut self) -> Result<(), PlatformError> {
+        self.start()
+    }
+
+    fn on_resume(&mut self) -> Result<(), PlatformError> {
+        if self.state == RuntimeState::Paused {
+            self.state = RuntimeState::Running;
+            self.emit_event(PlatformEvent::StateChanged(RuntimeState::Running));
+        }
+        Ok(())
+    }
+
+    fn on_pause(&mut self) -> Result<(), PlatformError> {
+        if self.state == RuntimeState::Running {
+            self.state = RuntimeState::Paused;
+            self.emit_event(PlatformEvent::StateChanged(RuntimeState::Paused));
+        }
+        Ok(())
+    }
+
+    fn on_stop(&mut self) -> Result<(), PlatformError> {
+        self.stop()
+    }
+
+    fn on_destroy(&mut self) -> Result<(), PlatformError> {
+        info!("lifecycle: on_destroy");
+        self.state = RuntimeState::Stopped;
+        if let Some(rt) = self.tokio_rt.take() {
+            rt.shutdown_background();
+        }
+        Ok(())
+    }
+
+    fn on_low_memory(&mut self) {
+        warn!("lifecycle: low memory — dropping scene cache");
+        if let Some(ref rt) = self.tokio_rt {
+            let cache = Arc::clone(&self.scene_cache);
+            rt.spawn(async move {
+                let mut guard = cache.write().await;
+                *guard = None;
+            });
+        }
+    }
+
+    fn on_configuration_changed(&mut self, config: PlatformConfig) {
+        info!(
+            width = config.width,
+            height = config.height,
+            density = config.density,
+            dark_mode = config.dark_mode,
+            "lifecycle: configuration changed"
+        );
+        self.config.display = config;
+    }
+
+    fn state(&self) -> RuntimeState {
+        self.state
+    }
+}
+
+impl Drop for EmbeddedRuntime {
+    fn drop(&mut self) {
+        if let Some(rt) = self.tokio_rt.take() {
+            rt.shutdown_background();
+        }
+    }
+}

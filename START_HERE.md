@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: July 15, 2026 (Wave 141a — cross-architecture transport, deps current, all scenarios passing, full clippy+deny clean)
+**Updated**: July 16, 2026 (Wave 141b — platform embedding layer, cross-architecture transport, deps current, all scenarios passing, full clippy+deny clean)
 
 ---
 
@@ -112,7 +112,7 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 2. **Constants centralized** -- All self-knowledge in `petal_tongue_core::constants`.
 3. **IPC priority** -- JSON-RPC 2.0 REQUIRED (Unix sockets / TCP listen surface), tarpc MAY for Rust-to-Rust hot paths, HTTP for external/browser access only.
 4. **Typed error handling** -- `thiserror` everywhere, no `anyhow` in production; `deny(unwrap_used, expect_used)` with `#[expect]` for justified cases.
-5. **`#![forbid(unsafe_code)]`** unconditional on all crates.
+5. **`#![forbid(unsafe_code)]`** unconditional on all crates. Exception: `petal-tongue-platform/ffi.rs` (C-FFI boundary requires `unsafe extern "C"`).
 6. **Concurrent testing** -- No `thread::sleep`. Use `tokio::time::timeout`.
 7. **Files under 800 lines** -- Smart domain refactoring into cohesive modules.
 8. **Zero `dyn`** -- Enum dispatch and generics for custom traits; `dyn` only for `Error`/closures.
@@ -153,6 +153,13 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 - `capability_parse.rs` -- 4-format capability parsing (flat, enriched, nested, result-wrapped)
 - `cache.rs` -- LRU discovery result cache
 - `dns_parser/` -- Pure-Rust DNS packet parser (SRV, TXT, PTR, A records); submodules: `header.rs`, `name.rs`, `record.rs`
+
+### Platform (`petal-tongue-platform`)
+- `config.rs` -- `Platform` enum (Desktop, Android, Ios, Wasm, Console), `EmbedConfig`, `PlatformConfig`
+- `lifecycle.rs` -- `PlatformLifecycle` trait (Android Activity lifecycle model), `PlatformEvent`, `RuntimeState`
+- `runtime.rs` -- `EmbeddedRuntime` (tokio runtime + scene compilation + SVG rendering + JSON-RPC bridge)
+- `ffi.rs` -- C-FFI entry points: `pt_create`, `pt_start`, `pt_render_svg`, `pt_ipc_request`, `pt_pause`, `pt_resume`, `pt_free_string`, `pt_destroy`
+- Crate type: `cdylib` + `rlib` — produces `.so` (Android), `.dylib` (iOS), or links as rlib (desktop)
 
 ### UI (`petal-tongue-ui`)
 - `scene_bridge/paint/` (color, geometry, primitives)
