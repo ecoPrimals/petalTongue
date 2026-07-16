@@ -359,26 +359,25 @@ impl BiomeOSProvider {
         method: &str,
         params: serde_json::Value,
     ) -> Result<serde_json::Value> {
+        use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
         use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-        use tokio::net::UnixStream;
 
-        // Connect to provider endpoint
-        let mut stream = UnixStream::connect(&self.endpoint)
+        let endpoint = TransportEndpoint::uds(&self.endpoint);
+        let stream = connect_transport(&endpoint)
             .await
             .map_err(|e| BiomeOsIntegrationError::ConnectToProvider(e.to_string()))?;
 
+        let (mut reader_half, mut writer) = tokio::io::split(stream);
+
         let request = build_jsonrpc_request(method, params, 1);
 
-        // Send request (line-delimited JSON-RPC)
         let request_str = serde_json::to_string(&request)?;
-        stream
+        writer
             .write_all(format!("{request_str}\n").as_bytes())
             .await?;
-        stream.flush().await?;
+        writer.flush().await?;
 
-        // Read response
-        let (reader, _) = stream.into_split();
-        let mut reader = BufReader::new(reader);
+        let mut reader = BufReader::new(&mut reader_half);
         let mut response_line = String::new();
 
         reader

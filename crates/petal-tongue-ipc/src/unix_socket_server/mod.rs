@@ -14,8 +14,11 @@ use petal_tongue_core::graph_engine::GraphEngine;
 use serde_json::Value;
 use std::path::PathBuf;
 use std::sync::Arc;
+#[cfg(unix)]
 use tokio::net::UnixListener;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
+#[cfg(unix)]
+use tracing::warn;
 
 /// Check if a UDS bind error is eligible for TCP fallback.
 ///
@@ -26,6 +29,7 @@ use tracing::{debug, error, info, warn};
 /// This enables graceful degradation on grapheneGate (Pixel 8) where
 /// `SELinux` denies UDS bind in `/data/local/tmp`. `deploy_pixel.sh`
 /// exports `PRIMAL_BIND_MODE=fallback` to opt in.
+#[cfg(unix)]
 fn is_uds_fallback_eligible(error: &std::io::Error) -> bool {
     if error.kind() != std::io::ErrorKind::PermissionDenied {
         return false;
@@ -219,14 +223,14 @@ impl UnixSocketServer {
         self
     }
 
-    /// Start the server: bind UDS (always) and optionally TCP, then accept connections.
+    /// Start the server: bind UDS (Unix) or TCP-only (Windows/Android), then accept connections.
     ///
     /// BTSP Phase 2: when `BtspHandshakeConfig` is available from the environment,
     /// every accepted connection must complete a handshake (delegated to the security provider)
     /// before JSON-RPC is served. Development mode (no `FAMILY_ID`) skips handshake.
     #[expect(
         clippy::too_many_lines,
-        reason = "UDS server start: bind + fallback + accept loop"
+        reason = "IPC server start: bind + fallback + accept loop"
     )]
     pub async fn start(self: Arc<Self>) -> Result<(), IpcServerError> {
         let posture = crate::btsp::current_btsp_posture();
@@ -241,61 +245,72 @@ impl UnixSocketServer {
             );
         }
 
-        // Remove stale socket before bind (crash-recovery hygiene per
-        // DEPLOYMENT_VALIDATION_STANDARD §stale-socket-cleanup).
-        // Unconditional remove avoids TOCTOU race with exists() check.
-        match std::fs::remove_file(&self.socket_path) {
-            Ok(()) => debug!("Removed stale socket: {}", self.socket_path.display()),
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
-            Err(e) => {
-                return Err(IpcServerError::IoError(format!(
-                    "Failed to remove stale socket {}: {e}",
-                    self.socket_path.display()
-                )));
-            }
-        }
-
-        let uds_listener = match UnixListener::bind(&self.socket_path) {
-            Ok(l) => {
-                info!(
-                    "Unix socket server listening: {}",
-                    self.socket_path.display()
-                );
-                Some(l)
-            }
-            Err(e) if is_uds_fallback_eligible(&e) => {
-                warn!(
-                    "UDS bind failed at {} ({e}) — PRIMAL_BIND_MODE permits TCP fallback",
-                    self.socket_path.display()
-                );
-                None
-            }
-            Err(e) => {
-                return Err(IpcServerError::SocketError(e.to_string()));
-            }
-        };
-        if uds_listener.is_some() {
-            info!("   Family ID: {}", self.family_id);
-        }
-
-        if uds_listener.is_some() {
-            write_pid_file(&self.socket_path);
-
-            if let Some(parent) = self.socket_path.parent() {
-                let symlink_name = crate::btsp::domain_symlink_filename(&posture);
-                let symlink_path = parent.join(&symlink_name);
-                let _ = std::fs::remove_file(&symlink_path);
-                if let Err(e) = std::os::unix::fs::symlink(&self.socket_path, &symlink_path) {
-                    debug!("Could not create capability symlink {symlink_name}: {e}");
-                } else {
-                    info!(
-                        "Capability symlink: {} -> {}",
-                        symlink_path.display(),
+        #[cfg(unix)]
+        let uds_listener = {
+            match std::fs::remove_file(&self.socket_path) {
+                Ok(()) => debug!("Removed stale socket: {}", self.socket_path.display()),
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                Err(e) => {
+                    return Err(IpcServerError::IoError(format!(
+                        "Failed to remove stale socket {}: {e}",
                         self.socket_path.display()
-                    );
+                    )));
                 }
             }
-        }
+
+            let listener = match UnixListener::bind(&self.socket_path) {
+                Ok(l) => {
+                    info!(
+                        "Unix socket server listening: {}",
+                        self.socket_path.display()
+                    );
+                    Some(l)
+                }
+                Err(e) if is_uds_fallback_eligible(&e) => {
+                    warn!(
+                        "UDS bind failed at {} ({e}) — PRIMAL_BIND_MODE permits TCP fallback",
+                        self.socket_path.display()
+                    );
+                    None
+                }
+                Err(e) => {
+                    return Err(IpcServerError::SocketError(e.to_string()));
+                }
+            };
+
+            if listener.is_some() {
+                info!("   Family ID: {}", self.family_id);
+                write_pid_file(&self.socket_path);
+
+                if let Some(parent) = self.socket_path.parent() {
+                    let symlink_name = crate::btsp::domain_symlink_filename(&posture);
+                    let symlink_path = parent.join(&symlink_name);
+                    let _ = std::fs::remove_file(&symlink_path);
+                    if let Err(e) = std::os::unix::fs::symlink(&self.socket_path, &symlink_path) {
+                        debug!("Could not create capability symlink {symlink_name}: {e}");
+                    } else {
+                        info!(
+                            "Capability symlink: {} -> {}",
+                            symlink_path.display(),
+                            self.socket_path.display()
+                        );
+                    }
+                }
+            }
+
+            listener
+        };
+
+        #[cfg(not(unix))]
+        let uds_listener: Option<()> = {
+            info!(
+                "Non-Unix platform: UDS unavailable, using TCP transport (socket path {} stored for discovery only)",
+                self.socket_path.display()
+            );
+            None
+        };
+
+        let has_uds = uds_listener.is_some();
 
         let tcp_listener = if let Some(port) = self.tcp_port {
             let addr = std::net::SocketAddr::new(self.tcp_bind_host, port);
@@ -304,7 +319,7 @@ impl UnixSocketServer {
                 .map_err(|e| IpcServerError::SocketError(format!("TCP bind {addr}: {e}")))?;
             info!("TCP JSON-RPC server listening: {addr}");
             Some(listener)
-        } else if uds_listener.is_none() {
+        } else if !has_uds {
             let port = petal_tongue_core::constants::ECOSYSTEM_TCP_FALLBACK_PORT;
             let addr = std::net::SocketAddr::new(self.tcp_bind_host, port);
             let listener = tokio::net::TcpListener::bind(addr).await.map_err(|e| {
@@ -316,7 +331,7 @@ impl UnixSocketServer {
             None
         };
 
-        if uds_listener.is_none() && tcp_listener.is_none() {
+        if !has_uds && tcp_listener.is_none() {
             return Err(IpcServerError::SocketError(
                 "no transport available: UDS failed and no TCP configured".into(),
             ));
@@ -325,11 +340,19 @@ impl UnixSocketServer {
         loop {
             tokio::select! {
                 result = async {
-                    match &uds_listener {
-                        Some(l) => l.accept().await,
-                        None => std::future::pending().await,
+                    #[cfg(unix)]
+                    {
+                        match &uds_listener {
+                            Some(l) => l.accept().await,
+                            None => std::future::pending().await,
+                        }
+                    }
+                    #[cfg(not(unix))]
+                    {
+                        std::future::pending::<std::io::Result<(tokio::net::TcpStream, std::net::SocketAddr)>>().await
                     }
                 } => {
+                    #[cfg(unix)]
                     match result {
                         Ok((stream, _addr)) => {
                             let server = Arc::clone(&self);
@@ -344,6 +367,8 @@ impl UnixSocketServer {
                         }
                         Err(e) => error!("Failed to accept UDS connection: {e}"),
                     }
+                    #[cfg(not(unix))]
+                    { let _ = result; }
                 }
                 result = async {
                     match &tcp_listener {
@@ -422,6 +447,7 @@ impl UnixSocketServer {
 
 impl Drop for UnixSocketServer {
     fn drop(&mut self) {
+        #[cfg(unix)]
         if let Some(parent) = self.socket_path.parent() {
             let posture = crate::btsp::current_btsp_posture();
             let symlink_path = parent.join(crate::btsp::domain_symlink_filename(&posture));

@@ -19,8 +19,8 @@ use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
+use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::UnixStream;
 use tracing::{debug, info, warn};
 
 /// JSON-RPC 2.0 error
@@ -134,15 +134,14 @@ impl UnixSocketProvider {
     ///
     /// Uses aggressive timeout to prevent hanging on unresponsive sockets.
     async fn probe_socket(&self, path: &Path) -> DiscoveryResult<PrimalInfo> {
-        // CRITICAL: Wrap socket connect in timeout to prevent hanging
-        // Unresponsive sockets are the #1 cause of test hangs
         let connect_timeout = Duration::from_millis(100);
+        let endpoint = TransportEndpoint::uds(path);
 
-        let stream = match tokio::time::timeout(connect_timeout, UnixStream::connect(path)).await {
+        let stream = match tokio::time::timeout(connect_timeout, connect_transport(&endpoint)).await {
             Ok(Ok(stream)) => stream,
             Ok(Err(e)) => {
                 debug!("Socket connection failed for {}: {}", path.display(), e);
-                return Err(DiscoveryError::Io(e));
+                return Err(DiscoveryError::Io(std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string())));
             }
             Err(_) => {
                 debug!("Socket connection timeout for {}", path.display());
@@ -168,12 +167,12 @@ impl UnixSocketProvider {
             Ok(Err(e)) => {
                 let err_str = e.to_string();
                 if err_str.contains("-32601") || err_str.contains("Method not found") {
-                    let stream = tokio::time::timeout(connect_timeout, UnixStream::connect(path))
+                    let stream = tokio::time::timeout(connect_timeout, connect_transport(&endpoint))
                         .await
                         .map_err(|_| DiscoveryError::ConnectionTimeout {
                             endpoint: path.display().to_string(),
                         })?
-                        .map_err(DiscoveryError::Io)?;
+                        .map_err(|e| DiscoveryError::Io(std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string())))?;
                     let legacy_request = json!({
                         "jsonrpc": "2.0",
                         "method": "get_capabilities",
@@ -206,8 +205,8 @@ impl UnixSocketProvider {
     }
 
     /// Send a JSON-RPC request and receive response
-    async fn send_request(&self, stream: UnixStream, request: Value) -> DiscoveryResult<Value> {
-        let (reader, mut writer) = stream.into_split();
+    async fn send_request(&self, stream: petal_tongue_core::transport::TransportStream, request: Value) -> DiscoveryResult<Value> {
+        let (reader, mut writer) = tokio::io::split(stream);
         let mut reader = BufReader::new(reader);
 
         // Send request

@@ -11,11 +11,11 @@
 use crate::primal_registration_error::PrimalRegistrationError;
 use petal_tongue_core::capability_names::{primal_names, self_capabilities};
 use petal_tongue_core::constants;
+use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::UnixStream;
 use tracing::{debug, error, info, warn};
 
 /// Primal registration data
@@ -146,10 +146,11 @@ impl RegistrationClient {
 
     /// Check if the discovery service is available
     pub async fn is_available(&self) -> bool {
+        let endpoint = TransportEndpoint::uds(&self.socket_path);
         matches!(
             tokio::time::timeout(
                 constants::discovery_timeouts::DISCOVERY_SERVICE_REGISTRATION_PROBE_TIMEOUT,
-                UnixStream::connect(&self.socket_path),
+                connect_transport(&endpoint),
             )
             .await,
             Ok(Ok(_))
@@ -214,17 +215,19 @@ impl RegistrationClient {
 
     /// Send a JSON-RPC request to the discovery service
     async fn send_request(&self, request: &Value) -> Result<(), PrimalRegistrationError> {
-        // Connect to discovery service
-        let mut stream = UnixStream::connect(&self.socket_path).await?;
+        let endpoint = TransportEndpoint::uds(&self.socket_path);
+        let stream = connect_transport(&endpoint)
+            .await
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string()))?;
+
+        let (mut reader_half, mut writer) = tokio::io::split(stream);
 
         let mut buf = serde_json::to_vec(request)?;
         buf.push(b'\n');
-        stream.write_all(&buf).await?;
-        stream.flush().await?;
+        writer.write_all(&buf).await?;
+        writer.flush().await?;
 
-        // Read response
-        let (reader, _) = stream.into_split();
-        let mut reader = BufReader::new(reader);
+        let mut reader = BufReader::new(&mut reader_half);
         let mut response_line = String::new();
 
         reader.read_line(&mut response_line).await?;

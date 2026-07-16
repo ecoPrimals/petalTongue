@@ -3,18 +3,20 @@
 
 use super::error::BtspHandshakeError;
 
-/// Call a BTSP RPC method on the security provider via UDS (`btsp.session.*`, `btsp.negotiate`).
+/// Call a BTSP RPC method on the security provider via local IPC (`btsp.session.*`, `btsp.negotiate`).
 pub(super) async fn provider_call(
     socket: &std::path::Path,
     method: &str,
     params: serde_json::Value,
 ) -> Result<serde_json::Value, BtspHandshakeError> {
+    use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
     use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
-    let mut stream = tokio::net::UnixStream::connect(socket).await.map_err(|e| {
+    let endpoint = TransportEndpoint::uds(socket);
+    let mut stream = connect_transport(&endpoint).await.map_err(|e| {
         BtspHandshakeError::ProviderConnect {
             path: socket.to_path_buf(),
-            source: e,
+            source: std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string()),
         }
     })?;
 

@@ -5,9 +5,9 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
+use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::UnixStream;
 use tracing::{debug, info, warn};
 
 use petal_tongue_core::constants::{
@@ -95,11 +95,13 @@ impl JsonRpcProvider {
     }
 
     async fn test_connection(path: &Path) -> DiscoveryResult<()> {
-        let stream = tokio::time::timeout(Duration::from_secs(2), UnixStream::connect(path))
+        let endpoint = TransportEndpoint::uds(path);
+        let stream = tokio::time::timeout(Duration::from_secs(2), connect_transport(&endpoint))
             .await
             .map_err(|_| DiscoveryError::ConnectionTimeout {
                 endpoint: path.display().to_string(),
-            })??;
+            })?
+            .map_err(|e| DiscoveryError::Io(std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string())))?;
 
         drop(stream);
         Ok(())
@@ -121,13 +123,15 @@ impl JsonRpcProvider {
 
         debug!("→ JSON-RPC request: {} (id={})", method, id);
 
-        let stream = tokio::time::timeout(self.timeout, UnixStream::connect(&self.socket_path))
+        let endpoint = TransportEndpoint::uds(&self.socket_path);
+        let stream = tokio::time::timeout(self.timeout, connect_transport(&endpoint))
             .await
             .map_err(|_| DiscoveryError::ConnectionTimeout {
                 endpoint: self.socket_path.display().to_string(),
-            })??;
+            })?
+            .map_err(|e| DiscoveryError::Io(std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string())))?;
 
-        let (reader, mut writer) = stream.into_split();
+        let (reader, mut writer) = tokio::io::split(stream);
         let mut reader = BufReader::new(reader);
 
         let request_json = serde_json::to_string(&request).map_err(DiscoveryError::Json)? + "\n";

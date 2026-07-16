@@ -320,6 +320,7 @@ fn test_topology_data_serialization() {
 }
 
 #[tokio::test]
+#[cfg(unix)]
 async fn test_send_request_invalid_json_response() {
     let dir = tempfile::tempdir().expect("tempdir");
     let sock = dir.path().join("invalid-json.sock");
@@ -345,6 +346,7 @@ async fn test_send_request_invalid_json_response() {
 }
 
 #[tokio::test]
+#[cfg(unix)]
 async fn test_send_request_rpc_error_response() {
     let dir = tempfile::tempdir().expect("tempdir");
     let sock = dir.path().join("rpc-error.sock");
@@ -376,6 +378,7 @@ async fn test_send_request_rpc_error_response() {
 }
 
 #[tokio::test]
+#[cfg(unix)]
 async fn test_send_request_empty_response() {
     let dir = tempfile::tempdir().expect("tempdir");
     let sock = dir.path().join("empty.sock");
@@ -402,6 +405,7 @@ async fn test_send_request_empty_response() {
 }
 
 #[tokio::test]
+#[cfg(unix)]
 async fn test_call_success_via_mock_server() {
     let dir = tempfile::tempdir().expect("tempdir");
     let sock = dir.path().join("success.sock");
@@ -493,8 +497,8 @@ fn test_primal_info_deserialization_from_discover_format() {
 }
 
 #[tokio::test]
+#[cfg(unix)]
 async fn test_send_request_read_timeout() {
-    // Server accepts connection, reads request, but never sends response
     let dir = tempfile::tempdir().expect("tempdir");
     let sock = dir.path().join("read-timeout.sock");
     let listener = tokio::net::UnixListener::bind(&sock).expect("bind");

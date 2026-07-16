@@ -7,8 +7,8 @@ use petal_tongue_core::capability_names::socket_roles;
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
 use serde_json::{Value, json};
 use std::path::PathBuf;
+use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::UnixStream;
 use tracing::{debug, info};
 
 use super::parse;
@@ -102,26 +102,25 @@ impl NeuralApiProvider {
 
         debug!("🧠 Calling Neural API: {}", method);
 
-        // Connect to socket
-        let mut stream = UnixStream::connect(&self.socket_path).await.map_err(|e| {
+        let endpoint = TransportEndpoint::uds(&self.socket_path);
+        let stream = connect_transport(&endpoint).await.map_err(|e| {
             DiscoveryError::HealthCheckFailed {
                 name: "Neural API".to_owned(),
                 endpoint: self.socket_path.display().to_string(),
-                source: e.into(),
+                source: std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string()).into(),
             }
         })?;
 
-        // Send request
+        let (mut reader_half, mut writer) = tokio::io::split(stream);
+
         let request_str = serde_json::to_string(&request).map_err(DiscoveryError::Json)?;
-        stream
+        writer
             .write_all(request_str.as_bytes())
             .await
             .map_err(DiscoveryError::Io)?;
-        stream.write_all(b"\n").await.map_err(DiscoveryError::Io)?;
+        writer.write_all(b"\n").await.map_err(DiscoveryError::Io)?;
 
-        // Read response
-        let (reader, _writer) = stream.split();
-        let mut reader = BufReader::new(reader);
+        let mut reader = BufReader::new(&mut reader_half);
         let mut response_line = String::new();
         reader
             .read_line(&mut response_line)
