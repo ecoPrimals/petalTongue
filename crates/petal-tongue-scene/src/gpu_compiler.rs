@@ -336,20 +336,21 @@ mod tests {
     use crate::scene_graph::{SceneGraph, SceneNode};
 
     #[test]
-    fn gpu_compiler_emits_viewport_and_clear() {
+    fn gpu_compiler_emits_viewport_and_clear() -> Result<(), Box<dyn std::error::Error>> {
         let graph = SceneGraph::new();
         let out = GpuCompiler::new(800.0, 600.0).compile(&graph);
         let ModalityOutput::GpuCommands(bytes) = &out else {
             panic!("expected GpuCommands");
         };
-        let commands: Vec<GpuDrawCommand> = serde_json::from_slice(bytes).unwrap();
+        let commands: Vec<GpuDrawCommand> = serde_json::from_slice(bytes)?;
         assert!(commands.len() >= 2);
         assert!(matches!(commands[0], GpuDrawCommand::SetViewport { .. }));
         assert!(matches!(commands[1], GpuDrawCommand::Clear { .. }));
+        Ok(())
     }
 
     #[test]
-    fn gpu_compiler_handles_point() {
+    fn gpu_compiler_handles_point() -> Result<(), Box<dyn std::error::Error>> {
         let mut graph = SceneGraph::new();
         graph.add_to_root(SceneNode::new("p").with_primitive(Primitive::Point {
             x: 100.0,
@@ -363,16 +364,17 @@ mod tests {
         let ModalityOutput::GpuCommands(bytes) = &out else {
             panic!("expected GpuCommands");
         };
-        let commands: Vec<GpuDrawCommand> = serde_json::from_slice(bytes).unwrap();
+        let commands: Vec<GpuDrawCommand> = serde_json::from_slice(bytes)?;
         let circle_count = commands
             .iter()
             .filter(|c| matches!(c, GpuDrawCommand::Circle { .. }))
             .count();
         assert_eq!(circle_count, 1);
+        Ok(())
     }
 
     #[test]
-    fn gpu_compiler_handles_mesh() {
+    fn gpu_compiler_handles_mesh() -> Result<(), Box<dyn std::error::Error>> {
         let mut graph = SceneGraph::new();
         graph.add_to_root(SceneNode::new("m").with_primitive(Primitive::Mesh {
             vertices: vec![
@@ -399,12 +401,13 @@ mod tests {
         let ModalityOutput::GpuCommands(bytes) = &out else {
             panic!("expected GpuCommands");
         };
-        let commands: Vec<GpuDrawCommand> = serde_json::from_slice(bytes).unwrap();
+        let commands: Vec<GpuDrawCommand> = serde_json::from_slice(bytes)?;
         let mesh_count = commands
             .iter()
             .filter(|c| matches!(c, GpuDrawCommand::Mesh { .. }))
             .count();
         assert_eq!(mesh_count, 1);
+        Ok(())
     }
 
     #[test]
@@ -440,7 +443,9 @@ mod tests {
         assert_eq!(commands[2].data_id.as_deref(), Some("d1"));
         assert_eq!(commands[2].primitive_index, 0);
         assert_eq!(provenance.len(), 1);
-        let entry = provenance.query_command(2).unwrap();
+        let entry = provenance
+            .query_command(2)
+            .expect("command index 2 should have provenance entry");
         assert_eq!(entry.node_id, "p");
         assert_eq!(entry.data_id.as_deref(), Some("d1"));
         assert_eq!(entry.primitive_index, 0);
@@ -448,14 +453,14 @@ mod tests {
 
     #[test]
     #[expect(clippy::float_cmp, reason = "test: exact known draw command values")]
-    fn gpu_draw_command_circle_serialization() {
+    fn gpu_draw_command_circle_serialization() -> Result<(), Box<dyn std::error::Error>> {
         let cmd = GpuDrawCommand::Circle {
             center: [100.0, 200.0],
             radius: 5.0,
             color: [1.0, 0.0, 0.0, 1.0],
         };
-        let json = serde_json::to_string(&cmd).unwrap();
-        let restored: GpuDrawCommand = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&cmd)?;
+        let restored: GpuDrawCommand = serde_json::from_str(&json)?;
         match restored {
             GpuDrawCommand::Circle {
                 center,
@@ -468,19 +473,20 @@ mod tests {
             }
             _ => panic!("expected Circle"),
         }
+        Ok(())
     }
 
     #[test]
     #[expect(clippy::float_cmp, reason = "test: exact known draw command values")]
-    fn gpu_draw_command_polyline_serialization() {
+    fn gpu_draw_command_polyline_serialization() -> Result<(), Box<dyn std::error::Error>> {
         let cmd = GpuDrawCommand::Polyline {
             vertices: vec![[0.0, 0.0], [1.0, 1.0]],
             color: [0.0, 1.0, 0.0, 1.0],
             width: 2.0,
             closed: false,
         };
-        let json = serde_json::to_string(&cmd).unwrap();
-        let restored: GpuDrawCommand = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&cmd)?;
+        let restored: GpuDrawCommand = serde_json::from_str(&json)?;
         match restored {
             GpuDrawCommand::Polyline {
                 vertices,
@@ -495,19 +501,20 @@ mod tests {
             }
             _ => panic!("expected Polyline"),
         }
+        Ok(())
     }
 
     #[test]
     #[expect(clippy::float_cmp, reason = "test: exact known draw command values")]
-    fn gpu_draw_command_fill_rect_serialization() {
+    fn gpu_draw_command_fill_rect_serialization() -> Result<(), Box<dyn std::error::Error>> {
         let cmd = GpuDrawCommand::FillRect {
             min: [10.0, 20.0],
             max: [110.0, 120.0],
             color: [0.0, 0.0, 1.0, 0.5],
             corner_radius: 4.0,
         };
-        let json = serde_json::to_string(&cmd).unwrap();
-        let restored: GpuDrawCommand = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&cmd)?;
+        let restored: GpuDrawCommand = serde_json::from_str(&json)?;
         match restored {
             GpuDrawCommand::FillRect {
                 min,
@@ -522,33 +529,36 @@ mod tests {
             }
             _ => panic!("expected FillRect"),
         }
+        Ok(())
     }
 
     #[test]
-    fn gpu_draw_command_set_viewport_serialization() {
+    fn gpu_draw_command_set_viewport_serialization() -> Result<(), Box<dyn std::error::Error>> {
         let cmd = GpuDrawCommand::SetViewport {
             x: 0.0,
             y: 0.0,
             width: 800.0,
             height: 600.0,
         };
-        let json = serde_json::to_string(&cmd).unwrap();
+        let json = serde_json::to_string(&cmd)?;
         assert!(json.contains("SetViewport"));
         assert!(json.contains("800"));
+        Ok(())
     }
 
     #[test]
     #[expect(clippy::float_cmp, reason = "test: exact known clear color value")]
-    fn gpu_draw_command_clear_serialization() {
+    fn gpu_draw_command_clear_serialization() -> Result<(), Box<dyn std::error::Error>> {
         let cmd = GpuDrawCommand::Clear {
             color: [0.1, 0.2, 0.3, 1.0],
         };
-        let json = serde_json::to_string(&cmd).unwrap();
-        let restored: GpuDrawCommand = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&cmd)?;
+        let restored: GpuDrawCommand = serde_json::from_str(&json)?;
         match restored {
             GpuDrawCommand::Clear { color } => assert_eq!(color[0], 0.1),
             _ => panic!("expected Clear"),
         }
+        Ok(())
     }
 
     #[test]
@@ -581,7 +591,9 @@ mod tests {
             primitive_index: 1,
         });
         assert_eq!(map.len(), 2);
-        let e = map.query_command(2).unwrap();
+        let e = map
+            .query_command(2)
+            .expect("command index 2 should have provenance entry");
         assert_eq!(e.node_id, "n1");
         assert_eq!(e.data_id.as_deref(), Some("d1"));
         assert!(map.query_command(0).is_none());

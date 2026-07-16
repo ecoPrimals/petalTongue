@@ -186,9 +186,10 @@ impl VisualizationDataProvider for ScenarioVisualizationProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::Result;
 
     #[tokio::test]
-    async fn test_scenario_provider_creation() {
+    async fn test_scenario_provider_creation() -> Result<()> {
         let json = r#"{
             "ecosystem": {
                 "primals": [
@@ -206,19 +207,20 @@ mod tests {
         }"#;
 
         let temp_file = std::env::temp_dir().join("test_scenario.json");
-        std::fs::write(&temp_file, json).unwrap();
+        std::fs::write(&temp_file, json)?;
 
-        let provider = ScenarioVisualizationProvider::from_file(&temp_file).unwrap();
-        let primals = provider.get_primals().await.unwrap();
+        let provider = ScenarioVisualizationProvider::from_file(&temp_file)?;
+        let primals = provider.get_primals().await?;
 
         assert_eq!(primals.len(), 1);
         assert_eq!(primals[0].name, "TEST");
 
         std::fs::remove_file(&temp_file).ok();
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_scenario_topology_with_nucleus() {
+    async fn test_scenario_topology_with_nucleus() -> Result<()> {
         let json = r#"{
             "ecosystem": {
                 "primals": [
@@ -228,16 +230,17 @@ mod tests {
             }
         }"#;
         let temp_file = std::env::temp_dir().join("test_scenario_nucleus.json");
-        std::fs::write(&temp_file, json).unwrap();
-        let provider = ScenarioVisualizationProvider::from_file(&temp_file).unwrap();
-        let topology = provider.get_topology().await.unwrap();
+        std::fs::write(&temp_file, json)?;
+        let provider = ScenarioVisualizationProvider::from_file(&temp_file)?;
+        let topology = provider.get_topology().await?;
         assert_eq!(topology.len(), 1);
         assert_eq!(topology[0].edge_type, "coordination");
         std::fs::remove_file(&temp_file).ok();
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_scenario_topology_mesh_without_nucleus() {
+    async fn test_scenario_topology_mesh_without_nucleus() -> Result<()> {
         let json = r#"{
             "ecosystem": {
                 "primals": [
@@ -247,16 +250,17 @@ mod tests {
             }
         }"#;
         let temp_file = std::env::temp_dir().join("test_scenario_mesh.json");
-        std::fs::write(&temp_file, json).unwrap();
-        let provider = ScenarioVisualizationProvider::from_file(&temp_file).unwrap();
-        let topology = provider.get_topology().await.unwrap();
+        std::fs::write(&temp_file, json)?;
+        let provider = ScenarioVisualizationProvider::from_file(&temp_file)?;
+        let topology = provider.get_topology().await?;
         assert_eq!(topology.len(), 2);
         assert_eq!(topology[0].edge_type, "peer");
         std::fs::remove_file(&temp_file).ok();
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_scenario_health_status_variants() {
+    async fn test_scenario_health_status_variants() -> Result<()> {
         let json = r#"{
             "ecosystem": {
                 "primals": [
@@ -268,27 +272,29 @@ mod tests {
             }
         }"#;
         let temp_file = std::env::temp_dir().join("test_scenario_health.json");
-        std::fs::write(&temp_file, json).unwrap();
-        let provider = ScenarioVisualizationProvider::from_file(&temp_file).unwrap();
-        let primals = provider.get_primals().await.unwrap();
+        std::fs::write(&temp_file, json)?;
+        let provider = ScenarioVisualizationProvider::from_file(&temp_file)?;
+        let primals = provider.get_primals().await?;
         assert_eq!(primals.len(), 4);
         assert!(matches!(primals[0].health, PrimalHealthStatus::Healthy));
         assert!(matches!(primals[1].health, PrimalHealthStatus::Warning));
         assert!(matches!(primals[2].health, PrimalHealthStatus::Critical));
         assert!(matches!(primals[3].health, PrimalHealthStatus::Unknown));
         std::fs::remove_file(&temp_file).ok();
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_scenario_metadata() {
+    async fn test_scenario_metadata() -> Result<()> {
         let json = r#"{"ecosystem": {"primals": []}}"#;
         let temp_file = std::env::temp_dir().join("test_scenario_meta.json");
-        std::fs::write(&temp_file, json).unwrap();
-        let provider = ScenarioVisualizationProvider::from_file(&temp_file).unwrap();
+        std::fs::write(&temp_file, json)?;
+        let provider = ScenarioVisualizationProvider::from_file(&temp_file)?;
         let meta = provider.get_metadata();
         assert_eq!(meta.name, "Scenario Provider");
         assert!(meta.endpoint.contains("scenario"));
         std::fs::remove_file(&temp_file).ok();
+        Ok(())
     }
 
     #[test]
@@ -298,11 +304,12 @@ mod tests {
     }
 
     #[test]
-    fn test_scenario_from_file_invalid_json() {
+    fn test_scenario_from_file_invalid_json() -> Result<()> {
         let temp_file = std::env::temp_dir().join("test_scenario_invalid.json");
-        std::fs::write(&temp_file, "invalid json {").unwrap();
+        std::fs::write(&temp_file, "invalid json {")?;
         let result = ScenarioVisualizationProvider::from_file(&temp_file);
         std::fs::remove_file(&temp_file).ok();
         assert!(result.is_err());
+        Ok(())
     }
 }

@@ -420,14 +420,18 @@ mod tests {
 
     #[test]
     fn test_caller_context_tcp_loopback() {
-        let addr: std::net::SocketAddr = "127.0.0.1:12345".parse().unwrap();
+        let addr: std::net::SocketAddr = "127.0.0.1:12345"
+            .parse()
+            .expect("127.0.0.1:12345 should be a valid socket address");
         let ctx = CallerContext::tcp(addr);
         assert_eq!(ctx.origin, ConnectionOrigin::Loopback);
     }
 
     #[test]
     fn test_caller_context_tcp_remote() {
-        let addr: std::net::SocketAddr = "192.168.1.50:12345".parse().unwrap();
+        let addr: std::net::SocketAddr = "192.168.1.50:12345"
+            .parse()
+            .expect("192.168.1.50:12345 should be a valid socket address");
         let ctx = CallerContext::tcp(addr);
         assert_eq!(ctx.origin, ConnectionOrigin::Remote);
     }
@@ -450,7 +454,9 @@ mod tests {
         let gate = MethodGate::new(EnforcementMode::Permissive);
         let ctx = CallerContext::unix();
         let resp = gate.handle_auth_check(json!(1), &ctx);
-        let r = resp.result.unwrap();
+        let r = resp
+            .result
+            .expect("auth.check should return a result payload");
         assert_eq!(r["authenticated"], false);
         assert_eq!(r["mode"], "permissive");
     }
@@ -463,7 +469,9 @@ mod tests {
             bearer_token: Some("tok".to_owned()),
         };
         let resp = gate.handle_auth_check(json!(1), &ctx);
-        let r = resp.result.unwrap();
+        let r = resp
+            .result
+            .expect("auth.check should return a result payload");
         assert_eq!(r["authenticated"], true);
         assert_eq!(r["mode"], "enforced");
     }
@@ -472,7 +480,9 @@ mod tests {
     fn test_auth_mode_handler() {
         let gate = MethodGate::new(EnforcementMode::Enforced);
         let resp = gate.handle_auth_mode(json!(1));
-        let r = resp.result.unwrap();
+        let r = resp
+            .result
+            .expect("auth.mode should return a result payload");
         assert_eq!(r["mode"], "enforced");
     }
 
@@ -484,7 +494,9 @@ mod tests {
             bearer_token: Some("tok".to_owned()),
         };
         let resp = gate.handle_auth_peer_info(json!(1), &ctx);
-        let r = resp.result.unwrap();
+        let r = resp
+            .result
+            .expect("auth.peer_info should return a result payload");
         assert_eq!(r["origin"], "remote");
         assert_eq!(r["has_token"], true);
     }

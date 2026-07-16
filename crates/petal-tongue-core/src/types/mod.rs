@@ -206,8 +206,6 @@ pub struct TrafficStats {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used, reason = "test code")]
-
     use super::*;
     use std::borrow::Borrow;
     use std::collections::hash_map::DefaultHasher;
@@ -235,7 +233,7 @@ mod tests {
     }
 
     #[test]
-    fn primal_id_construction_and_traits() {
+    fn primal_id_construction_and_traits() -> Result<(), Box<dyn std::error::Error>> {
         let id = PrimalId::new("alpha");
         assert_eq!(id.as_str(), "alpha");
         assert_eq!(format!("{id}"), "alpha");
@@ -257,9 +255,10 @@ mod tests {
         let cloned = id.clone();
         assert_eq!(hash_id(&id), hash_id(&cloned));
 
-        let json = serde_json::to_string(&id).unwrap();
-        let roundtrip: PrimalId = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&id)?;
+        let roundtrip: PrimalId = serde_json::from_str(&json)?;
         assert_eq!(roundtrip, id);
+        Ok(())
     }
 
     #[test]
@@ -288,17 +287,18 @@ mod tests {
     }
 
     #[test]
-    fn connection_status_serde_roundtrip() {
+    fn connection_status_serde_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
         for status in [
             ConnectionStatus::Connected,
             ConnectionStatus::Connecting,
             ConnectionStatus::Disconnected,
             ConnectionStatus::Error("timeout".to_string()),
         ] {
-            let json = serde_json::to_string(&status).unwrap();
-            let roundtrip: ConnectionStatus = serde_json::from_str(&json).unwrap();
+            let json = serde_json::to_string(&status)?;
+            let roundtrip: ConnectionStatus = serde_json::from_str(&json)?;
             assert_eq!(roundtrip, status);
         }
+        Ok(())
     }
 
     #[test]
@@ -320,24 +320,31 @@ mod tests {
     }
 
     #[test]
-    fn primal_info_wire_migration_legacy_fields() {
+    fn primal_info_wire_migration_legacy_fields() -> Result<(), Box<dyn std::error::Error>> {
         let json = minimal_primal_json(r#","trust_level": 2, "family_id": "legacy-fam""#);
-        let info: PrimalInfo = serde_json::from_str(&json).unwrap();
+        let info: PrimalInfo = serde_json::from_str(&json)?;
 
         assert_eq!(info.trust_level(), Some(2));
         assert_eq!(info.family_id(), Some("legacy-fam"));
         assert_eq!(
-            info.properties.get(PROP_TRUST_LEVEL).unwrap().as_number(),
+            info.properties
+                .get(PROP_TRUST_LEVEL)
+                .expect("trust_level property")
+                .as_number(),
             Some(2.0)
         );
         assert_eq!(
-            info.properties.get(PROP_FAMILY_ID).unwrap().as_string(),
+            info.properties
+                .get(PROP_FAMILY_ID)
+                .expect("family_id property")
+                .as_string(),
             Some("legacy-fam")
         );
+        Ok(())
     }
 
     #[test]
-    fn primal_info_wire_migration_metadata() {
+    fn primal_info_wire_migration_metadata() -> Result<(), Box<dyn std::error::Error>> {
         let json = minimal_primal_json(
             r#",
                 "metadata": {
@@ -347,21 +354,28 @@ mod tests {
                 }
             "#,
         );
-        let info: PrimalInfo = serde_json::from_str(&json).unwrap();
+        let info: PrimalInfo = serde_json::from_str(&json)?;
 
         assert_eq!(
-            info.properties.get("version").unwrap().as_string(),
+            info.properties
+                .get("version")
+                .expect("version property")
+                .as_string(),
             Some("v0.15.2")
         );
         assert_eq!(info.family_id(), Some("meta-fam"));
         assert_eq!(
-            info.properties.get("node_id").unwrap().as_string(),
+            info.properties
+                .get("node_id")
+                .expect("node_id property")
+                .as_string(),
             Some("node-7")
         );
+        Ok(())
     }
 
     #[test]
-    fn primal_info_endpoint_fallback_from_unix_socket() {
+    fn primal_info_endpoint_fallback_from_unix_socket() -> Result<(), Box<dyn std::error::Error>> {
         let json = r#"{
             "id": "p1",
             "name": "Test",
@@ -372,37 +386,40 @@ mod tests {
             "last_seen": 0,
             "endpoints": { "unix_socket": "/tmp/primal.sock" }
         }"#;
-        let info: PrimalInfo = serde_json::from_str(json).unwrap();
+        let info: PrimalInfo = serde_json::from_str(json)?;
         assert_eq!(info.endpoint, "unix:///tmp/primal.sock");
+        Ok(())
     }
 
     #[test]
-    fn topology_edge_default_edge_type() {
+    fn topology_edge_default_edge_type() -> Result<(), Box<dyn std::error::Error>> {
         let json = r#"{"from": "a", "to": "b"}"#;
-        let edge: TopologyEdge = serde_json::from_str(json).unwrap();
+        let edge: TopologyEdge = serde_json::from_str(json)?;
         assert_eq!(edge.edge_type, "connection");
+        Ok(())
     }
 
     #[test]
-    fn primal_endpoints_skip_serializing_none() {
+    fn primal_endpoints_skip_serializing_none() -> Result<(), Box<dyn std::error::Error>> {
         let ep = PrimalEndpoints {
             unix_socket: None,
             http: None,
         };
-        let json = serde_json::to_string(&ep).unwrap();
+        let json = serde_json::to_string(&ep)?;
         assert_eq!(json, "{}");
         assert!(!json.contains("unix_socket"));
         assert!(!json.contains("http"));
+        Ok(())
     }
 
     #[test]
-    fn connection_metrics_optional_fields() {
+    fn connection_metrics_optional_fields() -> Result<(), Box<dyn std::error::Error>> {
         let full = ConnectionMetrics {
             request_count: Some(10),
             avg_latency_ms: Some(5.5),
             error_count: Some(1),
         };
-        let full_json = serde_json::to_string(&full).unwrap();
+        let full_json = serde_json::to_string(&full)?;
         assert!(full_json.contains("request_count"));
         assert!(full_json.contains("avg_latency_ms"));
         assert!(full_json.contains("error_count"));
@@ -412,8 +429,9 @@ mod tests {
             avg_latency_ms: None,
             error_count: None,
         };
-        let empty_json = serde_json::to_string(&empty).unwrap();
+        let empty_json = serde_json::to_string(&empty)?;
         assert_eq!(empty_json, "{}");
+        Ok(())
     }
 
     #[test]
@@ -440,19 +458,25 @@ mod tests {
         info.migrate_metadata_to_properties();
 
         assert_eq!(
-            info.properties.get("version").unwrap().as_string(),
+            info.properties
+                .get("version")
+                .expect("version property")
+                .as_string(),
             Some("v1.0")
         );
         assert_eq!(info.family_id(), Some("fam-x"));
         assert_eq!(
-            info.properties.get("node_id").unwrap().as_string(),
+            info.properties
+                .get("node_id")
+                .expect("node_id property")
+                .as_string(),
             Some("node-3")
         );
         assert_eq!(info.endpoint, "unix:///run/sock");
     }
 
     #[test]
-    fn topology_graph_serde_roundtrip() {
+    fn topology_graph_serde_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
         let graph = TopologyGraph {
             nodes: vec![PrimalInfo::new(
                 "n1",
@@ -475,12 +499,13 @@ mod tests {
             timestamp: 100,
         };
 
-        let json = serde_json::to_string(&graph).unwrap();
-        let roundtrip: TopologyGraph = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&graph)?;
+        let roundtrip: TopologyGraph = serde_json::from_str(&json)?;
         assert_eq!(roundtrip.nodes.len(), 1);
         assert_eq!(roundtrip.edges.len(), 1);
         assert_eq!(roundtrip.timestamp, 100);
         assert_eq!(roundtrip.nodes[0].id.as_str(), "n1");
         assert_eq!(roundtrip.edges[0].to.as_str(), "n2");
+        Ok(())
     }
 }

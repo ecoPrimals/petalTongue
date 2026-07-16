@@ -53,7 +53,9 @@ mod tests {
         let lock = Arc::new(RwLock::new(42));
         let l2 = Arc::clone(&lock);
         let h = std::thread::spawn(move || {
-            let _g = l2.write().unwrap();
+            let _g = l2
+                .write()
+                .expect("lock should succeed before intentional poison");
             panic!("intentional poison");
         });
         let _ = h.join();

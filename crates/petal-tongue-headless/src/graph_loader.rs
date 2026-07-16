@@ -205,26 +205,28 @@ mod tests {
     }
 
     #[test]
-    fn load_graph_data_no_source_succeeds() {
+    fn load_graph_data_no_source_succeeds() -> Result<(), HeadlessError> {
         let graph = new_graph();
         let args = make_test_args(None, false);
         assert!(load_graph_data(&graph, &args).is_ok());
-        assert_eq!(graph.read().unwrap().nodes().len(), 0);
+        assert_eq!(graph.read()?.nodes().len(), 0);
+        Ok(())
     }
 
     #[test]
-    fn load_graph_data_demo_populates_graph() {
+    fn load_graph_data_demo_populates_graph() -> Result<(), HeadlessError> {
         let graph = new_graph();
         let args = make_test_args(None, true);
         assert!(load_graph_data(&graph, &args).is_ok());
-        let g = graph.read().unwrap();
+        let g = graph.read()?;
         assert!(g.nodes().len() >= 3, "demo should load 3+ primals");
         assert!(g.edges().len() >= 2, "demo should load 2+ edges");
         drop(g);
+        Ok(())
     }
 
     #[test]
-    fn load_scenario_valid_json() {
+    fn load_scenario_valid_json() -> Result<(), HeadlessError> {
         let scenario = serde_json::json!({
             "primals": [
                 {
@@ -243,17 +245,18 @@ mod tests {
                 { "from": "test-1", "to": "test-2", "type": "depends_on", "label": "dep" }
             ]
         });
-        let temp = tempfile::NamedTempFile::new().unwrap();
-        std::fs::write(temp.path(), scenario.to_string()).unwrap();
+        let temp = tempfile::NamedTempFile::new()?;
+        std::fs::write(temp.path(), scenario.to_string())?;
 
         let graph = new_graph();
-        let path = temp.path().to_str().unwrap();
-        load_scenario_file(&graph, path).unwrap();
+        let path = temp.path().to_str().expect("temp file path is valid UTF-8");
+        load_scenario_file(&graph, path)?;
 
-        let g = graph.read().unwrap();
+        let g = graph.read()?;
         assert_eq!(g.nodes().len(), 2);
         assert_eq!(g.edges().len(), 1);
         drop(g);
+        Ok(())
     }
 
     #[test]
@@ -269,54 +272,60 @@ mod tests {
     }
 
     #[test]
-    fn load_scenario_invalid_json() {
-        let temp = tempfile::NamedTempFile::new().unwrap();
-        std::fs::write(temp.path(), "not json {{{").unwrap();
+    fn load_scenario_invalid_json() -> Result<(), HeadlessError> {
+        let temp = tempfile::NamedTempFile::new()?;
+        std::fs::write(temp.path(), "not json {{{")?;
 
         let graph = new_graph();
-        let result = load_scenario_file(&graph, temp.path().to_str().unwrap());
+        let path = temp.path().to_str().expect("temp file path is valid UTF-8");
+        let result = load_scenario_file(&graph, path);
         assert!(result.is_err());
         assert!(matches!(
             result.unwrap_err(),
             HeadlessError::ScenarioLoad(_)
         ));
+        Ok(())
     }
 
     #[test]
-    fn load_scenario_empty_arrays() {
+    fn load_scenario_empty_arrays() -> Result<(), HeadlessError> {
         let scenario = serde_json::json!({ "primals": [], "edges": [] });
-        let temp = tempfile::NamedTempFile::new().unwrap();
-        std::fs::write(temp.path(), scenario.to_string()).unwrap();
+        let temp = tempfile::NamedTempFile::new()?;
+        std::fs::write(temp.path(), scenario.to_string())?;
 
         let graph = new_graph();
-        load_scenario_file(&graph, temp.path().to_str().unwrap()).unwrap();
-        assert_eq!(graph.read().unwrap().nodes().len(), 0);
+        let path = temp.path().to_str().expect("temp file path is valid UTF-8");
+        load_scenario_file(&graph, path)?;
+        assert_eq!(graph.read()?.nodes().len(), 0);
+        Ok(())
     }
 
     #[test]
-    fn load_scenario_missing_required_fields_skips_node() {
+    fn load_scenario_missing_required_fields_skips_node() -> Result<(), HeadlessError> {
         let scenario = serde_json::json!({
             "primals": [
                 { "id": "only-id" },
                 { "id": "valid", "name": "Valid", "domain": "test" }
             ]
         });
-        let temp = tempfile::NamedTempFile::new().unwrap();
-        std::fs::write(temp.path(), scenario.to_string()).unwrap();
+        let temp = tempfile::NamedTempFile::new()?;
+        std::fs::write(temp.path(), scenario.to_string())?;
 
         let graph = new_graph();
-        load_scenario_file(&graph, temp.path().to_str().unwrap()).unwrap();
-        let g = graph.read().unwrap();
+        let path = temp.path().to_str().expect("temp file path is valid UTF-8");
+        load_scenario_file(&graph, path)?;
+        let g = graph.read()?;
         assert_eq!(
             g.nodes().len(),
             1,
             "node with missing name/domain should be skipped"
         );
         drop(g);
+        Ok(())
     }
 
     #[test]
-    fn load_scenario_edges_missing_from_to_skipped() {
+    fn load_scenario_edges_missing_from_to_skipped() -> Result<(), HeadlessError> {
         let scenario = serde_json::json!({
             "primals": [
                 { "id": "a", "name": "A", "domain": "test" },
@@ -327,18 +336,20 @@ mod tests {
                 { "from": "a", "to": "b" }
             ]
         });
-        let temp = tempfile::NamedTempFile::new().unwrap();
-        std::fs::write(temp.path(), scenario.to_string()).unwrap();
+        let temp = tempfile::NamedTempFile::new()?;
+        std::fs::write(temp.path(), scenario.to_string())?;
 
         let graph = new_graph();
-        load_scenario_file(&graph, temp.path().to_str().unwrap()).unwrap();
-        let g = graph.read().unwrap();
+        let path = temp.path().to_str().expect("temp file path is valid UTF-8");
+        load_scenario_file(&graph, path)?;
+        let g = graph.read()?;
         assert_eq!(
             g.edges().len(),
             1,
             "edge without from/to should be skipped, valid edge should remain"
         );
         drop(g);
+        Ok(())
     }
 
     #[test]

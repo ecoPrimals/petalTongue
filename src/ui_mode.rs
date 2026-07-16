@@ -143,7 +143,6 @@ pub async fn run(
 }
 
 #[cfg(test)]
-#[expect(clippy::unwrap_used, reason = "test assertions")]
 mod tests {
     #[cfg(not(feature = "ui"))]
     use std::sync::Arc;
@@ -161,14 +160,24 @@ mod tests {
     fn test_scenario_to_path_some() {
         let path = scenario_to_path(Some("scenario.json".to_owned()));
         assert!(path.is_some());
-        assert_eq!(path.as_ref().unwrap().as_os_str(), "scenario.json");
+        assert_eq!(
+            path.as_ref()
+                .expect("scenario path should be Some")
+                .as_os_str(),
+            "scenario.json"
+        );
     }
 
     #[test]
     fn test_scenario_to_path_empty_string() {
         let path = scenario_to_path(Some(String::new()));
         assert!(path.is_some());
-        assert_eq!(path.as_ref().unwrap().as_os_str(), "");
+        assert_eq!(
+            path.as_ref()
+                .expect("empty scenario path should be Some")
+                .as_os_str(),
+            ""
+        );
     }
 
     #[test]
@@ -197,7 +206,7 @@ mod tests {
     fn test_scenario_to_path_with_path_separators() {
         let path = scenario_to_path(Some("/tmp/scenarios/demo.json".to_owned()));
         assert!(path.is_some());
-        let p = path.unwrap();
+        let p = path.expect("path with separators should be Some");
         assert!(p.to_string_lossy().contains("demo.json"));
     }
 
@@ -205,28 +214,48 @@ mod tests {
     fn test_scenario_to_path_with_relative_path() {
         let path = scenario_to_path(Some("./relative/path.json".to_owned()));
         assert!(path.is_some());
-        assert_eq!(path.as_ref().unwrap().as_os_str(), "./relative/path.json");
+        assert_eq!(
+            path.as_ref()
+                .expect("relative scenario path should be Some")
+                .as_os_str(),
+            "./relative/path.json"
+        );
     }
 
     #[test]
     fn test_scenario_to_path_parent_dir() {
         let path = scenario_to_path(Some("..".to_owned()));
         assert!(path.is_some());
-        assert_eq!(path.as_ref().unwrap().as_os_str(), "..");
+        assert_eq!(
+            path.as_ref()
+                .expect("parent dir scenario path should be Some")
+                .as_os_str(),
+            ".."
+        );
     }
 
     #[test]
     fn test_scenario_to_path_current_dir() {
         let path = scenario_to_path(Some(".".to_owned()));
         assert!(path.is_some());
-        assert_eq!(path.as_ref().unwrap().as_os_str(), ".");
+        assert_eq!(
+            path.as_ref()
+                .expect("current dir scenario path should be Some")
+                .as_os_str(),
+            "."
+        );
     }
 
     #[test]
     fn test_scenario_to_path_whitespace() {
         let path = scenario_to_path(Some("  path.json  ".to_owned()));
         assert!(path.is_some());
-        assert_eq!(path.as_ref().unwrap().as_os_str(), "  path.json  ");
+        assert_eq!(
+            path.as_ref()
+                .expect("whitespace scenario path should be Some")
+                .as_os_str(),
+            "  path.json  "
+        );
     }
 
     #[test]
@@ -269,14 +298,24 @@ mod tests {
     fn test_scenario_to_path_unicode() {
         let path = scenario_to_path(Some("scenario_日本語.json".to_owned()));
         assert!(path.is_some());
-        assert!(path.as_ref().unwrap().to_string_lossy().contains("日本語"));
+        assert!(
+            path.as_ref()
+                .expect("unicode scenario path should be Some")
+                .to_string_lossy()
+                .contains("日本語")
+        );
     }
 
     #[test]
     fn test_scenario_to_path_special_chars() {
         let path = scenario_to_path(Some("path with spaces.json".to_owned()));
         assert!(path.is_some());
-        assert_eq!(path.as_ref().unwrap().as_os_str(), "path with spaces.json");
+        assert_eq!(
+            path.as_ref()
+                .expect("special chars scenario path should be Some")
+                .as_os_str(),
+            "path with spaces.json"
+        );
     }
 
     #[tokio::test]
@@ -414,7 +453,7 @@ mod tests {
         assert!(path.is_some());
         assert!(
             path.as_ref()
-                .unwrap()
+                .expect("null byte scenario path should be Some")
                 .as_os_str()
                 .to_string_lossy()
                 .contains("path")
@@ -426,7 +465,12 @@ mod tests {
         let long = "a".repeat(4096);
         let path = scenario_to_path(Some(long.clone()));
         assert!(path.is_some());
-        assert_eq!(path.as_ref().unwrap().as_os_str(), long.as_str());
+        assert_eq!(
+            path.as_ref()
+                .expect("long scenario path should be Some")
+                .as_os_str(),
+            long.as_str()
+        );
     }
 
     #[test]
