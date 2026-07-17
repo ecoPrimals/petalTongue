@@ -1,6 +1,6 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 142b | **Date**: July 16, 2026 | **From**: petalTongue on eastGate
+**Wave**: 145b | **Date**: July 16, 2026 | **From**: petalTongue on eastGate
 
 ---
 
@@ -37,8 +37,15 @@ petalTongue is the **reference implementation** for Phase 2 Silicon Atheism.
    `LinuxProcMetrics` (production), `StubMetrics` (other platforms).
    Pattern for platform-aware telemetry.
 
-4. **Deep debt elimination** — zero bare `unwrap()` in production, zero
-   `todo!`/`FIXME`/`HACK`, all mocks confined to `#[cfg(test)]`.
+4. **Deep debt elimination** — zero bare `unwrap()` in production (269 eliminated
+   across 28 files), zero `todo!`/`FIXME`/`HACK`, all mocks confined to `#[cfg(test)]`.
+
+5. **Dependency isolation** — `socket2` (mDNS multicast UDP) now behind `mdns`
+   feature in `petal-tongue-discovery`. Zero mandatory C-library deps.
+
+6. **Platform metrics composition** — `petal-tongue-ui` `ProcStats` delegates
+   system-level metrics to `PlatformMetrics` trait. Process-level stats remain
+   UI-specific. Eliminates duplicate /proc parsing.
 
 ### The pattern for other primals
 
@@ -63,8 +70,6 @@ Live implementations query capabilities at runtime.
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| `main.rs` dispatch extraction | P3 | 727L — acceptable for UniBin entry point |
-| `socket2` → `mdns` feature gate | P3 | Only needed for mDNS multicast |
 | `eframe` as opt-in for server builds | P3 | Already feature-gated behind `ui` |
 | CI lint: no `unsafe` outside `ffi.rs` | P3 | Workspace forbid already covers this |
 
@@ -93,4 +98,4 @@ Live implementations query capabilities at runtime.
 
 ---
 
-*Wave 142b: Phase 2 reference. Abstraction over gating. 6,511 tests. Clean.*
+*Wave 145b: All milestones achieved. Phase 2 14/14, CAC 6/6, Glacial 8/8. 6,511 tests. Clean.*

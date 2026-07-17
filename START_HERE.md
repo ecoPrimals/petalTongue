@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: July 16, 2026 (Wave 142b — Phase 2 abstraction over gating, deep debt eliminated, platform embedding, 6,511 tests, zero clippy warnings)
+**Updated**: July 16, 2026 (Wave 145b — all milestones achieved: Phase 2 14/14, CAC 6/6, Glacial 8/8. socket2 feature-gated, PlatformMetrics composition, 6,511 tests, zero clippy warnings)
 
 ---
 

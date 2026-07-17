@@ -129,23 +129,26 @@ cargo test --workspace --all-features     # 6,511+ workspace tests, ~85-90% cove
 
 ## Current State
 
-Wave 142b Deep Debt + Phase 2 Abstraction (July 16, 2026).
+Wave 145b — All Milestones Achieved (July 16, 2026).
 
-**Phase 2 Silicon Atheism**: Abstraction over gating. `MeshTopologySource` trait
-introduced for runtime topology resolution. Static gate mesh data (IPs, NUCLEUS
-assignments, WG links) gated behind `offline-topology` feature.
-`StaticMeshTopology` implements the trait as compile-time fallback. Production
-code written against the trait for future songBird/biomeOS live topology sources.
+**Silicon Atheism Phase 2**: 14/14 COMPLETE. Transport abstraction across all
+primals. petalTongue `PlatformLifecycle` is the ecosystem reference pattern.
 
-**Deep debt eliminated**: 106 bare `unwrap()` calls removed from production
-paths (session/manager, data_service, notebook_render, CLI). Zero `todo!`,
-`unimplemented!`, `FIXME`, `HACK` in codebase. Zero clippy warnings
-(pedantic+nursery). All mocks confined to test modules.
+**Content-Addressed Convergence**: 6/6 layers COMPLETE.
 
-**Smart refactoring** (all files under 800L): `sensor/types.rs` (789→34L mod +
-5 sub-modules), `data_service.rs` (753→245L mod + 3 sub-modules),
-`web_mode/handlers.rs` (743→24L mod + 4 sub-modules). Magic numbers named with
-constants across `entity_graph.rs` and `data_service/mesh.rs`.
+**Glacial Shift Criteria**: 8/8 ALL CLEAR.
+
+**Dependency isolation**: `socket2` (mDNS multicast) feature-gated behind `mdns`
+in `petal-tongue-discovery`. Zero mandatory C-library dependencies. Entire
+workspace compiles with `--no-default-features` for air-gapped/CI environments.
+
+**Platform metrics composition**: `petal-tongue-ui` `ProcStats` now delegates
+system metrics to `PlatformMetrics` trait from `petal-tongue-core`. Process-level
+/proc stats remain UI-specific. Single source of truth for platform detection.
+
+**Deep debt eliminated**: 269 bare `unwrap()` calls removed across 28 files (two
+waves). Zero `todo!`, `unimplemented!`, `FIXME`, `HACK` in codebase. Zero clippy
+warnings (pedantic+nursery). All mocks confined to test modules. 6,511 tests pass.
 
 **Platform embedding** (`petal-tongue-platform`, Wave 141b): `cdylib` + `rlib`
 for Android/iOS/desktop host apps. `PlatformLifecycle` trait, `EmbeddedRuntime`,

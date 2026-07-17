@@ -5,8 +5,10 @@
 use crate::OfflineVisualizationProvider;
 use crate::errors::DiscoveryResult;
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
+#[cfg(feature = "mdns")]
+use crate::MdnsVisualizationProvider;
 use crate::{
-    DiscoveryServiceProvider, DynamicScenarioProvider, JsonRpcProvider, MdnsVisualizationProvider,
+    DiscoveryServiceProvider, DynamicScenarioProvider, JsonRpcProvider,
     NeuralApiProvider, ScenarioVisualizationProvider,
 };
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
@@ -20,6 +22,7 @@ pub enum KnownVisualizationProvider {
     /// JSON-RPC over Unix socket.
     JsonRpc(JsonRpcProvider),
     /// mDNS-discovered provider.
+    #[cfg(feature = "mdns")]
     Mdns(Box<MdnsVisualizationProvider>),
     /// Dynamic scenario (schema-driven).
     Dynamic(DynamicScenarioProvider),
@@ -94,6 +97,7 @@ impl VisualizationDataProvider for KnownVisualizationProvider {
             Self::Neural(p) => p.get_primals().await,
             Self::DiscoveryService(p) => p.get_primals().await,
             Self::JsonRpc(p) => p.get_primals().await,
+            #[cfg(feature = "mdns")]
             Self::Mdns(p) => p.get_primals().await,
             Self::Dynamic(p) => p.get_primals().await,
             Self::Scenario(p) => p.get_primals().await,
@@ -111,6 +115,7 @@ impl VisualizationDataProvider for KnownVisualizationProvider {
             Self::Neural(p) => p.get_topology().await,
             Self::DiscoveryService(p) => p.get_topology().await,
             Self::JsonRpc(p) => p.get_topology().await,
+            #[cfg(feature = "mdns")]
             Self::Mdns(p) => p.get_topology().await,
             Self::Dynamic(p) => p.get_topology().await,
             Self::Scenario(p) => p.get_topology().await,
@@ -128,6 +133,7 @@ impl VisualizationDataProvider for KnownVisualizationProvider {
             Self::Neural(p) => p.health_check().await,
             Self::DiscoveryService(p) => p.health_check().await,
             Self::JsonRpc(p) => p.health_check().await,
+            #[cfg(feature = "mdns")]
             Self::Mdns(p) => p.health_check().await,
             Self::Dynamic(p) => p.health_check().await,
             Self::Scenario(p) => p.health_check().await,
@@ -145,6 +151,7 @@ impl VisualizationDataProvider for KnownVisualizationProvider {
             Self::Neural(p) => p.get_metadata(),
             Self::DiscoveryService(p) => p.get_metadata(),
             Self::JsonRpc(p) => p.get_metadata(),
+            #[cfg(feature = "mdns")]
             Self::Mdns(p) => p.get_metadata(),
             Self::Dynamic(p) => p.get_metadata(),
             Self::Scenario(p) => p.get_metadata(),

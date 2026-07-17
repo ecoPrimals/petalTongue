@@ -55,11 +55,13 @@ mod capabilities;
 pub mod capability_parse;
 mod discovery_service_client;
 mod discovery_service_provider;
+#[cfg(feature = "mdns")]
 mod dns_parser;
 mod dynamic_scenario_provider;
 pub mod jsonl_provider;
 mod jsonrpc_provider;
 mod known_visualization_provider;
+#[cfg(feature = "mdns")]
 mod mdns_provider;
 mod neural_api_provider;
 mod neural_graph_client;
@@ -84,6 +86,7 @@ pub use known_visualization_provider::FailingHealthCheckProvider;
 #[cfg(any(test, feature = "test-fixtures"))]
 pub use known_visualization_provider::HangHealthCheckProvider;
 pub use known_visualization_provider::KnownVisualizationProvider;
+#[cfg(feature = "mdns")]
 pub use mdns_provider::{MdnsVisualizationProvider, parse_mdns_response};
 pub use neural_api_provider::NeuralApiProvider;
 pub use neural_graph_client::{ExecutionResult, ExecutionStatus, GraphMetadata, NeuralGraphClient};
@@ -183,28 +186,31 @@ pub async fn discover_visualization_providers() -> DiscoveryResult<Vec<KnownVisu
     }
 
     // Priority 3: Try mDNS auto-discovery
-    let enable_mdns = std::env::var("PETALTONGUE_ENABLE_MDNS")
-        .unwrap_or_else(|_| "true".to_owned())
-        .to_lowercase()
-        == "true";
+    #[cfg(feature = "mdns")]
+    {
+        let enable_mdns = std::env::var("PETALTONGUE_ENABLE_MDNS")
+            .unwrap_or_else(|_| "true".to_owned())
+            .to_lowercase()
+            == "true";
 
-    if enable_mdns {
-        tracing::info!("Attempting mDNS auto-discovery...");
-        match MdnsVisualizationProvider::discover().await {
-            Ok(mdns_providers) => {
-                if mdns_providers.is_empty() {
-                    tracing::debug!("mDNS discovery found no providers");
-                } else {
-                    tracing::info!("mDNS discovered {} provider(s)", mdns_providers.len());
-                    providers.extend(
-                        mdns_providers
-                            .into_iter()
-                            .map(|p| KnownVisualizationProvider::Mdns(Box::new(p))),
-                    );
+        if enable_mdns {
+            tracing::info!("Attempting mDNS auto-discovery...");
+            match MdnsVisualizationProvider::discover().await {
+                Ok(mdns_providers) => {
+                    if mdns_providers.is_empty() {
+                        tracing::debug!("mDNS discovery found no providers");
+                    } else {
+                        tracing::info!("mDNS discovered {} provider(s)", mdns_providers.len());
+                        providers.extend(
+                            mdns_providers
+                                .into_iter()
+                                .map(|p| KnownVisualizationProvider::Mdns(Box::new(p))),
+                        );
+                    }
                 }
-            }
-            Err(e) => {
-                tracing::warn!("mDNS discovery failed: {}", e);
+                Err(e) => {
+                    tracing::warn!("mDNS discovery failed: {}", e);
+                }
             }
         }
     }
