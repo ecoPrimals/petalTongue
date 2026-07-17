@@ -34,7 +34,7 @@ chrono = { workspace = true }
 tracing = { workspace = true }
 
 # Low-level socket for multicast (uses libc for syscalls, not C crypto)
-socket2 = { workspace = true }
+socket2 = { workspace = true, optional = true }
 
 # LRU cache for performance optimization (Phase 2) - pure Rust
 lru = { workspace = true, optional = true }
@@ -44,7 +44,10 @@ futures-util = { workspace = true }
 rand = { workspace = true }
 
 [features]
-default = []
+default = ["mdns"]
+# mDNS multicast auto-discovery (zero-config). Pulls in `socket2` for
+# raw UDP multicast. Disable for air-gapped or CI environments.
+mdns = ["dep:socket2"]
 # Enables ProviderCache (LRU + TTL caching layer for discovery results)
 cache = ["dep:lru"]
 # Mock provider - Run tests with: cargo test --features test-fixtures

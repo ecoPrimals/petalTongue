@@ -23,6 +23,7 @@ use petal_tongue_discovery::concurrent::discover_concurrent;
 use petal_tongue_discovery::concurrent::discover_first_available;
 use petal_tongue_discovery::discover_visualization_providers;
 use petal_tongue_discovery::errors::{DiscoveryError, DiscoveryResult};
+#[cfg(feature = "mdns")]
 use petal_tongue_discovery::parse_mdns_response;
 use serde_json::json;
 use std::net::SocketAddr;
@@ -109,6 +110,7 @@ fn chaos_malformed_capability_payloads_filtered() {
 }
 
 #[test]
+#[cfg(feature = "mdns")]
 fn chaos_dns_garbage_rejected() {
     let addr: SocketAddr = "192.0.2.1:5353".parse().unwrap();
     let garbage: Vec<u8> = (0_u8..=255).cycle().take(512).collect();
