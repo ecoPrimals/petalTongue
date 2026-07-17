@@ -274,6 +274,25 @@ impl EmbeddedRuntime {
             .unwrap_or("");
 
         let response = match method {
+            "health.check" => serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": request.get("id"),
+                "result": { "status": "ok", "state": format!("{:?}", self.state) }
+            }),
+            "capabilities.list" => serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": request.get("id"),
+                "result": {
+                    "capabilities": [
+                        "pt.render_svg",
+                        "pt.render_binding",
+                        "pt.state",
+                        "pt.scenarios",
+                        "health.check",
+                        "capabilities.list"
+                    ]
+                }
+            }),
             "pt.render_svg" => {
                 let builder_id = request
                     .pointer("/params/builder_id")
@@ -461,5 +480,65 @@ impl Drop for EmbeddedRuntime {
         if let Some(rt) = self.tokio_rt.take() {
             rt.shutdown_background();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::Platform;
+
+    fn test_runtime() -> EmbeddedRuntime {
+        let config = EmbedConfig::new(Platform::Desktop);
+        let mut rt = EmbeddedRuntime::new(config).expect("runtime should create");
+        rt.start().expect("runtime should start");
+        rt
+    }
+
+    #[test]
+    fn health_check_returns_ok() -> Result<(), PlatformError> {
+        let rt = test_runtime();
+        let resp = rt.ipc_request(r#"{"jsonrpc":"2.0","id":1,"method":"health.check","params":{}}"#)?;
+        let v: serde_json::Value = serde_json::from_str(&resp).expect("valid JSON");
+        assert_eq!(v["result"]["status"], "ok");
+        assert_eq!(v["id"], 1);
+        Ok(())
+    }
+
+    #[test]
+    fn capabilities_list_returns_methods() -> Result<(), PlatformError> {
+        let rt = test_runtime();
+        let resp = rt.ipc_request(r#"{"jsonrpc":"2.0","id":2,"method":"capabilities.list","params":{}}"#)?;
+        let v: serde_json::Value = serde_json::from_str(&resp).expect("valid JSON");
+        let caps = v["result"]["capabilities"].as_array().expect("array");
+        assert!(caps.iter().any(|c| c == "health.check"));
+        assert!(caps.iter().any(|c| c == "pt.render_svg"));
+        Ok(())
+    }
+
+    #[test]
+    fn unknown_method_returns_error() -> Result<(), PlatformError> {
+        let rt = test_runtime();
+        let resp = rt.ipc_request(r#"{"jsonrpc":"2.0","id":3,"method":"no.such.method","params":{}}"#)?;
+        let v: serde_json::Value = serde_json::from_str(&resp).expect("valid JSON");
+        assert_eq!(v["error"]["code"], -32601);
+        Ok(())
+    }
+
+    #[test]
+    fn state_method_returns_running() -> Result<(), PlatformError> {
+        let rt = test_runtime();
+        let resp = rt.ipc_request(r#"{"jsonrpc":"2.0","id":4,"method":"pt.state","params":{}}"#)?;
+        let v: serde_json::Value = serde_json::from_str(&resp).expect("valid JSON");
+        assert_eq!(v["result"]["state"], "Running");
+        Ok(())
+    }
+
+    #[test]
+    fn ipc_request_while_stopped_fails() {
+        let config = EmbedConfig::new(Platform::Desktop);
+        let rt = EmbeddedRuntime::new(config).expect("runtime should create");
+        let result = rt.ipc_request(r#"{"jsonrpc":"2.0","id":1,"method":"health.check","params":{}}"#);
+        assert!(result.is_err());
     }
 }
