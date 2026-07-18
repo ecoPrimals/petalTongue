@@ -184,3 +184,115 @@ async fn handle_connection(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::{EmbedConfig, Platform};
+    use futures_util::{SinkExt, StreamExt};
+
+    fn create_test_runtime() -> Arc<RwLock<EmbeddedRuntime>> {
+        let config = EmbedConfig::new(Platform::Desktop);
+        let mut rt = EmbeddedRuntime::new(config).expect("runtime should create");
+        rt.start().expect("runtime should start");
+        Arc::new(RwLock::new(rt))
+    }
+
+    #[tokio::test]
+    async fn ws_bridge_health_check_e2e() {
+        let runtime = create_test_runtime();
+        let config = WsBridgeConfig {
+            bind_host: "127.0.0.1".to_owned(),
+            port: 0, // OS assigns a free port
+        };
+
+        let handle = spawn_ws_bridge(Arc::clone(&runtime), config)
+            .await
+            .expect("bridge should bind");
+
+        let url = format!("ws://{}", handle.local_addr());
+        let (mut ws, _) = tokio_tungstenite::connect_async(&url)
+            .await
+            .expect("WS connect should succeed");
+
+        let req = r#"{"jsonrpc":"2.0","id":1,"method":"health.check","params":{}}"#;
+        ws.send(tokio_tungstenite::tungstenite::Message::Text(req.to_owned()))
+            .await
+            .expect("send should succeed");
+
+        let resp = ws.next().await.expect("should get response").expect("no error");
+        let v: serde_json::Value = serde_json::from_str(resp.to_text().expect("text frame"))
+            .expect("valid JSON");
+
+        assert_eq!(v["id"], 1);
+        assert_eq!(v["result"]["status"], "ok");
+
+        handle.shutdown();
+    }
+
+    #[tokio::test]
+    async fn ws_bridge_capabilities_e2e() {
+        let runtime = create_test_runtime();
+        let config = WsBridgeConfig {
+            bind_host: "127.0.0.1".to_owned(),
+            port: 0,
+        };
+
+        let handle = spawn_ws_bridge(Arc::clone(&runtime), config)
+            .await
+            .expect("bridge should bind");
+
+        let url = format!("ws://{}", handle.local_addr());
+        let (mut ws, _) = tokio_tungstenite::connect_async(&url)
+            .await
+            .expect("WS connect");
+
+        let req = r#"{"jsonrpc":"2.0","id":2,"method":"capabilities.list","params":{}}"#;
+        ws.send(tokio_tungstenite::tungstenite::Message::Text(req.to_owned()))
+            .await
+            .expect("send");
+
+        let resp = ws.next().await.expect("response").expect("no error");
+        let v: serde_json::Value = serde_json::from_str(resp.to_text().expect("text"))
+            .expect("valid JSON");
+
+        assert_eq!(v["id"], 2);
+        let caps = v["result"]["capabilities"].as_array().expect("array");
+        assert!(caps.iter().any(|c| c == "health.check"));
+        assert!(caps.iter().any(|c| c == "pt.render_svg"));
+
+        handle.shutdown();
+    }
+
+    #[tokio::test]
+    async fn ws_bridge_unknown_method_e2e() {
+        let runtime = create_test_runtime();
+        let config = WsBridgeConfig {
+            bind_host: "127.0.0.1".to_owned(),
+            port: 0,
+        };
+
+        let handle = spawn_ws_bridge(Arc::clone(&runtime), config)
+            .await
+            .expect("bridge should bind");
+
+        let url = format!("ws://{}", handle.local_addr());
+        let (mut ws, _) = tokio_tungstenite::connect_async(&url)
+            .await
+            .expect("WS connect");
+
+        let req = r#"{"jsonrpc":"2.0","id":99,"method":"bogus.method","params":{}}"#;
+        ws.send(tokio_tungstenite::tungstenite::Message::Text(req.to_owned()))
+            .await
+            .expect("send");
+
+        let resp = ws.next().await.expect("response").expect("no error");
+        let v: serde_json::Value = serde_json::from_str(resp.to_text().expect("text"))
+            .expect("valid JSON");
+
+        assert_eq!(v["id"], 99);
+        assert_eq!(v["error"]["code"], -32601);
+
+        handle.shutdown();
+    }
+}
