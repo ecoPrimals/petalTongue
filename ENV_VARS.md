@@ -854,15 +854,25 @@ Before deploying to production:
 
 ## Platform Embedding (Wave 141b+)
 
+### **WebSocket JSON-RPC — Two Paths**
+
+1. **Web server path** (preferred for composition): `/ws` on port 8080.
+   The web server (`petaltongue web`) mounts a WebSocket upgrade handler
+   that delegates to the same `EmbeddedRuntime` JSON-RPC dispatcher.
+   footPrint's Caddy routes `/ws` → `petalTongue:8080` — this path is active.
+
+2. **Standalone bridge** (for embedded/standalone use): separate port via
+   `PETALTONGUE_WS_PORT` / `PETALTONGUE_WS_BIND_HOST`. Used when running
+   petalTongue as a `cdylib` or without the web server.
+
 ### **PETALTONGUE_WS_PORT**
 **Type**: Integer (port number)  
 **Default**: `8765`  
 **Required**: No  
 **Example**: `PETALTONGUE_WS_PORT=9876`
 
-Port for the WebSocket JSON-RPC bridge in `petal-tongue-platform`. Used by
-`footPrint` compositions and network clients to communicate with embedded
-petalTongue instances without going through C-FFI.
+Port for the standalone WebSocket JSON-RPC bridge in `petal-tongue-platform`.
+Used when running without the web server (e.g., embedded, server mode, cdylib).
 
 ---
 
@@ -872,8 +882,8 @@ petalTongue instances without going through C-FFI.
 **Required**: No  
 **Example**: `PETALTONGUE_WS_BIND_HOST=0.0.0.0`
 
-Bind host for the WebSocket bridge. Set to `0.0.0.0` for network-accessible
-embedded instances (e.g., when `footPrint` connects from another host).
+Bind host for the standalone WebSocket bridge. Set to `0.0.0.0` for
+network-accessible embedded instances.
 
 ---
 

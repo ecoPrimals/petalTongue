@@ -69,12 +69,18 @@ Standard JSON-RPC 2.0 over WebSocket text frames.
 
 ## Integration Steps (footPrint ACTION REQUIRED)
 
-1. Wire `WS_PATH` composition mount to `ws://localhost:8765`
-2. Use standard WebSocket client (browser `WebSocket` API or `tokio-tungstenite`)
-3. Send JSON-RPC requests, receive responses
-4. Handle connection drop gracefully (petalTongue may restart)
-5. Test with `health.check` first to confirm connectivity
-6. Use `pt.metrics` for real-time resource monitoring in composition dashboard
+**Primary path (composition via Caddy)**: `/ws` on port 8080 (same as web server).
+footPrint's Caddy already routes `/ws` → `petalTongue:8080` — this path is now active.
+
+**Alternative path (standalone bridge)**: port 8765 via `PETALTONGUE_WS_PORT`.
+Use when running petalTongue as an embedded service without the web server.
+
+Steps:
+1. Connect WebSocket to `ws://petalTongue:8080/ws` (Caddy-proxied path)
+2. Send JSON-RPC requests, receive responses
+3. Handle connection drop gracefully (petalTongue may restart)
+4. Test with `health.check` first to confirm connectivity
+5. Use `pt.metrics` for real-time resource monitoring in composition dashboard
 
 ---
 
@@ -84,27 +90,33 @@ In footPrint composition config:
 ```toml
 [mounts.petaltongue]
 type = "websocket"
-url = "ws://${PETALTONGUE_WS_BIND_HOST}:${PETALTONGUE_WS_PORT}"
+url = "ws://petalTongue:8080/ws"
 protocol = "jsonrpc"
 ```
 
-For Docker/sporeGate deployments, set `PETALTONGUE_WS_BIND_HOST=0.0.0.0`.
+Alternative (standalone bridge, Docker/non-Caddy):
+```toml
+[mounts.petaltongue]
+type = "websocket"
+url = "ws://${PETALTONGUE_WS_BIND_HOST}:${PETALTONGUE_WS_PORT}"
+protocol = "jsonrpc"
+```
 
 ---
 
 ## Testing the Bridge Locally
 
 ```bash
-# Start petalTongue with WS bridge active
-cargo run -- server
+# Start petalTongue web server (includes /ws route on port 8080)
+cargo run -- web --bind 0.0.0.0:8080
 
-# In another terminal, test with websocat (or any WS client):
+# Test via the web server's /ws path:
 echo '{"jsonrpc":"2.0","id":1,"method":"health.check","params":{}}' | \
-  websocat ws://127.0.0.1:8765
+  websocat ws://127.0.0.1:8080/ws
 
 # Platform metrics:
 echo '{"jsonrpc":"2.0","id":2,"method":"pt.metrics","params":{}}' | \
-  websocat ws://127.0.0.1:8765
+  websocat ws://127.0.0.1:8080/ws
 ```
 
 ---
