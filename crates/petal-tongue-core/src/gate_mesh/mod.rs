@@ -95,7 +95,7 @@ pub struct MeshNode {
 pub trait MeshTopologySource: Send + Sync {
     /// All known gate/VPS nodes.
     fn nodes(&self) -> Vec<&'static MeshNode>;
-    /// Known WireGuard overlay links between nodes.
+    /// Known `WireGuard` overlay links between nodes.
     fn links(&self) -> Vec<&'static MeshLink>;
     /// Count of nodes matching a given enrollment status.
     fn count_by_enrollment(&self, status: GateEnrollment) -> usize {

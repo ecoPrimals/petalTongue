@@ -6,7 +6,8 @@
 
 #![expect(
     clippy::cast_precision_loss,
-    reason = "/proc stats use u64→f64 for display; precision loss acceptable"
+    clippy::cast_possible_truncation,
+    reason = "/proc stats use u64→f64→f32 for display; precision loss acceptable"
 )]
 
 use std::fs;
@@ -72,7 +73,7 @@ impl LinuxProcMetrics {
     }
 }
 
-/// Parse aggregate CPU line from /proc/stat, returns (total_ticks, busy_ticks).
+/// Parse aggregate CPU line from `/proc/stat`, returns (`total_ticks`, `busy_ticks`).
 fn parse_cpu_aggregate() -> Option<(u64, u64)> {
     let s = fs::read_to_string("/proc/stat").ok()?;
     let first = s.lines().next()?;
