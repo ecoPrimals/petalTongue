@@ -11,6 +11,7 @@ pub mod content_backend;
 pub mod content_direct;
 mod coord_handlers;
 mod handlers;
+pub mod ws_handler;
 #[cfg(test)]
 mod tests;
 
@@ -32,6 +33,7 @@ use handlers::{
 use std::sync::Arc;
 
 use axum::{Router, routing::get};
+use tokio::sync::RwLock;
 use tower_http::compression::CompressionLayer;
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
@@ -126,6 +128,36 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .route("/api/events", get(events_sse_handler))
         .route("/viz/{slug}", get(viz_handler))
         .nest_service("/static", ServeDir::new(WEB_STATIC_DIR));
+
+    // WebSocket JSON-RPC bridge — enables footPrint composition wiring (`/ws` → petalTongue)
+    let ws_runtime = {
+        use petal_tongue_platform::config::{EmbedConfig, Platform};
+        use petal_tongue_platform::EmbeddedRuntime;
+
+        let config = EmbedConfig::new(Platform::Desktop);
+        match EmbeddedRuntime::new(config) {
+            Ok(mut rt) => {
+                if let Err(e) = rt.start() {
+                    tracing::warn!("WS bridge runtime start failed: {e} — /ws disabled");
+                    None
+                } else {
+                    tracing::info!("WebSocket JSON-RPC bridge active at /ws");
+                    Some(Arc::new(RwLock::new(rt)))
+                }
+            }
+            Err(e) => {
+                tracing::warn!("WS bridge runtime init failed: {e} — /ws disabled");
+                None
+            }
+        }
+    };
+
+    if let Some(ws_state) = ws_runtime {
+        let ws_router = Router::new()
+            .route("/ws", get(ws_handler::ws_upgrade_handler))
+            .with_state(ws_state);
+        app = app.merge(ws_router);
+    }
 
     for comp in &cfg.compositions {
         if comp.path.is_dir() {

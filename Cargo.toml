@@ -186,7 +186,7 @@ predicates = "3.0"
 criterion = { version = "0.5", features = ["html_reports"] }
 
 # Web server (axum stack — only root binary uses these)
-axum = { version = "0.7", features = ["tokio"] }
+axum = { version = "0.7", features = ["tokio", "ws"] }
 tower-http = { version = "0.5", features = ["fs", "trace", "cors", "compression-gzip", "compression-br"] }
 tower = { version = "0.5", features = ["util"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
@@ -252,6 +252,7 @@ tuple_array_conversions = "allow"
 # Core crates
 petal-tongue-core = { path = "crates/petal-tongue-core" }
 petal-tongue-discovery = { path = "crates/petal-tongue-discovery" }
+petal-tongue-platform = { path = "crates/petal-tongue-platform" }
 petal-tongue-ui-core = { path = "crates/petal-tongue-ui-core" }
 petal-tongue-graph = { path = "crates/petal-tongue-graph" }
 petal-tongue-ipc = { path = "crates/petal-tongue-ipc" }

@@ -1,36 +1,38 @@
 # petalTongue — After Action Report
 
-**Wave**: 150b | **Date**: July 18, 2026 | **From**: petalTongue on eastGate
+**Wave**: 150f | **Date**: July 18, 2026 | **From**: petalTongue on eastGate
 **For**: eastGate overwatch, footPrint team
 
 ---
 
 ## Summary
 
-petalTongue has achieved all ecosystem milestones and is in steady-state.
-The Wave 150b demand signal still lists `WS_PATH` as "Open" — this tracks
-end-to-end completion. **Our side is SHIPPED and OPERATIONAL** with full
-JSON-RPC method coverage including real-time resource monitoring (`pt.metrics`).
+petalTongue `WS_PATH` is **COMPLETE**. The WebSocket JSON-RPC bridge is now
+mounted at `/ws` on the web server (port 8080) — the **same port Caddy already
+proxies**. footPrint's existing Caddy routing (`/ws` → petalTongue:8080) now
+hits a live WebSocket endpoint. 7 JSON-RPC methods available including
+real-time resource monitoring (`pt.metrics`).
 
 ---
 
-## Demand Signal Response (Wave 150b)
+## Demand Signal Response (Wave 150f)
 
 | Demand | From | Our Status | Evidence |
 |--------|------|-----------|----------|
-| `WS_PATH` agent bridge | footPrint | **SHIPPED** | `470d7b5`, `ea5dbc6`, `d9c2ddb`, latest (pt.metrics) |
+| `WS_PATH` agent bridge | footPrint | **COMPLETE** | `/ws` route on port 8080 (Caddy-compatible) |
 | Health monitoring trait (P2) | ecosystem | **SHIPPED** | `PlatformMetrics` trait + `pt.metrics` IPC method |
 | GAP-036: Socket naming convention | ecosystem | **COMPLIANT** | Capability-based naming, env-overridable |
 | GAP-038: Stale UDS socket cleanup | ecosystem | **COMPLIANT** | `server.rs` L139-142, `unix_socket_server/mod.rs` L250-255 |
 
 ---
 
-## Recent Commits (Wave 149b → 150b)
+## Recent Commits (Wave 149b → 150f)
 
 | Commit | What |
 |--------|------|
 | `d9c2ddb` | E2E WebSocket bridge tests + AAR Wave 149b |
-| latest | `pt.metrics` method — real-time resource monitoring over WS bridge |
+| `de94a99` | `pt.metrics` method — real-time resource monitoring over WS bridge |
+| latest | `/ws` route on Axum web server (port 8080) — Caddy-compatible composition path |
 
 ---
 
@@ -68,14 +70,14 @@ JSON-RPC method coverage including real-time resource monitoring (`pt.metrics`).
 
 ## What We Need From Other Teams
 
-### footPrint (P1 — composition wiring — ACTION REQUIRED)
+### footPrint (P1 — composition wiring — VERIFY ONLY)
 
-Our bridge is shipped with 7 methods. footPrint needs to:
-1. Wire `WS_PATH` → `ws://127.0.0.1:8765`
-2. Call `health.check` to verify connectivity
-3. Use `pt.metrics` for resource dashboard integration
-4. Call `pt.render_svg` / `pt.render_binding` for chart rendering
-5. Report completion to overwatch
+Our `/ws` endpoint is now on port 8080 — matching footPrint's existing Caddy
+route. footPrint needs to:
+1. Verify `footprint.primals.eco/ws` WebSocket upgrade works
+2. Call `health.check` to confirm connectivity
+3. Integrate `pt.render_svg` / `pt.metrics` in the client
+4. Report completion to overwatch
 
 Protocol docs: `infra/wateringHole/handoffs/FOOTPRINT_WS_BRIDGE.md`
 
@@ -108,7 +110,6 @@ Protocol docs: `infra/wateringHole/handoffs/FOOTPRINT_WS_BRIDGE.md`
 
 ---
 
-*Wave 150b AAR: petalTongue steady-state. `WS_PATH` is SHIPPED with 7 JSON-RPC
-methods including real-time resource monitoring. Dimensional review: all GREEN.
-0 warnings, 0 debt, 0 mocks in prod. Awaiting footPrint client wiring as sole
-remaining external handoff.*
+*Wave 150f AAR: petalTongue `WS_PATH` is COMPLETE. `/ws` mounted on port 8080
+(Caddy-compatible). 7 JSON-RPC methods. Dimensional review: all GREEN.
+0 warnings, 0 debt, 0 mocks in prod. footPrint verification is the last step.*
