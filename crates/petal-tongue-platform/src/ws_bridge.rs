@@ -161,7 +161,7 @@ async fn handle_connection(
 
         let request_text = msg.into_text().unwrap_or_default();
         let response = {
-            let rt = runtime.read().await;
+            let mut rt = runtime.write().await;
             match rt.ipc_request(&request_text) {
                 Ok(r) => r,
                 Err(e) => {
@@ -292,6 +292,40 @@ mod tests {
 
         assert_eq!(v["id"], 99);
         assert_eq!(v["error"]["code"], -32601);
+
+        handle.shutdown();
+    }
+
+    #[tokio::test]
+    async fn ws_bridge_metrics_e2e() {
+        let runtime = create_test_runtime();
+        let config = WsBridgeConfig {
+            bind_host: "127.0.0.1".to_owned(),
+            port: 0,
+        };
+
+        let handle = spawn_ws_bridge(Arc::clone(&runtime), config)
+            .await
+            .expect("bridge should bind");
+
+        let url = format!("ws://{}", handle.local_addr());
+        let (mut ws, _) = tokio_tungstenite::connect_async(&url)
+            .await
+            .expect("WS connect");
+
+        let req = r#"{"jsonrpc":"2.0","id":7,"method":"pt.metrics","params":{}}"#;
+        ws.send(tokio_tungstenite::tungstenite::Message::Text(req.to_owned()))
+            .await
+            .expect("send");
+
+        let resp = ws.next().await.expect("response").expect("no error");
+        let v: serde_json::Value = serde_json::from_str(resp.to_text().expect("text"))
+            .expect("valid JSON");
+
+        assert_eq!(v["id"], 7);
+        assert!(v["result"]["cpu_count"].as_u64().unwrap_or(0) >= 1);
+        assert!(v["result"]["source"].is_string());
+        assert!(v["result"]["memory_percent"].is_number());
 
         handle.shutdown();
     }

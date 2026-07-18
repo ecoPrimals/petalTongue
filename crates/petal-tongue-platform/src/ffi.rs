@@ -161,7 +161,7 @@ pub unsafe extern "C" fn pt_ipc_request(
     if handle.is_null() || json.is_null() {
         return std::ptr::null_mut();
     }
-    let h = unsafe { &*handle };
+    let h = unsafe { &mut *handle };
 
     let Ok(request) = (unsafe { CStr::from_ptr(json) }).to_str() else {
         return std::ptr::null_mut();

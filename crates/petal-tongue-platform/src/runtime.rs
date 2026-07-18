@@ -9,6 +9,7 @@ use tokio::runtime::Runtime;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
 
+use petal_tongue_core::platform_metrics::{self, PlatformMetrics};
 use petal_tongue_core::scenario_builder::ScenarioBuilder;
 use petal_tongue_core::scenarios::{
     AirSpringCropCoefficientScenario, AirSpringDroughtIndexScenario, AirSpringET0Scenario,
@@ -47,6 +48,7 @@ pub struct EmbeddedRuntime {
     scene_cache: Arc<RwLock<Option<SceneGraph>>>,
     event_callback: Option<EventCallback>,
     builders: Vec<Box<dyn ScenarioBuilder>>,
+    metrics: Box<dyn PlatformMetrics>,
 }
 
 impl EmbeddedRuntime {
@@ -71,6 +73,7 @@ impl EmbeddedRuntime {
             scene_cache: Arc::new(RwLock::new(None)),
             event_callback: None,
             builders: Self::builtin_builders(),
+            metrics: platform_metrics::detect(),
         })
     }
 
@@ -256,7 +259,8 @@ impl EmbeddedRuntime {
     ///
     /// # Errors
     /// Returns error if the request is malformed or processing fails.
-    pub fn ipc_request(&self, json: &str) -> Result<String, PlatformError> {
+    #[allow(clippy::too_many_lines)]
+    pub fn ipc_request(&mut self, json: &str) -> Result<String, PlatformError> {
         if self.state != RuntimeState::Running {
             return Err(PlatformError::InvalidState {
                 current: self.state,
@@ -288,6 +292,7 @@ impl EmbeddedRuntime {
                         "pt.render_binding",
                         "pt.state",
                         "pt.scenarios",
+                        "pt.metrics",
                         "health.check",
                         "capabilities.list"
                     ]
@@ -335,6 +340,21 @@ impl EmbeddedRuntime {
                 "id": request.get("id"),
                 "result": { "state": format!("{:?}", self.state) }
             }),
+            "pt.metrics" => {
+                let snap = self.metrics.snapshot();
+                serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": request.get("id"),
+                    "result": {
+                        "cpu_percent": snap.cpu_percent,
+                        "memory_total": snap.memory_total,
+                        "memory_used": snap.memory_used,
+                        "memory_percent": snap.memory_percent(),
+                        "cpu_count": snap.cpu_count,
+                        "source": self.metrics.source_id()
+                    }
+                })
+            }
             "pt.scenarios" => {
                 let list = self.list_scenarios();
                 serde_json::json!({
@@ -497,7 +517,7 @@ mod tests {
 
     #[test]
     fn health_check_returns_ok() -> Result<(), PlatformError> {
-        let rt = test_runtime();
+        let mut rt = test_runtime();
         let resp = rt.ipc_request(r#"{"jsonrpc":"2.0","id":1,"method":"health.check","params":{}}"#)?;
         let v: serde_json::Value = serde_json::from_str(&resp).expect("valid JSON");
         assert_eq!(v["result"]["status"], "ok");
@@ -507,7 +527,7 @@ mod tests {
 
     #[test]
     fn capabilities_list_returns_methods() -> Result<(), PlatformError> {
-        let rt = test_runtime();
+        let mut rt = test_runtime();
         let resp = rt.ipc_request(r#"{"jsonrpc":"2.0","id":2,"method":"capabilities.list","params":{}}"#)?;
         let v: serde_json::Value = serde_json::from_str(&resp).expect("valid JSON");
         let caps = v["result"]["capabilities"].as_array().expect("array");
@@ -518,7 +538,7 @@ mod tests {
 
     #[test]
     fn unknown_method_returns_error() -> Result<(), PlatformError> {
-        let rt = test_runtime();
+        let mut rt = test_runtime();
         let resp = rt.ipc_request(r#"{"jsonrpc":"2.0","id":3,"method":"no.such.method","params":{}}"#)?;
         let v: serde_json::Value = serde_json::from_str(&resp).expect("valid JSON");
         assert_eq!(v["error"]["code"], -32601);
@@ -527,7 +547,7 @@ mod tests {
 
     #[test]
     fn state_method_returns_running() -> Result<(), PlatformError> {
-        let rt = test_runtime();
+        let mut rt = test_runtime();
         let resp = rt.ipc_request(r#"{"jsonrpc":"2.0","id":4,"method":"pt.state","params":{}}"#)?;
         let v: serde_json::Value = serde_json::from_str(&resp).expect("valid JSON");
         assert_eq!(v["result"]["state"], "Running");
@@ -537,8 +557,20 @@ mod tests {
     #[test]
     fn ipc_request_while_stopped_fails() {
         let config = EmbedConfig::new(Platform::Desktop);
-        let rt = EmbeddedRuntime::new(config).expect("runtime should create");
+        let mut rt = EmbeddedRuntime::new(config).expect("runtime should create");
         let result = rt.ipc_request(r#"{"jsonrpc":"2.0","id":1,"method":"health.check","params":{}}"#);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn metrics_returns_snapshot() -> Result<(), PlatformError> {
+        let mut rt = test_runtime();
+        let resp = rt.ipc_request(r#"{"jsonrpc":"2.0","id":5,"method":"pt.metrics","params":{}}"#)?;
+        let v: serde_json::Value = serde_json::from_str(&resp).expect("valid JSON");
+        assert_eq!(v["id"], 5);
+        assert!(v["result"]["cpu_count"].as_u64().unwrap_or(0) >= 1);
+        assert!(v["result"]["source"].is_string());
+        assert!(v["result"]["memory_percent"].is_number());
+        Ok(())
     }
 }
