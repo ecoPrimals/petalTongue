@@ -395,3 +395,99 @@ fn find_by_data_id_empty_graph() {
     let found = g.find_by_data_id("any");
     assert!(found.is_empty());
 }
+
+// --- 3D Scene Unification Tests ---
+
+#[test]
+fn effective_camera_defaults_to_ortho_2d() {
+    let g = SceneGraph::new();
+    let cam = g.effective_camera();
+    assert!(matches!(
+        cam.projection,
+        crate::transform::Projection::Orthographic { .. }
+    ));
+}
+
+#[test]
+fn set_camera_overrides_default() {
+    use crate::transform::{Camera, Projection, Transform3D};
+    let mut g = SceneGraph::new();
+    let cam = Camera::perspective(Transform3D::translate(0.0, 0.0, 10.0), 16.0 / 9.0);
+    g.set_camera(cam);
+    let eff = g.effective_camera();
+    assert!(matches!(eff.projection, Projection::Perspective { .. }));
+}
+
+#[test]
+fn flatten_3d_embeds_2d_at_z0() {
+    use crate::primitive::Color;
+    use crate::transform::Transform3D;
+
+    let mut g = SceneGraph::new();
+    let node = SceneNode::new("dot")
+        .with_transform(Transform2D::translate(5.0, 3.0))
+        .with_primitive(Primitive::Point {
+            x: 0.0,
+            y: 0.0,
+            radius: 1.0,
+            fill: Some(Color::BLACK),
+            stroke: None,
+            data_id: None,
+        });
+    g.add_to_root(node);
+    let flat = g.flatten_3d();
+    assert_eq!(flat.len(), 1);
+    let (t3d, _, _) = &flat[0];
+    // Translation should be at (5, 3, 0) in the 3D matrix
+    assert!((t3d.matrix[12] - 5.0).abs() < EPS);
+    assert!((t3d.matrix[13] - 3.0).abs() < EPS);
+    assert!((t3d.matrix[14] - 0.0).abs() < EPS);
+}
+
+#[test]
+fn flatten_3d_uses_explicit_transform_3d() {
+    use crate::primitive::Color;
+    use crate::transform::Transform3D;
+
+    let mut g = SceneGraph::new();
+    let node = SceneNode::new("elevated")
+        .with_transform(Transform2D::translate(1.0, 2.0))
+        .with_transform_3d(Transform3D::translate(1.0, 2.0, 7.0))
+        .with_primitive(Primitive::Point {
+            x: 0.0,
+            y: 0.0,
+            radius: 1.0,
+            fill: Some(Color::BLACK),
+            stroke: None,
+            data_id: None,
+        });
+    g.add_to_root(node);
+    let flat = g.flatten_3d();
+    assert_eq!(flat.len(), 1);
+    let (t3d, _, _) = &flat[0];
+    // Should use the explicit 3D transform, not the 2D one
+    assert!((t3d.matrix[14] - 7.0).abs() < EPS);
+}
+
+#[test]
+fn scene_node_effective_transform_3d_without_explicit() {
+    use crate::transform::Transform3D;
+    let node = SceneNode::new("n").with_transform(Transform2D::scale(2.0, 3.0));
+    let t = node.effective_transform_3d();
+    // Scale factors should appear in the diagonal
+    assert!((t.matrix[0] - 2.0).abs() < EPS);
+    assert!((t.matrix[5] - 3.0).abs() < EPS);
+    assert!((t.matrix[10] - 1.0).abs() < EPS); // z stays 1.0
+}
+
+#[test]
+fn scene_node_effective_transform_3d_with_explicit() {
+    use crate::transform::Transform3D;
+    let node = SceneNode::new("n")
+        .with_transform(Transform2D::scale(2.0, 3.0))
+        .with_transform_3d(Transform3D::uniform_scale(5.0));
+    let t = node.effective_transform_3d();
+    assert!((t.matrix[0] - 5.0).abs() < EPS);
+    assert!((t.matrix[5] - 5.0).abs() < EPS);
+    assert!((t.matrix[10] - 5.0).abs() < EPS);
+}

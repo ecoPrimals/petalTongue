@@ -171,6 +171,17 @@ impl GrammarExpr {
         self
     }
 
+    /// Add z variable binding (enables 3D scene rendering).
+    #[must_use]
+    pub fn with_z(mut self, field: impl Into<String>) -> Self {
+        self.variables.push(VariableBinding {
+            name: "z".to_owned(),
+            field: field.into(),
+            role: VariableRole::Z,
+        });
+        self
+    }
+
     /// Add color aesthetic binding.
     #[must_use]
     pub fn with_color(mut self, field: impl Into<String>) -> Self {
@@ -340,6 +351,17 @@ mod tests {
             .with_x("x")
             .with_y("y");
         assert!(!expr.uses_3d_coord());
+    }
+
+    #[test]
+    fn with_z_adds_z_variable() {
+        let expr = GrammarExpr::new("data", GeometryType::Sphere)
+            .with_x("x")
+            .with_y("y")
+            .with_z("depth");
+        assert_eq!(expr.variables.len(), 3);
+        assert_eq!(expr.variables[2].role, VariableRole::Z);
+        assert_eq!(expr.variables[2].field, "depth");
     }
 
     #[test]

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::primitive::Primitive;
-use crate::transform::Transform2D;
+use crate::transform::{Camera, Transform2D, Transform3D};
 
 use super::node::SceneNode;
 use crate::node_id::NodeId;
@@ -15,10 +15,16 @@ use crate::node_id::NodeId;
 /// Nodes reference children by ID. The graph is acyclic by construction
 /// (callers must not create cycles). Flat storage enables O(1) lookup
 /// and efficient serialization for IPC.
+///
+/// The optional `camera` field supports 3D rendering: when absent, a
+/// default orthographic camera at z=0 is assumed (full 2D compatibility).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SceneGraph {
     nodes: HashMap<NodeId, SceneNode>,
     root_id: NodeId,
+    /// Camera for this scene. Defaults to orthographic 2D when absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub camera: Option<Camera>,
 }
 
 impl SceneGraph {
@@ -29,13 +35,29 @@ impl SceneGraph {
         let root_id = root.id.clone();
         let mut nodes = HashMap::new();
         nodes.insert(root_id.clone(), root);
-        Self { nodes, root_id }
+        Self {
+            nodes,
+            root_id,
+            camera: None,
+        }
     }
 
     /// Get the root node ID.
     #[must_use]
     pub fn root_id(&self) -> &str {
         self.root_id.as_str()
+    }
+
+    /// Get the effective camera for rendering.
+    /// Returns the scene's camera if set, otherwise a default orthographic 2D camera.
+    #[must_use]
+    pub fn effective_camera(&self) -> Camera {
+        self.camera.unwrap_or(Camera::ORTHO_2D)
+    }
+
+    /// Set the camera for this scene.
+    pub const fn set_camera(&mut self, camera: Camera) {
+        self.camera = Some(camera);
     }
 
     /// Add a node to the graph, parented to the given parent.
@@ -199,10 +221,57 @@ impl SceneGraph {
             .filter(|(_, p)| p.data_id() == Some(data_id))
             .collect()
     }
+
+    /// Flatten with 3D world transforms (for 3D-aware renderers).
+    /// Uses each node's `effective_transform_3d()` — nodes without explicit
+    /// 3D transforms are automatically embedded at z=0.
+    #[must_use]
+    pub fn flatten_3d(&self) -> Vec<(Transform3D, &Primitive, &NodeId)> {
+        let mut result = Vec::new();
+        self.flatten_node_3d(self.root_id.as_str(), Transform3D::IDENTITY, &mut result);
+        result
+    }
+
+    fn flatten_node_3d<'a>(
+        &'a self,
+        node_id: &str,
+        parent_transform: Transform3D,
+        out: &mut Vec<(Transform3D, &'a Primitive, &'a NodeId)>,
+    ) {
+        let Some(node) = self.nodes.get(node_id) else {
+            return;
+        };
+        if !node.visible {
+            return;
+        }
+        let local = node.effective_transform_3d();
+        let world = mul_4x4(&parent_transform, &local);
+        for prim in &node.primitives {
+            out.push((world, prim, &node.id));
+        }
+        for child_id in &node.children {
+            self.flatten_node_3d(child_id.as_str(), world, out);
+        }
+    }
 }
 
 impl Default for SceneGraph {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// Multiply two column-major 4×4 matrices (a * b).
+fn mul_4x4(a: &Transform3D, b: &Transform3D) -> Transform3D {
+    let mut out = [0.0f64; 16];
+    for col in 0..4 {
+        for row in 0..4 {
+            let mut sum = 0.0;
+            for k in 0..4 {
+                sum = a.matrix[k * 4 + row].mul_add(b.matrix[col * 4 + k], sum);
+            }
+            out[col * 4 + row] = sum;
+        }
+    }
+    Transform3D { matrix: out }
 }

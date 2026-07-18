@@ -1,6 +1,6 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 145b | **Date**: July 16, 2026 | **From**: petalTongue on eastGate
+**Wave**: 150h | **Date**: July 18, 2026 | **From**: petalTongue on eastGate
 
 ---
 
@@ -10,7 +10,7 @@
 |--------|-------|
 | Version | 1.6.6 |
 | Crates | 19 workspace members |
-| Tests | 6,511 passing, 0 failures |
+| Tests | 6,529 passing, 0 failures |
 | Clippy | Zero warnings (pedantic + nursery) |
 | Unsafe | Confined to `petal-tongue-platform/src/ffi.rs` (C-FFI boundary) |
 | Cross-arch | x86_64-linux, aarch64-linux, aarch64-android, x86_64-windows |
@@ -19,59 +19,54 @@
 
 ---
 
-## Phase 2: Abstraction Over Gating
+## Shipped Capabilities
+
+### NUCLEUS Composition (P1 — COMPLETE)
+
+petalTongue's `/ws` WebSocket JSON-RPC bridge is live and consumed by footPrint.
+7 methods available. Both provider and consumer sides confirmed working.
+
+### Phase 2: Abstraction Over Gating (REFERENCE)
 
 petalTongue is the **reference implementation** for Phase 2 Silicon Atheism.
 
-### What shipped
-
 1. **`petal-tongue-platform` crate** — cdylib embedding layer with C-FFI,
    `PlatformLifecycle` trait, `EmbeddedRuntime`, WebSocket JSON-RPC bridge.
-   This is the pattern for other primals targeting Android/iOS embedding.
 
 2. **`MeshTopologySource` trait** — runtime topology resolution abstraction.
-   Static gate mesh data now behind `offline-topology` feature. Production
-   code written against the trait, not statics.
+   Static gate mesh data behind `offline-topology` feature.
 
 3. **`PlatformMetrics` trait** — cross-platform system resource queries.
    `LinuxProcMetrics` (production), `StubMetrics` (other platforms).
-   Pattern for platform-aware telemetry.
 
-4. **Deep debt elimination** — zero bare `unwrap()` in production (269 eliminated
-   across 28 files), zero `todo!`/`FIXME`/`HACK`, all mocks confined to `#[cfg(test)]`.
+4. **Deep debt elimination** — zero bare `unwrap()` in production (269 eliminated),
+   zero `todo!`/`FIXME`/`HACK`, all mocks confined to `#[cfg(test)]`.
 
-5. **Dependency isolation** — `socket2` (mDNS multicast UDP) now behind `mdns`
-   feature in `petal-tongue-discovery`. Zero mandatory C-library deps.
+### Scene Unification — 2D-as-3D-slice (Wave 150h)
 
-6. **Platform metrics composition** — `petal-tongue-ui` `ProcStats` delegates
-   system-level metrics to `PlatformMetrics` trait. Process-level stats remain
-   UI-specific. Eliminates duplicate /proc parsing.
+New architectural evolution making petalTongue a universal rendering engine
+(narrative, scientific, geospatial, molecular).
 
-### The pattern for other primals
+| Component | Status |
+|-----------|--------|
+| `Transform3D` on `SceneNode` | SHIPPED |
+| `Camera` + `Projection` types | SHIPPED |
+| Orthographic default (2D compat) | SHIPPED |
+| `SceneGraph::flatten_3d()` | SHIPPED |
+| Grammar `with_z()` + Perspective3D camera | SHIPPED |
+| 4×4 matrix composition | SHIPPED |
 
-```
-trait FooSource: Send + Sync {
-    fn data(&self) -> Vec<&'static FooItem>;
-}
-
-#[cfg(feature = "offline-topology")]
-struct StaticFoo;
-
-#[cfg(feature = "offline-topology")]
-impl FooSource for StaticFoo { ... }
-```
-
-Gate deployment-specific data behind features. Consumers work against the trait.
-Live implementations query capabilities at runtime.
+**Design**: 2D = orthographic camera at z=0. All non-breaking.
 
 ---
 
-## Remaining Work (petalTongue local)
+## Evolution Target (P2)
 
 | Item | Priority | Notes |
 |------|----------|-------|
+| SVG renderer camera integration (Phase 3) | P2 | Viewport from camera projection |
+| 3D geometry compilation (Phase 4) | P2 | Mesh3D, Sphere, Cylinder primitives → scene nodes |
 | `eframe` as opt-in for server builds | P3 | Already feature-gated behind `ui` |
-| CI lint: no `unsafe` outside `ffi.rs` | P3 | Workspace forbid already covers this |
 
 ---
 
@@ -79,10 +74,9 @@ Live implementations query capabilities at runtime.
 
 | From | Capability | Status |
 |------|-----------|--------|
-| songBird | `mesh.peers` IPC → live `MeshTopologySource` impl | Pattern ready, needs songBird adapter |
-| biomeOS | `gate.mesh.live` capability → live topology | Pattern ready |
-| footPrint | WebSocket client → `PETALTONGUE_WS_PORT` | Bridge shipped, integration TODO |
-| bearDog | `crypto.sign` delegation for scene signing | Design ready, env override exists |
+| songBird | `mesh.peers` IPC → live `MeshTopologySource` impl | Pattern ready |
+| songBird | `PROXY_PATH` drawbridge routing | P2 |
+| sporeGate ops | Deploy composition on gate | P2 |
 
 ---
 
@@ -90,12 +84,16 @@ Live implementations query capabilities at runtime.
 
 | To | What | How |
 |----|------|-----|
-| footPrint | Chart rendering, topology viz | WebSocket JSON-RPC bridge |
+| footPrint | Chart rendering, topology viz, metrics | WebSocket JSON-RPC (`/ws`) — **WIRED** |
+| esotericWebb | Interactive visualization via `ui.render` | WebSocket JSON-RPC |
 | sporePrint | Static file serving | `petaltongue web --docroot` |
-| primalSpring | Scenario validation, grammar tests | 29 JSON scenarios in `sandbox/scenarios/` |
+| primalSpring | Scenario validation, grammar tests | 29 JSON scenarios |
 | Any primal | Visualization IPC | `visualization.render.*` over UDS/TCP |
 | Mobile hosts | Embedded rendering | C-FFI via `petal-tongue-platform` |
+| 3D consumers | Scene unification | `flatten_3d()` + Camera/Projection |
 
 ---
 
-*Wave 145b: All milestones achieved. Phase 2 14/14, CAC 6/6, Glacial 8/8. 6,511 tests. Clean.*
+*Wave 150h: FULL NUCLEUS COMPOSITION WIRED. Scene unification Phase 1-2 shipped.
+6,529 tests. All milestones GREEN. footPrint consumer confirmed. esotericWebb V21
+using petalTongue rendering.*

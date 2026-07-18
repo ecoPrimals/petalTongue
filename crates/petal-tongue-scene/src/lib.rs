@@ -90,7 +90,7 @@ pub use primitive::{
 pub use provenance::{ProvenanceBuffer, ProvenanceRenderer};
 pub use render_plan::{AxisMeta, PanelBounds, PanelMeta, RenderPlan};
 pub use scene_graph::{NodeId, SceneGraph, SceneNode};
-pub use transform::{Transform2D, Transform3D};
+pub use transform::{Camera, Projection, Transform2D, Transform3D};
 pub use tufte::{
     ChartjunkDetection, ColorAccessibility, ConstraintResult, ConstraintSeverity, DataDensity,
     DataInkRatio, LieFactor, SmallMultiplesPreference, SmallestEffectiveDifference,
