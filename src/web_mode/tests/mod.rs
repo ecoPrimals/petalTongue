@@ -16,6 +16,7 @@ mod handler_tests;
 mod router_tests;
 mod startup_tests;
 mod viz_registry_tests;
+mod ws_bridge_tests;
 
 pub(super) fn test_config(bind: &str) -> WebConfig<'_> {
     WebConfig {

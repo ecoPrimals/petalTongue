@@ -304,6 +304,8 @@ anyhow = "1.0"
 petal-tongue-core = { path = "crates/petal-tongue-core", features = ["test-fixtures"] }
 tempfile = { workspace = true }
 criterion = { workspace = true }
+tokio-tungstenite = { workspace = true }
+futures-util = { workspace = true }
 
 [[bench]]
 name = "grammar_compiler"
