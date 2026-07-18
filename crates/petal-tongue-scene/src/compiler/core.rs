@@ -5,10 +5,11 @@
 use serde_json::Value;
 
 use crate::domain_palette::palette_for_domain;
-use crate::grammar::GrammarExpr;
+use crate::grammar::{CoordinateSystem, GrammarExpr};
 use crate::math::{Axes, MathObject};
 use crate::primitive::{AnchorPoint, Color, LineCap, LineJoin, Primitive, StrokeStyle};
 use crate::scene_graph::{SceneGraph, SceneNode};
+use crate::transform::Camera;
 
 use super::GrammarCompiler;
 use super::geometry::compile_geometry;
@@ -18,6 +19,14 @@ impl GrammarCompiler {
     /// Compile grammar expression and data into a scene graph.
     pub fn compile(&self, expr: &GrammarExpr, data: &[Value]) -> SceneGraph {
         let mut graph = SceneGraph::new();
+
+        // Set camera based on coordinate system: Perspective3D → perspective, else orthographic
+        if expr.coordinate == CoordinateSystem::Perspective3D {
+            graph.set_camera(Camera::perspective(
+                crate::transform::Transform3D::translate(0.0, 0.0, 5.0),
+                4.0 / 3.0,
+            ));
+        }
 
         let x_field = x_field(expr);
         let y_field = y_field(expr);
