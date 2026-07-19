@@ -46,7 +46,7 @@ keywords.workspace = true
 categories.workspace = true
 
 [workspace.package]
-version = "1.6.6"
+version = "1.7.0"
 edition = "2024"
 rust-version = "1.87"
 license = "AGPL-3.0-or-later"
