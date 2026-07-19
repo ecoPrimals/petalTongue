@@ -6,14 +6,12 @@ use bytes::Bytes;
 
 use crate::primitive::{AnchorPoint, Color, FillRule, Primitive};
 use crate::scene_graph::SceneGraph;
-use crate::transform::Transform2D;
+use crate::transform::{Projection, Transform2D};
 
 use super::{ModalityCompiler, ModalityOutput};
 
-/// Default SVG viewport width.
-const SVG_VIEWPORT_WIDTH: u32 = 800;
-/// Default SVG viewport height.
-const SVG_VIEWPORT_HEIGHT: u32 = 600;
+/// Fallback SVG viewport height when no camera is set.
+const DEFAULT_VIEWPORT_HEIGHT: f64 = 600.0;
 
 /// Compiles scene graph to SVG.
 #[derive(Debug, Clone, Default)]
@@ -25,6 +23,18 @@ impl SvgCompiler {
     pub const fn new() -> Self {
         Self
     }
+
+    /// Extract viewport dimensions from the scene's camera projection.
+    /// For orthographic: uses width/height directly.
+    /// For perspective: derives from aspect ratio at a canonical height.
+    fn viewport_from_scene(scene: &SceneGraph) -> (f64, f64) {
+        match scene.effective_camera().projection {
+            Projection::Orthographic { width, height, .. } => (width, height),
+            Projection::Perspective { aspect, .. } => {
+                (DEFAULT_VIEWPORT_HEIGHT * aspect, DEFAULT_VIEWPORT_HEIGHT)
+            }
+        }
+    }
 }
 
 impl ModalityCompiler for SvgCompiler {
@@ -33,10 +43,11 @@ impl ModalityCompiler for SvgCompiler {
     }
 
     fn compile(&self, scene: &SceneGraph) -> ModalityOutput {
+        let (vw, vh) = Self::viewport_from_scene(scene);
         let mut buf = String::new();
         let _ = write!(
             buf,
-            r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {SVG_VIEWPORT_WIDTH} {SVG_VIEWPORT_HEIGHT}">"#,
+            r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {vw} {vh}">"#,
         );
 
         for (transform, prim) in scene.flatten() {
