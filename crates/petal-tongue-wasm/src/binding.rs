@@ -117,7 +117,8 @@ pub fn binding_id(binding: &DataBinding) -> &str {
         | DataBinding::GameScene { id, .. }
         | DataBinding::Soundscape { id, .. }
         | DataBinding::GenomeTrack { id, .. }
-        | DataBinding::CircularMap { id, .. } => id,
+        | DataBinding::CircularMap { id, .. }
+        | DataBinding::ColorGrid { id, .. } => id,
     }
 }
 
@@ -135,6 +136,7 @@ pub fn binding_label(binding: &DataBinding) -> &str {
         | DataBinding::GameScene { label, .. }
         | DataBinding::Soundscape { label, .. }
         | DataBinding::GenomeTrack { label, .. }
-        | DataBinding::CircularMap { label, .. } => label,
+        | DataBinding::CircularMap { label, .. }
+        | DataBinding::ColorGrid { label, .. } => label,
     }
 }

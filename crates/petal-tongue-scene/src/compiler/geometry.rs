@@ -236,44 +236,69 @@ pub fn compile_geometry(
                     .map(|(i, (point, &val))| {
                         let [x, y] = *point;
                         let (sx, sy) = axes.data_to_screen(x, y);
-                        let status = data.get(i).and_then(|d| {
-                            d.as_object()
-                                .and_then(|o| o.get("status"))
-                                .and_then(|s| s.as_str())
+
+                        // Explicit RGBA color (e.g., from ColorGrid binding)
+                        #[expect(
+                            clippy::cast_possible_truncation,
+                            reason = "color channels are 0.0–1.0 range, f32 is sufficient"
+                        )]
+                        let explicit_color = data.get(i).and_then(|d| {
+                            let o = d.as_object()?;
+                            let cr = get_number(o, "r")? as f32;
+                            let cg = get_number(o, "g")? as f32;
+                            let cb = get_number(o, "b")? as f32;
+                            let ca = get_number(o, "a").unwrap_or(1.0) as f32;
+                            Some(Color::rgba(cr, cg, cb, ca))
                         });
-                        let fill = status.map_or_else(
-                            || {
-                                #[expect(
-                                    clippy::cast_possible_truncation,
-                                    reason = "color interpolation t is clamped to 0.0..1.0"
-                                )]
-                                let t = ((val - val_min) / val_range).clamp(0.0, 1.0) as f32;
-                                Color::rgba(
-                                    primary.r.mul_add(t, palette.chart_bg.r * (1.0 - t)),
-                                    primary.g.mul_add(t, palette.chart_bg.g * (1.0 - t)),
-                                    primary.b.mul_add(t, palette.chart_bg.b * (1.0 - t)),
-                                    0.9,
-                                )
-                            },
-                            |status| match status {
-                                "normal" => palette.normal,
-                                "warning" => palette.warning,
-                                "critical" => palette.critical,
-                                _ => {
+
+                        let fill = explicit_color.unwrap_or_else(|| {
+                            let status = data.get(i).and_then(|d| {
+                                d.as_object()
+                                    .and_then(|o| o.get("status"))
+                                    .and_then(|s| s.as_str())
+                            });
+                            status.map_or_else(
+                                || {
                                     #[expect(
                                         clippy::cast_possible_truncation,
                                         reason = "color interpolation t is clamped to 0.0..1.0"
                                     )]
-                                    let t = ((val - val_min) / val_range).clamp(0.0, 1.0) as f32;
+                                    let t =
+                                        ((val - val_min) / val_range).clamp(0.0, 1.0) as f32;
                                     Color::rgba(
                                         primary.r.mul_add(t, palette.chart_bg.r * (1.0 - t)),
                                         primary.g.mul_add(t, palette.chart_bg.g * (1.0 - t)),
                                         primary.b.mul_add(t, palette.chart_bg.b * (1.0 - t)),
                                         0.9,
                                     )
-                                }
-                            },
-                        );
+                                },
+                                |status| match status {
+                                    "normal" => palette.normal,
+                                    "warning" => palette.warning,
+                                    "critical" => palette.critical,
+                                    _ => {
+                                        #[expect(
+                                            clippy::cast_possible_truncation,
+                                            reason = "color interpolation t is clamped to 0.0..1.0"
+                                        )]
+                                        let t = ((val - val_min) / val_range).clamp(0.0, 1.0)
+                                            as f32;
+                                        Color::rgba(
+                                            primary
+                                                .r
+                                                .mul_add(t, palette.chart_bg.r * (1.0 - t)),
+                                            primary
+                                                .g
+                                                .mul_add(t, palette.chart_bg.g * (1.0 - t)),
+                                            primary
+                                                .b
+                                                .mul_add(t, palette.chart_bg.b * (1.0 - t)),
+                                            0.9,
+                                        )
+                                    }
+                                },
+                            )
+                        });
                         Primitive::Rect {
                             x: sx - tile_w / 2.0,
                             y: sy - tile_h / 2.0,

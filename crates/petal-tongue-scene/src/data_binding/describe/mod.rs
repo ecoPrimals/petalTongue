@@ -148,6 +148,23 @@ pub fn describe_binding(binding: &DataBinding) -> String {
                 a = arcs.len(),
             )
         }
+        DataBinding::ColorGrid {
+            label,
+            cols,
+            rows,
+            reveal_fraction,
+            ..
+        } => {
+            let total = cols * rows;
+            if (*reveal_fraction - 1.0).abs() < f64::EPSILON {
+                format!("Color grid '{label}': {cols}×{rows} ({total} cells, fully revealed).")
+            } else {
+                format!(
+                    "Color grid '{label}': {cols}×{rows} ({total} cells, {pct:.0}% revealed).",
+                    pct = reveal_fraction * 100.0,
+                )
+            }
+        }
     }
 }
 

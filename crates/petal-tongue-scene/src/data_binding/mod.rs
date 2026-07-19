@@ -415,6 +415,56 @@ impl DataBindingCompiler {
                     .collect();
                 (expr, data)
             }
+            DataBinding::ColorGrid {
+                id,
+                label,
+                cols,
+                rows,
+                colors,
+                reveal_fraction,
+            } => {
+                let expr = GrammarExpr::new(id.as_str(), GeometryType::Tile)
+                    .with_x("x")
+                    .with_y("y")
+                    .with_title(label.as_str())
+                    .with_scale("x", ScaleType::Linear)
+                    .with_scale("y", ScaleType::Linear);
+                let expr = if let Some(d) = domain {
+                    expr.with_domain(d)
+                } else {
+                    expr
+                };
+                #[expect(clippy::cast_precision_loss, reason = "grid indices")]
+                #[expect(clippy::cast_possible_truncation, reason = "reveal count within usize")]
+                #[expect(clippy::cast_sign_loss, reason = "product is non-negative")]
+                let reveal_count =
+                    ((cols * rows) as f64 * reveal_fraction.clamp(0.0, 1.0)) as usize;
+                let data: Vec<Value> = (0..*rows)
+                    .flat_map(|row| {
+                        (0..*cols).map(move |col| {
+                            let idx = row * cols + col;
+                            let rgba = colors
+                                .get(idx)
+                                .copied()
+                                .unwrap_or([0.5, 0.5, 0.5, 1.0]);
+                            let revealed = idx < reveal_count;
+                            let [cr, cg, cb, ca] = if revealed {
+                                rgba
+                            } else {
+                                [0.15, 0.15, 0.15, 1.0]
+                            };
+                            serde_json::json!({
+                                "x": col,
+                                "y": row,
+                                "value": if revealed { 1.0 } else { 0.0 },
+                                "r": cr, "g": cg, "b": cb, "a": ca,
+                                "data_id": format!("{col}:{row}"),
+                            })
+                        })
+                    })
+                    .collect();
+                (expr, data)
+            }
         }
     }
 
