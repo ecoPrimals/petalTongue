@@ -7,6 +7,11 @@
 
 use serde::{Deserialize, Serialize};
 
+/// Default reveal fraction (fully revealed).
+const fn default_reveal() -> f64 {
+    1.0
+}
+
 /// Data binding for universal visualization (binds data source to chart type)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "channel_type")]
@@ -248,6 +253,29 @@ pub enum DataBinding {
         /// Unit for any associated values.
         unit: String,
     },
+    /// Pre-computed color grid (e.g., bingoCube commitments, hash visualizations).
+    ///
+    /// Unlike `Heatmap` which derives colors from numeric values, `ColorGrid`
+    /// receives explicit RGBA colors per cell. Supports progressive reveal
+    /// via `reveal_fraction` (0.0–1.0, cells beyond fraction render as masked).
+    #[serde(rename = "color_grid")]
+    ColorGrid {
+        /// Unique identifier for this channel within the visualization.
+        id: String,
+        /// Human-readable display name.
+        label: String,
+        /// Number of columns in the grid.
+        cols: usize,
+        /// Number of rows in the grid.
+        rows: usize,
+        /// Flat array of cell colors as `[r, g, b, a]` (0.0–1.0), row-major order.
+        /// Length must equal `cols * rows`.
+        colors: Vec<[f32; 4]>,
+        /// Fraction of cells to reveal (0.0–1.0). Cells beyond this fraction
+        /// render with a masked/placeholder color. Default: 1.0 (fully revealed).
+        #[serde(default = "default_reveal")]
+        reveal_fraction: f64,
+    },
 }
 
 /// Threshold range with status (normal/warning/critical for any metric)
@@ -333,6 +361,34 @@ mod tests {
         }"#;
         let binding: DataBinding = serde_json::from_str(json).expect("deserialize");
         assert!(matches!(binding, DataBinding::CircularMap { .. }));
+        let serialized = serde_json::to_string(&binding).expect("serialize");
+        let _restored: DataBinding = serde_json::from_str(&serialized).expect("round-trip");
+    }
+
+    #[test]
+    fn color_grid_round_trip() {
+        let json = r#"{
+            "channel_type": "color_grid",
+            "id": "bingo_test",
+            "label": "BingoCube Grid",
+            "cols": 2,
+            "rows": 2,
+            "colors": [[1.0, 0.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0], [0.0, 0.0, 1.0, 1.0], [1.0, 1.0, 0.0, 1.0]],
+            "reveal_fraction": 0.75
+        }"#;
+        let binding: DataBinding = serde_json::from_str(json).expect("deserialize");
+        assert!(matches!(binding, DataBinding::ColorGrid { .. }));
+        if let DataBinding::ColorGrid {
+            cols,
+            rows,
+            reveal_fraction,
+            ..
+        } = &binding
+        {
+            assert_eq!(*cols, 2);
+            assert_eq!(*rows, 2);
+            assert!((reveal_fraction - 0.75).abs() < f64::EPSILON);
+        }
         let serialized = serde_json::to_string(&binding).expect("serialize");
         let _restored: DataBinding = serde_json::from_str(&serialized).expect("round-trip");
     }

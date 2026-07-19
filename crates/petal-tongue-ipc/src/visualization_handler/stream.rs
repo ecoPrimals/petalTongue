@@ -25,7 +25,8 @@ pub fn binding_id(binding: &DataBinding) -> &str {
         | DataBinding::GameScene { id, .. }
         | DataBinding::Soundscape { id, .. }
         | DataBinding::GenomeTrack { id, .. }
-        | DataBinding::CircularMap { id, .. } => id,
+        | DataBinding::CircularMap { id, .. }
+        | DataBinding::ColorGrid { id, .. } => id,
     }
 }
 

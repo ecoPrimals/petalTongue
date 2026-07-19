@@ -411,3 +411,86 @@ fn compile_batch_with_thresholds_fieldmap() {
     assert_eq!(results[0].1[0]["status"], "normal");
     assert_eq!(results[0].1[1]["status"], "unknown");
 }
+
+#[test]
+fn color_grid_binding_compiles_to_tiles() {
+    let binding = DataBinding::ColorGrid {
+        id: "bingocube_1".to_string(),
+        label: "BingoCube Commitment".to_string(),
+        cols: 3,
+        rows: 3,
+        colors: vec![
+            [1.0, 0.0, 0.0, 1.0],
+            [0.0, 1.0, 0.0, 1.0],
+            [0.0, 0.0, 1.0, 1.0],
+            [1.0, 1.0, 0.0, 1.0],
+            [1.0, 0.0, 1.0, 1.0],
+            [0.0, 1.0, 1.0, 1.0],
+            [0.5, 0.5, 0.5, 1.0],
+            [0.2, 0.8, 0.2, 1.0],
+            [0.8, 0.2, 0.8, 1.0],
+        ],
+        reveal_fraction: 1.0,
+    };
+    let (expr, data) = DataBindingCompiler::compile(&binding, None);
+    assert_eq!(expr.data_source, "bingocube_1");
+    assert_eq!(data.len(), 9);
+    // Verify colors are passed through
+    assert_eq!(data[0]["r"], 1.0);
+    assert_eq!(data[0]["g"], 0.0);
+    assert_eq!(data[0]["b"], 0.0);
+}
+
+#[test]
+fn color_grid_partial_reveal_masks_cells() {
+    let binding = DataBinding::ColorGrid {
+        id: "bc_partial".to_string(),
+        label: "Partial Reveal".to_string(),
+        cols: 2,
+        rows: 2,
+        colors: vec![
+            [1.0, 0.0, 0.0, 1.0],
+            [0.0, 1.0, 0.0, 1.0],
+            [0.0, 0.0, 1.0, 1.0],
+            [1.0, 1.0, 0.0, 1.0],
+        ],
+        reveal_fraction: 0.5,
+    };
+    let (_, data) = DataBindingCompiler::compile(&binding, None);
+    assert_eq!(data.len(), 4);
+    // First 2 cells revealed (50% of 4)
+    assert_eq!(data[0]["r"], 1.0);
+    assert_eq!(data[1]["g"], 1.0);
+    // Last 2 cells masked
+    let masked_r: f64 = data[2]["r"].as_f64().unwrap_or(0.0);
+    assert!((masked_r - 0.15).abs() < 0.01, "masked cells should use 0.15");
+}
+
+#[test]
+fn color_grid_renders_through_scene_pipeline() {
+    use crate::compiler::GrammarCompiler;
+    use crate::primitive::Primitive;
+
+    let binding = DataBinding::ColorGrid {
+        id: "bc_render".to_string(),
+        label: "Render Test".to_string(),
+        cols: 2,
+        rows: 2,
+        colors: vec![
+            [1.0, 0.0, 0.0, 1.0],
+            [0.0, 1.0, 0.0, 1.0],
+            [0.0, 0.0, 1.0, 1.0],
+            [1.0, 1.0, 0.0, 1.0],
+        ],
+        reveal_fraction: 1.0,
+    };
+    let (expr, data) = DataBindingCompiler::compile(&binding, None);
+    let compiler = GrammarCompiler::new();
+    let scene = compiler.compile(&expr, &data);
+    let flat = scene.flatten();
+    let rects: Vec<_> = flat
+        .iter()
+        .filter(|(_, p)| matches!(p, Primitive::Rect { .. }))
+        .collect();
+    assert_eq!(rects.len(), 4, "2x2 grid should produce 4 Rect primitives");
+}

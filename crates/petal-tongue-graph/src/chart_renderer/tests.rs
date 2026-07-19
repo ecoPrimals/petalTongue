@@ -156,7 +156,8 @@ fn binding_label(binding: &DataBinding) -> &str {
         | DataBinding::GameScene { label, .. }
         | DataBinding::Soundscape { label, .. }
         | DataBinding::GenomeTrack { label, .. }
-        | DataBinding::CircularMap { label, .. } => label,
+        | DataBinding::CircularMap { label, .. }
+        | DataBinding::ColorGrid { label, .. } => label,
     }
 }
 

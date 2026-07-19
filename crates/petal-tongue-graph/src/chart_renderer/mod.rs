@@ -155,6 +155,11 @@ pub fn draw_channel(ui: &mut Ui, binding: &DataBinding, domain: Option<&str>) {
                 ui.label("(empty circular map scene)");
             }
         }
+        DataBinding::ColorGrid { .. } => {
+            if !scene_paint::draw_binding_via_scene(ui, binding, domain) {
+                ui.label("(empty color grid scene)");
+            }
+        }
     }
 }
 
