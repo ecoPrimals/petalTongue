@@ -425,3 +425,44 @@ proptest! {
         prop_assert!(s.ends_with("</svg>"));
     }
 }
+
+// --- Camera-driven viewport tests ---
+
+#[test]
+fn svg_viewport_defaults_to_800x600() {
+    let graph = SceneGraph::new();
+    let out = SvgCompiler::new().compile(&graph);
+    let ModalityOutput::Svg(b) = &out else {
+        panic!("expected Svg");
+    };
+    let s = std::str::from_utf8(b.as_ref()).unwrap();
+    assert!(s.contains(r#"viewBox="0 0 800 600""#));
+}
+
+#[test]
+fn svg_viewport_uses_custom_ortho_camera() {
+    use crate::transform::Camera;
+    let mut graph = SceneGraph::new();
+    graph.set_camera(Camera::ortho(1920.0, 1080.0));
+    let out = SvgCompiler::new().compile(&graph);
+    let ModalityOutput::Svg(b) = &out else {
+        panic!("expected Svg");
+    };
+    let s = std::str::from_utf8(b.as_ref()).unwrap();
+    assert!(s.contains(r#"viewBox="0 0 1920 1080""#));
+}
+
+#[test]
+fn svg_viewport_uses_perspective_aspect() {
+    use crate::transform::{Camera, Transform3D};
+    let mut graph = SceneGraph::new();
+    graph.set_camera(Camera::perspective(Transform3D::IDENTITY, 16.0 / 9.0));
+    let out = SvgCompiler::new().compile(&graph);
+    let ModalityOutput::Svg(b) = &out else {
+        panic!("expected Svg");
+    };
+    let s = std::str::from_utf8(b.as_ref()).unwrap();
+    // Perspective with 16:9 aspect → 600 * (16/9) ≈ 1066.67 width, 600 height
+    assert!(s.contains("viewBox=\"0 0 1066.6"));
+    assert!(s.contains(" 600\""));
+}
