@@ -42,10 +42,10 @@ petalTongue is the **reference implementation** for Phase 2 Silicon Atheism.
 4. **Deep debt elimination** — zero bare `unwrap()` in production (269 eliminated),
    zero `todo!`/`FIXME`/`HACK`, all mocks confined to `#[cfg(test)]`.
 
-### Scene Unification — 2D-as-3D-slice (Wave 150h)
+### Scene Unification — 2D-as-3D-slice (ALL PHASES COMPLETE)
 
-New architectural evolution making petalTongue a universal rendering engine
-(narrative, scientific, geospatial, molecular).
+Universal rendering engine (narrative, scientific, geospatial, molecular).
+All 4 phases shipped and tested.
 
 | Component | Status |
 |-----------|--------|
@@ -54,6 +54,13 @@ New architectural evolution making petalTongue a universal rendering engine
 | Orthographic default (2D compat) | SHIPPED |
 | `SceneGraph::flatten_3d()` | SHIPPED |
 | Grammar `with_z()` + Perspective3D camera | SHIPPED |
+| SVG viewport from camera projection | SHIPPED |
+| Sphere mesh generation (UV tessellation) | SHIPPED |
+| Cylinder mesh generation (ring tessellation) | SHIPPED |
+| Mesh3D passthrough (vertex/index data) | SHIPPED |
+| Ribbon (confidence band polygon) | SHIPPED |
+| ErrorBar geometry (whisker + caps) | SHIPPED |
+| Text geometry (positioned labels) | SHIPPED |
 | 4×4 matrix composition | SHIPPED |
 
 **Design**: 2D = orthographic camera at z=0. All non-breaking.
@@ -64,9 +71,8 @@ New architectural evolution making petalTongue a universal rendering engine
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| SVG renderer camera integration (Phase 3) | P2 | Viewport from camera projection |
-| 3D geometry compilation (Phase 4) | P2 | Mesh3D, Sphere, Cylinder primitives → scene nodes |
 | `eframe` as opt-in for server builds | P3 | Already feature-gated behind `ui` |
+| Live `MeshTopologySource` via songBird | P2 | Trait ready, awaiting songBird adapter |
 
 ---
 
@@ -94,6 +100,5 @@ New architectural evolution making petalTongue a universal rendering engine
 
 ---
 
-*Wave 150h: FULL NUCLEUS COMPOSITION WIRED. Scene unification Phase 1-2 shipped.
-6,529 tests. All milestones GREEN. footPrint consumer confirmed. esotericWebb V21
-using petalTongue rendering.*
+*Wave 150h: FULL NUCLEUS COMPOSITION WIRED. Scene unification ALL 4 PHASES COMPLETE.
+6,529+ tests. All milestones GREEN. footPrint consumer confirmed. Zero production stubs.*

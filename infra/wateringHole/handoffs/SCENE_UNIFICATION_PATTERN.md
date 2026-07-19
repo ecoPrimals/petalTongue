@@ -60,7 +60,29 @@ expr.coordinate = CoordinateSystem::Perspective3D;
 2. **Auto-embed**: `effective_transform_3d()` creates 3D from 2D when no explicit set
 3. **Camera defaults**: Missing camera → orthographic 800×600 at z=0
 4. **Grammar integration**: `VariableRole::Z` + `CoordinateSystem::Perspective3D` → auto-camera
+5. **SVG viewport**: Derived from camera projection — orthographic uses explicit dims, perspective uses aspect ratio
+6. **3D geometry**: `Sphere`, `Cylinder`, `Mesh3D` compile to `Primitive::Mesh` with proper tessellation
+7. **Ribbon evolved**: Produces `Polygon` from `ymin`/`ymax` data fields (no longer a placeholder)
+
+## 3D Geometry Compilation
+
+```rust
+// Sphere — UV-sphere tessellation at data-driven position + radius
+let expr = GrammarExpr::new("data", GeometryType::Sphere)
+    .with_x("x").with_y("y").with_z("z");
+// Data rows: {"x": 0, "y": 0, "z": 0, "radius": 1.5}
+// → Primitive::Mesh with position=[x,y,z], proper normals
+
+// Cylinder — ring tessellation with data-driven radius/height
+let expr = GrammarExpr::new("data", GeometryType::Cylinder)
+    .with_x("x").with_y("y");
+// Data rows: {"x": 0, "y": 0, "radius": 0.5, "height": 3.0}
+
+// Mesh3D — pre-built vertex/index passthrough
+// Data rows: {"vertices": [[x,y,z], ...], "indices": [0, 1, 2, ...]}
+```
 
 ---
 
-*Pattern reference for primals needing unified 2D/3D scene rendering.*
+*Pattern reference for primals needing unified 2D/3D scene rendering.
+All 4 phases complete — no remaining work.*

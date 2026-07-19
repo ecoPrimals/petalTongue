@@ -11,7 +11,7 @@ FULL NUCLEUS COMPOSITION WIRED. Both footPrint consumer modules confirmed
 working (WebSocket bridge + nestGate CAS). All P1 inter-primal wiring is
 **RESOLVED** on both provider and consumer sides. petalTongue now executing
 on the new P2 demand: **Scene Unification (2D-as-3D-slice)** — Transform3D
-on SceneNode, Camera+Projection, grammar z-wiring. Phase 1-2 shipped locally.
+on SceneNode, Camera+Projection, grammar z-wiring. Phase 1-4 shipped locally.
 
 ---
 
@@ -21,7 +21,7 @@ on SceneNode, Camera+Projection, grammar z-wiring. Phase 1-2 shipped locally.
 |--------|------|-----------|----------|
 | `WS_PATH` agent bridge | footPrint | **COMPLETE (both sides)** | footPrint `petal-tongue.ts` (231L) consuming `/ws` |
 | Health monitoring trait (P2) | ecosystem | **SHIPPED** | `PlatformMetrics` trait + `pt.metrics` IPC method |
-| Scene unification (2D-as-3D-slice) | overwatch | **PHASE 1-2 SHIPPED** | Transform3D on SceneNode, Camera+Projection, flatten_3d, grammar z-wiring |
+| Scene unification (2D-as-3D-slice) | overwatch | **PHASE 1-4 COMPLETE** | Transform3D, Camera+Projection, flatten_3d, grammar z-wiring, SVG viewport, 3D geometry compilation |
 | GAP-036: Socket naming convention | ecosystem | **COMPLIANT** | Capability-based naming, env-overridable |
 | GAP-038: Stale UDS socket cleanup | ecosystem | **COMPLIANT** | Server cleanup on start + drop |
 
@@ -29,7 +29,7 @@ on SceneNode, Camera+Projection, grammar z-wiring. Phase 1-2 shipped locally.
 
 ## Scene Unification — What Shipped (Wave 150h)
 
-The 2D-as-3D-slice architecture is now in place:
+The 2D-as-3D-slice architecture is now **fully complete**:
 
 | Component | Status | Location |
 |-----------|--------|----------|
@@ -42,18 +42,20 @@ The 2D-as-3D-slice architecture is now in place:
 | `SceneGraph::flatten_3d()` | SHIPPED | 3D-aware traversal with matrix composition |
 | Grammar `with_z()` builder | SHIPPED | `petal-tongue-scene/src/grammar.rs` |
 | Compiler `Perspective3D` → camera | SHIPPED | Auto-sets perspective camera for 3D coords |
+| SVG viewport from camera | SHIPPED | `petal-tongue-scene/src/modality/svg.rs` |
+| Sphere mesh generation | SHIPPED | UV-sphere tessellation, data-driven radius |
+| Cylinder mesh generation | SHIPPED | Ring tessellation, data-driven radius/height |
+| Mesh3D passthrough | SHIPPED | Pre-built vertex/index data from data rows |
+| Ribbon (confidence band) | SHIPPED | Polygon from ymin/ymax (evolved from stub) |
+| ErrorBar geometry | SHIPPED | Whisker + caps + center point |
+| Text geometry | SHIPPED | Positioned labels from `label`/`text` fields |
 | 4×4 matrix multiplication | SHIPPED | Column-major, `mul_add` optimized |
-| 14 new tests | SHIPPED | Transform3D, Camera, flatten_3d, grammar z |
+| 19 new tests | SHIPPED | All phases covered |
 
 **Key design principle**: All non-breaking. 2D = orthographic camera at z=0.
 Existing scenes render identically. No downstream breakage.
 
-### Remaining phases (P2 — not blocking anything)
-
-| Phase | What | Status |
-|-------|------|--------|
-| Phase 3 | Renderer integration — SVG viewport from camera | NEXT |
-| Phase 4 | 3D geometry compilation (Mesh3D, Sphere, Cylinder) | FUTURE |
+**All 4 phases COMPLETE**. No remaining work for scene unification.
 
 ---
 
@@ -66,7 +68,7 @@ Existing scenes render identically. No downstream breakage.
 | Debt markers | **0** | No `todo!`, `FIXME`, `HACK` |
 | Unsafe code | **0** (except FFI boundary) | `ffi.rs` only, workspace `forbid(unsafe_code)` |
 | Files > 800L | **0** | |
-| Tests | **6,529+ passing** (561 in scene crate) | +14 new 3D/camera tests |
+| Tests | **6,529+ passing** (569 in scene crate) | +19 new 3D/camera/geometry tests |
 | Production `unwrap()` | **0** | All 269 eliminated |
 | Mocks in production | **0** | All mocks isolated to `#[cfg(test)]` |
 | Remotes | Forgejo-first | `origin`=Forgejo, `github`=GitHub |
@@ -129,5 +131,6 @@ with `game_scene` binding. This is an esotericWebb-side fix — our API is stabl
 ---
 
 *Wave 150h AAR: FULL NUCLEUS COMPOSITION WIRED (both sides). Scene unification
-Phase 1-2 shipped (Transform3D on SceneNode, Camera+Projection, grammar z-wiring).
-All non-breaking — 2D scenes render identically. 6,529 tests. All GREEN.*
+Phase 1-4 COMPLETE (Transform3D, Camera+Projection, SVG viewport, 3D geometry
+compilation: Sphere, Cylinder, Mesh3D, ErrorBar, Text, Ribbon evolved).
+All non-breaking — 2D scenes render identically. 6,529+ tests. All GREEN.*

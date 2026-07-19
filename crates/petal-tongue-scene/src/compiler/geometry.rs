@@ -6,9 +6,9 @@ use std::collections::BTreeSet;
 use serde_json::Value;
 
 use crate::domain_palette::{DomainPalette, categorical_color};
-use crate::grammar::{CoordinateSystem, GeometryType, GrammarExpr};
+use crate::grammar::{CoordinateSystem, GeometryType, GrammarExpr, VariableRole};
 use crate::math::Axes;
-use crate::primitive::{AnchorPoint, Color, LineCap, LineJoin, Primitive, StrokeStyle};
+use crate::primitive::{AnchorPoint, Color, LineCap, LineJoin, MeshVertex, Primitive, StrokeStyle};
 
 use super::utils::get_number;
 
@@ -147,18 +147,53 @@ pub fn compile_geometry(
         }
 
         GeometryType::Ribbon => {
-            let fill_color = Color::rgba(secondary.r, secondary.g, secondary.b, 0.2);
-            vec![Primitive::Text {
-                x: axes.origin.0 + axes.width / 2.0,
-                y: axes.origin.1 - axes.height / 2.0,
-                content: "Ribbon (requires ymin/ymax roles)".to_owned(),
-                font_size: 12.0,
-                color: fill_color,
-                anchor: AnchorPoint::Center,
-                bold: false,
-                italic: false,
-                data_id: None,
-            }]
+            if points.len() < 2 {
+                Vec::new()
+            } else {
+                let fill_color = Color::rgba(secondary.r, secondary.g, secondary.b, 0.2);
+
+                // Build upper boundary from ymax in data rows
+                let mut poly_pts: Vec<[f64; 2]> = points
+                    .iter()
+                    .zip(data.iter())
+                    .map(|(&[x, _], row)| {
+                        let ymax = row
+                            .as_object()
+                            .and_then(|o| get_number(o, "ymax"))
+                            .unwrap_or(0.0);
+                        axes.data_to_screen(x, ymax).into()
+                    })
+                    .collect();
+
+                // Append lower boundary reversed (closed shape)
+                poly_pts.extend(
+                    points
+                        .iter()
+                        .zip(data.iter())
+                        .rev()
+                        .map(|(&[x, _], row)| {
+                            let ymin = row
+                                .as_object()
+                                .and_then(|o| get_number(o, "ymin"))
+                                .unwrap_or(0.0);
+                            let pt: [f64; 2] = axes.data_to_screen(x, ymin).into();
+                            pt
+                        }),
+                );
+
+                vec![Primitive::Polygon {
+                    points: poly_pts,
+                    fill: fill_color,
+                    stroke: Some(StrokeStyle {
+                        color: Color::rgba(secondary.r, secondary.g, secondary.b, 0.5),
+                        width: 1.0,
+                        cap: LineCap::Butt,
+                        join: LineJoin::Round,
+                    }),
+                    fill_rule: crate::primitive::FillRule::NonZero,
+                    data_id: Some("ribbon-0".to_owned()),
+                }]
+            }
         }
 
         GeometryType::Tile => {
@@ -431,18 +466,288 @@ pub fn compile_geometry(
             }
         }
 
-        _ => {
-            vec![Primitive::Text {
-                x: axes.origin.0 + axes.width / 2.0,
-                y: axes.origin.1 - axes.height / 2.0,
-                content: format!("Unsupported geometry: {:?}", expr.geometry),
-                font_size: 12.0,
-                color: Color::BLACK,
-                anchor: AnchorPoint::Center,
-                bold: false,
-                italic: false,
-                data_id: None,
-            }]
+        GeometryType::Text => {
+            points
+                .iter()
+                .zip(data.iter())
+                .enumerate()
+                .map(|(i, (&[x, y], row))| {
+                    let (sx, sy) = axes.data_to_screen(x, y);
+                    let content = row
+                        .as_object()
+                        .and_then(|o| o.get("label").or_else(|| o.get("text")))
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("")
+                        .to_owned();
+                    Primitive::Text {
+                        x: sx,
+                        y: sy,
+                        content,
+                        font_size: 12.0,
+                        color: primary,
+                        anchor: AnchorPoint::Center,
+                        bold: false,
+                        italic: false,
+                        data_id: Some(row_data_id(data, i, "text")),
+                    }
+                })
+                .collect()
+        }
+
+        GeometryType::ErrorBar => {
+            let mut prims = Vec::new();
+            for (i, &[x, y]) in points.iter().enumerate() {
+                let ymin = data
+                    .get(i)
+                    .and_then(|d| d.as_object())
+                    .and_then(|o| get_number(o, "ymin"))
+                    .unwrap_or(y * 0.9);
+                let ymax = data
+                    .get(i)
+                    .and_then(|d| d.as_object())
+                    .and_then(|o| get_number(o, "ymax"))
+                    .unwrap_or(y * 1.1);
+
+                let (sx, sy) = axes.data_to_screen(x, y);
+                let (_, sy_min) = axes.data_to_screen(x, ymin);
+                let (_, sy_max) = axes.data_to_screen(x, ymax);
+                let cap_width = 6.0;
+
+                // Vertical whisker
+                prims.push(Primitive::Line {
+                    points: vec![[sx, sy_min], [sx, sy_max]],
+                    stroke: *stroke,
+                    closed: false,
+                    data_id: Some(row_data_id(data, i, "errbar-whisker")),
+                });
+                // Top cap
+                prims.push(Primitive::Line {
+                    points: vec![[sx - cap_width, sy_max], [sx + cap_width, sy_max]],
+                    stroke: *stroke,
+                    closed: false,
+                    data_id: None,
+                });
+                // Bottom cap
+                prims.push(Primitive::Line {
+                    points: vec![[sx - cap_width, sy_min], [sx + cap_width, sy_min]],
+                    stroke: *stroke,
+                    closed: false,
+                    data_id: None,
+                });
+                // Center point
+                prims.push(Primitive::Point {
+                    x: sx,
+                    y: sy,
+                    radius: 3.0,
+                    fill: Some(primary),
+                    stroke: None,
+                    data_id: Some(row_data_id(data, i, "errbar-pt")),
+                });
+            }
+            prims
+        }
+
+        GeometryType::Sphere => {
+            let z_field = expr
+                .variables
+                .iter()
+                .find(|v| v.role == VariableRole::Z)
+                .map(|v| v.field.as_str());
+
+            points
+                .iter()
+                .zip(data.iter())
+                .enumerate()
+                .map(|(i, (&[x, y], row))| {
+                    let z = z_field
+                        .and_then(|f| row.as_object().and_then(|o| get_number(o, f)))
+                        .unwrap_or(0.0);
+                    let radius = row
+                        .as_object()
+                        .and_then(|o| get_number(o, "radius"))
+                        .unwrap_or(1.0);
+                    let color = categorical_color(palette, i);
+                    let mesh = generate_sphere_mesh(x, y, z, radius, color, 16);
+                    Primitive::Mesh {
+                        vertices: mesh.0,
+                        indices: mesh.1,
+                        data_id: Some(row_data_id(data, i, "sphere")),
+                    }
+                })
+                .collect()
+        }
+
+        GeometryType::Cylinder => {
+            let z_field = expr
+                .variables
+                .iter()
+                .find(|v| v.role == VariableRole::Z)
+                .map(|v| v.field.as_str());
+
+            points
+                .iter()
+                .zip(data.iter())
+                .enumerate()
+                .map(|(i, (&[x, y], row))| {
+                    let z = z_field
+                        .and_then(|f| row.as_object().and_then(|o| get_number(o, f)))
+                        .unwrap_or(0.0);
+                    let radius = row
+                        .as_object()
+                        .and_then(|o| get_number(o, "radius"))
+                        .unwrap_or(0.5);
+                    let height = row
+                        .as_object()
+                        .and_then(|o| get_number(o, "height"))
+                        .unwrap_or(2.0);
+                    let color = categorical_color(palette, i);
+                    let mesh = generate_cylinder_mesh(x, y, z, radius, height, color, 16);
+                    Primitive::Mesh {
+                        vertices: mesh.0,
+                        indices: mesh.1,
+                        data_id: Some(row_data_id(data, i, "cyl")),
+                    }
+                })
+                .collect()
+        }
+
+        GeometryType::Mesh3D => {
+            // Mesh3D expects pre-built vertex/index data in the data rows.
+            // Each row should have `vertices` (array of [x,y,z]) and `indices` (array of u32).
+            data.iter()
+                .enumerate()
+                .filter_map(|(i, row)| {
+                    let obj = row.as_object()?;
+                    let verts_val = obj.get("vertices")?;
+                    let indices_val = obj.get("indices")?;
+
+                    let vertices: Vec<MeshVertex> = verts_val
+                        .as_array()?
+                        .iter()
+                        .map(|v| {
+                            let arr = v.as_array();
+                            let pos = arr.map_or([0.0, 0.0, 0.0], |a| {
+                                [
+                                    a.first().and_then(Value::as_f64).unwrap_or(0.0),
+                                    a.get(1).and_then(Value::as_f64).unwrap_or(0.0),
+                                    a.get(2).and_then(Value::as_f64).unwrap_or(0.0),
+                                ]
+                            });
+                            MeshVertex {
+                                position: pos,
+                                normal: [0.0, 1.0, 0.0],
+                                color: categorical_color(palette, i),
+                            }
+                        })
+                        .collect();
+
+                    #[expect(clippy::cast_possible_truncation, reason = "mesh indices fit u32")]
+                    let indices: Vec<u32> = indices_val
+                        .as_array()?
+                        .iter()
+                        .filter_map(|v| v.as_u64().map(|n| n as u32))
+                        .collect();
+
+                    Some(Primitive::Mesh {
+                        vertices,
+                        indices,
+                        data_id: Some(row_data_id(data, i, "mesh")),
+                    })
+                })
+                .collect()
         }
     }
+}
+
+/// Generate a UV sphere mesh at the given center with `segments` longitudinal slices.
+#[expect(clippy::cast_precision_loss, reason = "sphere tessellation indices")]
+fn generate_sphere_mesh(
+    cx: f64,
+    cy: f64,
+    cz: f64,
+    radius: f64,
+    color: Color,
+    segments: usize,
+) -> (Vec<MeshVertex>, Vec<u32>) {
+    let rings = segments / 2;
+    let mut vertices = Vec::with_capacity((rings + 1) * (segments + 1));
+    let mut indices = Vec::new();
+
+    for ring in 0..=rings {
+        let phi = std::f64::consts::PI * ring as f64 / rings as f64;
+        for seg in 0..=segments {
+            let theta = 2.0 * std::f64::consts::PI * seg as f64 / segments as f64;
+            let nx = phi.sin() * theta.cos();
+            let ny = phi.cos();
+            let nz = phi.sin() * theta.sin();
+            vertices.push(MeshVertex {
+                position: [radius.mul_add(nx, cx), radius.mul_add(ny, cy), radius.mul_add(nz, cz)],
+                normal: [nx, ny, nz],
+                color,
+            });
+        }
+    }
+
+    let stride = segments + 1;
+    for ring in 0..rings {
+        for seg in 0..segments {
+            #[expect(clippy::cast_possible_truncation, reason = "mesh indices")]
+            let tl = (ring * stride + seg) as u32;
+            #[expect(clippy::cast_possible_truncation, reason = "mesh indices")]
+            let tr = (ring * stride + seg + 1) as u32;
+            #[expect(clippy::cast_possible_truncation, reason = "mesh indices")]
+            let bl = ((ring + 1) * stride + seg) as u32;
+            #[expect(clippy::cast_possible_truncation, reason = "mesh indices")]
+            let br = ((ring + 1) * stride + seg + 1) as u32;
+            indices.extend_from_slice(&[tl, bl, tr, tr, bl, br]);
+        }
+    }
+
+    (vertices, indices)
+}
+
+/// Generate a cylinder mesh at the given center with `segments` around the circumference.
+#[expect(clippy::cast_precision_loss, reason = "cylinder tessellation indices")]
+fn generate_cylinder_mesh(
+    cx: f64,
+    cy: f64,
+    cz: f64,
+    radius: f64,
+    height: f64,
+    color: Color,
+    segments: usize,
+) -> (Vec<MeshVertex>, Vec<u32>) {
+    let half_h = height / 2.0;
+    let mut vertices = Vec::with_capacity((segments + 1) * 2);
+    let mut indices = Vec::new();
+
+    // Bottom and top rings
+    for ring in 0..=1 {
+        let y_off = if ring == 0 { -half_h } else { half_h };
+        for seg in 0..=segments {
+            let theta = 2.0 * std::f64::consts::PI * seg as f64 / segments as f64;
+            let nx = theta.cos();
+            let nz = theta.sin();
+            vertices.push(MeshVertex {
+                position: [radius.mul_add(nx, cx), cy + y_off, radius.mul_add(nz, cz)],
+                normal: [nx, 0.0, nz],
+                color,
+            });
+        }
+    }
+
+    let stride = segments + 1;
+    for seg in 0..segments {
+        #[expect(clippy::cast_possible_truncation, reason = "mesh indices")]
+        let bl = seg as u32;
+        #[expect(clippy::cast_possible_truncation, reason = "mesh indices")]
+        let br = (seg + 1) as u32;
+        #[expect(clippy::cast_possible_truncation, reason = "mesh indices")]
+        let tl = (stride + seg) as u32;
+        #[expect(clippy::cast_possible_truncation, reason = "mesh indices")]
+        let tr = (stride + seg + 1) as u32;
+        indices.extend_from_slice(&[bl, tl, br, br, tl, tr]);
+    }
+
+    (vertices, indices)
 }

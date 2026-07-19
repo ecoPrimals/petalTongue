@@ -262,22 +262,22 @@ fn compile_area_geometry_creates_polygon_and_line() {
 }
 
 #[test]
-fn compile_ribbon_geometry_produces_placeholder() {
+fn compile_ribbon_geometry_produces_polygon() {
     let compiler = GrammarCompiler::new();
     let expr = GrammarExpr::new("data", GeometryType::Ribbon)
         .with_x("x")
         .with_y("y");
     let data = vec![
-        serde_json::json!({"x": 0.0, "y": 10.0}),
-        serde_json::json!({"x": 1.0, "y": 20.0}),
+        serde_json::json!({"x": 0.0, "y": 10.0, "ymin": 8.0, "ymax": 12.0}),
+        serde_json::json!({"x": 1.0, "y": 20.0, "ymin": 18.0, "ymax": 22.0}),
     ];
     let graph = compiler.compile(&expr, &data);
     let primitives: Vec<_> = graph.flatten().into_iter().map(|(_, p)| p).collect();
-    let text_count = primitives
+    let poly_count = primitives
         .iter()
-        .filter(|p| matches!(p, Primitive::Text { content, .. } if content.contains("Ribbon")))
+        .filter(|p| matches!(p, Primitive::Polygon { data_id, .. } if data_id.as_deref() == Some("ribbon-0")))
         .count();
-    assert!(text_count >= 1);
+    assert_eq!(poly_count, 1, "ribbon should produce one Polygon primitive");
 }
 
 #[test]
@@ -649,4 +649,108 @@ fn all_databinding_variants_produce_nonempty_scenes() {
             expr.data_source,
         );
     }
+}
+
+#[test]
+fn compile_sphere_geometry_produces_mesh() {
+    let expr = GrammarExpr::new("data", GeometryType::Sphere)
+        .with_x("x")
+        .with_y("y")
+        .with_z("z");
+    let data = vec![
+        serde_json::json!({"x": 1.0, "y": 2.0, "z": 3.0, "radius": 1.5}),
+        serde_json::json!({"x": 5.0, "y": 6.0, "z": 0.0}),
+    ];
+    let compiler = GrammarCompiler::new();
+    let scene = compiler.compile(&expr, &data);
+    let flat = scene.flatten();
+    let mesh_count = flat
+        .iter()
+        .filter(|(_, p)| matches!(p, Primitive::Mesh { .. }))
+        .count();
+    assert_eq!(mesh_count, 2, "each data row → one Mesh primitive");
+}
+
+#[test]
+fn compile_cylinder_geometry_produces_mesh() {
+    let expr = GrammarExpr::new("data", GeometryType::Cylinder)
+        .with_x("x")
+        .with_y("y");
+    let data = vec![
+        serde_json::json!({"x": 0.0, "y": 0.0, "radius": 0.5, "height": 3.0}),
+    ];
+    let compiler = GrammarCompiler::new();
+    let scene = compiler.compile(&expr, &data);
+    let flat = scene.flatten();
+    let mesh_count = flat
+        .iter()
+        .filter(|(_, p)| matches!(p, Primitive::Mesh { .. }))
+        .count();
+    assert_eq!(mesh_count, 1);
+}
+
+#[test]
+fn compile_mesh3d_from_vertex_data() {
+    let expr = GrammarExpr::new("data", GeometryType::Mesh3D)
+        .with_x("x")
+        .with_y("y");
+    let data = vec![serde_json::json!({
+        "vertices": [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
+        "indices": [0, 1, 2]
+    })];
+    let compiler = GrammarCompiler::new();
+    let scene = compiler.compile(&expr, &data);
+    let flat = scene.flatten();
+    let meshes: Vec<_> = flat
+        .iter()
+        .filter_map(|(_, p)| if let Primitive::Mesh { vertices, indices, .. } = p { Some((vertices, indices)) } else { None })
+        .collect();
+    assert_eq!(meshes.len(), 1);
+    assert_eq!(meshes[0].0.len(), 3);
+    assert_eq!(meshes[0].1.len(), 3);
+}
+
+#[test]
+fn compile_error_bar_geometry() {
+    let expr = GrammarExpr::new("data", GeometryType::ErrorBar)
+        .with_x("x")
+        .with_y("y");
+    let data = vec![
+        serde_json::json!({"x": 1.0, "y": 5.0, "ymin": 3.0, "ymax": 7.0}),
+        serde_json::json!({"x": 2.0, "y": 8.0, "ymin": 6.0, "ymax": 10.0}),
+    ];
+    let compiler = GrammarCompiler::new();
+    let scene = compiler.compile(&expr, &data);
+    let flat = scene.flatten();
+    // Each error bar produces: whisker + top cap + bottom cap + center point = 4 prims per row
+    let line_count = flat
+        .iter()
+        .filter(|(_, p)| matches!(p, Primitive::Line { .. }))
+        .count();
+    let point_count = flat
+        .iter()
+        .filter(|(_, p)| matches!(p, Primitive::Point { .. }))
+        .count();
+    assert!(line_count >= 6, "2 error bars × 3 lines each (whisker + 2 caps)");
+    assert!(point_count >= 2, "2 error bars × 1 center point each");
+}
+
+#[test]
+fn compile_text_geometry() {
+    let expr = GrammarExpr::new("data", GeometryType::Text)
+        .with_x("x")
+        .with_y("y");
+    let data = vec![
+        serde_json::json!({"x": 1.0, "y": 2.0, "label": "Hello"}),
+        serde_json::json!({"x": 3.0, "y": 4.0, "text": "World"}),
+    ];
+    let compiler = GrammarCompiler::new();
+    let scene = compiler.compile(&expr, &data);
+    let flat = scene.flatten();
+    let text_prims: Vec<_> = flat
+        .iter()
+        .filter_map(|(_, p)| if let Primitive::Text { content, .. } = p { Some(content.as_str()) } else { None })
+        .collect();
+    assert!(text_prims.contains(&"Hello"));
+    assert!(text_prims.contains(&"World"));
 }
