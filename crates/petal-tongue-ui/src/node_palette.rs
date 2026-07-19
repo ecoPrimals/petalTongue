@@ -324,16 +324,14 @@ mod tests {
     fn test_search_filter_nonexistent_returns_empty() {
         let mut palette = NodePalette::new();
         palette.search = "xyznonexistent123".to_owned();
-        assert!(
-            !palette.node_types.iter().any(|info| {
-                info.name
+        assert!(!palette.node_types.iter().any(|info| {
+            info.name
+                .to_lowercase()
+                .contains(&palette.search.to_lowercase())
+                || info
+                    .description
                     .to_lowercase()
                     .contains(&palette.search.to_lowercase())
-                    || info
-                        .description
-                        .to_lowercase()
-                        .contains(&palette.search.to_lowercase())
-            })
-        );
+        }));
     }
 }

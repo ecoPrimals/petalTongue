@@ -300,10 +300,7 @@ article.notebook > header h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 
 #[cfg(test)]
 mod tests {
-    #![allow(
-        clippy::expect_used,
-        reason = "test code uses expect for brevity"
-    )]
+    #![allow(clippy::expect_used, reason = "test code uses expect for brevity")]
 
     use super::*;
 
@@ -416,7 +413,8 @@ mod tests {
             }]
         });
         let json = serde_json::to_vec(&nb)?;
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
+        let html =
+            render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("<table><tr><td>1</td></tr></table>"));
         assert!(
             !html.contains("fallback"),
@@ -443,7 +441,8 @@ mod tests {
             }]
         });
         let json = serde_json::to_vec(&nb)?;
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
+        let html =
+            render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("data:image/png;base64,iVBORw0KGgo="));
         Ok(())
     }
@@ -467,7 +466,8 @@ mod tests {
             }]
         });
         let json = serde_json::to_vec(&nb)?;
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
+        let html =
+            render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("nb-error"));
         assert!(html.contains("ZeroDivisionError"));
         Ok(())
@@ -486,7 +486,8 @@ mod tests {
             }]
         });
         let json = serde_json::to_vec(&nb)?;
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
+        let html =
+            render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("nb-raw"));
         assert!(html.contains("&lt;content&gt;"));
         Ok(())
@@ -501,7 +502,8 @@ mod tests {
             "cells": []
         });
         let json = serde_json::to_vec(&nb)?;
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
+        let html =
+            render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(!html.contains("<script>"), "title must be escaped");
         assert!(html.contains("&lt;script&gt;"));
         Ok(())
@@ -523,7 +525,8 @@ mod tests {
             }]
         });
         let json = serde_json::to_vec(&nb)?;
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
+        let html =
+            render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("language-rust"));
         Ok(())
     }
@@ -537,7 +540,8 @@ mod tests {
             "cells": []
         });
         let json = serde_json::to_vec(&nb)?;
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
+        let html =
+            render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("prefers-color-scheme: dark"));
         Ok(())
     }
@@ -556,7 +560,8 @@ mod tests {
             }]
         });
         let json = serde_json::to_vec(&nb)?;
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
+        let html =
+            render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(
             !html.contains("class=\"nb-code\""),
             "empty code cells should not render"
@@ -577,7 +582,8 @@ mod tests {
             }]
         });
         let json = serde_json::to_vec(&nb)?;
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
+        let html =
+            render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("data:image/jpeg;base64,AAAA"));
         Ok(())
     }
@@ -595,7 +601,8 @@ mod tests {
             }]
         });
         let json = serde_json::to_vec(&nb)?;
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
+        let html =
+            render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("<svg>"));
         Ok(())
     }
@@ -613,7 +620,8 @@ mod tests {
             }]
         });
         let json = serde_json::to_vec(&nb)?;
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
+        let html =
+            render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("42"));
         Ok(())
     }
@@ -629,7 +637,8 @@ mod tests {
             }]
         });
         let json = serde_json::to_vec(&nb)?;
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
+        let html =
+            render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(
             html.contains("julia"),
             "should annotate with language_info.name"
@@ -649,7 +658,8 @@ mod tests {
             }]
         });
         let json = serde_json::to_vec(&nb)?;
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
+        let html =
+            render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(!html.contains("ignored"));
         Ok(())
     }
@@ -666,7 +676,8 @@ mod tests {
             }]
         });
         let json = serde_json::to_vec(&nb)?;
-        let html = render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
+        let html =
+            render_notebook(&json, &NotebookRenderConfig::default()).ok_or("should render")?;
         assert!(html.contains("nb-raw"));
         assert!(html.contains("raw &lt;content&gt;"));
         Ok(())

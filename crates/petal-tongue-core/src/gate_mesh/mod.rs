@@ -16,15 +16,15 @@ pub mod kderm;
 pub mod nucleus;
 pub mod peers;
 
-pub use kderm::{HardeningControl, HardeningStatus, KDermLayer, HARDENING_CONTROLS, KDERM_LAYERS};
+pub use kderm::{HARDENING_CONTROLS, HardeningControl, HardeningStatus, KDERM_LAYERS, KDermLayer};
 #[cfg(feature = "offline-topology")]
 pub use nucleus::{
-    NucleusAtomic, NucleusPrimal, META_ATOMIC, NEST_ATOMIC, NODE_ATOMIC, NUCLEUS_ATOMICS,
+    META_ATOMIC, NEST_ATOMIC, NODE_ATOMIC, NUCLEUS_ATOMICS, NucleusAtomic, NucleusPrimal,
     TOWER_ATOMIC, nucleus_primal_count,
 };
-pub use peers::{MeshPeer, PeerStatus};
 #[cfg(feature = "offline-topology")]
 pub use peers::derive_mesh_peers;
+pub use peers::{MeshPeer, PeerStatus};
 
 use serde::{Deserialize, Serialize};
 
@@ -451,10 +451,7 @@ mod tests {
         let source = StaticMeshTopology;
         assert_eq!(source.nodes().len(), 12);
         assert_eq!(source.links().len(), 7);
-        assert_eq!(
-            source.count_by_enrollment(GateEnrollment::Enrolled),
-            7
-        );
+        assert_eq!(source.count_by_enrollment(GateEnrollment::Enrolled), 7);
         assert_eq!(source.mesh_active_count(), 8);
         assert_eq!(source.gpu_nodes().len(), 2);
     }

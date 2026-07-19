@@ -93,8 +93,11 @@ pub async fn announce_to_neural_api() {
         connect_transport(&endpoint),
     )
     .await
-    .unwrap_or_else(|_| Err(petal_tongue_core::transport::TransportError::Io(std::io::ErrorKind::TimedOut.into())))
-    else {
+    .unwrap_or_else(|_| {
+        Err(petal_tongue_core::transport::TransportError::Io(
+            std::io::ErrorKind::TimedOut.into(),
+        ))
+    }) else {
         tracing::debug!(
             socket,
             "Neural API not reachable — skipping primal.announce"

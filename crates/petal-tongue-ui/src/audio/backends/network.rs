@@ -99,9 +99,12 @@ impl NetworkBackend {
         });
 
         let endpoint = TransportEndpoint::uds(socket_path);
-        let mut stream = connect_transport(&endpoint)
-            .await
-            .map_err(|e| NetworkAudioError::Connect(std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string())))?;
+        let mut stream = connect_transport(&endpoint).await.map_err(|e| {
+            NetworkAudioError::Connect(std::io::Error::new(
+                std::io::ErrorKind::ConnectionRefused,
+                e.to_string(),
+            ))
+        })?;
 
         let payload = format!(
             "{}\n",

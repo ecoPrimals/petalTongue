@@ -676,9 +676,7 @@ fn compile_cylinder_geometry_produces_mesh() {
     let expr = GrammarExpr::new("data", GeometryType::Cylinder)
         .with_x("x")
         .with_y("y");
-    let data = vec![
-        serde_json::json!({"x": 0.0, "y": 0.0, "radius": 0.5, "height": 3.0}),
-    ];
+    let data = vec![serde_json::json!({"x": 0.0, "y": 0.0, "radius": 0.5, "height": 3.0})];
     let compiler = GrammarCompiler::new();
     let scene = compiler.compile(&expr, &data);
     let flat = scene.flatten();
@@ -703,7 +701,16 @@ fn compile_mesh3d_from_vertex_data() {
     let flat = scene.flatten();
     let meshes: Vec<_> = flat
         .iter()
-        .filter_map(|(_, p)| if let Primitive::Mesh { vertices, indices, .. } = p { Some((vertices, indices)) } else { None })
+        .filter_map(|(_, p)| {
+            if let Primitive::Mesh {
+                vertices, indices, ..
+            } = p
+            {
+                Some((vertices, indices))
+            } else {
+                None
+            }
+        })
         .collect();
     assert_eq!(meshes.len(), 1);
     assert_eq!(meshes[0].0.len(), 3);
@@ -731,7 +738,10 @@ fn compile_error_bar_geometry() {
         .iter()
         .filter(|(_, p)| matches!(p, Primitive::Point { .. }))
         .count();
-    assert!(line_count >= 6, "2 error bars × 3 lines each (whisker + 2 caps)");
+    assert!(
+        line_count >= 6,
+        "2 error bars × 3 lines each (whisker + 2 caps)"
+    );
     assert!(point_count >= 2, "2 error bars × 1 center point each");
 }
 
@@ -749,7 +759,13 @@ fn compile_text_geometry() {
     let flat = scene.flatten();
     let text_prims: Vec<_> = flat
         .iter()
-        .filter_map(|(_, p)| if let Primitive::Text { content, .. } = p { Some(content.as_str()) } else { None })
+        .filter_map(|(_, p)| {
+            if let Primitive::Text { content, .. } = p {
+                Some(content.as_str())
+            } else {
+                None
+            }
+        })
         .collect();
     assert!(text_prims.contains(&"Hello"));
     assert!(text_prims.contains(&"World"));

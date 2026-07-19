@@ -13,13 +13,13 @@
 use crate::capability_parse;
 use crate::errors::{DiscoveryError, DiscoveryResult};
 use futures_util::future::join_all;
+use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
 use petal_tongue_core::types::{PrimalHealthStatus, PrimalInfo};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
-use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tracing::{debug, info, warn};
 
@@ -137,11 +137,15 @@ impl UnixSocketProvider {
         let connect_timeout = Duration::from_millis(100);
         let endpoint = TransportEndpoint::uds(path);
 
-        let stream = match tokio::time::timeout(connect_timeout, connect_transport(&endpoint)).await {
+        let stream = match tokio::time::timeout(connect_timeout, connect_transport(&endpoint)).await
+        {
             Ok(Ok(stream)) => stream,
             Ok(Err(e)) => {
                 debug!("Socket connection failed for {}: {}", path.display(), e);
-                return Err(DiscoveryError::Io(std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string())));
+                return Err(DiscoveryError::Io(std::io::Error::new(
+                    std::io::ErrorKind::ConnectionRefused,
+                    e.to_string(),
+                )));
             }
             Err(_) => {
                 debug!("Socket connection timeout for {}", path.display());
@@ -160,52 +164,61 @@ impl UnixSocketProvider {
 
         let rpc_timeout = Duration::from_millis(200);
 
-        let response = match tokio::time::timeout(rpc_timeout, self.send_request(stream, request))
-            .await
-        {
-            Ok(Ok(response)) => response,
-            Ok(Err(e)) => {
-                let err_str = e.to_string();
-                if err_str.contains("-32601") || err_str.contains("Method not found") {
-                    let stream = tokio::time::timeout(connect_timeout, connect_transport(&endpoint))
-                        .await
-                        .map_err(|_| DiscoveryError::ConnectionTimeout {
-                            endpoint: path.display().to_string(),
-                        })?
-                        .map_err(|e| DiscoveryError::Io(std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string())))?;
-                    let legacy_request = json!({
-                        "jsonrpc": "2.0",
-                        "method": "get_capabilities",
-                        "params": {},
-                        "id": 1
-                    });
-                    tokio::time::timeout(rpc_timeout, self.send_request(stream, legacy_request))
-                        .await
-                        .map_err(|_| DiscoveryError::RpcTimeout {
-                            context: path.display().to_string(),
-                        })?
-                        .map_err(|e| DiscoveryError::InvalidData {
-                            name: "Unix socket".to_owned(),
-                            reason: format!("Legacy get_capabilities failed: {e}"),
-                        })?
-                } else {
-                    debug!("RPC request failed for {}: {}", path.display(), e);
-                    return Err(e);
+        let response =
+            match tokio::time::timeout(rpc_timeout, self.send_request(stream, request)).await {
+                Ok(Ok(response)) => response,
+                Ok(Err(e)) => {
+                    let err_str = e.to_string();
+                    if err_str.contains("-32601") || err_str.contains("Method not found") {
+                        let stream =
+                            tokio::time::timeout(connect_timeout, connect_transport(&endpoint))
+                                .await
+                                .map_err(|_| DiscoveryError::ConnectionTimeout {
+                                    endpoint: path.display().to_string(),
+                                })?
+                                .map_err(|e| {
+                                    DiscoveryError::Io(std::io::Error::new(
+                                        std::io::ErrorKind::ConnectionRefused,
+                                        e.to_string(),
+                                    ))
+                                })?;
+                        let legacy_request = json!({
+                            "jsonrpc": "2.0",
+                            "method": "get_capabilities",
+                            "params": {},
+                            "id": 1
+                        });
+                        tokio::time::timeout(rpc_timeout, self.send_request(stream, legacy_request))
+                            .await
+                            .map_err(|_| DiscoveryError::RpcTimeout {
+                                context: path.display().to_string(),
+                            })?
+                            .map_err(|e| DiscoveryError::InvalidData {
+                                name: "Unix socket".to_owned(),
+                                reason: format!("Legacy get_capabilities failed: {e}"),
+                            })?
+                    } else {
+                        debug!("RPC request failed for {}: {}", path.display(), e);
+                        return Err(e);
+                    }
                 }
-            }
-            Err(_) => {
-                debug!("RPC request timeout for {}", path.display());
-                return Err(DiscoveryError::RpcTimeout {
-                    context: path.display().to_string(),
-                });
-            }
-        };
+                Err(_) => {
+                    debug!("RPC request timeout for {}", path.display());
+                    return Err(DiscoveryError::RpcTimeout {
+                        context: path.display().to_string(),
+                    });
+                }
+            };
 
         self.parse_capabilities_response(path, response)
     }
 
     /// Send a JSON-RPC request and receive response
-    async fn send_request(&self, stream: petal_tongue_core::transport::TransportStream, request: Value) -> DiscoveryResult<Value> {
+    async fn send_request(
+        &self,
+        stream: petal_tongue_core::transport::TransportStream,
+        request: Value,
+    ) -> DiscoveryResult<Value> {
         let (reader, mut writer) = tokio::io::split(stream);
         let mut reader = BufReader::new(reader);
 

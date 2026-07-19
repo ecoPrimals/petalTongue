@@ -189,10 +189,7 @@ async fn test_render_scene_direct() {
         .unwrap()
         .grammar_scenes
         .contains_key("scene-session");
-    assert!(
-        has_scene,
-        "expected grammar_scene for scene-session"
-    );
+    assert!(has_scene, "expected grammar_scene for scene-session");
 }
 
 #[tokio::test]

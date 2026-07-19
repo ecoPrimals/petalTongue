@@ -82,7 +82,10 @@ fn relation_color(relation: &str) -> Color {
 }
 
 /// Fruchterman-Reingold-style force-directed layout.
-#[expect(clippy::cast_precision_loss, reason = "layout math on small node counts")]
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "layout math on small node counts"
+)]
 fn force_layout(
     nodes: &[GraphNode],
     edges: &[GraphEdge],
@@ -271,7 +274,10 @@ fn build_legend(width: f64) -> SceneNode {
     ];
 
     let mut legend = SceneNode::new("legend")
-        .with_transform(Transform2D::translate(width - LEGEND_X_OFFSET_FROM_RIGHT, 10.0))
+        .with_transform(Transform2D::translate(
+            width - LEGEND_X_OFFSET_FROM_RIGHT,
+            10.0,
+        ))
         .with_label("Legend");
 
     for (i, (kind, label)) in kinds.iter().enumerate() {

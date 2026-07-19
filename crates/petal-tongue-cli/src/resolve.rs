@@ -74,10 +74,7 @@ mod tests {
                 registry.register(instance)?;
 
                 let resolved = resolve_instance_id("550e")?;
-                assert_eq!(
-                    resolved.as_str(),
-                    "550e8400-e29b-41d4-a716-446655440000"
-                );
+                assert_eq!(resolved.as_str(), "550e8400-e29b-41d4-a716-446655440000");
                 Ok(())
             },
         )?;

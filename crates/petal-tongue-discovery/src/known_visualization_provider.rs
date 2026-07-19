@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Enum dispatch for [`VisualizationDataProvider`] (replaces `Box<dyn …>` with RPITIT).
 
+#[cfg(feature = "mdns")]
+use crate::MdnsVisualizationProvider;
 #[cfg(any(test, feature = "test-fixtures"))]
 use crate::OfflineVisualizationProvider;
 use crate::errors::DiscoveryResult;
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
-#[cfg(feature = "mdns")]
-use crate::MdnsVisualizationProvider;
 use crate::{
-    DiscoveryServiceProvider, DynamicScenarioProvider, JsonRpcProvider,
-    NeuralApiProvider, ScenarioVisualizationProvider,
+    DiscoveryServiceProvider, DynamicScenarioProvider, JsonRpcProvider, NeuralApiProvider,
+    ScenarioVisualizationProvider,
 };
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
 

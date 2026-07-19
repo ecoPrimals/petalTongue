@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use petal_tongue_core::{gate_mesh, GraphEngine};
+use petal_tongue_core::{GraphEngine, gate_mesh};
 
 use super::types::{LiveEdge, LiveMeshPeer, LivePrimal, LiveTopology};
 
@@ -22,42 +22,40 @@ pub fn mesh_peers() -> Vec<gate_mesh::MeshPeer> {
 pub fn live_topology(has_api: bool, graph: Option<&GraphEngine>) -> LiveTopology {
     const LATENCY_MS_TO_EDGE_WEIGHT_SCALE: f64 = 100.0;
 
-    let (primals, edges) = graph
-        .filter(|g| !g.nodes().is_empty())
-        .map_or_else(
-            || (Vec::new(), Vec::new()),
-            |g| {
-                let primals: Vec<LivePrimal> = g
-                    .nodes()
-                    .iter()
-                    .map(|node| LivePrimal {
-                        id: node.info.id.to_string(),
-                        name: node.info.name.clone(),
-                        primal_type: node.info.primal_type.clone(),
-                        health: format!("{:?}", node.info.health),
-                        capabilities: node.info.capabilities.clone(),
-                        endpoint: node.info.endpoint.clone(),
-                    })
-                    .collect();
-                let edges: Vec<LiveEdge> = g
-                    .edges()
-                    .iter()
-                    .map(|e| LiveEdge {
-                        from: e.from.to_string(),
-                        to: e.to.to_string(),
-                        edge_type: e.edge_type.clone(),
-                        capability: e.capability.clone(),
-                        weight: e.weight.or_else(|| {
-                            e.metrics
-                                .as_ref()
-                                .and_then(|m| m.avg_latency_ms)
-                                .map(|ms| ms / LATENCY_MS_TO_EDGE_WEIGHT_SCALE)
-                        }),
-                    })
-                    .collect();
-                (primals, edges)
-            },
-        );
+    let (primals, edges) = graph.filter(|g| !g.nodes().is_empty()).map_or_else(
+        || (Vec::new(), Vec::new()),
+        |g| {
+            let primals: Vec<LivePrimal> = g
+                .nodes()
+                .iter()
+                .map(|node| LivePrimal {
+                    id: node.info.id.to_string(),
+                    name: node.info.name.clone(),
+                    primal_type: node.info.primal_type.clone(),
+                    health: format!("{:?}", node.info.health),
+                    capabilities: node.info.capabilities.clone(),
+                    endpoint: node.info.endpoint.clone(),
+                })
+                .collect();
+            let edges: Vec<LiveEdge> = g
+                .edges()
+                .iter()
+                .map(|e| LiveEdge {
+                    from: e.from.to_string(),
+                    to: e.to.to_string(),
+                    edge_type: e.edge_type.clone(),
+                    capability: e.capability.clone(),
+                    weight: e.weight.or_else(|| {
+                        e.metrics
+                            .as_ref()
+                            .and_then(|m| m.avg_latency_ms)
+                            .map(|ms| ms / LATENCY_MS_TO_EDGE_WEIGHT_SCALE)
+                    }),
+                })
+                .collect();
+            (primals, edges)
+        },
+    );
 
     let mesh_peers = mesh_peers_live();
 

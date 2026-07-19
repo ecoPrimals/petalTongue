@@ -288,9 +288,12 @@ async fn send_jsonrpc_unix(
     use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
     let endpoint = TransportEndpoint::uds(socket_path);
-    let stream = connect_transport(&endpoint)
-        .await
-        .map_err(|e| ComputeBridgeError::Connect(std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string())))?;
+    let stream = connect_transport(&endpoint).await.map_err(|e| {
+        ComputeBridgeError::Connect(std::io::Error::new(
+            std::io::ErrorKind::ConnectionRefused,
+            e.to_string(),
+        ))
+    })?;
 
     let (reader, mut writer) = tokio::io::split(stream);
 

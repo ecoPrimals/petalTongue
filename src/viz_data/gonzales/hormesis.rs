@@ -2,7 +2,9 @@
 //! Hormesis scene (biphasic dose-response).
 
 use petal_tongue_scene::math::{Axes, FunctionPlot, MathObject};
-use petal_tongue_scene::primitive::{AnchorPoint, Color, LineCap, LineJoin, Primitive, StrokeStyle};
+use petal_tongue_scene::primitive::{
+    AnchorPoint, Color, LineCap, LineJoin, Primitive, StrokeStyle,
+};
 use petal_tongue_scene::scene_graph::{SceneGraph, SceneNode};
 
 /// Hormesis model parameters.

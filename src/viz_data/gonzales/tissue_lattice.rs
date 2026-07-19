@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Tissue lattice scene (spatial cell-state viability grid).
 
-use petal_tongue_scene::primitive::{AnchorPoint, Color, LineCap, LineJoin, Primitive, StrokeStyle};
+use petal_tongue_scene::primitive::{
+    AnchorPoint, Color, LineCap, LineJoin, Primitive, StrokeStyle,
+};
 use petal_tongue_scene::scene_graph::{SceneGraph, SceneNode};
 
 /// Build the tissue lattice scene (cell viability heat map).
@@ -67,10 +69,7 @@ pub fn build_tissue_lattice_scene() -> SceneGraph {
     let legend_x = 520.0;
     let legend_height = 200.0;
     let legend_steps = 20_usize;
-    #[expect(
-        clippy::cast_precision_loss,
-        reason = "legend steps: f64 sufficient"
-    )]
+    #[expect(clippy::cast_precision_loss, reason = "legend steps: f64 sufficient")]
     for i in 0..legend_steps {
         let t = i as f64 / (legend_steps - 1) as f64;
         let y = 100.0 + t * legend_height;

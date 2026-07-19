@@ -16,9 +16,9 @@ use std::path::PathBuf;
 use std::sync::Arc;
 #[cfg(unix)]
 use tokio::net::UnixListener;
-use tracing::{debug, error, info};
 #[cfg(unix)]
 use tracing::warn;
+use tracing::{debug, error, info};
 
 /// Check if a UDS bind error is eligible for TCP fallback.
 ///

@@ -331,7 +331,10 @@ fn velocity_direction(vx: f64, vy: f64) -> &'static str {
         clippy::cast_sign_loss,
         reason = "rem_euclid(8.0) guarantees [0, 8) — always non-negative"
     )]
-    #[expect(clippy::cast_possible_truncation, reason = "octant index fits in usize")]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "octant index fits in usize"
+    )]
     let octant = raw.rem_euclid(8.0) as usize;
     DIRS[octant.min(7)]
 }

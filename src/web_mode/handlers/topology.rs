@@ -99,11 +99,7 @@ pub async fn ecosystem_handler() -> Json<serde_json::Value> {
         .get("compute")
         .and_then(|c| c.get("primary_gate"))
         .and_then(toml::Value::as_str)
-        .unwrap_or_else(|| {
-            gate_mesh::gpu_nodes()
-                .next()
-                .map_or("unknown", |n| n.id)
-        });
+        .unwrap_or_else(|| gate_mesh::gpu_nodes().next().map_or("unknown", |n| n.id));
 
     let wave = manifest
         .get("ecosystem")
