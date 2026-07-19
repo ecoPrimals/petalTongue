@@ -13,12 +13,13 @@ pub(super) async fn provider_call(
     use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
     let endpoint = TransportEndpoint::uds(socket);
-    let mut stream = connect_transport(&endpoint).await.map_err(|e| {
-        BtspHandshakeError::ProviderConnect {
-            path: socket.to_path_buf(),
-            source: std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string()),
-        }
-    })?;
+    let mut stream =
+        connect_transport(&endpoint)
+            .await
+            .map_err(|e| BtspHandshakeError::ProviderConnect {
+                path: socket.to_path_buf(),
+                source: std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string()),
+            })?;
 
     let request = serde_json::json!({
         "jsonrpc": "2.0",

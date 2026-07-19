@@ -183,9 +183,10 @@ async fn test_log_streaming_workflow() {
     assert_eq!(logs.len(), 100);
 
     // Verify log sources are distributed
-    assert!(logs
-        .iter()
-        .any(|log| log.source.as_deref() == Some("songbird")));
+    assert!(
+        logs.iter()
+            .any(|log| log.source.as_deref() == Some("songbird"))
+    );
 
     // Continue streaming (test ring buffer)
     for i in 100..1500 {

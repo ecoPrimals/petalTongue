@@ -561,8 +561,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn connect_transport_mesh_relay_uses_discovered_config(
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    async fn connect_transport_mesh_relay_uses_discovered_config()
+    -> Result<(), Box<dyn std::error::Error>> {
         clear_mesh_relay_config();
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
             .await

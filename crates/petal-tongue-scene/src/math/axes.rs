@@ -459,7 +459,10 @@ pub fn format_tick(value: f64, step: f64) -> String {
     }
 
     #[expect(clippy::cast_sign_loss, reason = "clamped to [0, 6]")]
-    #[expect(clippy::cast_possible_truncation, reason = "decimal places clamped to [0, 6]")]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "decimal places clamped to [0, 6]"
+    )]
     let decimals = (-step.log10()).ceil().clamp(0.0, 6.0) as usize;
     format!("{value:.decimals$}")
 }
@@ -622,9 +625,7 @@ mod tests {
             ..NumberLine::default()
         };
         let prims = nl.to_primitives();
-        let has_decimal_labels = prims
-            .iter()
-            .any(|p| matches!(p, Primitive::Text { .. }));
+        let has_decimal_labels = prims.iter().any(|p| matches!(p, Primitive::Text { .. }));
         assert!(has_decimal_labels, "should have decimal labels like 0.25");
     }
 }

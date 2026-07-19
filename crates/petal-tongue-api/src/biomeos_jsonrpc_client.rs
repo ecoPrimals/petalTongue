@@ -20,11 +20,11 @@ use crate::biomeos_error::BiomeOsClientError;
 use petal_tongue_core::capability_names::primal_names;
 use petal_tongue_core::constants;
 use petal_tongue_core::constants::biomeos_socket_name;
+use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
 use petal_tongue_ipc::socket_path::discover_primal_socket;
 use serde_json::{Value, json};
 use std::path::PathBuf;
-use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tracing::{debug, info};
 

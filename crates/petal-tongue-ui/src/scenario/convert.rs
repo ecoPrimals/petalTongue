@@ -203,9 +203,9 @@ impl PrimalDefinition {
 mod tests {
     use super::*;
     use crate::scenario::config::UiConfig;
+    use crate::scenario::ecosystem::{Position, PrimalMetrics as ScenarioMetrics};
     use crate::scenario::sensory::SensoryConfig;
     use crate::scenario::types::NeuralApiConfig;
-    use crate::scenario::ecosystem::{Position, PrimalMetrics as ScenarioMetrics};
 
     #[test]
     fn test_primal_definition_to_info() {

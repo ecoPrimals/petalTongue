@@ -2,7 +2,9 @@
 //! IC50 dose-response scene (4-parameter logistic Hill equation).
 
 use petal_tongue_scene::math::{Axes, FunctionPlot, MathObject};
-use petal_tongue_scene::primitive::{AnchorPoint, Color, LineCap, LineJoin, Primitive, StrokeStyle};
+use petal_tongue_scene::primitive::{
+    AnchorPoint, Color, LineCap, LineJoin, Primitive, StrokeStyle,
+};
 use petal_tongue_scene::scene_graph::{SceneGraph, SceneNode};
 
 /// Hill equation parameters for IC50 visualization.

@@ -11,9 +11,9 @@ pub mod content_backend;
 pub mod content_direct;
 mod coord_handlers;
 mod handlers;
-pub mod ws_handler;
 #[cfg(test)]
 mod tests;
+pub mod ws_handler;
 
 pub use handlers::{build_response, is_ipynb};
 
@@ -131,8 +131,8 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
 
     // WebSocket JSON-RPC bridge — enables footPrint composition wiring (`/ws` → petalTongue)
     let ws_runtime = {
-        use petal_tongue_platform::config::{EmbedConfig, Platform};
         use petal_tongue_platform::EmbeddedRuntime;
+        use petal_tongue_platform::config::{EmbedConfig, Platform};
 
         let config = EmbedConfig::new(Platform::Desktop);
         match EmbeddedRuntime::new(config) {
@@ -268,13 +268,12 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
                     |resp: &axum::http::Response<_>,
                      latency: std::time::Duration,
                      _span: &tracing::Span| {
-                        #[expect(clippy::cast_possible_truncation, reason = "latency ms fits in u64")]
+                        #[expect(
+                            clippy::cast_possible_truncation,
+                            reason = "latency ms fits in u64"
+                        )]
                         let latency_ms = latency.as_millis() as u64;
-                        tracing::info!(
-                            status = resp.status().as_u16(),
-                            latency_ms,
-                            "response"
-                        );
+                        tracing::info!(status = resp.status().as_u16(), latency_ms, "response");
                     },
                 ),
         );

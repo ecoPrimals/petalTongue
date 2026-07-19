@@ -307,7 +307,8 @@ mod tests {
     fn session_path_returns_correct_path() {
         let dir = tempfile::tempdir().expect("create temp dir");
         let path = session_path_in(&dir, "sess.ron");
-        let manager = SessionManager::with_session_path(path.clone()).expect("create session manager");
+        let manager =
+            SessionManager::with_session_path(path.clone()).expect("create session manager");
 
         assert_eq!(manager.session_path(), path.as_path());
     }
@@ -316,7 +317,8 @@ mod tests {
     fn load_or_create_creates_new_state_when_missing() {
         let dir = tempfile::tempdir().expect("create temp dir");
         let path = session_path_in(&dir, "new.ron");
-        let mut manager = SessionManager::with_session_path(path.clone()).expect("create session manager");
+        let mut manager =
+            SessionManager::with_session_path(path.clone()).expect("create session manager");
         let instance_id = InstanceId::new();
 
         assert!(manager.current_state().is_none());
@@ -328,7 +330,13 @@ mod tests {
 
         assert!(manager.current_state().is_some());
         assert!(manager.is_dirty());
-        assert_eq!(manager.current_state().expect("session state loaded").instance_id, instance_id);
+        assert_eq!(
+            manager
+                .current_state()
+                .expect("session state loaded")
+                .instance_id,
+            instance_id
+        );
     }
 
     #[test]
@@ -337,7 +345,8 @@ mod tests {
         let path = session_path_in(&dir, "roundtrip.ron");
         let instance_id = InstanceId::new();
 
-        let mut manager = SessionManager::with_session_path(path.clone()).expect("create session manager");
+        let mut manager =
+            SessionManager::with_session_path(path.clone()).expect("create session manager");
         manager
             .load_or_create(instance_id.clone())
             .expect("load or create session");
@@ -355,7 +364,11 @@ mod tests {
 
         assert!(!manager2.is_dirty());
         assert_eq!(
-            manager2.current_state().expect("session state loaded").metadata.get("marker"),
+            manager2
+                .current_state()
+                .expect("session state loaded")
+                .metadata
+                .get("marker"),
             Some(&"saved".to_owned())
         );
     }
@@ -407,7 +420,11 @@ mod tests {
 
         assert!(manager.is_dirty());
         assert_eq!(
-            manager.current_state().expect("session state loaded").metadata.get("replaced"),
+            manager
+                .current_state()
+                .expect("session state loaded")
+                .metadata
+                .get("replaced"),
             Some(&"yes".to_owned())
         );
     }
@@ -434,7 +451,8 @@ mod tests {
     fn save_clears_dirty_and_fails_without_state() {
         let dir = tempfile::tempdir().expect("create temp dir");
         let path = session_path_in(&dir, "save.ron");
-        let mut manager = SessionManager::with_session_path(path.clone()).expect("create session manager");
+        let mut manager =
+            SessionManager::with_session_path(path.clone()).expect("create session manager");
 
         let no_state = manager.save();
         assert!(matches!(no_state, Err(SessionError::NoState)));
@@ -459,9 +477,7 @@ mod tests {
         manager.save().expect("save session");
         assert!(!manager.is_dirty());
 
-        let saved = manager
-            .auto_save_if_needed()
-            .expect("auto save if needed");
+        let saved = manager.auto_save_if_needed().expect("auto save if needed");
 
         assert!(!saved);
         assert!(!manager.is_dirty());
@@ -479,9 +495,7 @@ mod tests {
         manager.mark_dirty();
         manager.set_auto_save_interval(0);
 
-        let saved = manager
-            .auto_save_if_needed()
-            .expect("auto save if needed");
+        let saved = manager.auto_save_if_needed().expect("auto save if needed");
 
         assert!(
             !saved,
@@ -509,15 +523,24 @@ mod tests {
         manager.export(&export_path).expect("export session");
         assert!(export_path.exists());
 
-        let mut manager2 =
-            SessionManager::with_session_path(dir.path().join("other.ron"))
-                .expect("create session manager");
+        let mut manager2 = SessionManager::with_session_path(dir.path().join("other.ron"))
+            .expect("create session manager");
         manager2.import(&export_path).expect("import session");
 
         assert!(manager2.is_dirty());
-        assert_eq!(manager2.current_state().expect("session state loaded").instance_id, instance_id);
         assert_eq!(
-            manager2.current_state().expect("session state loaded").metadata.get("exported"),
+            manager2
+                .current_state()
+                .expect("session state loaded")
+                .instance_id,
+            instance_id
+        );
+        assert_eq!(
+            manager2
+                .current_state()
+                .expect("session state loaded")
+                .metadata
+                .get("exported"),
             Some(&"value".to_owned())
         );
     }

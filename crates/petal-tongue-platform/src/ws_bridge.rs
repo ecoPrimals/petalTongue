@@ -43,8 +43,8 @@ impl Default for WsBridgeConfig {
             .and_then(|v| v.parse().ok())
             .unwrap_or(DEFAULT_WS_PORT);
 
-        let bind_host = std::env::var("PETALTONGUE_WS_BIND_HOST")
-            .unwrap_or_else(|_| "127.0.0.1".to_owned());
+        let bind_host =
+            std::env::var("PETALTONGUE_WS_BIND_HOST").unwrap_or_else(|_| "127.0.0.1".to_owned());
 
         Self { bind_host, port }
     }
@@ -164,14 +164,12 @@ async fn handle_connection(
             let mut rt = runtime.write().await;
             match rt.ipc_request(&request_text) {
                 Ok(r) => r,
-                Err(e) => {
-                    serde_json::json!({
-                        "jsonrpc": "2.0",
-                        "id": null,
-                        "error": { "code": -32603, "message": e.to_string() }
-                    })
-                    .to_string()
-                }
+                Err(e) => serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": null,
+                    "error": { "code": -32603, "message": e.to_string() }
+                })
+                .to_string(),
             }
         };
 
@@ -216,13 +214,19 @@ mod tests {
             .expect("WS connect should succeed");
 
         let req = r#"{"jsonrpc":"2.0","id":1,"method":"health.check","params":{}}"#;
-        ws.send(tokio_tungstenite::tungstenite::Message::Text(req.to_owned()))
-            .await
-            .expect("send should succeed");
+        ws.send(tokio_tungstenite::tungstenite::Message::Text(
+            req.to_owned(),
+        ))
+        .await
+        .expect("send should succeed");
 
-        let resp = ws.next().await.expect("should get response").expect("no error");
-        let v: serde_json::Value = serde_json::from_str(resp.to_text().expect("text frame"))
-            .expect("valid JSON");
+        let resp = ws
+            .next()
+            .await
+            .expect("should get response")
+            .expect("no error");
+        let v: serde_json::Value =
+            serde_json::from_str(resp.to_text().expect("text frame")).expect("valid JSON");
 
         assert_eq!(v["id"], 1);
         assert_eq!(v["result"]["status"], "ok");
@@ -248,13 +252,15 @@ mod tests {
             .expect("WS connect");
 
         let req = r#"{"jsonrpc":"2.0","id":2,"method":"capabilities.list","params":{}}"#;
-        ws.send(tokio_tungstenite::tungstenite::Message::Text(req.to_owned()))
-            .await
-            .expect("send");
+        ws.send(tokio_tungstenite::tungstenite::Message::Text(
+            req.to_owned(),
+        ))
+        .await
+        .expect("send");
 
         let resp = ws.next().await.expect("response").expect("no error");
-        let v: serde_json::Value = serde_json::from_str(resp.to_text().expect("text"))
-            .expect("valid JSON");
+        let v: serde_json::Value =
+            serde_json::from_str(resp.to_text().expect("text")).expect("valid JSON");
 
         assert_eq!(v["id"], 2);
         let caps = v["result"]["capabilities"].as_array().expect("array");
@@ -282,13 +288,15 @@ mod tests {
             .expect("WS connect");
 
         let req = r#"{"jsonrpc":"2.0","id":99,"method":"bogus.method","params":{}}"#;
-        ws.send(tokio_tungstenite::tungstenite::Message::Text(req.to_owned()))
-            .await
-            .expect("send");
+        ws.send(tokio_tungstenite::tungstenite::Message::Text(
+            req.to_owned(),
+        ))
+        .await
+        .expect("send");
 
         let resp = ws.next().await.expect("response").expect("no error");
-        let v: serde_json::Value = serde_json::from_str(resp.to_text().expect("text"))
-            .expect("valid JSON");
+        let v: serde_json::Value =
+            serde_json::from_str(resp.to_text().expect("text")).expect("valid JSON");
 
         assert_eq!(v["id"], 99);
         assert_eq!(v["error"]["code"], -32601);
@@ -314,13 +322,15 @@ mod tests {
             .expect("WS connect");
 
         let req = r#"{"jsonrpc":"2.0","id":7,"method":"pt.metrics","params":{}}"#;
-        ws.send(tokio_tungstenite::tungstenite::Message::Text(req.to_owned()))
-            .await
-            .expect("send");
+        ws.send(tokio_tungstenite::tungstenite::Message::Text(
+            req.to_owned(),
+        ))
+        .await
+        .expect("send");
 
         let resp = ws.next().await.expect("response").expect("no error");
-        let v: serde_json::Value = serde_json::from_str(resp.to_text().expect("text"))
-            .expect("valid JSON");
+        let v: serde_json::Value =
+            serde_json::from_str(resp.to_text().expect("text")).expect("valid JSON");
 
         assert_eq!(v["id"], 7);
         assert!(v["result"]["cpu_count"].as_u64().unwrap_or(0) >= 1);

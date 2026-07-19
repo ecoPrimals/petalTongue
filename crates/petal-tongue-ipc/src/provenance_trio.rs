@@ -275,12 +275,16 @@ impl ProvenanceTrioClient {
         use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
         let endpoint = TransportEndpoint::uds(socket);
-        let stream = connect_transport(&endpoint).await.map_err(|e| {
-            ProvenanceRpcError::Connect {
-                path: socket.to_owned(),
-                source: std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string()),
-            }
-        })?;
+        let stream =
+            connect_transport(&endpoint)
+                .await
+                .map_err(|e| ProvenanceRpcError::Connect {
+                    path: socket.to_owned(),
+                    source: std::io::Error::new(
+                        std::io::ErrorKind::ConnectionRefused,
+                        e.to_string(),
+                    ),
+                })?;
 
         let (reader, mut writer) = tokio::io::split(stream);
 

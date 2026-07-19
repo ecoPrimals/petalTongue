@@ -368,8 +368,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_discover_toadstool_with_manifest_in_temp_dir(
-    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+    async fn test_discover_toadstool_with_manifest_in_temp_dir()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
         let temp = tempfile::tempdir()?;
         let discovery_dir = temp.path().join("ecoPrimals").join("discovery");
         std::fs::create_dir_all(&discovery_dir)?;
@@ -404,8 +404,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_cpu_fallback_lifecycle_init_available_shutdown(
-    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+    async fn test_cpu_fallback_lifecycle_init_available_shutdown()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
         let mut provider = CPUFallbackCompute::new();
 
         assert!(
@@ -432,7 +432,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_toadstool_without_discovery() -> std::result::Result<(), Box<dyn std::error::Error>> {
+    async fn test_toadstool_without_discovery()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
         use crate::test_fixtures::env_test_helpers;
 
         let provider = env_test_helpers::with_env_vars_removed_async(

@@ -113,9 +113,8 @@ impl VizRegistry {
             VizEntry {
                 slug: "gonzales-ic50".to_owned(),
                 title: "IC\u{2085}\u{2080} Dose-Response".to_owned(),
-                description:
-                    "Sigmoidal dose-response curve (4-parameter logistic Hill equation)"
-                        .to_owned(),
+                description: "Sigmoidal dose-response curve (4-parameter logistic Hill equation)"
+                    .to_owned(),
                 data_source: None,
                 has_animation: true,
             },

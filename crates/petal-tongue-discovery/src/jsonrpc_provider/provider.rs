@@ -101,7 +101,12 @@ impl JsonRpcProvider {
             .map_err(|_| DiscoveryError::ConnectionTimeout {
                 endpoint: path.display().to_string(),
             })?
-            .map_err(|e| DiscoveryError::Io(std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string())))?;
+            .map_err(|e| {
+                DiscoveryError::Io(std::io::Error::new(
+                    std::io::ErrorKind::ConnectionRefused,
+                    e.to_string(),
+                ))
+            })?;
 
         drop(stream);
         Ok(())
@@ -129,7 +134,12 @@ impl JsonRpcProvider {
             .map_err(|_| DiscoveryError::ConnectionTimeout {
                 endpoint: self.socket_path.display().to_string(),
             })?
-            .map_err(|e| DiscoveryError::Io(std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string())))?;
+            .map_err(|e| {
+                DiscoveryError::Io(std::io::Error::new(
+                    std::io::ErrorKind::ConnectionRefused,
+                    e.to_string(),
+                ))
+            })?;
 
         let (reader, mut writer) = tokio::io::split(stream);
         let mut reader = BufReader::new(reader);

@@ -216,9 +216,9 @@ impl RegistrationClient {
     /// Send a JSON-RPC request to the discovery service
     async fn send_request(&self, request: &Value) -> Result<(), PrimalRegistrationError> {
         let endpoint = TransportEndpoint::uds(&self.socket_path);
-        let stream = connect_transport(&endpoint)
-            .await
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string()))?;
+        let stream = connect_transport(&endpoint).await.map_err(|e| {
+            std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string())
+        })?;
 
         let (mut reader_half, mut writer) = tokio::io::split(stream);
 

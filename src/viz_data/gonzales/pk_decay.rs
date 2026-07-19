@@ -2,7 +2,9 @@
 //! PK decay scene (two-compartment pharmacokinetic elimination).
 
 use petal_tongue_scene::math::{Axes, FunctionPlot, MathObject};
-use petal_tongue_scene::primitive::{AnchorPoint, Color, LineCap, LineJoin, Primitive, StrokeStyle};
+use petal_tongue_scene::primitive::{
+    AnchorPoint, Color, LineCap, LineJoin, Primitive, StrokeStyle,
+};
 use petal_tongue_scene::scene_graph::{SceneGraph, SceneNode};
 
 /// Two-compartment PK parameters.
@@ -16,8 +18,10 @@ pub(super) struct PkParams {
 impl PkParams {
     /// C(t) = A·e^(-α·t) + B·e^(-β·t)
     pub fn concentration(&self, t: f64) -> f64 {
-        self.a_coeff
-            .mul_add((-self.alpha * t).exp(), self.b_coeff * (-self.beta * t).exp())
+        self.a_coeff.mul_add(
+            (-self.alpha * t).exp(),
+            self.b_coeff * (-self.beta * t).exp(),
+        )
     }
 }
 
@@ -30,10 +34,10 @@ pub fn build_pk_decay_scene() -> SceneGraph {
     let mut scene = SceneGraph::new();
 
     let params = PkParams {
-        a_coeff: 80.0,  // ng/mL (distribution amplitude)
-        alpha: 1.5,     // h⁻¹ (distribution rate)
-        b_coeff: 20.0,  // ng/mL (elimination amplitude)
-        beta: 0.15,     // h⁻¹ (elimination rate, t½ ≈ 4.6h)
+        a_coeff: 80.0, // ng/mL (distribution amplitude)
+        alpha: 1.5,    // h⁻¹ (distribution rate)
+        b_coeff: 20.0, // ng/mL (elimination amplitude)
+        beta: 0.15,    // h⁻¹ (elimination rate, t½ ≈ 4.6h)
     };
 
     let axes = Axes {

@@ -6,7 +6,7 @@
 
 use super::types::JsonRpcRequest;
 use super::types::JsonRpcResponse;
-use crate::transport::{connect_transport, TransportEndpoint};
+use crate::transport::{TransportEndpoint, connect_transport};
 
 /// Simple JSON-RPC client for biomeOS Neural API.
 ///

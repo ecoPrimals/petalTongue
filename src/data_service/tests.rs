@@ -98,8 +98,7 @@ async fn test_snapshot_serialization() -> Result<()> {
     let service = DataService::new();
     let snapshot = service.snapshot().await?;
     let json = serde_json::to_string(&snapshot).expect("serialization failed");
-    let deser: DataSnapshot =
-        serde_json::from_str(&json).expect("deserialization failed");
+    let deser: DataSnapshot = serde_json::from_str(&json).expect("deserialization failed");
     assert_eq!(deser.primals.len(), snapshot.primals.len());
     assert_eq!(deser.edges.len(), snapshot.edges.len());
     assert_eq!(deser.timestamp, snapshot.timestamp);
@@ -213,8 +212,7 @@ async fn test_snapshot_serialization_with_data() -> Result<()> {
     }
     let snapshot = service.snapshot().await?;
     let json = serde_json::to_string(&snapshot).expect("serialization failed");
-    let deser: DataSnapshot =
-        serde_json::from_str(&json).expect("deserialization failed");
+    let deser: DataSnapshot = serde_json::from_str(&json).expect("deserialization failed");
     assert_eq!(deser.primals.len(), 1);
     assert_eq!(deser.primals[0].id.as_str(), "test-1");
     assert_eq!(deser.primals[0].name, "Test Primal");
@@ -368,8 +366,7 @@ async fn test_data_snapshot_serialization_roundtrip_with_edges() {
         timestamp: 12345,
     };
     let json = serde_json::to_string(&snapshot).expect("serialization failed");
-    let deser: DataSnapshot =
-        serde_json::from_str(&json).expect("deserialization failed");
+    let deser: DataSnapshot = serde_json::from_str(&json).expect("deserialization failed");
     assert_eq!(deser.primals.len(), 2);
     assert_eq!(deser.edges.len(), 1);
     assert_eq!(deser.edges[0].edge_type, "api_call");

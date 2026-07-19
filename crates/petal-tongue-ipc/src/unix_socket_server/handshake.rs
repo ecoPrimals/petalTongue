@@ -4,9 +4,9 @@ use crate::unix_socket_connection;
 use crate::unix_socket_rpc_handlers::RpcHandlers;
 #[cfg(unix)]
 use std::sync::Arc;
-use tracing::{debug, error, info};
 #[cfg(unix)]
 use tracing::warn;
+use tracing::{debug, error, info};
 
 /// Outcome of UDS BTSP handshake classification.
 ///

@@ -115,7 +115,10 @@ fn load_scenario_trust_demo() {
                 .get("endpoint")
                 .and_then(|v| v.as_str())
                 .unwrap_or("http://localhost");
-            #[expect(clippy::cast_possible_truncation, reason = "trust level capped to u8 in test")]
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "trust level capped to u8 in test"
+            )]
             let trust = p
                 .get("trust_level")
                 .and_then(serde_json::Value::as_u64)

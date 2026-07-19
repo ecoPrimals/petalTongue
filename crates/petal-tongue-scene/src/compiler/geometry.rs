@@ -166,20 +166,14 @@ pub fn compile_geometry(
                     .collect();
 
                 // Append lower boundary reversed (closed shape)
-                poly_pts.extend(
-                    points
-                        .iter()
-                        .zip(data.iter())
-                        .rev()
-                        .map(|(&[x, _], row)| {
-                            let ymin = row
-                                .as_object()
-                                .and_then(|o| get_number(o, "ymin"))
-                                .unwrap_or(0.0);
-                            let pt: [f64; 2] = axes.data_to_screen(x, ymin).into();
-                            pt
-                        }),
-                );
+                poly_pts.extend(points.iter().zip(data.iter()).rev().map(|(&[x, _], row)| {
+                    let ymin = row
+                        .as_object()
+                        .and_then(|o| get_number(o, "ymin"))
+                        .unwrap_or(0.0);
+                    let pt: [f64; 2] = axes.data_to_screen(x, ymin).into();
+                    pt
+                }));
 
                 vec![Primitive::Polygon {
                     points: poly_pts,
@@ -342,9 +336,15 @@ pub fn compile_geometry(
                     let end_rad = end_deg.to_radians() - std::f64::consts::FRAC_PI_2;
 
                     #[expect(clippy::cast_sign_loss, reason = "clamped to non-negative")]
-                    #[expect(clippy::cast_possible_truncation, reason = "grid indices fit in usize")]
+                    #[expect(
+                        clippy::cast_possible_truncation,
+                        reason = "grid indices fit in usize"
+                    )]
                     let ring = ring_idx.max(0.0) as usize;
-                    #[expect(clippy::cast_precision_loss, reason = "ring count well within f64 precision")]
+                    #[expect(
+                        clippy::cast_precision_loss,
+                        reason = "ring count well within f64 precision"
+                    )]
                     let r = (ring as f64 + 1.0).mul_add(ring_spacing, base_radius);
 
                     let fill = categorical_color(palette, i);
@@ -354,7 +354,10 @@ pub fn compile_geometry(
                         clippy::cast_sign_loss,
                         reason = "abs + ceil + max(8) is non-negative"
                     )]
-                    #[expect(clippy::cast_possible_truncation, reason = "sample count well within usize")]
+                    #[expect(
+                        clippy::cast_possible_truncation,
+                        reason = "sample count well within usize"
+                    )]
                     let n_samples = ((end_rad - start_rad).abs() * 20.0).ceil().max(8.0) as usize;
                     let mut poly_pts = Vec::with_capacity(n_samples * 2 + 2);
                     let r_inner = r - arc_thickness / 2.0;
@@ -466,33 +469,31 @@ pub fn compile_geometry(
             }
         }
 
-        GeometryType::Text => {
-            points
-                .iter()
-                .zip(data.iter())
-                .enumerate()
-                .map(|(i, (&[x, y], row))| {
-                    let (sx, sy) = axes.data_to_screen(x, y);
-                    let content = row
-                        .as_object()
-                        .and_then(|o| o.get("label").or_else(|| o.get("text")))
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("")
-                        .to_owned();
-                    Primitive::Text {
-                        x: sx,
-                        y: sy,
-                        content,
-                        font_size: 12.0,
-                        color: primary,
-                        anchor: AnchorPoint::Center,
-                        bold: false,
-                        italic: false,
-                        data_id: Some(row_data_id(data, i, "text")),
-                    }
-                })
-                .collect()
-        }
+        GeometryType::Text => points
+            .iter()
+            .zip(data.iter())
+            .enumerate()
+            .map(|(i, (&[x, y], row))| {
+                let (sx, sy) = axes.data_to_screen(x, y);
+                let content = row
+                    .as_object()
+                    .and_then(|o| o.get("label").or_else(|| o.get("text")))
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_owned();
+                Primitive::Text {
+                    x: sx,
+                    y: sy,
+                    content,
+                    font_size: 12.0,
+                    color: primary,
+                    anchor: AnchorPoint::Center,
+                    bold: false,
+                    italic: false,
+                    data_id: Some(row_data_id(data, i, "text")),
+                }
+            })
+            .collect(),
 
         GeometryType::ErrorBar => {
             let mut prims = Vec::new();
@@ -681,7 +682,11 @@ fn generate_sphere_mesh(
             let ny = phi.cos();
             let nz = phi.sin() * theta.sin();
             vertices.push(MeshVertex {
-                position: [radius.mul_add(nx, cx), radius.mul_add(ny, cy), radius.mul_add(nz, cz)],
+                position: [
+                    radius.mul_add(nx, cx),
+                    radius.mul_add(ny, cy),
+                    radius.mul_add(nz, cz),
+                ],
                 normal: [nx, ny, nz],
                 color,
             });

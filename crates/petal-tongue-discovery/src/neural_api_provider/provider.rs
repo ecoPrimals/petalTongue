@@ -4,10 +4,10 @@
 use crate::errors::{DiscoveryError, DiscoveryResult};
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
 use petal_tongue_core::capability_names::socket_roles;
+use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
 use serde_json::{Value, json};
 use std::path::PathBuf;
-use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tracing::{debug, info};
 
@@ -103,13 +103,18 @@ impl NeuralApiProvider {
         debug!("🧠 Calling Neural API: {}", method);
 
         let endpoint = TransportEndpoint::uds(&self.socket_path);
-        let stream = connect_transport(&endpoint).await.map_err(|e| {
-            DiscoveryError::HealthCheckFailed {
-                name: "Neural API".to_owned(),
-                endpoint: self.socket_path.display().to_string(),
-                source: std::io::Error::new(std::io::ErrorKind::ConnectionRefused, e.to_string()).into(),
-            }
-        })?;
+        let stream =
+            connect_transport(&endpoint)
+                .await
+                .map_err(|e| DiscoveryError::HealthCheckFailed {
+                    name: "Neural API".to_owned(),
+                    endpoint: self.socket_path.display().to_string(),
+                    source: std::io::Error::new(
+                        std::io::ErrorKind::ConnectionRefused,
+                        e.to_string(),
+                    )
+                    .into(),
+                })?;
 
         let (mut reader_half, mut writer) = tokio::io::split(stream);
 

@@ -136,11 +136,7 @@ impl EmbeddedRuntime {
     ///
     /// # Errors
     /// Returns error if scenario is unknown or compilation fails.
-    pub fn render_svg(
-        &self,
-        builder_id: &str,
-        scene_name: &str,
-    ) -> Result<String, PlatformError> {
+    pub fn render_svg(&self, builder_id: &str, scene_name: &str) -> Result<String, PlatformError> {
         if self.state != RuntimeState::Running {
             return Err(PlatformError::InvalidState {
                 current: self.state,
@@ -152,9 +148,8 @@ impl EmbeddedRuntime {
         let output = self.svg_compiler.compile(&scene_graph);
 
         match output {
-            ModalityOutput::Svg(bytes) => String::from_utf8(bytes.to_vec()).map_err(|e| {
-                PlatformError::Runtime(format!("SVG output is not valid UTF-8: {e}"))
-            }),
+            ModalityOutput::Svg(bytes) => String::from_utf8(bytes.to_vec())
+                .map_err(|e| PlatformError::Runtime(format!("SVG output is not valid UTF-8: {e}"))),
             _ => Err(PlatformError::Runtime(
                 "SvgCompiler did not produce SVG output".to_owned(),
             )),
@@ -177,19 +172,16 @@ impl EmbeddedRuntime {
             });
         }
 
-        let binding: petal_tongue_core::DataBinding =
-            serde_json::from_str(binding_json).map_err(|e| {
-                PlatformError::Serialization(format!("invalid DataBinding JSON: {e}"))
-            })?;
+        let binding: petal_tongue_core::DataBinding = serde_json::from_str(binding_json)
+            .map_err(|e| PlatformError::Serialization(format!("invalid DataBinding JSON: {e}")))?;
 
         let (expr, data) = DataBindingCompiler::compile(&binding, domain);
         let scene_graph = self.compiler.compile(&expr, &data);
         let output = self.svg_compiler.compile(&scene_graph);
 
         match output {
-            ModalityOutput::Svg(bytes) => String::from_utf8(bytes.to_vec()).map_err(|e| {
-                PlatformError::Runtime(format!("SVG output is not valid UTF-8: {e}"))
-            }),
+            ModalityOutput::Svg(bytes) => String::from_utf8(bytes.to_vec())
+                .map_err(|e| PlatformError::Runtime(format!("SVG output is not valid UTF-8: {e}"))),
             _ => Err(PlatformError::Runtime(
                 "SvgCompiler did not produce SVG output".to_owned(),
             )),
@@ -268,9 +260,8 @@ impl EmbeddedRuntime {
             });
         }
 
-        let request: serde_json::Value = serde_json::from_str(json).map_err(|e| {
-            PlatformError::Serialization(format!("invalid JSON-RPC request: {e}"))
-        })?;
+        let request: serde_json::Value = serde_json::from_str(json)
+            .map_err(|e| PlatformError::Serialization(format!("invalid JSON-RPC request: {e}")))?;
 
         let method = request
             .get("method")
@@ -366,9 +357,8 @@ impl EmbeddedRuntime {
             _ => Self::error_response(&request, -32601, &format!("unknown method: {method}")),
         };
 
-        serde_json::to_string(&response).map_err(|e| {
-            PlatformError::Serialization(format!("failed to serialize response: {e}"))
-        })
+        serde_json::to_string(&response)
+            .map_err(|e| PlatformError::Serialization(format!("failed to serialize response: {e}")))
     }
 
     /// Current runtime state.
@@ -389,11 +379,7 @@ impl EmbeddedRuntime {
         }
     }
 
-    fn error_response(
-        request: &serde_json::Value,
-        code: i64,
-        message: &str,
-    ) -> serde_json::Value {
+    fn error_response(request: &serde_json::Value, code: i64, message: &str) -> serde_json::Value {
         serde_json::json!({
             "jsonrpc": "2.0",
             "id": request.get("id"),
@@ -518,7 +504,8 @@ mod tests {
     #[test]
     fn health_check_returns_ok() -> Result<(), PlatformError> {
         let mut rt = test_runtime();
-        let resp = rt.ipc_request(r#"{"jsonrpc":"2.0","id":1,"method":"health.check","params":{}}"#)?;
+        let resp =
+            rt.ipc_request(r#"{"jsonrpc":"2.0","id":1,"method":"health.check","params":{}}"#)?;
         let v: serde_json::Value = serde_json::from_str(&resp).expect("valid JSON");
         assert_eq!(v["result"]["status"], "ok");
         assert_eq!(v["id"], 1);
@@ -528,7 +515,8 @@ mod tests {
     #[test]
     fn capabilities_list_returns_methods() -> Result<(), PlatformError> {
         let mut rt = test_runtime();
-        let resp = rt.ipc_request(r#"{"jsonrpc":"2.0","id":2,"method":"capabilities.list","params":{}}"#)?;
+        let resp =
+            rt.ipc_request(r#"{"jsonrpc":"2.0","id":2,"method":"capabilities.list","params":{}}"#)?;
         let v: serde_json::Value = serde_json::from_str(&resp).expect("valid JSON");
         let caps = v["result"]["capabilities"].as_array().expect("array");
         assert!(caps.iter().any(|c| c == "health.check"));
@@ -539,7 +527,8 @@ mod tests {
     #[test]
     fn unknown_method_returns_error() -> Result<(), PlatformError> {
         let mut rt = test_runtime();
-        let resp = rt.ipc_request(r#"{"jsonrpc":"2.0","id":3,"method":"no.such.method","params":{}}"#)?;
+        let resp =
+            rt.ipc_request(r#"{"jsonrpc":"2.0","id":3,"method":"no.such.method","params":{}}"#)?;
         let v: serde_json::Value = serde_json::from_str(&resp).expect("valid JSON");
         assert_eq!(v["error"]["code"], -32601);
         Ok(())
@@ -558,14 +547,16 @@ mod tests {
     fn ipc_request_while_stopped_fails() {
         let config = EmbedConfig::new(Platform::Desktop);
         let mut rt = EmbeddedRuntime::new(config).expect("runtime should create");
-        let result = rt.ipc_request(r#"{"jsonrpc":"2.0","id":1,"method":"health.check","params":{}}"#);
+        let result =
+            rt.ipc_request(r#"{"jsonrpc":"2.0","id":1,"method":"health.check","params":{}}"#);
         assert!(result.is_err());
     }
 
     #[test]
     fn metrics_returns_snapshot() -> Result<(), PlatformError> {
         let mut rt = test_runtime();
-        let resp = rt.ipc_request(r#"{"jsonrpc":"2.0","id":5,"method":"pt.metrics","params":{}}"#)?;
+        let resp =
+            rt.ipc_request(r#"{"jsonrpc":"2.0","id":5,"method":"pt.metrics","params":{}}"#)?;
         let v: serde_json::Value = serde_json::from_str(&resp).expect("valid JSON");
         assert_eq!(v["id"], 5);
         assert!(v["result"]["cpu_count"].as_u64().unwrap_or(0) >= 1);

@@ -376,11 +376,7 @@ mod tests {
         let out = dir.path().join("test_baselines");
         let args = Args {
             mode: OutputMode::Baselines,
-            output: Some(
-                out.to_str()
-                    .expect("temp path is valid UTF-8")
-                    .to_owned(),
-            ),
+            output: Some(out.to_str().expect("temp path is valid UTF-8").to_owned()),
             width: 800,
             height: 600,
             scenario: None,

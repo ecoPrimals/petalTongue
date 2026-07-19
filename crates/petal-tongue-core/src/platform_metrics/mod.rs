@@ -43,7 +43,10 @@ impl ResourceSnapshot {
         if self.memory_total == 0 {
             return 0.0;
         }
-        #[expect(clippy::cast_possible_truncation, reason = "percentage always fits f32")]
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "percentage always fits f32"
+        )]
         let pct = (self.memory_used as f64 / self.memory_total as f64 * 100.0) as f32;
         pct
     }

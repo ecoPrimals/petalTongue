@@ -36,23 +36,21 @@ impl DiscoveryServiceClient {
         let connect_timeout = discovery_timeouts::DISCOVERY_SERVICE_CONNECT_TIMEOUT;
 
         let endpoint = TransportEndpoint::uds(&self.socket_path);
-        let stream =
-            match tokio::time::timeout(connect_timeout, connect_transport(&endpoint))
-                .await
-            {
-                Ok(Ok(stream)) => stream,
-                Ok(Err(e)) => {
-                    return Err(DiscoveryError::Io(std::io::Error::new(
-                        std::io::ErrorKind::ConnectionRefused,
-                        e.to_string(),
-                    )));
-                }
-                Err(_) => {
-                    return Err(DiscoveryError::ConnectionTimeout {
-                        endpoint: self.socket_path.display().to_string(),
-                    });
-                }
-            };
+        let stream = match tokio::time::timeout(connect_timeout, connect_transport(&endpoint)).await
+        {
+            Ok(Ok(stream)) => stream,
+            Ok(Err(e)) => {
+                return Err(DiscoveryError::Io(std::io::Error::new(
+                    std::io::ErrorKind::ConnectionRefused,
+                    e.to_string(),
+                )));
+            }
+            Err(_) => {
+                return Err(DiscoveryError::ConnectionTimeout {
+                    endpoint: self.socket_path.display().to_string(),
+                });
+            }
+        };
 
         let (reader, mut writer) = tokio::io::split(stream);
         let mut reader = BufReader::new(reader);
