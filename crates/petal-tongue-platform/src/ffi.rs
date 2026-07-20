@@ -43,6 +43,7 @@ pub unsafe extern "C" fn pt_create(config_json: *const c_char) -> *mut PetalTong
     let config = if config_json.is_null() {
         EmbedConfig::new(crate::config::Platform::Desktop)
     } else {
+        // SAFETY: caller guarantees config_json is a valid NUL-terminated C string.
         let c_str = unsafe { CStr::from_ptr(config_json) };
         let Ok(json) = c_str.to_str() else {
             return std::ptr::null_mut();
@@ -70,6 +71,7 @@ pub unsafe extern "C" fn pt_start(handle: *mut PetalTongueHandle) -> i32 {
     if handle.is_null() {
         return -1;
     }
+    // SAFETY: null-checked above; caller guarantees valid handle from pt_create.
     let h = unsafe { &mut *handle };
     if h.runtime.start().is_ok() { 0 } else { -1 }
 }
@@ -86,6 +88,7 @@ pub unsafe extern "C" fn pt_pause(handle: *mut PetalTongueHandle) -> i32 {
     if handle.is_null() {
         return -1;
     }
+    // SAFETY: null-checked above; caller guarantees valid handle from pt_create.
     let h = unsafe { &mut *handle };
     if h.runtime.on_pause().is_ok() { 0 } else { -1 }
 }
@@ -102,6 +105,7 @@ pub unsafe extern "C" fn pt_resume(handle: *mut PetalTongueHandle) -> i32 {
     if handle.is_null() {
         return -1;
     }
+    // SAFETY: null-checked above; caller guarantees valid handle from pt_create.
     let h = unsafe { &mut *handle };
     if h.runtime.on_resume().is_ok() { 0 } else { -1 }
 }
@@ -127,11 +131,14 @@ pub unsafe extern "C" fn pt_render_svg(
     if handle.is_null() || builder_id.is_null() || scene_name.is_null() {
         return std::ptr::null_mut();
     }
+    // SAFETY: null-checked above; caller guarantees valid handle from pt_create.
     let h = unsafe { &*handle };
 
+    // SAFETY: null-checked above; caller guarantees valid NUL-terminated C strings.
     let Ok(bid) = (unsafe { CStr::from_ptr(builder_id) }).to_str() else {
         return std::ptr::null_mut();
     };
+    // SAFETY: same as above.
     let Ok(sname) = (unsafe { CStr::from_ptr(scene_name) }).to_str() else {
         return std::ptr::null_mut();
     };
@@ -161,8 +168,10 @@ pub unsafe extern "C" fn pt_ipc_request(
     if handle.is_null() || json.is_null() {
         return std::ptr::null_mut();
     }
+    // SAFETY: null-checked above; caller guarantees valid handle from pt_create.
     let h = unsafe { &mut *handle };
 
+    // SAFETY: null-checked above; caller guarantees valid NUL-terminated C string.
     let Ok(request) = (unsafe { CStr::from_ptr(json) }).to_str() else {
         return std::ptr::null_mut();
     };
@@ -181,6 +190,7 @@ pub unsafe extern "C" fn pt_ipc_request(
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn pt_free_string(ptr: *mut c_char) {
     if !ptr.is_null() {
+        // SAFETY: caller guarantees ptr was returned by a pt_* function (allocated via CString::into_raw).
         drop(unsafe { CString::from_raw(ptr) });
     }
 }
@@ -194,6 +204,7 @@ pub unsafe extern "C" fn pt_free_string(ptr: *mut c_char) {
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn pt_destroy(handle: *mut PetalTongueHandle) {
     if !handle.is_null() {
+        // SAFETY: null-checked; caller guarantees valid handle from pt_create, not yet destroyed.
         drop(unsafe { Box::from_raw(handle) });
     }
 }

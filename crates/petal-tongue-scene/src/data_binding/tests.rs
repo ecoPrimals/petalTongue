@@ -488,9 +488,9 @@ fn color_grid_renders_through_scene_pipeline() {
     let compiler = GrammarCompiler::new();
     let scene = compiler.compile(&expr, &data);
     let flat = scene.flatten();
-    let rects: Vec<_> = flat
+    let rect_count = flat
         .iter()
         .filter(|(_, p)| matches!(p, Primitive::Rect { .. }))
-        .collect();
-    assert_eq!(rects.len(), 4, "2x2 grid should produce 4 Rect primitives");
+        .count();
+    assert_eq!(rect_count, 4, "2x2 grid should produce 4 Rect primitives");
 }

@@ -18,6 +18,7 @@ use petal_tongue_core::scenarios::{
     GroundSpringSpectralReconstructionScenario,
 };
 use petal_tongue_scene::modality::SvgCompiler;
+use petal_tongue_scene::modality::WebGlCompiler;
 use petal_tongue_scene::{
     DataBindingCompiler, GrammarCompiler, ModalityCompiler, ModalityOutput, SceneGraph,
 };
@@ -45,6 +46,7 @@ pub struct EmbeddedRuntime {
     tokio_rt: Option<Runtime>,
     compiler: Arc<GrammarCompiler>,
     svg_compiler: Arc<SvgCompiler>,
+    webgl_compiler: Arc<WebGlCompiler>,
     scene_cache: Arc<RwLock<Option<SceneGraph>>>,
     event_callback: Option<EventCallback>,
     builders: Vec<Box<dyn ScenarioBuilder>>,
@@ -70,6 +72,7 @@ impl EmbeddedRuntime {
             tokio_rt: Some(tokio_rt),
             compiler: Arc::new(GrammarCompiler::new()),
             svg_compiler: Arc::new(SvgCompiler::new()),
+            webgl_compiler: Arc::new(WebGlCompiler::new()),
             scene_cache: Arc::new(RwLock::new(None)),
             event_callback: None,
             builders: Self::builtin_builders(),
@@ -188,6 +191,38 @@ impl EmbeddedRuntime {
         }
     }
 
+    /// Render a data binding to WebGL draw commands (JSON-serialized [`WebGlScene`]).
+    ///
+    /// # Errors
+    /// Returns error if the runtime is not running or binding JSON is invalid.
+    pub fn render_binding_webgl(
+        &self,
+        binding_json: &str,
+        domain: Option<&str>,
+    ) -> Result<String, PlatformError> {
+        if self.state != RuntimeState::Running {
+            return Err(PlatformError::InvalidState {
+                current: self.state,
+                attempted: "render_binding_webgl".to_owned(),
+            });
+        }
+
+        let binding: petal_tongue_core::DataBinding = serde_json::from_str(binding_json)
+            .map_err(|e| PlatformError::Serialization(format!("invalid DataBinding JSON: {e}")))?;
+
+        let (expr, data) = DataBindingCompiler::compile(&binding, domain);
+        let scene_graph = self.compiler.compile(&expr, &data);
+        let output = self.webgl_compiler.compile(&scene_graph);
+
+        match output {
+            ModalityOutput::GpuCommands(bytes) => String::from_utf8(bytes.to_vec())
+                .map_err(|e| PlatformError::Runtime(format!("WebGL output not UTF-8: {e}"))),
+            _ => Err(PlatformError::Runtime(
+                "WebGlCompiler did not produce GpuCommands output".to_owned(),
+            )),
+        }
+    }
+
     /// Compile a scene graph from a named scenario builder and scene.
     ///
     /// # Errors
@@ -281,6 +316,7 @@ impl EmbeddedRuntime {
                     "capabilities": [
                         "pt.render_svg",
                         "pt.render_binding",
+                        "pt.render_webgl",
                         "pt.state",
                         "pt.scenarios",
                         "pt.metrics",
@@ -322,6 +358,24 @@ impl EmbeddedRuntime {
                         "jsonrpc": "2.0",
                         "id": request.get("id"),
                         "result": { "svg": svg }
+                    }),
+                    Err(e) => Self::error_response(&request, -32000, &e.to_string()),
+                }
+            }
+            "pt.render_webgl" => {
+                let binding_json = request
+                    .pointer("/params/binding")
+                    .map(std::string::ToString::to_string)
+                    .unwrap_or_default();
+                let domain = request
+                    .pointer("/params/domain")
+                    .and_then(serde_json::Value::as_str);
+
+                match self.render_binding_webgl(&binding_json, domain) {
+                    Ok(webgl_json) => serde_json::json!({
+                        "jsonrpc": "2.0",
+                        "id": request.get("id"),
+                        "result": serde_json::from_str::<serde_json::Value>(&webgl_json).unwrap_or_default()
                     }),
                     Err(e) => Self::error_response(&request, -32000, &e.to_string()),
                 }
@@ -562,6 +616,53 @@ mod tests {
         assert!(v["result"]["cpu_count"].as_u64().unwrap_or(0) >= 1);
         assert!(v["result"]["source"].is_string());
         assert!(v["result"]["memory_percent"].is_number());
+        Ok(())
+    }
+
+    #[test]
+    fn render_webgl_returns_scene_data() -> Result<(), PlatformError> {
+        let mut rt = test_runtime();
+        let binding = serde_json::json!({
+            "channel_type": "scatter",
+            "id": "test-scatter",
+            "label": "Test",
+            "x": [1.0, 3.0],
+            "y": [2.0, 4.0],
+            "unit": "mm"
+        });
+        let req = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 10,
+            "method": "pt.render_webgl",
+            "params": { "binding": binding }
+        });
+        let resp = rt.ipc_request(&serde_json::to_string(&req).unwrap())?;
+        let v: serde_json::Value = serde_json::from_str(&resp).expect("valid JSON");
+        assert_eq!(v["id"], 10);
+        assert!(
+            v.get("error").is_none(),
+            "unexpected error: {}",
+            serde_json::to_string_pretty(&v).unwrap()
+        );
+        assert!(
+            v["result"]["vertices"].is_array(),
+            "response: {}",
+            serde_json::to_string_pretty(&v).unwrap()
+        );
+        assert!(v["result"]["indices"].is_array());
+        assert!(v["result"]["draw_calls"].is_array());
+        assert!(v["result"]["view_projection"].is_array());
+        Ok(())
+    }
+
+    #[test]
+    fn capabilities_includes_render_webgl() -> Result<(), PlatformError> {
+        let mut rt = test_runtime();
+        let resp =
+            rt.ipc_request(r#"{"jsonrpc":"2.0","id":11,"method":"capabilities.list","params":{}}"#)?;
+        let v: serde_json::Value = serde_json::from_str(&resp).expect("valid JSON");
+        let caps = v["result"]["capabilities"].as_array().expect("array");
+        assert!(caps.iter().any(|c| c == "pt.render_webgl"));
         Ok(())
     }
 }
