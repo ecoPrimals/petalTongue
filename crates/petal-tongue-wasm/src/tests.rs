@@ -353,3 +353,68 @@ fn render_binding_with_thresholds_heatmap() {
 fn version_matches_cargo() {
     assert_eq!(version(), env!("CARGO_PKG_VERSION"));
 }
+
+// ── WebGL modality tests ─────────────────────────────────────────
+
+#[test]
+fn render_binding_webgl_produces_json() {
+    use crate::render_binding_webgl;
+    let binding = r#"{
+        "channel_type": "scatter",
+        "id": "sc", "label": "Plot", "unit": "mm",
+        "x": [1.0, 2.0, 3.0],
+        "y": [4.0, 5.0, 6.0]
+    }"#;
+    let result = render_binding_webgl(binding, "");
+    assert!(!result.contains("error"), "unexpected error: {result}");
+    let v: serde_json::Value = serde_json::from_str(&result).expect("valid JSON");
+    assert!(v["vertices"].is_array());
+    assert!(v["indices"].is_array());
+    assert!(v["draw_calls"].is_array());
+    assert!(v["view_projection"].is_array());
+}
+
+#[test]
+fn render_color_grid_webgl_produces_json() {
+    use crate::render_color_grid_webgl;
+    let colors = serde_json::to_string(&vec![
+        [1.0f32, 0.0, 0.0, 1.0],
+        [0.0, 1.0, 0.0, 1.0],
+        [0.0, 0.0, 1.0, 1.0],
+        [1.0, 1.0, 0.0, 1.0],
+    ])
+    .unwrap();
+    let result = render_color_grid_webgl("bingo-test", 2, 2, &colors, 1.0);
+    assert!(!result.contains("error"), "unexpected error: {result}");
+    let v: serde_json::Value = serde_json::from_str(&result).expect("valid JSON");
+    assert!(v["vertices"].is_array());
+    assert!(v["draw_calls"].is_array());
+}
+
+#[test]
+fn render_binding_to_modality_webgl() {
+    let binding = r#"{
+        "channel_type": "bar",
+        "id": "b", "label": "Bars", "unit": "kg",
+        "categories": ["A", "B"],
+        "values": [10.0, 20.0]
+    }"#;
+    let result = render_binding_to_modality(binding, "", "webgl");
+    assert!(!result.contains("Error:"), "unexpected error: {result}");
+    let v: serde_json::Value = serde_json::from_str(&result).expect("valid JSON");
+    assert!(v["vertices"].is_array());
+}
+
+#[test]
+fn render_binding_to_modality_audio() {
+    let binding = r#"{
+        "channel_type": "scatter",
+        "id": "s", "label": "S", "unit": "Hz",
+        "x": [100.0, 200.0],
+        "y": [0.5, 0.8]
+    }"#;
+    let result = render_binding_to_modality(binding, "", "audio");
+    assert!(!result.contains("Error:"), "unexpected error: {result}");
+    let v: serde_json::Value = serde_json::from_str(&result).expect("valid JSON");
+    assert!(v.is_array(), "audio should return array of params");
+}
