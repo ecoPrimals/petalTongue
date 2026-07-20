@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Scene graph compilation to output modalities (SVG, description, terminal).
+//! Scene graph compilation to output modalities (SVG, description, terminal, webgl).
 
 use petal_tongue_scene::modality::svg::SvgCompiler;
+use petal_tongue_scene::modality::webgl::WebGlCompiler;
 use petal_tongue_scene::modality::{ModalityCompiler, ModalityOutput};
 use petal_tongue_scene::scene_graph::SceneGraph;
 use petal_tongue_scene::tufte::TufteConstraintImpl;
@@ -26,9 +27,18 @@ pub fn scene_to_svg(scene: &SceneGraph) -> String {
     }
 }
 
+pub fn scene_to_webgl(scene: &SceneGraph) -> String {
+    let compiler = WebGlCompiler::new();
+    match compiler.compile(scene) {
+        ModalityOutput::GpuCommands(bytes) => String::from_utf8_lossy(&bytes).into_owned(),
+        _ => "Error: WebGL compilation produced unexpected modality".to_owned(),
+    }
+}
+
 pub fn compile_scene_to_modality(scene: &SceneGraph, modality: &str) -> String {
     match modality {
         "svg" | "" => scene_to_svg(scene),
+        "webgl" => scene_to_webgl(scene),
         "description" => {
             let compiler = petal_tongue_scene::modality::description::DescriptionCompiler::new();
             match compiler.compile(scene) {
@@ -45,6 +55,15 @@ pub fn compile_scene_to_modality(scene: &SceneGraph, modality: &str) -> String {
                     .collect::<Vec<_>>()
                     .join("\n"),
                 _ => "Error: terminal compilation produced unexpected modality".to_owned(),
+            }
+        }
+        "audio" => {
+            let compiler = petal_tongue_scene::modality::AudioCompiler::new();
+            match compiler.compile(scene) {
+                ModalityOutput::AudioParams(params) => {
+                    serde_json::to_string(&params).unwrap_or_else(|e| format!("Error: {e}"))
+                }
+                _ => "Error: audio compilation produced unexpected modality".to_owned(),
             }
         }
         other => format!("Error: unsupported modality: {other}"),

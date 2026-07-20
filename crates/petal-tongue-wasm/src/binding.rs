@@ -7,7 +7,7 @@ use petal_tongue_scene::compiler::GrammarCompiler;
 use petal_tongue_scene::data_binding::DataBindingCompiler;
 use petal_tongue_types::DataBinding;
 
-use crate::compile::{compile_scene_to_modality, scene_to_svg};
+use crate::compile::{compile_scene_to_modality, scene_to_svg, scene_to_webgl};
 
 /// Render a single data binding to SVG.
 ///
@@ -139,4 +139,73 @@ pub fn binding_label(binding: &DataBinding) -> &str {
         | DataBinding::CircularMap { label, .. }
         | DataBinding::ColorGrid { label, .. } => label,
     }
+}
+
+/// Render a data binding directly to WebGL draw commands (JSON).
+///
+/// Returns a JSON string containing `vertices`, `indices`, `draw_calls`,
+/// and `view_projection` arrays ready for GPU upload via `gl.bufferData()`.
+///
+/// This is the primary entry point for browser-side 3D/WebGL rendering
+/// of petalTongue visualizations without a server round-trip.
+#[must_use]
+#[wasm_bindgen]
+pub fn render_binding_webgl(binding_json: &str, domain: &str) -> String {
+    let binding: DataBinding = match serde_json::from_str(binding_json) {
+        Ok(b) => b,
+        Err(e) => return format!("{{\"error\": \"invalid binding: {e}\"}}"),
+    };
+
+    let domain_opt = if domain.is_empty() {
+        None
+    } else {
+        Some(domain)
+    };
+
+    let (expr, data) = DataBindingCompiler::compile(&binding, domain_opt);
+    let grammar = GrammarCompiler::new();
+    let scene = grammar.compile(&expr, &data);
+
+    scene_to_webgl(&scene)
+}
+
+/// Render a `ColorGrid` binding to WebGL for bingoCube commitment visualization.
+///
+/// Convenience wrapper that constructs a `ColorGrid` `DataBinding` from raw parameters
+/// and compiles to WebGL draw commands in a single call.
+///
+/// # Arguments
+/// * `id` - Grid identifier
+/// * `cols` - Number of columns
+/// * `rows` - Number of rows  
+/// * `colors_json` - JSON array of `[r,g,b,a]` arrays (row-major, f32 0.0-1.0)
+/// * `reveal_fraction` - 0.0 (all hidden) to 1.0 (all revealed)
+#[must_use]
+#[wasm_bindgen]
+pub fn render_color_grid_webgl(
+    id: &str,
+    cols: u32,
+    rows: u32,
+    colors_json: &str,
+    reveal_fraction: f64,
+) -> String {
+    let colors: Vec<[f32; 4]> = match serde_json::from_str(colors_json) {
+        Ok(c) => c,
+        Err(e) => return format!("{{\"error\": \"invalid colors: {e}\"}}"),
+    };
+
+    let binding = DataBinding::ColorGrid {
+        id: id.to_owned(),
+        label: format!("{id} grid"),
+        cols: cols as usize,
+        rows: rows as usize,
+        colors,
+        reveal_fraction,
+    };
+
+    let (expr, data) = DataBindingCompiler::compile(&binding, None);
+    let grammar = GrammarCompiler::new();
+    let scene = grammar.compile(&expr, &data);
+
+    scene_to_webgl(&scene)
 }

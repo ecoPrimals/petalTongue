@@ -13,6 +13,8 @@
 //! ```text
 //! Browser JS ──► render_grammar(grammar, data)           ──► SVG string
 //!            ──► render_binding(binding, domain)          ──► SVG string
+//!            ──► render_binding_webgl(binding, domain)    ──► WebGL JSON
+//!            ──► render_color_grid_webgl(id,c,r,cols,rev) ──► WebGL JSON
 //!            ──► render_bindings(bindings, domain)        ──► SVG string (dashboard)
 //!            ──► render_dashboard(bindings, config)       ──► SVG string
 //!            ──► render_scene(scene_json)                 ──► SVG string
@@ -52,7 +54,10 @@ mod validation;
 #[cfg(test)]
 mod tests;
 
-pub use binding::{render_binding, render_binding_to_modality, render_binding_with_thresholds};
+pub use binding::{
+    render_binding, render_binding_to_modality, render_binding_webgl,
+    render_binding_with_thresholds, render_color_grid_webgl,
+};
 pub use dashboard::{render_bindings, render_dashboard};
 pub use grammar::{render_grammar, render_grammar_to_modality};
 pub use scene::{compile_scene, render_scene, render_scene_to_modality};
