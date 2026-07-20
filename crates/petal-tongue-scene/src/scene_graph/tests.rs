@@ -421,7 +421,6 @@ fn set_camera_overrides_default() {
 #[test]
 fn flatten_3d_embeds_2d_at_z0() {
     use crate::primitive::Color;
-    use crate::transform::Transform3D;
 
     let mut g = SceneGraph::new();
     let node = SceneNode::new("dot")
@@ -471,7 +470,6 @@ fn flatten_3d_uses_explicit_transform_3d() {
 
 #[test]
 fn scene_node_effective_transform_3d_without_explicit() {
-    use crate::transform::Transform3D;
     let node = SceneNode::new("n").with_transform(Transform2D::scale(2.0, 3.0));
     let t = node.effective_transform_3d();
     // Scale factors should appear in the diagonal

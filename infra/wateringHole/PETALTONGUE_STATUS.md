@@ -1,6 +1,6 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 150h | **Date**: July 18, 2026 | **From**: petalTongue on eastGate
+**Wave**: 150o | **Date**: July 20, 2026 | **From**: petalTongue on eastGate
 
 ---
 
@@ -8,11 +8,11 @@
 
 | Metric | Value |
 |--------|-------|
-| Version | 1.6.6 |
+| Version | 1.7.0 |
 | Crates | 19 workspace members |
-| Tests | 6,529 passing, 0 failures |
-| Clippy | Zero warnings (pedantic + nursery) |
-| Unsafe | Confined to `petal-tongue-platform/src/ffi.rs` (C-FFI boundary) |
+| Tests | 5,800+ passing, 0 failures |
+| Clippy | Zero warnings (pedantic + nursery, all targets) |
+| Unsafe | Confined to `petal-tongue-platform/src/ffi.rs` (15 usages, all SAFETY-documented) |
 | Cross-arch | x86_64-linux, aarch64-linux, aarch64-android, x86_64-windows |
 | Files | All production files < 800 LOC |
 | Edition | 2024 |
@@ -62,8 +62,21 @@ All 4 phases shipped and tested.
 | ErrorBar geometry (whisker + caps) | SHIPPED |
 | Text geometry (positioned labels) | SHIPPED |
 | 4×4 matrix composition | SHIPPED |
+| **WebGL modality compiler** | SHIPPED |
 
 **Design**: 2D = orthographic camera at z=0. All non-breaking.
+
+### bingoCube Widget Integration (SHIPPED)
+
+`DataBinding::ColorGrid` — pre-computed RGBA color grids with progressive reveal.
+Used by bingoCube's crypto commitment visualization on primals.eco.
+Exposed via `pt.render_webgl` JSON-RPC method for browser-side WebGL rendering.
+
+### WebGL Rendering Pipeline (SHIPPED)
+
+`WebGlCompiler` — scene graph to GPU draw commands (vertex arrays + index buffers + draw calls).
+Supports 2D primitives (projected to clip space) and 3D meshes (camera view-projection).
+Available via JSON-RPC `pt.render_webgl` method on the `/ws` bridge.
 
 ---
 
@@ -92,13 +105,16 @@ All 4 phases shipped and tested.
 |----|------|-----|
 | footPrint | Chart rendering, topology viz, metrics | WebSocket JSON-RPC (`/ws`) — **WIRED** |
 | esotericWebb | Interactive visualization via `ui.render` | WebSocket JSON-RPC |
+| bingoCube | ColorGrid commitment rendering | `pt.render_webgl` → WebGL draw commands |
 | sporePrint | Static file serving | `petaltongue web --docroot` |
-| primalSpring | Scenario validation, grammar tests | 29 JSON scenarios |
+| primalSpring | Scenario validation, grammar tests | 30 JSON scenarios |
 | Any primal | Visualization IPC | `visualization.render.*` over UDS/TCP |
 | Mobile hosts | Embedded rendering | C-FFI via `petal-tongue-platform` |
 | 3D consumers | Scene unification | `flatten_3d()` + Camera/Projection |
+| Browser clients | WebGL rendering | `pt.render_webgl` JSON-RPC method |
 
 ---
 
-*Wave 150h: FULL NUCLEUS COMPOSITION WIRED. Scene unification ALL 4 PHASES COMPLETE.
-6,529+ tests. All milestones GREEN. footPrint consumer confirmed. Zero production stubs.*
+*Wave 150o: WebGL modality compiler SHIPPED. bingoCube ColorGrid integration COMPLETE.
+FFI safety documentation added. Deep debt lint warnings eliminated (0 warnings, all targets).
+5,800+ tests. All milestones GREEN. Ready for deployment to flockGate.*

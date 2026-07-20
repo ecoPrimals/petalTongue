@@ -148,7 +148,7 @@ mod tests {
     fn stub_metrics_snapshot_defaults() {
         let mut stub = StubMetrics;
         let snap = stub.snapshot();
-        assert_eq!(snap.cpu_percent, 0.0);
+        assert!((snap.cpu_percent - 0.0).abs() < f32::EPSILON);
         assert_eq!(snap.memory_total, 0);
         assert_eq!(snap.memory_used, 0);
         assert!(snap.cpu_count >= 1);
@@ -169,6 +169,6 @@ mod tests {
     #[test]
     fn resource_snapshot_memory_percent_zero_total() {
         let snap = ResourceSnapshot::default();
-        assert_eq!(snap.memory_percent(), 0.0);
+        assert!((snap.memory_percent() - 0.0).abs() < f32::EPSILON);
     }
 }

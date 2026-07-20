@@ -11,6 +11,7 @@ pub mod document_compiler;
 pub mod haptic;
 pub mod svg;
 pub mod terminal;
+pub mod webgl;
 
 #[cfg(test)]
 mod test_utils;
@@ -80,6 +81,7 @@ pub use description::DescriptionCompiler;
 pub use haptic::HapticCompiler;
 pub use svg::SvgCompiler;
 pub use terminal::TerminalCompiler;
+pub use webgl::WebGlCompiler;
 
 #[cfg(test)]
 mod tests {
