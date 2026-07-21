@@ -1,7 +1,7 @@
 # footPrint WebSocket Bridge — Integration Handoff
 
-**Wave**: 150b | **Date**: July 18, 2026 | **For**: footPrint team
-**Status**: petalTongue bridge **SHIPPED and OPERATIONAL**. Awaiting footPrint client wiring.
+**Wave**: 150t | **Date**: July 21, 2026 | **For**: footPrint team
+**Status**: Both sides **SHIPPED AND WIRED**. End-to-end operational since Wave 150h.
 
 ---
 
@@ -44,6 +44,7 @@ Standard JSON-RPC 2.0 over WebSocket text frames.
 | `pt.scenarios` | List available visualization scenarios |
 | `pt.render_svg` | Render a scenario scene → SVG |
 | `pt.render_binding` | Render a data binding → SVG |
+| `pt.render_webgl` | Render a data binding → WebGL draw commands (vertex/index buffers) |
 
 ### Example: Health Check
 
@@ -132,6 +133,6 @@ echo '{"jsonrpc":"2.0","id":2,"method":"pt.metrics","params":{}}' | \
 
 ---
 
-*Wave 150b: Bridge shipped, tested (10+4 tests), operational. `pt.metrics` added for
-real-time resource monitoring. footPrint client wiring is the remaining step.
-Report completion to overwatch when `WS_PATH` composition is live.*
+*Wave 150t: Both provider (petalTongue) and consumer (footPrint) sides confirmed
+wired since Wave 150h. Bridge includes `pt.render_webgl` for GPU-ready draw commands.
+NUCLEUS composition is end-to-end operational through live products.*

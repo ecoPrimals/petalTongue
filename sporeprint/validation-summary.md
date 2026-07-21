@@ -1,7 +1,7 @@
 +++
 title = "petalTongue Validation Summary"
-description = "Universal user interface primal — 366 workspace tests, 56 IPC methods, 18 crates, 7 modes, pure Rust"
-date = 2026-07-15
+description = "Universal user interface primal — 5,800+ workspace tests, 56+ IPC methods, 19 crates, 7 modes, pure Rust, WebGL + site builder"
+date = 2026-07-21
 
 [taxonomies]
 primals = ["petaltongue"]
@@ -10,24 +10,24 @@ springs = []
 
 ## Status
 
-- **v1.6.6** — workspace edition 2024, `forbid(unsafe_code)`
-- **366 workspace tests** passing, 0 failed (unit + integration + doc + property)
-- **56 IPC methods** across 10 domain categories (health, identity, auth,
+- **v1.7.0** — workspace edition 2024, `forbid(unsafe_code)`
+- **5,800+ workspace tests** passing, 0 failed (unit + integration + doc + property)
+- **56+ IPC methods** across 10 domain categories (health, identity, auth,
   capabilities, visualization, interaction, audio, UI, motor, BTSP, gate mesh)
-- **18 workspace crates** (core, IPC, graph, scene, discovery, adapters,
-  entropy, UI, TUI, headless, API, WASM, and domain crates)
+- **19 workspace crates** (core, IPC, graph, scene, discovery, adapters,
+  entropy, UI, TUI, headless, API, WASM, platform, and domain crates)
 - **7 runtime modes**: `server`, `web`, `ui`, `tui`, `live`, `headless`, `status`
-- **Zero unsafe code**, zero C dependencies (`deny.toml` bans ring/openssl/aws-lc-sys)
+- **Zero unsafe code** (except confined C-FFI in `petal-tongue-platform/ffi.rs`, 15 SAFETY-documented usages)
 - **BTSP Phase 3** encrypted transport (ChaCha20-Poly1305 + HKDF-SHA256)
 - **MethodGate** (JH-0): public/protected method classification with auth enforcement
-- **DH-1 /tmp cleanup**: All socket paths through `BIOMEOS_SOCKET_DIR` tier chain
-- **Stadial gate**: READY — all 8 glacial criteria clear (Wave 136b)
-- **Content pipeline**: `content_render` + `viz_data` + `content_direct` wired and compiled
-- **S3 cutover**: 4-tier content backend audited; FAMILY_ID aligned; DISCOVERY_SOCKET wired
-- **Wave 136b K-Derm diderm**: `/api/topology-layers` renders 5-layer defense-in-depth. Hardening controls tracked. DNSSEC live.
-- **Wave 132d coordination backend**: `/api/coord/*` (6 endpoints) reading nestGate CAS manifest. grapheneGate enrolled. DataService → songBird `mesh.peers` wired.
-- **Manifest-driven**: sporePrint and physical_topology handlers evolved from hardcoding to runtime `ecosystem_manifest.toml` parsing. Zero hardcoded IPs/test counts in production.
-- **cargo deny**: fully clean (zero advisories). `crossbeam-epoch` 0.9.20. `ttf-parser`/`quick-xml` exemptions documented for transitive egui chain.
+- **Scene unification**: 2D-as-3D-slice, all 4 phases complete (Transform3D, Camera/Projection, 3D geometry)
+- **WebGL pipeline**: Scene graph → GPU draw commands via `WebGlCompiler`
+- **Static site builder**: `ContentSource` trait + `SiteBuilder` + WASM exports (Zola replacement foundation)
+- **bingoCube integration**: `ColorGrid` DataBinding + `render_color_grid_webgl` WASM export
+- **Cross-architecture**: x86_64-linux, aarch64-linux, aarch64-android, x86_64-windows
+- **Platform embedding**: `petal-tongue-platform` cdylib for Android/iOS with C-FFI
+- **Stadial gate**: READY — all 8 glacial criteria clear
+- **cargo deny**: fully clean (zero advisories)
 
 ## Key Capabilities
 
@@ -81,6 +81,8 @@ springs = []
 | lithoSpore | Validation dashboard via `visualization.render.dashboard` + SSE |
 | projectNUCLEUS | sporePrint sovereign serving via `web` mode + content backend |
 | wetSpring | Fermentation visualization via `visualization.render.grammar` |
+| bingoCube | Crypto commitment grid via `render_color_grid_webgl` WASM |
+| footPrint | Composition integration via `/ws` WebSocket JSON-RPC bridge |
 
 ## See Also
 
