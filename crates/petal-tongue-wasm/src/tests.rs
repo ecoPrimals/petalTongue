@@ -418,3 +418,78 @@ fn render_binding_to_modality_audio() {
     let v: serde_json::Value = serde_json::from_str(&result).expect("valid JSON");
     assert!(v.is_array(), "audio should return array of params");
 }
+
+// ── Site builder tests ───────────────────────────────────────────
+
+#[test]
+fn build_site_produces_html_files() {
+    use crate::build_site;
+    let content = serde_json::json!({
+        "pages": [{
+            "Page": {
+                "meta": {"title": "Home", "path": "/", "description": "Welcome"},
+                "body": [{"Paragraph": {"inlines": [{"Text": "Hello world."}]}}]
+            }
+        }],
+        "nav": [],
+        "search_index": [],
+        "entity_registry": {}
+    });
+    let result = build_site(&serde_json::to_string(&content).unwrap(), "");
+    assert!(!result.contains("error"), "unexpected error: {result}");
+    let v: serde_json::Value = serde_json::from_str(&result).expect("valid JSON");
+    assert!(v["file_count"].as_u64().unwrap() >= 1);
+    assert!(v["files"]["index.html"].is_string());
+    let html = v["files"]["index.html"].as_str().unwrap();
+    assert!(html.contains("Hello world."));
+    assert!(html.contains("petalTongue"));
+}
+
+#[test]
+fn render_page_with_layout_produces_html() {
+    use crate::render_page_with_layout;
+    let page = serde_json::json!({
+        "Page": {
+            "meta": {"title": "About", "path": "/about", "description": "About us"},
+            "body": [{"Heading": {"level": 2, "inlines": [{"Text": "About"}], "id": "about"}}]
+        }
+    });
+    let result = render_page_with_layout(&serde_json::to_string(&page).unwrap(), "", "");
+    assert!(!result.starts_with("Error:"), "unexpected error: {result}");
+    assert!(result.contains("<!DOCTYPE html>"));
+    assert!(result.contains("About"));
+    assert!(result.contains("site-header"));
+    assert!(result.contains("<style>"));
+}
+
+#[test]
+fn build_site_with_custom_layout() {
+    use crate::build_site;
+    let content = serde_json::json!({
+        "pages": [{
+            "Page": {
+                "meta": {"title": "Test", "path": "/test"},
+                "body": [{"Paragraph": {"inlines": [{"Text": "Content."}]}}]
+            }
+        }],
+        "nav": [],
+        "search_index": [],
+        "entity_registry": {}
+    });
+    let layout = serde_json::json!({
+        "site_title": "My Custom Site",
+        "css": {"Inline": "body { color: red; }"},
+        "footer_html": "<p>Custom footer</p>",
+        "base_url": "https://example.com",
+        "generate_search_index": false
+    });
+    let result = build_site(
+        &serde_json::to_string(&content).unwrap(),
+        &serde_json::to_string(&layout).unwrap(),
+    );
+    let v: serde_json::Value = serde_json::from_str(&result).expect("valid JSON");
+    let html = v["files"]["test/index.html"].as_str().unwrap();
+    assert!(html.contains("My Custom Site"));
+    assert!(html.contains("color: red"));
+    assert!(html.contains("Custom footer"));
+}

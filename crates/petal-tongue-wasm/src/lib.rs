@@ -21,6 +21,8 @@
 //!            ──► compile_scene(grammar, data)             ──► SceneGraph JSON
 //!            ──► validate_grammar(grammar, data)          ──► Tufte report JSON
 //!            ──► render_binding_to_modality(…, modality)  ──► rendered string
+//!            ──► build_site(content, layout)              ──► Static site JSON
+//!            ──► render_page_with_layout(page, nav, lay)  ──► HTML string
 //! ```
 //!
 //! # Usage from JavaScript
@@ -49,6 +51,7 @@ mod compile;
 mod dashboard;
 mod grammar;
 mod scene;
+mod site;
 mod validation;
 
 #[cfg(test)]
@@ -61,6 +64,7 @@ pub use binding::{
 pub use dashboard::{render_bindings, render_dashboard};
 pub use grammar::{render_grammar, render_grammar_to_modality};
 pub use scene::{compile_scene, render_scene, render_scene_to_modality};
+pub use site::{build_site, render_page_with_layout};
 pub use validation::validate_grammar;
 
 /// Initialize the WASM module with better panic messages.
