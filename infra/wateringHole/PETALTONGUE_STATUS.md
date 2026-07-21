@@ -1,6 +1,6 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 150o | **Date**: July 20, 2026 | **From**: petalTongue on eastGate
+**Wave**: 150t | **Date**: July 21, 2026 | **From**: petalTongue on eastGate
 
 ---
 
@@ -78,6 +78,24 @@ Exposed via `pt.render_webgl` JSON-RPC method for browser-side WebGL rendering.
 Supports 2D primitives (projected to clip space) and 3D meshes (camera view-projection).
 Available via JSON-RPC `pt.render_webgl` method on the `/ws` bridge.
 
+### Static Site Builder — Zola Replacement (FOUNDATION SHIPPED)
+
+Sovereignty Evolution Tier 1: replace Zola with petalTongue rendering.
+
+| Component | Status |
+|-----------|--------|
+| `ContentSource` trait | SHIPPED |
+| `SiteBuilder` + `SiteLayout` | SHIPPED |
+| `InMemorySource` | SHIPPED |
+| WASM `build_site()` export | SHIPPED |
+| WASM `render_page_with_layout()` export | SHIPPED |
+| Dark/light responsive CSS | SHIPPED |
+| Nav tree composition | SHIPPED |
+| Search index generation | SHIPPED |
+
+**Next**: Wire `nestGate CAS` as a `ContentSource` implementation. Then
+`cellMembrane` serves the `StaticSite` output. Replaces Zola end-to-end.
+
 ---
 
 ## Evolution Target (P2)
@@ -115,6 +133,7 @@ Available via JSON-RPC `pt.render_webgl` method on the `/ws` bridge.
 
 ---
 
-*Wave 150o: WebGL modality compiler SHIPPED. bingoCube ColorGrid integration COMPLETE.
-FFI safety documentation added. Deep debt lint warnings eliminated (0 warnings, all targets).
-5,800+ tests. All milestones GREEN. Ready for deployment to flockGate.*
+*Wave 150t: SiteBuilder FOUNDATION SHIPPED — Zola replacement path active.
+WebGL + bingoCube ColorGrid + WASM exports all complete. Static site generation
+available client-side via build_site() and render_page_with_layout(). ContentSource
+trait ready for nestGate CAS integration. 5,800+ tests. Zero clippy warnings.*
