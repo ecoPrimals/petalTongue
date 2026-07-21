@@ -898,7 +898,7 @@ used on Android where standard XDG paths are unavailable.
 
 ---
 
-**Last Updated**: July 16, 2026 (Wave 142b — platform embedding WebSocket bridge, offline-topology feature)  
+**Last Updated**: July 21, 2026 (Wave 150t — scene unification, WebGL pipeline, static site builder, bingoCube ColorGrid)  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 

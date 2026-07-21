@@ -1,6 +1,6 @@
 # petalTongue
 
-**The Universal User Interface Primal for ecoPrimals** — v1.6.6
+**The Universal User Interface Primal for ecoPrimals** — v1.7.0
 
 [![License: AGPL-3.0-or-later](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue.svg)](./LICENSE)
 
@@ -71,11 +71,13 @@ petaltongue
 - **Self-knowledge only** -- other primals discovered at runtime
 - **Graceful degradation** -- works standalone or in full ecosystem
 - **Grammar of Graphics** -- composable data→representation pipeline
-- **DataBinding auto-compiler** -- all 13 chart types auto-compile to grammar
+- **DataBinding auto-compiler** -- all 14 chart types auto-compile to grammar (including ColorGrid for bingoCube)
 - **Tufte constraints** -- machine-checked visualization quality
 - **Dashboard layout engine** -- multi-panel grid with domain theming and SVG export
 - **Domain-aware rendering** -- automatic palette selection per domain
-- **Multi-modal output** -- visual, audio, haptic, terminal, braille, JSON API (tiered)
+- **Multi-modal output** -- visual (SVG/WebGL), audio, haptic, terminal, braille, JSON API (tiered)
+- **WebGL modality compiler** -- scene graph to GPU draw commands (vertex/index buffers + draw calls)
+- **Static site builder** -- SiteBuilder + ContentSource trait (Zola replacement path, Sovereignty Tier 1)
 - **Sensory Capability Matrix** -- formal input×output negotiation (`capabilities.sensory` IPC)
 - **Accessibility adapters** -- switch access, audio inverse pipeline, agent adapter for AI
 - **Server-side backpressure** -- rate limiting for 60 Hz streaming
@@ -93,7 +95,7 @@ petaltongue
 | `petal-tongue-types` | Portable data types (`DataBinding`, `ThresholdRange`) — WASM-compatible, serde-only |
 | `petal-tongue-scene` | Scene graph, animation, grammar compiler, DataBinding compiler, dashboard layout, Tufte constraints, modality compilers, physics bridge |
 | `petal-tongue-platform` | Platform embedding layer — cdylib + lifecycle abstraction for Android/iOS/desktop host apps |
-| `petal-tongue-wasm` | Client-side WASM rendering — grammar→SVG pipeline for offline-capable browser UIs |
+| `petal-tongue-wasm` | Client-side WASM rendering — grammar/SVG/WebGL pipeline for offline-capable browser UIs, static site generation |
 | `petal-tongue-graph` | Domain-aware chart renderers, 2D rendering, audio sonification |
 | `petal-tongue-ui` | Desktop display (egui/eframe), panels, scenarios, biomeOS |
 | `petal-tongue-tui` | Terminal display (ratatui) |
@@ -115,7 +117,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 6,500+ passing, 0 failures (`--all-features`) |
+| Tests | 5,800+ passing, 0 failures (`--all-features`) |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (`--all-features`, pedantic + nursery; `#[expect]` with reasons) |
 | Docs | `cargo doc --workspace --no-deps` zero warnings |
@@ -150,7 +152,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 6,500+ tests
+cargo test --workspace --all-features        # 5,800+ tests
 cargo clippy --workspace --all-features -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
