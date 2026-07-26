@@ -6,6 +6,96 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 151b: sporePrint Pipeline Sources (July 26, 2026)
+
+Implemented both concrete `ContentSource` backends for the sporePrint pipeline
+(Zola replacement). petalTongue now generates complete static sites from either
+filesystem content directories or nestGate CAS blobs.
+
+#### Added
+- **`FilesystemSource`**: Zola-compatible directory scanner — reads `.md` with
+  TOML `+++` front matter, builds nav from `_index.md` sections, generates
+  search index with text preview extraction, resolves entity shortcodes.
+- **`CasSource`**: Content-addressed storage source — resolves pages from
+  nestGate CAS via `site-manifest.json` (hash → blob mapping). Supports
+  `sha256:` and `blake3:` prefixed hashes. Filesystem CAS access mode.
+- **`nav_with_active()`**: Active page navigation marker for server-side
+  rendering with current-page highlighting.
+- **`ContentDirectState::generate_static_site()`**: Batch site generation
+  from content-direct web backend using `FilesystemSource`.
+- **11 tests** covering both sources end-to-end with `SiteBuilder`.
+
+### Wave 150t: Sovereignty Evolution — Scene Unification + WebGL + SiteBuilder (July 21, 2026)
+
+Major feature wave: universal rendering engine, browser-side WebGL pipeline,
+static site generation foundation, and bingoCube widget integration.
+
+#### Added
+- **Scene Unification** (4 phases): `Transform3D` on `SceneNode`, `Camera` +
+  `Projection` types, `GrammarCompiler` z-wiring, universal 2D-as-3D-slice
+  rendering (orthographic camera at z=0).
+- **`WebGlCompiler`**: Scene graph → GPU draw commands (vertex arrays, index
+  buffers, draw calls). Exposed via `pt.render_webgl` JSON-RPC and WASM
+  exports (`render_binding_webgl`, `render_color_grid_webgl`).
+- **`SiteBuilder` + `ContentSource` trait**: Static site builder foundation —
+  compiles `SiteContent` into complete HTML/CSS/JSON output files with layout
+  composition, navigation, search index, and structured data.
+- **`InMemorySource`**: Testing/WASM content source for `SiteBuilder`.
+- **WASM exports**: `build_site()`, `render_page_with_layout()` for
+  client-side static site generation.
+- **`DataBinding::ColorGrid`**: Pre-computed RGBA color grids with progressive
+  reveal (bingoCube widget integration).
+- **`Tile` geometry**: Adapted to respect explicit per-cell colors for
+  ColorGrid rendering.
+
+#### Changed
+- **`data_channel.rs`**: 13 → 14 data binding variants (added `ColorGrid`).
+- **`modality/webgl.rs`**: Full modality compiler with 3D mesh, line, polygon,
+  and text primitive support.
+- **`petal-tongue-wasm`**: Added WebGL + site generation WASM exports alongside
+  existing SVG rendering.
+
+### Wave 150h–150g: WebSocket JSON-RPC Bridge on Port 8080 (July 19–20, 2026)
+
+Resolved LAST P1 inter-primal wiring — footPrint Caddy routes `/ws` to
+petalTongue directly on port 8080.
+
+#### Added
+- **`/ws` route**: WebSocket JSON-RPC bridge integrated into Axum web server
+  (port 8080), eliminating separate bridge port.
+- **`pt.metrics`**: JSON-RPC method exposing `PlatformMetrics` snapshot
+  (CPU, memory, uptime) via WebSocket.
+
+### Wave 150f: Platform Metrics Abstraction (July 18, 2026)
+
+#### Added
+- **`PlatformMetrics` trait**: Abstracts system resource queries across
+  platforms (Linux, Android, iOS, WASM).
+- **`ResourceSnapshot`**: CPU, memory, uptime in a cross-platform struct.
+- **`LinuxProcMetrics`**: `/proc/stat` + `/proc/meminfo` implementation.
+- **`StubMetrics`**: No-op fallback for unsupported/WASM platforms.
+
+### Wave 143b–141b: Platform Lifecycle + Cross-Architecture (July 15–17, 2026)
+
+#### Added
+- **`petal-tongue-platform` crate**: `PlatformLifecycle` trait,
+  `EmbeddedRuntime` for core logic, C-FFI entry points (`pt_create`,
+  `pt_start`, `pt_stop`, `pt_destroy`, `pt_ipc_request`).
+- **`MeshTopologySource` trait**: Runtime topology resolution with
+  `StaticMeshTopology` feature-gated fallback.
+- **Android `cdylib`**: Application-loaded shared library target for
+  embedded Android usage.
+- **Hardcoding elimination**: Removed all hardcoded IPs, ports, paths,
+  service names from production code paths.
+
+#### Changed
+- **`petal-tongue-core/transport.rs`**: `TransportEndpoint` abstraction
+  replaces direct `tokio::net::UnixStream`. Platform-agnostic IPC.
+- **`biomeos_discovery/client.rs`**: Uses `connect_transport()` via
+  `TransportEndpoint` instead of raw socket.
+
+---
+
 ### Wave 141a: Silicon Atheism Adoption (July 15, 2026)
 
 Cross-architecture transport for petalTongue. `petal-tongue-core` compiles for

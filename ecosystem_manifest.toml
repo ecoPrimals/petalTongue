@@ -3,21 +3,21 @@
 #
 # This manifest describes the ecosystem topology from petalTongue's perspective.
 # It is used for visualization layout, dashboard composition, and capability routing.
-# Updated per Wave 141a (Silicon Atheism adoption, cross-arch transport).
+# Updated per Wave 151b (sporePrint pipeline sources, BTSP strict mode ecosystem-wide).
 
 [ecosystem]
 name = "ecoPrimals"
-wave = 141
+wave = 151
 nucleus_count = 14
 atomics = 4
-posture = "public + sovereign (tangibles pivot)"
+posture = "BTSP strict + Nest Atomic prep"
 glacial_criteria_clear = 8
 compositions = ["footPrint", "tideGlass"]
 live_surfaces = ["primals.eco", "primals.eco/footprint/", "live.primals.eco"]
-repos = 42
-depot_binaries = 45
+repos = 43
+depot_binaries = 56
 depot_architectures = 4
-spring_scenarios = 162
+spring_scenarios = 197
 spring_tests = 1194
 
 [security]
