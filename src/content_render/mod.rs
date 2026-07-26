@@ -11,11 +11,17 @@ mod front_matter;
 mod markdown;
 mod shortcodes;
 mod site;
+pub mod filesystem_source;
+#[allow(dead_code, reason = "sporePrint pipeline API — wired via tests, awaiting CLI integration")]
+pub mod cas_source;
 
 pub use front_matter::{parse_front_matter, split_front_matter};
 pub use markdown::compile_markdown;
 pub use shortcodes::resolve_shortcodes;
 pub use site::{build_nav_tree, load_entity_registry};
+pub use filesystem_source::FilesystemSource;
+#[allow(unused_imports)]
+pub use cas_source::CasSource;
 
 use petal_tongue_scene::document::DocumentNode;
 

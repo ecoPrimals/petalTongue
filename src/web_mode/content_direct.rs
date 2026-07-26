@@ -13,6 +13,7 @@
 
 use axum::response::IntoResponse;
 use petal_tongue_scene::document::{EntityRegistryEntry, NavSection};
+use petal_tongue_scene::site_builder::ContentSource;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -71,6 +72,24 @@ impl ContentDirectState {
             nav,
             viz_registry,
         }
+    }
+
+    /// Generate a complete static site from the content directory.
+    ///
+    /// Uses `FilesystemSource` to batch-compile all pages into a `StaticSite`,
+    /// which can be written to disk or served from memory.
+    #[expect(dead_code, reason = "public API for sporePrint pipeline CLI command")]
+    pub fn generate_static_site(
+        &self,
+        layout: petal_tongue_scene::site_builder::SiteLayout,
+    ) -> Result<petal_tongue_scene::site_builder::StaticSite, petal_tongue_scene::site_builder::ContentError> {
+        let source = content_render::FilesystemSource::new(
+            self.content_dir.clone(),
+            None,
+        );
+        let content = source.load()?;
+        let builder = petal_tongue_scene::site_builder::SiteBuilder::new(layout);
+        builder.build(&content)
     }
 
     /// Resolve a URL path to a markdown file on disk.
