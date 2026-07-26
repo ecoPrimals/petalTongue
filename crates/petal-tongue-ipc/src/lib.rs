@@ -120,6 +120,9 @@ pub use btsp::{
     error::BtspHandshakeError, handshake_policy, log_handshake_policy, socket_filename,
     validate_insecure_guard,
 };
+pub use btsp::client_hello::{
+    BtspClientConfig, perform_client_handshake, perform_client_handshake_split,
+};
 pub use client::{IpcClient, IpcClientError};
 pub use discovery_helpers::{address_env_var, resolve_primal_socket, socket_env_var};
 pub use ipc_errors::{DispatchOutcome, IpcErrorPhase, StreamItem, exit_code, extract_rpc_error};

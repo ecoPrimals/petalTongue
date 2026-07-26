@@ -6,6 +6,8 @@
 //! Phase 3: encrypted frame I/O using ChaCha20-Poly1305 AEAD after `btsp.negotiate`.
 
 mod client;
+/// BTSP client-side handshake (ClientHello flow).
+pub mod client_hello;
 /// Typed errors for BTSP handshake operations.
 pub mod error;
 pub(crate) mod framing;
@@ -25,5 +27,9 @@ pub use types::{
 };
 
 pub use server::{perform_server_handshake, perform_server_handshake_split};
+
+pub use client_hello::{
+    BtspClientConfig, perform_client_handshake, perform_client_handshake_split,
+};
 
 pub use json_line::{relay_json_line_handshake, relay_json_line_handshake_split};
