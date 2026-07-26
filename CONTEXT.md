@@ -59,7 +59,9 @@ provider handshake delegation on both UDS and TCP, length-prefixed and
 JSON-line framing, `btsp.session.create`, `btsp.session.verify`, and
 `btsp.negotiate` via provider client. BTSP Phase 3 complete:
 ChaCha20-Poly1305 AEAD encrypted frame I/O after negotiate; HKDF-SHA256
-directional key derivation; 13/13 ecosystem parity.
+directional key derivation; 13/13 ecosystem parity. **BTSP ClientHello**
+(Wave 151c): client-side 4-step handshake for authenticated outbound
+connections (HMAC-SHA256 challenge-response). 12/13 primals compliant.
 
 JH-0 MethodGate: pre-dispatch authorization on all JSON-RPC calls.
 Public methods (`health.*`, `identity.get`, `capabilities.list`,
@@ -124,16 +126,24 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # 6,730+ workspace tests, ~85-90% coverage
+cargo test --workspace --all-features     # 6,589 workspace tests, ~85-90% coverage
 ```
 
 ## Current State
 
-Wave 151b — sporePrint Pipeline Sources Active (July 26, 2026).
+Wave 151c — BTSP ClientHello + Deep Debt Evolution (July 26, 2026).
+
+**BTSP ClientHello**: Client-side 4-step handshake shipped (HMAC-SHA256).
+Wired into `primal.announce` and `content.resolve` outbound connections.
+petalTongue is 12/13 for BTSP strict mode (nestGate pending — Nest Atomic blocker).
 
 **sporePrint Pipeline**: `FilesystemSource` and `CasSource` implementing
 `ContentSource` trait — the full Zola replacement content backend is wired.
 nestGate CAS integration ready (awaits Nest Atomic Phase 0).
+
+**Deep Debt**: Mesh peer derivation evolved from name-based matching to
+attribute-based inference. Zero `todo!`/`FIXME`/`HACK`, zero production
+`unwrap()`, zero unsafe (except necessary FFI).
 
 **Scene Unification**: ALL 4 PHASES COMPLETE. Universal 2D-as-3D-slice rendering
 (Transform3D, Camera/Projection, flatten_3d, Sphere/Cylinder/Mesh3D/Ribbon/ErrorBar/Text).
@@ -161,7 +171,8 @@ WebSocket JSON-RPC bridge on `/ws` (port 8080) and standalone (port 8765).
 
 | Wave/Date | Milestone |
 |-----------|-----------|
-| 151b (Jul 26) | sporePrint pipeline: FilesystemSource + CasSource shipped, 6,730 tests |
+| 151c (Jul 26) | BTSP ClientHello shipped (12/13), attribute-based mesh topology, 6,589 tests |
+| 151b (Jul 26) | sporePrint pipeline: FilesystemSource + CasSource shipped |
 | 150t (Jul 21) | Sovereignty Evolution: SiteBuilder, WebGL WASM, bingoCube ColorGrid |
 | 150i (Jul 20) | Scene unification ALL 4 PHASES, v1.7.0 deployed to golgiBody depot |
 | 150g (Jul 19) | `/ws` WebSocket JSON-RPC bridge on port 8080 — LAST P1 resolved |
