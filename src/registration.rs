@@ -105,6 +105,21 @@ pub async fn announce_to_neural_api() {
         return;
     };
 
+    if let Some(btsp_config) = petal_tongue_ipc::BtspClientConfig::from_env() {
+        match petal_tongue_ipc::perform_client_handshake(&mut stream, &btsp_config).await {
+            Ok(result) => {
+                tracing::debug!(
+                    cipher = %result.cipher,
+                    session = %result.session_token,
+                    "BTSP client handshake succeeded for primal.announce"
+                );
+            }
+            Err(e) => {
+                tracing::debug!(error = %e, "BTSP handshake failed — proceeding without (dev mode)");
+            }
+        }
+    }
+
     let mut buf = serde_json::to_vec(&payload).unwrap_or_default();
     buf.push(b'\n');
     if stream.write_all(&buf).await.is_err() || stream.flush().await.is_err() {

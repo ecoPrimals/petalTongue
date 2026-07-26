@@ -261,6 +261,15 @@ impl ContentBackendClient {
                 endpoint: endpoint.to_string(),
                 source,
             })?;
+
+        if let Some(btsp_config) = petal_tongue_ipc::BtspClientConfig::from_env() {
+            if let Err(e) =
+                petal_tongue_ipc::perform_client_handshake(&mut stream, &btsp_config).await
+            {
+                tracing::debug!(error = %e, "BTSP handshake on content backend — proceeding without");
+            }
+        }
+
         stream.write_all(request.as_bytes()).await?;
         stream.flush().await?;
 
