@@ -1,6 +1,6 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 150t | **Date**: July 21, 2026 | **From**: petalTongue on eastGate
+**Wave**: 151b | **Date**: July 26, 2026 | **From**: petalTongue on eastGate
 
 ---
 
@@ -10,7 +10,7 @@
 |--------|-------|
 | Version | 1.7.0 |
 | Crates | 19 workspace members |
-| Tests | 5,800+ passing, 0 failures |
+| Tests | 6,730+ passing, 0 failures |
 | Clippy | Zero warnings (pedantic + nursery, all targets) |
 | Unsafe | Confined to `petal-tongue-platform/src/ffi.rs` (15 usages, all SAFETY-documented) |
 | Cross-arch | x86_64-linux, aarch64-linux, aarch64-android, x86_64-windows |
@@ -78,7 +78,7 @@ Exposed via `pt.render_webgl` JSON-RPC method for browser-side WebGL rendering.
 Supports 2D primitives (projected to clip space) and 3D meshes (camera view-projection).
 Available via JSON-RPC `pt.render_webgl` method on the `/ws` bridge.
 
-### Static Site Builder — Zola Replacement (FOUNDATION SHIPPED)
+### Static Site Builder — Zola Replacement (sporePrint Pipeline ACTIVE)
 
 Sovereignty Evolution Tier 1: replace Zola with petalTongue rendering.
 
@@ -87,14 +87,18 @@ Sovereignty Evolution Tier 1: replace Zola with petalTongue rendering.
 | `ContentSource` trait | SHIPPED |
 | `SiteBuilder` + `SiteLayout` | SHIPPED |
 | `InMemorySource` | SHIPPED |
+| `FilesystemSource` (Zola-compatible .md scanner) | SHIPPED |
+| `CasSource` (nestGate CAS hash resolution) | SHIPPED |
 | WASM `build_site()` export | SHIPPED |
 | WASM `render_page_with_layout()` export | SHIPPED |
 | Dark/light responsive CSS | SHIPPED |
 | Nav tree composition | SHIPPED |
 | Search index generation | SHIPPED |
+| Text preview extraction for search | SHIPPED |
+| Entity shortcode resolution | SHIPPED |
 
-**Next**: Wire `nestGate CAS` as a `ContentSource` implementation. Then
-`cellMembrane` serves the `StaticSite` output. Replaces Zola end-to-end.
+**Next**: nestGate publishes `site-manifest.json` (Nest Atomic Phase 0).
+`cellMembrane` serves `StaticSite` output files. Full Zola replacement end-to-end.
 
 ---
 
@@ -111,6 +115,8 @@ Sovereignty Evolution Tier 1: replace Zola with petalTongue rendering.
 
 | From | Capability | Status |
 |------|-----------|--------|
+| nestGate | `site-manifest.json` in CAS dataset (for CasSource) | Awaiting Nest Atomic Phase 0 |
+| cellMembrane | Serve `StaticSite` output (path → bytes) | Pattern ready |
 | songBird | `mesh.peers` IPC → live `MeshTopologySource` impl | Pattern ready |
 | songBird | `PROXY_PATH` drawbridge routing | P2 |
 | sporeGate ops | Deploy composition on gate | P2 |
@@ -124,7 +130,7 @@ Sovereignty Evolution Tier 1: replace Zola with petalTongue rendering.
 | footPrint | Chart rendering, topology viz, metrics | WebSocket JSON-RPC (`/ws`) — **WIRED** |
 | esotericWebb | Interactive visualization via `ui.render` | WebSocket JSON-RPC |
 | bingoCube | ColorGrid commitment rendering | `pt.render_webgl` → WebGL draw commands |
-| sporePrint | Static file serving | `petaltongue web --docroot` |
+| sporePrint | Static site generation + serving | `FilesystemSource` + `CasSource` + `petaltongue web --docroot` |
 | primalSpring | Scenario validation, grammar tests | 30 JSON scenarios |
 | Any primal | Visualization IPC | `visualization.render.*` over UDS/TCP |
 | Mobile hosts | Embedded rendering | C-FFI via `petal-tongue-platform` |
@@ -133,7 +139,7 @@ Sovereignty Evolution Tier 1: replace Zola with petalTongue rendering.
 
 ---
 
-*Wave 150t: SiteBuilder FOUNDATION SHIPPED — Zola replacement path active.
-WebGL + bingoCube ColorGrid + WASM exports all complete. Static site generation
-available client-side via build_site() and render_page_with_layout(). ContentSource
-trait ready for nestGate CAS integration. 5,800+ tests. Zero clippy warnings.*
+*Wave 151b: sporePrint pipeline ACTIVE — FilesystemSource + CasSource shipped.
+Full Zola replacement content backends wired. Awaiting nestGate site-manifest.json
+(Nest Atomic Phase 0) and cellMembrane StaticSite serving. Scene unification,
+WebGL, bingoCube all COMPLETE. 6,730+ tests. Zero clippy warnings.*

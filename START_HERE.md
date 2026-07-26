@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: July 21, 2026 (Wave 150t — Sovereignty Evolution active. Scene unification, WebGL pipeline, SiteBuilder, bingoCube ColorGrid. 5,800+ tests, zero clippy warnings)
+**Updated**: July 26, 2026 (Wave 151b — sporePrint pipeline ContentSource backends shipped: FilesystemSource + CasSource. 6,730+ tests, zero clippy warnings)
 
 ---
 
@@ -90,7 +90,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace --all-features           # 5,800+ workspace tests
+cargo test --workspace --all-features           # 6,730+ workspace tests
 cargo clippy --workspace --all-targets -- -W clippy::pedantic -W clippy::nursery -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
