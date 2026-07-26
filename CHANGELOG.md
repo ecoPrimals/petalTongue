@@ -6,6 +6,34 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 151c: BTSP ClientHello + Deep Debt (July 26, 2026)
+
+Shipped the BTSP client-side handshake — petalTongue is now 12/13 for BTSP
+strict mode compliance. Evolved mesh peer derivation from name-based matching
+to attribute-based inference.
+
+#### Added
+- `client_hello` module: 4-step BTSP ClientHello handshake (HMAC-SHA256)
+- `BtspClientConfig` with env-based family seed resolution
+- `perform_client_handshake()` + split-stream variant
+- BTSP handshake wired into `primal.announce` and `content.resolve` outbound connections
+- `hmac = "0.12"` workspace dependency (pure Rust, zero unsafe)
+- 5 new BTSP client handshake tests + 4 attribute-based mesh peer derivation tests
+
+#### Changed
+- `derive_mesh_peers()`: connectivity and capabilities now inferred from node
+  attributes (zone, lan_ip, wg_ip, enrollment, role, gpu_target) rather than
+  hardcoded per-gate-name match arms
+- New gates added to topology data auto-classify without code changes
+
+#### Metrics
+- 6,589 tests pass, 0 failures, 18 ignored
+- Zero clippy warnings (workspace-wide, pedantic + nursery)
+- Zero `unsafe` in production (only C-FFI in `petal-tongue-platform/src/ffi.rs`)
+- Zero `todo!`/`unimplemented!`/`FIXME`/`HACK` in production code
+- Zero bare `unwrap()` in production paths
+- All production `.rs` files under 800 LOC
+
 ### Wave 151b: sporePrint Pipeline Sources (July 26, 2026)
 
 Implemented both concrete `ContentSource` backends for the sporePrint pipeline

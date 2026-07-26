@@ -1,6 +1,6 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 151b | **Date**: July 26, 2026 | **From**: petalTongue on eastGate
+**Wave**: 151c | **Date**: July 26, 2026 | **From**: petalTongue on eastGate
 
 ---
 
@@ -10,9 +10,10 @@
 |--------|-------|
 | Version | 1.7.0 |
 | Crates | 19 workspace members |
-| Tests | 6,730+ passing, 0 failures |
+| Tests | 6,589 passing, 0 failures |
 | Clippy | Zero warnings (pedantic + nursery, all targets) |
 | Unsafe | Confined to `petal-tongue-platform/src/ffi.rs` (15 usages, all SAFETY-documented) |
+| BTSP | **ClientHello SHIPPED** (12/13 primals compliant) |
 | Cross-arch | x86_64-linux, aarch64-linux, aarch64-android, x86_64-windows |
 | Files | All production files < 800 LOC |
 | Edition | 2024 |
