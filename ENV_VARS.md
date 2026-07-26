@@ -898,7 +898,7 @@ used on Android where standard XDG paths are unavailable.
 
 ---
 
-**Last Updated**: July 21, 2026 (Wave 150t — scene unification, WebGL pipeline, static site builder, bingoCube ColorGrid)  
+**Last Updated**: July 26, 2026 (Wave 151b — sporePrint pipeline: FilesystemSource + CasSource, 6,730+ tests)  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 

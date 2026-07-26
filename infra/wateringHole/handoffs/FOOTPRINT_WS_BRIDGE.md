@@ -1,6 +1,6 @@
 # footPrint WebSocket Bridge — Integration Handoff
 
-**Wave**: 150t | **Date**: July 21, 2026 | **For**: footPrint team
+**Wave**: 151b | **Date**: July 26, 2026 | **For**: footPrint team
 **Status**: Both sides **SHIPPED AND WIRED**. End-to-end operational since Wave 150h.
 
 ---

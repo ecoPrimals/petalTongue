@@ -124,12 +124,16 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # 5,800+ workspace tests, ~85-90% coverage
+cargo test --workspace --all-features     # 6,730+ workspace tests, ~85-90% coverage
 ```
 
 ## Current State
 
-Wave 150t — Sovereignty Evolution Active (July 21, 2026).
+Wave 151b — sporePrint Pipeline Sources Active (July 26, 2026).
+
+**sporePrint Pipeline**: `FilesystemSource` and `CasSource` implementing
+`ContentSource` trait — the full Zola replacement content backend is wired.
+nestGate CAS integration ready (awaits Nest Atomic Phase 0).
 
 **Scene Unification**: ALL 4 PHASES COMPLETE. Universal 2D-as-3D-slice rendering
 (Transform3D, Camera/Projection, flatten_3d, Sphere/Cylinder/Mesh3D/Ribbon/ErrorBar/Text).
@@ -149,7 +153,7 @@ Android/iOS/desktop host apps. C-FFI surface with SAFETY-documented unsafe block
 WebSocket JSON-RPC bridge on `/ws` (port 8080) and standalone (port 8765).
 
 **Deep debt**: Zero production `unwrap()`, zero TODO/FIXME/HACK, zero clippy warnings
-(pedantic+nursery, all targets), all files <800 LOC, 5,800+ tests passing.
+(pedantic+nursery, all targets), all files <800 LOC, 6,730+ tests passing.
 
 **Cross-architecture**: x86_64-linux, aarch64-linux, aarch64-android, x86_64-windows.
 
@@ -157,6 +161,7 @@ WebSocket JSON-RPC bridge on `/ws` (port 8080) and standalone (port 8765).
 
 | Wave/Date | Milestone |
 |-----------|-----------|
+| 151b (Jul 26) | sporePrint pipeline: FilesystemSource + CasSource shipped, 6,730 tests |
 | 150t (Jul 21) | Sovereignty Evolution: SiteBuilder, WebGL WASM, bingoCube ColorGrid |
 | 150i (Jul 20) | Scene unification ALL 4 PHASES, v1.7.0 deployed to golgiBody depot |
 | 150g (Jul 19) | `/ws` WebSocket JSON-RPC bridge on port 8080 — LAST P1 resolved |
@@ -183,8 +188,7 @@ Full per-wave changelogs preserved in git history and `infra/wateringHole/` AARs
 - Audio backend wire protocols (via `audio.play` capability discovery)
 - Overlay mode (display capability Phase 2)
 - `crypto.sign` delegation to security provider (currently local BLAKE3)
-- sporePrint full self-hosted pipeline (petalTongue + content provider + cellMembrane)
-- sporePrint primal pipeline design (petalTongue rendering + nestGate CAS + cellMembrane serving)
+- sporePrint full deployment: cellMembrane serving of petalTongue-generated StaticSite output
 
 ## Stadial Readiness (May 17, 2026)
 
