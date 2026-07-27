@@ -6,6 +6,26 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 155b: Stable Posture — Convergence (July 27, 2026)
+
+petalTongue declared STABLE at ecosystem convergence. No glacial goals owned
+directly. All P1/P2 resolved. Infrastructure ready for Nest Atomic (G3),
+Chimera (G5), and gate enmeshment (G7). BTSP now 13/13 ecosystem-wide.
+
+#### Changed
+- Documentation synchronized to Wave 155b ecosystem posture
+- Test count verified: 6,739 passing (was reported as 5,812 in blurb — corrected)
+- `ecosystem_manifest.toml`: wave 155, BTSP 13/13, 10 fossilized dimensions
+- Workspace metadata: added `homepage` and `documentation` URLs
+
+#### Metrics
+- 6,739 tests pass, 0 failures, 22 ignored
+- Zero clippy warnings (workspace-wide, pedantic + nursery)
+- Zero `unsafe` in production (only C-FFI in `petal-tongue-platform/src/ffi.rs`)
+- Zero `todo!`/`unimplemented!`/`FIXME`/`HACK` in production code
+- Zero bare `unwrap()` in production paths
+- All production `.rs` files under 800 LOC
+
 ### Wave 151c: BTSP ClientHello + Deep Debt (July 26, 2026)
 
 Shipped the BTSP client-side handshake — petalTongue is now 12/13 for BTSP

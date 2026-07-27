@@ -53,6 +53,8 @@ license = "AGPL-3.0-or-later"
 repository = "https://github.com/ecoPrimals/petalTongue"
 authors = ["ecoPrimals Project"]
 readme = "README.md"
+homepage = "https://sporeprint.primals.eco"
+documentation = "https://sporeprint.primals.eco/lab/"
 keywords = ["visualization", "ecosystem", "ipc", "json-rpc", "pure-rust"]
 categories = ["visualization", "gui", "command-line-interface"]
 

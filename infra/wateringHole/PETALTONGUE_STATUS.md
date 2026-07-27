@@ -1,6 +1,7 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 151c | **Date**: July 26, 2026 | **From**: petalTongue on eastGate
+**Wave**: 155b | **Date**: July 27, 2026 | **From**: petalTongue on eastGate
+**Posture**: **STABLE** — no active glacial goals owned. Infrastructure ready.
 
 ---
 
@@ -10,10 +11,10 @@
 |--------|-------|
 | Version | 1.7.0 |
 | Crates | 19 workspace members |
-| Tests | 6,589 passing, 0 failures |
+| Tests | 6,739 passing, 0 failures |
 | Clippy | Zero warnings (pedantic + nursery, all targets) |
 | Unsafe | Confined to `petal-tongue-platform/src/ffi.rs` (15 usages, all SAFETY-documented) |
-| BTSP | **ClientHello SHIPPED** (12/13 primals compliant) |
+| BTSP | **13/13** (ClientHello + server-side, full strict mode) |
 | Cross-arch | x86_64-linux, aarch64-linux, aarch64-android, x86_64-windows |
 | Files | All production files < 800 LOC |
 | Edition | 2024 |
@@ -109,6 +110,20 @@ Sovereignty Evolution Tier 1: replace Zola with petalTongue rendering.
 |------|----------|-------|
 | `eframe` as opt-in for server builds | P3 | Already feature-gated behind `ui` |
 | Live `MeshTopologySource` via songBird | P2 | Trait ready, awaiting songBird adapter |
+| Nest Atomic CAS integration | P2 | `CasSource` ready, blocked on G3 |
+
+---
+
+## Glacial Goal Relevance
+
+petalTongue owns **no glacial goals directly** but supports:
+
+| Goal | How petalTongue Helps |
+|------|----------------------|
+| G3 (Nest Atomic Phase 0) | `CasSource` ready to consume `site-manifest.json` |
+| G5 (Chimera) | `petal-tongue-platform` is the embedding pattern reference |
+| G7 (Gate enmeshment) | WASM genomeBin target enables cross-platform |
+| G9 (JOSS publication) | Visualization rendering for Gonzales NF paper figures |
 
 ---
 
@@ -140,7 +155,7 @@ Sovereignty Evolution Tier 1: replace Zola with petalTongue rendering.
 
 ---
 
-*Wave 151b: sporePrint pipeline ACTIVE — FilesystemSource + CasSource shipped.
-Full Zola replacement content backends wired. Awaiting nestGate site-manifest.json
-(Nest Atomic Phase 0) and cellMembrane StaticSite serving. Scene unification,
-WebGL, bingoCube all COMPLETE. 6,730+ tests. Zero clippy warnings.*
+*Wave 155b: petalTongue STABLE. BTSP 13/13. 6,739 tests. genomeBin convergence.
+No active glacial goals owned — infrastructure ready for G3 (Nest Atomic CAS),
+G5 (Chimera embedding pattern), G7 (cross-platform via WASM/platform crate).
+All P1/P2 items resolved. Remaining backlog is P2+ ecosystem dependencies.*
