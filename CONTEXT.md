@@ -126,24 +126,27 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # 6,589 workspace tests, ~85-90% coverage
+cargo test --workspace --all-features     # 6,739 workspace tests, ~85-90% coverage
 ```
 
 ## Current State
 
-Wave 151c — BTSP ClientHello + Deep Debt Evolution (July 26, 2026).
+Wave 155b — STABLE / genomeBin Convergence (July 27, 2026).
 
-**BTSP ClientHello**: Client-side 4-step handshake shipped (HMAC-SHA256).
-Wired into `primal.announce` and `content.resolve` outbound connections.
-petalTongue is 12/13 for BTSP strict mode (nestGate pending — Nest Atomic blocker).
+petalTongue is **stable and feature-complete** for the current ecosystem phase.
+All P1 and P2 work items resolved. No glacial goals directly owned — serves as
+infrastructure for other teams (WebGL rendering for bingoCube, content pipeline
+for sporePrint, WASM exports for cross-platform embedding).
 
-**sporePrint Pipeline**: `FilesystemSource` and `CasSource` implementing
-`ContentSource` trait — the full Zola replacement content backend is wired.
-nestGate CAS integration ready (awaits Nest Atomic Phase 0).
+**BTSP**: 13/13 strict mode (ClientHello + server-side). Wired into outbound
+`primal.announce` and `content.resolve` connections (HMAC-SHA256).
 
-**Deep Debt**: Mesh peer derivation evolved from name-based matching to
-attribute-based inference. Zero `todo!`/`FIXME`/`HACK`, zero production
-`unwrap()`, zero unsafe (except necessary FFI).
+**sporePrint Pipeline**: `FilesystemSource` + `CasSource` implementing
+`ContentSource` trait. Full Zola replacement backend wired. Awaits Nest Atomic
+Phase 0 (G3) for live CAS integration.
+
+**Deep Debt**: Zero `todo!`/`FIXME`/`HACK`, zero production `unwrap()`, zero
+unsafe (except necessary FFI). Attribute-based mesh topology.
 
 **Scene Unification**: ALL 4 PHASES COMPLETE. Universal 2D-as-3D-slice rendering
 (Transform3D, Camera/Projection, flatten_3d, Sphere/Cylinder/Mesh3D/Ribbon/ErrorBar/Text).
@@ -171,6 +174,7 @@ WebSocket JSON-RPC bridge on `/ws` (port 8080) and standalone (port 8765).
 
 | Wave/Date | Milestone |
 |-----------|-----------|
+| 155b (Jul 27) | STABLE — genomeBin convergence, 6,739 tests, tracks converged |
 | 151c (Jul 26) | BTSP ClientHello shipped (12/13), attribute-based mesh topology, 6,589 tests |
 | 151b (Jul 26) | sporePrint pipeline: FilesystemSource + CasSource shipped |
 | 150t (Jul 21) | Sovereignty Evolution: SiteBuilder, WebGL WASM, bingoCube ColorGrid |
@@ -200,6 +204,10 @@ Full per-wave changelogs preserved in git history and `infra/wateringHole/` AARs
 - Overlay mode (display capability Phase 2)
 - `crypto.sign` delegation to security provider (currently local BLAKE3)
 - sporePrint full deployment: cellMembrane serving of petalTongue-generated StaticSite output
+- Nest Atomic CAS integration: live `CasSource` connected to nestGate (blocked on G3)
+
+All items are P2+ and depend on other primals' glacial goal progress.
+None are blockers for petalTongue's stable operation.
 
 ## Stadial Readiness (May 17, 2026)
 
