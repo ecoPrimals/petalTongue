@@ -1,29 +1,54 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Coordination backend handlers — reads nestGate CAS on shared filesystem.
+//! Coordination backend handlers — reads CAS coordination data on shared filesystem.
 //!
 //! These handlers expose the coordination manifest (blurbs, waves, heads,
 //! FRAGOs, topology, depot) via HTTP API. The data source is discovered
-//! at runtime via `NESTGATE_STORAGE_BASE_PATH` env or XDG defaults.
+//! at runtime via `COORD_STORAGE_PATH` env or XDG defaults.
 
 use axum::{Json, response::IntoResponse};
 
-/// Resolve the nestGate CAS storage base directory.
+/// Resolve the coordination/CAS storage base directory.
 ///
 /// Discovery order (capability-based, no hardcoding):
-/// 1. `NESTGATE_STORAGE_BASE_PATH` env (explicit configuration)
-/// 2. `$HOME/.local/share/nestgate/storage` (XDG data, if exists)
-/// 3. `/var/lib/nestgate/storage` (system default)
+/// 1. `COORD_STORAGE_PATH` env (explicit configuration)
+/// 2. `$XDG_DATA_HOME/ecoPrimals/coord-storage` (if exists)
+/// 3. `$HOME/.local/share/ecoPrimals/coord-storage` (if exists)
+/// 4. Legacy nestGate paths (last resort)
 fn storage_base() -> std::path::PathBuf {
-    if let Ok(base) = std::env::var("NESTGATE_STORAGE_BASE_PATH") {
+    if let Ok(base) = std::env::var("COORD_STORAGE_PATH") {
         return std::path::PathBuf::from(base);
     }
-    if let Ok(home) = std::env::var("HOME") {
-        let xdg = std::path::PathBuf::from(home).join(".local/share/nestgate/storage");
-        if xdg.exists() {
-            return xdg;
+
+    if let Ok(xdg) = std::env::var("XDG_DATA_HOME") {
+        let eco_path = std::path::PathBuf::from(xdg).join("ecoPrimals/coord-storage");
+        if eco_path.exists() {
+            return eco_path;
         }
     }
-    std::path::PathBuf::from("/var/lib/nestgate/storage")
+
+    if let Ok(home) = std::env::var("HOME") {
+        let eco_path =
+            std::path::PathBuf::from(&home).join(".local/share/ecoPrimals/coord-storage");
+        if eco_path.exists() {
+            return eco_path;
+        }
+
+        let legacy = std::path::PathBuf::from(home).join(".local/share/nestgate/storage");
+        if legacy.exists() {
+            tracing::debug!(
+                path = %legacy.display(),
+                "using legacy nestGate coordination storage path"
+            );
+            return legacy;
+        }
+    }
+
+    let legacy_system = std::path::PathBuf::from("/var/lib/nestgate/storage");
+    tracing::debug!(
+        path = %legacy_system.display(),
+        "using legacy nestGate coordination storage path"
+    );
+    legacy_system
 }
 
 fn manifest_path() -> std::path::PathBuf {

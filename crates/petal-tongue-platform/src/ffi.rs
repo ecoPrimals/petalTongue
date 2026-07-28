@@ -208,3 +208,145 @@ pub unsafe extern "C" fn pt_destroy(handle: *mut PetalTongueHandle) {
         drop(unsafe { Box::from_raw(handle) });
     }
 }
+
+#[cfg(test)]
+#[allow(unsafe_code)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn create_with_null_config_returns_handle() {
+        // SAFETY: NULL config triggers default Desktop platform.
+        let handle = unsafe { pt_create(std::ptr::null()) };
+        assert!(!handle.is_null());
+        // SAFETY: handle is valid from pt_create above.
+        unsafe { pt_destroy(handle) };
+    }
+
+    #[test]
+    fn create_with_valid_json_returns_handle() {
+        let json = CString::new(r#"{"platform":"desktop"}"#).unwrap();
+        // SAFETY: json is a valid NUL-terminated C string.
+        let handle = unsafe { pt_create(json.as_ptr()) };
+        assert!(!handle.is_null());
+        // SAFETY: handle is valid from pt_create above.
+        unsafe { pt_destroy(handle) };
+    }
+
+    #[test]
+    fn create_with_invalid_json_returns_null() {
+        let json = CString::new("not valid json {{{").unwrap();
+        // SAFETY: json is a valid NUL-terminated C string (content is invalid JSON).
+        let handle = unsafe { pt_create(json.as_ptr()) };
+        assert!(handle.is_null());
+    }
+
+    #[test]
+    fn start_null_handle_returns_error() {
+        // SAFETY: testing NULL handle path.
+        assert_eq!(unsafe { pt_start(std::ptr::null_mut()) }, -1);
+    }
+
+    #[test]
+    fn pause_null_handle_returns_error() {
+        // SAFETY: testing NULL handle path.
+        assert_eq!(unsafe { pt_pause(std::ptr::null_mut()) }, -1);
+    }
+
+    #[test]
+    fn resume_null_handle_returns_error() {
+        // SAFETY: testing NULL handle path.
+        assert_eq!(unsafe { pt_resume(std::ptr::null_mut()) }, -1);
+    }
+
+    #[test]
+    fn render_svg_null_handle_returns_null() {
+        let bid = CString::new("test").unwrap();
+        let sname = CString::new("test").unwrap();
+        // SAFETY: testing NULL handle path.
+        let result = unsafe { pt_render_svg(std::ptr::null_mut(), bid.as_ptr(), sname.as_ptr()) };
+        assert!(result.is_null());
+    }
+
+    #[test]
+    fn render_svg_null_args_returns_null() {
+        // SAFETY: NULL config → default platform.
+        let handle = unsafe { pt_create(std::ptr::null()) };
+        assert!(!handle.is_null());
+
+        // SAFETY: testing NULL builder_id path with valid handle.
+        let sname = CString::new("test").unwrap();
+        let r1 = unsafe { pt_render_svg(handle, std::ptr::null(), sname.as_ptr()) };
+        assert!(r1.is_null());
+
+        // SAFETY: testing NULL scene_name path with valid handle.
+        let bid = CString::new("test").unwrap();
+        let r2 = unsafe { pt_render_svg(handle, bid.as_ptr(), std::ptr::null()) };
+        assert!(r2.is_null());
+
+        // SAFETY: valid handle from pt_create.
+        unsafe { pt_destroy(handle) };
+    }
+
+    #[test]
+    fn ipc_request_null_handle_returns_null() {
+        let json = CString::new("{}").unwrap();
+        // SAFETY: testing NULL handle path.
+        let result = unsafe { pt_ipc_request(std::ptr::null_mut(), json.as_ptr()) };
+        assert!(result.is_null());
+    }
+
+    #[test]
+    fn ipc_request_null_json_returns_null() {
+        // SAFETY: NULL config → default platform.
+        let handle = unsafe { pt_create(std::ptr::null()) };
+        assert!(!handle.is_null());
+        // SAFETY: testing NULL json path with valid handle.
+        let result = unsafe { pt_ipc_request(handle, std::ptr::null()) };
+        assert!(result.is_null());
+        // SAFETY: valid handle from pt_create.
+        unsafe { pt_destroy(handle) };
+    }
+
+    #[test]
+    fn free_string_null_is_noop() {
+        // SAFETY: NULL is explicitly allowed and is a no-op.
+        unsafe { pt_free_string(std::ptr::null_mut()) };
+    }
+
+    #[test]
+    fn destroy_null_is_noop() {
+        // SAFETY: NULL is explicitly allowed and is a no-op.
+        unsafe { pt_destroy(std::ptr::null_mut()) };
+    }
+
+    #[test]
+    fn full_lifecycle_roundtrip() {
+        // SAFETY: NULL config → default platform.
+        let handle = unsafe { pt_create(std::ptr::null()) };
+        assert!(!handle.is_null(), "create should succeed");
+
+        // SAFETY: valid handle from pt_create.
+        let start_result = unsafe { pt_start(handle) };
+        assert_eq!(start_result, 0, "start should succeed");
+
+        // SAFETY: valid handle, pause/resume lifecycle.
+        assert_eq!(unsafe { pt_pause(handle) }, 0);
+        assert_eq!(unsafe { pt_resume(handle) }, 0);
+
+        let req =
+            CString::new(r#"{"jsonrpc":"2.0","method":"visualization.list_scenarios","id":1}"#)
+                .unwrap();
+        // SAFETY: valid handle and valid C string.
+        let resp = unsafe { pt_ipc_request(handle, req.as_ptr()) };
+        if !resp.is_null() {
+            // SAFETY: resp is from pt_ipc_request, valid to read and free.
+            let resp_str = unsafe { CStr::from_ptr(resp) }.to_str().unwrap();
+            assert!(resp_str.contains("jsonrpc"));
+            unsafe { pt_free_string(resp) };
+        }
+
+        // SAFETY: valid handle, final cleanup.
+        unsafe { pt_destroy(handle) };
+    }
+}

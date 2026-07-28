@@ -6,6 +6,46 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 155g: Deep Debt Evolution Pass (July 28, 2026)
+
+Major architecture evolution — eliminated static topology overstep, evolved to
+runtime-discovered mesh topology, refactored large files, wired production stubs,
+and hardened FFI boundary.
+
+#### Added
+- `ManifestMeshTopology` — loads gate topology from `ecosystem_manifest.toml` at runtime
+- `MeshTopologySource` trait now returns owned `Vec<MeshNode>` (was `&'static`)
+- `MeshNode` / `MeshLink` evolved to owned `String` fields (agnostic to data source)
+- `offline-topology` feature now non-default (was default) — no static IPs compiled in
+- 13 FFI boundary tests covering null safety + full lifecycle roundtrip
+- `discover_via_mdns` wired to real `MdnsVisualizationProvider`
+- `discover_via_config` reads operator `discovery.toml` files
+- `query_unix_socket` probes UDS with JSON-RPC `capabilities.list`
+- `PETALTONGUE_GATE_ID` env var for runtime gate identity (was hardcoded `eastGate`)
+- `COORD_STORAGE_PATH` env var for coord/CAS storage path discovery
+
+#### Changed
+- `main.rs` 727→199 lines: extracted `cli.rs`, `bootstrap.rs`, `dispatch.rs`
+- `geometry.rs` 783 lines → `compiler/geometry/` module with strategy pattern
+- K-Derm components: `"songBird drawbridge"` → `"mesh.routing"`, `"bearDog TLS"` → `"tls.gateway"`
+- Storage paths: nestGate-specific defaults → generic `ecoPrimals/coord-storage` with env override
+- Hardcoded wave `136` fallback → reads from manifest, defaults to `null`
+- `derive_mesh_peers` no longer hardcodes `LOCAL_GATE_ID = "eastGate"`
+- `derive_capabilities` no longer matches primal names in role strings
+
+#### Fixed
+- Version drift: `manifest.toml` and `niche.yaml` synced to 1.7.0
+- 4 clippy doc-backtick warnings in `client_hello.rs`
+- 3 doc link resolution warnings in `dispatch.rs` and `method_gate.rs`
+- `cargo fmt` applied workspace-wide
+
+#### Metrics
+- 6,605 tests pass, 0 failures, 3 ignored
+- Zero clippy warnings (workspace-wide, pedantic + nursery)
+- Zero `todo!()`/`FIXME`/`HACK` in production code
+- Zero debris files (no .bak, .tmp, .swp, .log, stale .env)
+- All production `.rs` files under 800 LOC
+
 ### Wave 155b: Stable Posture — Convergence (July 27, 2026)
 
 petalTongue declared STABLE at ecosystem convergence. No glacial goals owned

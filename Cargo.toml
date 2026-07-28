@@ -324,6 +324,9 @@ ui = ["petal-tongue-ui", "dep:eframe", "dep:egui", "dep:winit"]
 # Disable for web-only or headless deployments.
 tui = ["dep:petal-tongue-tui"]
 examples = ["png"]
+# Static topology fallback — embeds gate mesh data at compile time.
+# Prefer runtime manifest loading; enable only for offline demos.
+offline-topology = ["petal-tongue-core/offline-topology"]
 
 [[example]]
 name = "awakening_pure_rust"

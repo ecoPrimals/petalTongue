@@ -4,7 +4,7 @@
 //! Consumes shared topology data from `petal_tongue_core::gate_mesh` and renders
 //! it as a scene graph with enrollment color coding and `WireGuard` link overlays.
 
-use petal_tongue_core::gate_mesh::{self, GateEnrollment, MeshNode};
+use petal_tongue_core::gate_mesh::{self, GateEnrollment, MeshNode, MeshTopologySource};
 use petal_tongue_scene::animation::{Animation, AnimationTarget, Easing, Sequence};
 use petal_tongue_scene::primitive::{
     AnchorPoint, Color, LineCap, LineJoin, Primitive, StrokeStyle,
@@ -104,9 +104,11 @@ pub fn build_gate_mesh_scene() -> SceneGraph {
     let links_group = SceneNode::new("wg-links").with_label("WireGuard overlay");
     scene.add_to_root(links_group);
 
-    let all_nodes: Vec<&MeshNode> = gate_mesh::all_nodes().collect();
+    let source = gate_mesh::ManifestMeshTopology::discover();
+    let all_nodes: Vec<MeshNode> = source.nodes();
+    let all_links = source.links();
 
-    for link in gate_mesh::WG_LINKS {
+    for link in &all_links {
         let from_node = all_nodes.iter().find(|n| n.id == link.from);
         let to_node = all_nodes.iter().find(|n| n.id == link.to);
         if let (Some(from), Some(to)) = (from_node, to_node) {
@@ -162,13 +164,13 @@ pub fn build_gate_mesh_scene() -> SceneGraph {
                 cap: LineCap::Round,
                 join: LineJoin::Round,
             }),
-            data_id: Some(gate.id.to_owned()),
+            data_id: Some(gate.id.clone()),
         };
 
         let name_lbl = Primitive::Text {
             x: gate.x,
             y: gate.y + radius + 14.0,
-            content: gate.label.to_owned(),
+            content: gate.label.clone(),
             font_size: 11.0,
             color: Color::from_rgba8(205, 214, 244, 220),
             anchor: AnchorPoint::TopCenter,
@@ -177,16 +179,16 @@ pub fn build_gate_mesh_scene() -> SceneGraph {
             data_id: None,
         };
 
-        let mut node = SceneNode::new(gate.id)
+        let mut node = SceneNode::new(&gate.id)
             .with_primitive(circle)
             .with_primitive(name_lbl)
-            .with_label(gate.label);
+            .with_label(&gate.label);
 
-        if let Some(ip) = gate.wg_ip {
+        if let Some(ip) = &gate.wg_ip {
             node = node.with_primitive(Primitive::Text {
                 x: gate.x,
                 y: gate.y + radius + 26.0,
-                content: ip.to_owned(),
+                content: ip.clone(),
                 font_size: 9.0,
                 color: Color::from_rgba8(137, 180, 250, 160),
                 anchor: AnchorPoint::TopCenter,
@@ -273,8 +275,10 @@ pub fn build_gate_mesh_scene() -> SceneGraph {
 
 /// Build an enrollment progression animation.
 pub fn build_enrollment_animation() -> Sequence {
-    let targets: Vec<&str> = gate_mesh::GATES
-        .iter()
+    let source = gate_mesh::ManifestMeshTopology::discover();
+    let targets: Vec<String> = source
+        .nodes()
+        .into_iter()
         .filter(|g| !matches!(g.enrollment, GateEnrollment::Enrolled))
         .map(|g| g.id)
         .collect();
@@ -287,7 +291,7 @@ pub fn build_enrollment_animation() -> Sequence {
 
         animations.push(Animation {
             target: AnimationTarget::Opacity {
-                node_id: (*gate_id).to_owned(),
+                node_id: gate_id.clone(),
                 from: 0.4,
                 to: 1.0,
             },
@@ -297,7 +301,7 @@ pub fn build_enrollment_animation() -> Sequence {
         });
         animations.push(Animation {
             target: AnimationTarget::Scale {
-                node_id: (*gate_id).to_owned(),
+                node_id: gate_id.clone(),
                 from: 1.0,
                 to: 1.3,
             },
@@ -307,7 +311,7 @@ pub fn build_enrollment_animation() -> Sequence {
         });
         animations.push(Animation {
             target: AnimationTarget::Scale {
-                node_id: (*gate_id).to_owned(),
+                node_id: gate_id.clone(),
                 from: 1.3,
                 to: 1.0,
             },

@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use petal_tongue_core::gate_mesh::MeshTopologySource;
 use petal_tongue_core::{GraphEngine, gate_mesh};
 
 use super::types::{LiveEdge, LiveMeshPeer, LivePrimal, LiveTopology};
 
-/// Get current mesh peer state (songBird `mesh.peers` concept).
+/// Get current mesh peer state via manifest topology.
 ///
-/// Currently returns statically derived peers from the gate topology.
-/// When songBird IPC is available, this will query live peer state.
+/// Loads topology from `ecosystem_manifest.toml` at runtime and derives
+/// peer connectivity. When a discovery service is available, callers
+/// should prefer the live `mesh.peers` capability call.
 #[must_use]
 pub fn mesh_peers() -> Vec<gate_mesh::MeshPeer> {
-    gate_mesh::derive_mesh_peers(gate_mesh::all_nodes())
+    let source = gate_mesh::ManifestMeshTopology::discover();
+    let nodes = source.nodes();
+    gate_mesh::derive_mesh_peers(&nodes)
 }
 
 /// Get live topology for TOPO-VIS visualization.
@@ -81,15 +85,15 @@ fn mesh_peers_live() -> Vec<LiveMeshPeer> {
     mesh_peers()
         .into_iter()
         .map(|p| LiveMeshPeer {
-            gate_id: p.gate_id.to_owned(),
+            gate_id: p.gate_id,
             status: format!("{:?}", p.status),
-            transport: p.transport.to_owned(),
+            transport: p.transport,
             latency_ms: if p.latency_ms == u32::MAX {
                 None
             } else {
                 Some(p.latency_ms)
             },
-            capabilities: p.capabilities.iter().map(|&s| s.to_owned()).collect(),
+            capabilities: p.capabilities,
         })
         .collect()
 }

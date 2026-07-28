@@ -93,13 +93,7 @@ impl ModalityCompiler for WebGlCompiler {
                     indices: mesh_idx,
                     data_id,
                 } => {
-                    emit_mesh(
-                        &mut vertices,
-                        &mut indices,
-                        mesh_verts,
-                        mesh_idx,
-                        transform,
-                    );
+                    emit_mesh(&mut vertices, &mut indices, mesh_verts, mesh_idx, transform);
                     draw_calls.push(DrawCall {
                         index_offset: u32_from_usize(base_index),
                         index_count: u32_from_usize(mesh_idx.len()),
@@ -308,17 +302,20 @@ fn mul_mat4(a: &[f32; 16], b: &[f32; 16]) -> [f32; 16] {
     let mut out = [0.0f32; 16];
     for col in 0..4 {
         for row in 0..4 {
-            out[col * 4 + row] = (0..4)
-                .map(|k| a[k * 4 + row] * b[col * 4 + k])
-                .sum();
+            out[col * 4 + row] = (0..4).map(|k| a[k * 4 + row] * b[col * 4 + k]).sum();
         }
     }
     out
 }
 
-#[expect(clippy::cast_possible_truncation, reason = "vertex color channels fit f32")]
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "vertex color channels fit f32"
+)]
 fn push_vertex(verts: &mut Vec<f32>, x: f64, y: f64, z: f64, color: Color, _vw: f64, _vh: f64) {
-    verts.extend_from_slice(&[x as f32, y as f32, z as f32, color.r, color.g, color.b, color.a]);
+    verts.extend_from_slice(&[
+        x as f32, y as f32, z as f32, color.r, color.g, color.b, color.a,
+    ]);
 }
 
 #[expect(clippy::cast_possible_truncation, reason = "vertex index fits u32")]
@@ -359,13 +356,7 @@ fn emit_mesh(
         let ty = m[1].mul_add(px, m[5].mul_add(py, m[9].mul_add(pz, m[13])));
         let tz = m[2].mul_add(px, m[6].mul_add(py, m[10].mul_add(pz, m[14])));
         verts.extend_from_slice(&[
-            tx as f32,
-            ty as f32,
-            tz as f32,
-            v.color.r,
-            v.color.g,
-            v.color.b,
-            v.color.a,
+            tx as f32, ty as f32, tz as f32, v.color.r, v.color.g, v.color.b, v.color.a,
         ]);
     }
 
@@ -423,10 +414,7 @@ mod tests {
                 .draw_calls
                 .iter()
                 .any(|c| matches!(c.topology, Topology::Triangles));
-            assert!(
-                has_mesh_calls,
-                "sphere should produce triangle draw calls"
-            );
+            assert!(has_mesh_calls, "sphere should produce triangle draw calls");
         } else {
             panic!("expected GpuCommands output");
         }

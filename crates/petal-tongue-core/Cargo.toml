@@ -41,7 +41,7 @@ terminal_size = { workspace = true }
 temp-env = { workspace = true, optional = true }
 
 [features]
-default = ["offline-topology"]
+default = []
 offline-topology = []
 test-fixtures = ["dep:temp-env"]
 

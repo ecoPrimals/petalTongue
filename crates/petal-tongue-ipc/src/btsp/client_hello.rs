@@ -84,7 +84,7 @@ where
     receive_handshake_complete(reader, &session_id).await
 }
 
-/// Step 1: Send ClientHello frame.
+/// Step 1: Send `ClientHello` frame.
 async fn send_client_hello<W: tokio::io::AsyncWriteExt + Unpin>(
     writer: &mut W,
     client_ephemeral_pub: &str,
@@ -106,7 +106,7 @@ async fn send_client_hello<W: tokio::io::AsyncWriteExt + Unpin>(
         })
 }
 
-/// Step 2: Read ServerHello, extract challenge and session ID.
+/// Step 2: Read `ServerHello`, extract challenge and session ID.
 async fn receive_server_hello<R: tokio::io::AsyncReadExt + Unpin>(
     reader: &mut R,
 ) -> Result<(String, String), BtspHandshakeError> {
@@ -147,7 +147,7 @@ async fn receive_server_hello<R: tokio::io::AsyncReadExt + Unpin>(
     Ok((challenge, session_id))
 }
 
-/// Step 3: Compute HMAC and send ChallengeResponse.
+/// Step 3: Compute HMAC and send `ChallengeResponse`.
 async fn send_challenge_response<W: tokio::io::AsyncWriteExt + Unpin>(
     writer: &mut W,
     config: &BtspClientConfig,
@@ -172,7 +172,7 @@ async fn send_challenge_response<W: tokio::io::AsyncWriteExt + Unpin>(
         })
 }
 
-/// Step 4: Read HandshakeComplete or rejection.
+/// Step 4: Read `HandshakeComplete` or rejection.
 async fn receive_handshake_complete<R: tokio::io::AsyncReadExt + Unpin>(
     reader: &mut R,
     session_id: &str,
@@ -320,17 +320,19 @@ mod tests {
                 "challenge": "test-challenge-123",
                 "session_id": "session-abc",
             });
-            write_frame(&mut server_stream, &serde_json::to_vec(&server_hello).unwrap())
-                .await
-                .unwrap();
+            write_frame(
+                &mut server_stream,
+                &serde_json::to_vec(&server_hello).unwrap(),
+            )
+            .await
+            .unwrap();
 
             let cr_bytes = read_frame(&mut server_stream).await.unwrap();
             let cr: serde_json::Value = serde_json::from_slice(&cr_bytes).unwrap();
             assert!(cr["response"].is_string());
             assert_eq!(cr["preferred_cipher"], "chacha20-poly1305");
 
-            let expected_response =
-                compute_challenge_response(b"test-seed", "test-challenge-123");
+            let expected_response = compute_challenge_response(b"test-seed", "test-challenge-123");
             assert_eq!(cr["response"].as_str().unwrap(), expected_response);
 
             let complete = serde_json::json!({
@@ -373,9 +375,12 @@ mod tests {
                 "challenge": "challenge-xyz",
                 "session_id": "sess-1",
             });
-            write_frame(&mut server_stream, &serde_json::to_vec(&server_hello).unwrap())
-                .await
-                .unwrap();
+            write_frame(
+                &mut server_stream,
+                &serde_json::to_vec(&server_hello).unwrap(),
+            )
+            .await
+            .unwrap();
 
             let _cr = read_frame(&mut server_stream).await.unwrap();
 

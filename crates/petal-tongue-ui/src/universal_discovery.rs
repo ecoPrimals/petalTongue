@@ -23,9 +23,13 @@
 
 use crate::error::Result;
 use petal_tongue_core::constants;
+use petal_tongue_discovery::{MdnsVisualizationProvider, VisualizationDataProvider};
+use petal_tongue_ipc::JsonRpcClient;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use tracing::{debug, info};
+use std::path::{Path, PathBuf};
+use std::time::Duration;
+use tracing::{debug, info, warn};
 
 /// Universal service discovery
 ///
@@ -224,14 +228,53 @@ impl UniversalDiscovery {
     }
 
     /// Discover via config file (AGNOSTIC)
-    #[expect(clippy::unused_async, reason = "async for future config file I/O")]
     async fn discover_via_config(&self, capability: &str) -> Result<Vec<DiscoveredService>> {
         debug!("Checking config file for capability: {capability}");
 
-        // Delegated: config-file discovery is handled by the deployment layer.
-        // petalTongue discovers capabilities at runtime via socket/mDNS/HTTP probing;
-        // config files are an operator concern, not a primal concern.
-        Ok(Vec::new())
+        let mut services = Vec::new();
+
+        for path in discovery_config_paths() {
+            if !path.is_file() {
+                continue;
+            }
+
+            let content = match tokio::fs::read_to_string(&path).await {
+                Ok(content) => content,
+                Err(e) => {
+                    warn!("Failed to read discovery config {}: {e}", path.display());
+                    continue;
+                }
+            };
+
+            match parse_config_services(&content) {
+                Ok(entries) => {
+                    info!(
+                        "Loaded {} service(s) from {}",
+                        entries.len(),
+                        path.display()
+                    );
+                    for entry in entries {
+                        if entry.capability == capability {
+                            services.push(DiscoveredService {
+                                id: entry.name.clone(),
+                                capabilities: vec![entry.capability.clone()],
+                                endpoint: entry.endpoint.clone(),
+                                protocol: entry
+                                    .protocol
+                                    .clone()
+                                    .unwrap_or_else(|| "auto".to_owned()),
+                                metadata: HashMap::new(),
+                            });
+                        }
+                    }
+                }
+                Err(e) => {
+                    warn!("Failed to parse discovery config {}: {e}", path.display());
+                }
+            }
+        }
+
+        Ok(services)
     }
 
     /// Discover via Unix socket probing (AGNOSTIC)
@@ -278,16 +321,40 @@ impl UniversalDiscovery {
     /// - _discovery._tcp.local
     /// - _gpu-rendering._tcp.local
     /// - _compute._tcp.local
-    #[expect(clippy::unused_async, reason = "async for future mDNS I/O")]
     async fn discover_via_mdns(&self, capability: &str) -> Result<Vec<DiscoveredService>> {
         debug!("Querying mDNS for capability: {}", capability);
 
-        // Convert capability to mDNS service type
-        let _service_type = format!("_{capability}._tcp.local");
+        let service_type = mdns_service_type_for_capability(capability);
 
-        // mDNS discovery is implemented in petal-tongue-discovery::MdnsProvider.
-        // This layer delegates to the provider when available; returns empty otherwise.
-        Ok(Vec::new())
+        match MdnsVisualizationProvider::discover_for_service(&service_type).await {
+            Ok(providers) => {
+                let services = providers
+                    .into_iter()
+                    .map(|provider| {
+                        let metadata = provider.get_metadata();
+                        let mut capabilities = metadata.capabilities;
+                        if !capabilities
+                            .iter()
+                            .any(|cap| capability_matches(cap, capability))
+                        {
+                            capabilities.push(capability.to_owned());
+                        }
+                        DiscoveredService {
+                            id: format!("mdns-{}", metadata.name),
+                            capabilities,
+                            endpoint: metadata.endpoint,
+                            protocol: metadata.protocol,
+                            metadata: HashMap::new(),
+                        }
+                    })
+                    .collect();
+                Ok(services)
+            }
+            Err(e) => {
+                warn!("mDNS discovery failed for capability '{capability}': {e}");
+                Ok(Vec::new())
+            }
+        }
     }
 
     /// Discover via HTTP probing (AGNOSTIC)
@@ -385,18 +452,157 @@ impl UniversalDiscovery {
     }
 
     /// Query a Unix socket generically
-    #[expect(clippy::unused_async, reason = "async for future UDS I/O")]
     async fn query_unix_socket(
         &self,
         endpoint: &str,
-        _capability: &str,
+        capability: &str,
     ) -> Result<Vec<DiscoveredService>> {
         debug!("Querying Unix socket: {}", endpoint);
 
-        // Unix socket querying is implemented in petal-tongue-discovery::UnixSocketProvider.
-        // This layer delegates to the provider when available; returns empty otherwise.
-        Ok(Vec::new())
+        let socket_path = endpoint.strip_prefix("unix://").unwrap_or(endpoint);
+        if socket_path.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let client = match JsonRpcClient::with_timeout(socket_path, Duration::from_millis(500)) {
+            Ok(client) => client,
+            Err(e) => {
+                debug!("Invalid Unix socket path {socket_path}: {e}");
+                return Ok(Vec::new());
+            }
+        };
+
+        let response = match client
+            .call("capabilities.list", serde_json::json!({}))
+            .await
+        {
+            Ok(result) => result,
+            Err(e) => {
+                debug!("capabilities.list failed on {socket_path}: {e}");
+                return Ok(Vec::new());
+            }
+        };
+
+        let capabilities = extract_capabilities_from_rpc_result(&response);
+        if !service_matches_capability(&capabilities, capability) {
+            return Ok(Vec::new());
+        }
+
+        let id = response
+            .get("primal")
+            .or_else(|| response.get("name"))
+            .and_then(serde_json::Value::as_str)
+            .map_or_else(
+                || {
+                    Path::new(socket_path)
+                        .file_stem()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or("unix-socket")
+                        .to_owned()
+                },
+                str::to_owned,
+            );
+
+        Ok(vec![DiscoveredService {
+            id: format!("uds-{id}"),
+            capabilities,
+            endpoint: endpoint.to_owned(),
+            protocol: "json-rpc".to_owned(),
+            metadata: HashMap::new(),
+        }])
     }
+}
+
+/// Operator-configured discovery entries from `discovery.toml`.
+#[derive(Debug, Deserialize)]
+struct DiscoveryConfigFile {
+    #[serde(default)]
+    services: Vec<ConfigServiceEntry>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ConfigServiceEntry {
+    name: String,
+    capability: String,
+    endpoint: String,
+    protocol: Option<String>,
+}
+
+/// Candidate paths for operator discovery configuration.
+fn discovery_config_paths() -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+
+    if let Ok(config_home) = petal_tongue_core::platform_dirs::config_dir() {
+        paths.push(config_home.join("petaltongue/discovery.toml"));
+    }
+
+    paths.push(PathBuf::from("config/discovery.toml"));
+    paths
+}
+
+fn parse_config_services(
+    content: &str,
+) -> std::result::Result<Vec<ConfigServiceEntry>, toml::de::Error> {
+    let config: DiscoveryConfigFile = toml::from_str(content)?;
+    Ok(config.services)
+}
+
+/// Map a capability name to an mDNS DNS-SD service type.
+fn mdns_service_type_for_capability(capability: &str) -> String {
+    match capability {
+        "visualization" | "visualization-provider" => {
+            "_visualization-provider._tcp.local".to_owned()
+        }
+        _ => format!("_{capability}._tcp.local"),
+    }
+}
+
+/// Whether a service advertises the requested capability.
+fn service_matches_capability(advertised: &[String], requested: &str) -> bool {
+    !advertised.is_empty()
+        && advertised
+            .iter()
+            .any(|cap| capability_matches(cap, requested))
+}
+
+fn capability_matches(advertised: &str, requested: &str) -> bool {
+    advertised == requested
+        || advertised.contains(requested)
+        || requested.contains(advertised)
+        || advertised.replace('.', "-") == requested
+        || advertised.replace('-', ".") == requested
+}
+
+/// Extract capability strings from a `capabilities.list` JSON-RPC result.
+fn extract_capabilities_from_rpc_result(result: &serde_json::Value) -> Vec<String> {
+    if let Some(array) = result
+        .get("capabilities")
+        .and_then(serde_json::Value::as_array)
+    {
+        return array
+            .iter()
+            .filter_map(serde_json::Value::as_str)
+            .map(str::to_owned)
+            .collect();
+    }
+
+    if let Some(array) = result.get("methods").and_then(serde_json::Value::as_array) {
+        return array
+            .iter()
+            .filter_map(serde_json::Value::as_str)
+            .map(str::to_owned)
+            .collect();
+    }
+
+    if let Some(array) = result.as_array() {
+        return array
+            .iter()
+            .filter_map(serde_json::Value::as_str)
+            .map(str::to_owned)
+            .collect();
+    }
+
+    Vec::new()
 }
 
 impl Default for UniversalDiscovery {

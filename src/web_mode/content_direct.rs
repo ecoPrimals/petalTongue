@@ -82,11 +82,11 @@ impl ContentDirectState {
     pub fn generate_static_site(
         &self,
         layout: petal_tongue_scene::site_builder::SiteLayout,
-    ) -> Result<petal_tongue_scene::site_builder::StaticSite, petal_tongue_scene::site_builder::ContentError> {
-        let source = content_render::FilesystemSource::new(
-            self.content_dir.clone(),
-            None,
-        );
+    ) -> Result<
+        petal_tongue_scene::site_builder::StaticSite,
+        petal_tongue_scene::site_builder::ContentError,
+    > {
+        let source = content_render::FilesystemSource::new(self.content_dir.clone(), None);
         let content = source.load()?;
         let builder = petal_tongue_scene::site_builder::SiteBuilder::new(layout);
         builder.build(&content)

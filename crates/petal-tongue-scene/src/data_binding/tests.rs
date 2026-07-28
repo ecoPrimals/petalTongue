@@ -463,7 +463,10 @@ fn color_grid_partial_reveal_masks_cells() {
     assert_eq!(data[1]["g"], 1.0);
     // Last 2 cells masked
     let masked_r: f64 = data[2]["r"].as_f64().unwrap_or(0.0);
-    assert!((masked_r - 0.15).abs() < 0.01, "masked cells should use 0.15");
+    assert!(
+        (masked_r - 0.15).abs() < 0.01,
+        "masked cells should use 0.15"
+    );
 }
 
 #[test]

@@ -11,7 +11,7 @@ impl RpcHandlers {
     /// Dispatch JSON-RPC request to the appropriate handler.
     ///
     /// JH-0: `auth.*` methods are intercepted before the dispatch table.
-    /// All other methods pass through [`MethodGate::check`] first.
+    /// All other methods pass through [`crate::method_gate::MethodGate::check`] first.
     pub async fn handle_request(
         &self,
         req: JsonRpcRequest,

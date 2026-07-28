@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: July 27, 2026 (Wave 155b — genomeBin convergence. petalTongue STABLE. 6,739 tests, zero clippy warnings)
+**Updated**: July 28, 2026 (Wave 155g — deep debt evolution pass. petalTongue STABLE. 6,605 tests, zero clippy warnings, zero stale markers)
 
 ---
 
