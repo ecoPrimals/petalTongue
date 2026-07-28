@@ -11,10 +11,18 @@ use super::manifest::load_ecosystem_manifest;
 // ── Gate mesh status ─────────────────────────────────────────────────────
 
 /// Returns gate mesh topology as JSON (mirrors `gate.mesh.status` IPC method).
+///
+/// Loads topology from `ecosystem_manifest.toml` at runtime rather than
+/// serving compile-time static data.
 pub async fn gate_mesh_handler() -> Json<serde_json::Value> {
-    use petal_tongue_core::gate_mesh;
+    use petal_tongue_core::gate_mesh::{self, MeshTopologySource};
 
-    let gates: Vec<serde_json::Value> = gate_mesh::all_nodes()
+    let source = gate_mesh::ManifestMeshTopology::discover();
+    let nodes = source.nodes();
+    let links = source.links();
+
+    let gates: Vec<serde_json::Value> = nodes
+        .iter()
         .map(|node| {
             serde_json::json!({
                 "id": node.id,
@@ -31,7 +39,7 @@ pub async fn gate_mesh_handler() -> Json<serde_json::Value> {
         })
         .collect();
 
-    let links: Vec<serde_json::Value> = gate_mesh::WG_LINKS
+    let link_json: Vec<serde_json::Value> = links
         .iter()
         .map(|link| {
             serde_json::json!({
@@ -42,28 +50,31 @@ pub async fn gate_mesh_handler() -> Json<serde_json::Value> {
         })
         .collect();
 
-    let enrolled = gates
-        .iter()
-        .filter(|g| g["enrollment"] == "Enrolled")
-        .count();
+    let enrolled = source.count_by_enrollment(gate_mesh::GateEnrollment::Enrolled);
 
     Json(serde_json::json!({
         "gates": gates,
-        "links": links,
+        "links": link_json,
         "enrolled_count": enrolled,
-        "total_count": gates.len(),
-        "source": "static",
+        "total_count": nodes.len(),
+        "source": if nodes.is_empty() { "empty" } else { "manifest" },
     }))
 }
 
 // ── Ecosystem composition ────────────────────────────────────────────────
 
-/// Returns the NUCLEUS composition (4 atomics, 13 primals) and ecosystem metrics.
+/// Returns the NUCLEUS composition and ecosystem metrics.
+///
+/// Reads ecosystem metadata from `ecosystem_manifest.toml` at runtime.
+/// NUCLEUS atomic composition data comes from the offline-topology feature
+/// when enabled, or returns empty when topology is purely runtime-discovered.
 pub async fn ecosystem_handler() -> Json<serde_json::Value> {
-    use petal_tongue_core::gate_mesh;
+    use petal_tongue_core::gate_mesh::{self, MeshTopologySource};
 
     let manifest = load_ecosystem_manifest();
+    let source = gate_mesh::ManifestMeshTopology::discover();
 
+    #[cfg(feature = "offline-topology")]
     let atomics: Vec<serde_json::Value> = gate_mesh::NUCLEUS_ATOMICS
         .iter()
         .map(|atomic| {
@@ -85,7 +96,12 @@ pub async fn ecosystem_handler() -> Json<serde_json::Value> {
         })
         .collect();
 
-    let gpu_nodes: Vec<serde_json::Value> = gate_mesh::gpu_nodes()
+    #[cfg(not(feature = "offline-topology"))]
+    let atomics: Vec<serde_json::Value> = Vec::new();
+
+    let gpu_nodes: Vec<serde_json::Value> = source
+        .gpu_nodes()
+        .iter()
         .map(|n| {
             serde_json::json!({
                 "gate": n.id,
@@ -99,7 +115,15 @@ pub async fn ecosystem_handler() -> Json<serde_json::Value> {
         .get("compute")
         .and_then(|c| c.get("primary_gate"))
         .and_then(toml::Value::as_str)
-        .unwrap_or_else(|| gate_mesh::gpu_nodes().next().map_or("unknown", |n| n.id));
+        .map_or_else(
+            || {
+                source
+                    .gpu_nodes()
+                    .first()
+                    .map_or_else(|| "unknown".to_owned(), |n| n.id.clone())
+            },
+            String::from,
+        );
 
     let wave = manifest
         .get("ecosystem")
@@ -112,6 +136,7 @@ pub async fn ecosystem_handler() -> Json<serde_json::Value> {
         .and_then(toml::Value::as_str);
 
     let has_manifest = !manifest.is_empty();
+    let nodes = source.nodes();
 
     Json(serde_json::json!({
         "nucleus": atomics,
@@ -120,13 +145,12 @@ pub async fn ecosystem_handler() -> Json<serde_json::Value> {
             "primary_gate": primary_gate,
         },
         "metrics": {
-            "total_primals": gate_mesh::nucleus_primal_count(),
-            "total_atomics": gate_mesh::NUCLEUS_ATOMICS.len(),
-            "gates_enrolled": gate_mesh::count_by_enrollment(gate_mesh::GateEnrollment::Enrolled),
-            "gpu_capable": gate_mesh::gpu_nodes().count(),
+            "gates_enrolled": source.count_by_enrollment(gate_mesh::GateEnrollment::Enrolled),
+            "gpu_capable": source.gpu_nodes().len(),
+            "total_gates": nodes.len(),
             "wave": wave,
             "posture": posture,
-            "source": if has_manifest { "ecosystem_manifest" } else { "static_fallback" },
+            "source": if has_manifest { "ecosystem_manifest" } else { "discovery_required" },
         },
     }))
 }
@@ -255,6 +279,12 @@ pub async fn mesh_peers_handler(
 pub async fn topology_layers_handler() -> Json<serde_json::Value> {
     use petal_tongue_core::gate_mesh;
 
+    let manifest = load_ecosystem_manifest();
+    let wave = manifest
+        .get("ecosystem")
+        .and_then(|e| e.get("wave"))
+        .and_then(toml::Value::as_integer);
+
     let layers: Vec<serde_json::Value> = gate_mesh::KDERM_LAYERS
         .iter()
         .map(|layer| {
@@ -296,7 +326,7 @@ pub async fn topology_layers_handler() -> Json<serde_json::Value> {
         },
         "architecture": "diderm",
         "principle": "Defense in depth, not obscurity. Outer membrane data reinforces inner membrane.",
-        "wave": 136,
+        "wave": wave,
     }))
 }
 
@@ -327,8 +357,7 @@ pub async fn sporeprint_handler() -> Json<serde_json::Value> {
     let wave = manifest
         .get("ecosystem")
         .and_then(|e| e.get("wave"))
-        .and_then(toml::Value::as_integer)
-        .unwrap_or(136);
+        .and_then(toml::Value::as_integer);
 
     let posture = manifest
         .get("ecosystem")

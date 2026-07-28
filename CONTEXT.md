@@ -19,7 +19,8 @@ does not own computation, storage, or security domains.
 ## Architecture
 
 19 workspace crates, single UniBin binary (`petaltongue`, 7 subcommands).
-`offline-topology` feature gates static mesh topology (default on; disable for lean builds):
+`offline-topology` feature gates static mesh topology (default off; enable only for offline demos).
+Production code uses `MeshTopologySource` trait with `ManifestMeshTopology` for runtime discovery:
 
 | Crate | Purpose |
 |-------|---------|

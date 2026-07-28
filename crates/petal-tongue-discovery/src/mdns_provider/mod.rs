@@ -64,7 +64,15 @@ impl MdnsVisualizationProvider {
     /// # Errors
     /// Returns `DiscoveryError::MdnsError` if the multicast socket cannot be created.
     pub async fn discover() -> DiscoveryResult<Vec<Self>> {
-        tracing::info!("Starting mDNS discovery for visualization providers...");
+        Self::discover_for_service(SERVICE_NAME).await
+    }
+
+    /// Discover providers advertising the given mDNS service type (e.g. `_gpu-rendering._tcp.local`).
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError::MdnsError` if the multicast socket cannot be created.
+    pub async fn discover_for_service(service_type: &str) -> DiscoveryResult<Vec<Self>> {
+        tracing::info!("Starting mDNS discovery for service type: {service_type}");
 
         let socket = Self::create_multicast_socket().map_err(|e| {
             DiscoveryError::MdnsError(format!("Failed to create multicast socket: {e}"))
@@ -75,7 +83,13 @@ impl MdnsVisualizationProvider {
         })?;
 
         let discovery_timeout = constants::default_discovery_timeout();
-        let providers = match timeout(discovery_timeout, Self::query_services(socket)).await {
+        let service_type = service_type.to_owned();
+        let providers = match timeout(
+            discovery_timeout,
+            Self::query_services(socket, &service_type),
+        )
+        .await
+        {
             Ok(Ok(providers)) => {
                 tracing::info!("mDNS discovery found {} provider(s)", providers.len());
                 providers
@@ -118,9 +132,9 @@ impl MdnsVisualizationProvider {
         Ok(socket.into())
     }
 
-    /// Query for visualization provider services
-    async fn query_services(socket: UdpSocket) -> DiscoveryResult<Vec<Self>> {
-        let query = packet::build_mdns_query(SERVICE_NAME);
+    /// Query for services of the given mDNS type
+    async fn query_services(socket: UdpSocket, service_type: &str) -> DiscoveryResult<Vec<Self>> {
+        let query = packet::build_mdns_query(service_type);
 
         let multicast_target = SocketAddr::V4(SocketAddrV4::new(MDNS_MULTICAST_ADDR, MDNS_PORT));
         socket
@@ -128,7 +142,7 @@ impl MdnsVisualizationProvider {
             .await
             .map_err(|e| DiscoveryError::MdnsError(format!("Failed to send mDNS query: {e}")))?;
 
-        tracing::debug!("Sent mDNS query for service: {}", SERVICE_NAME);
+        tracing::debug!("Sent mDNS query for service: {service_type}");
 
         let mut providers = Vec::new();
         let mut buf = vec![0u8; 1024];

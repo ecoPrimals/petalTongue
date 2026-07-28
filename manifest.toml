@@ -8,7 +8,7 @@
 name = "petaltongue"
 display_name = "petalTongue"
 description = "Universal Visualization Primal for ecoPrimals"
-version = "1.6.6"
+version = "1.7.0"
 license = "AGPL-3.0-or-later"
 seed_fingerprint = "2a57a4aaed1a1e11cd977670d2c3c523a49b5ef38217e024aa76637b8b806255"
 

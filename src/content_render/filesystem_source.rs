@@ -83,7 +83,10 @@ impl ContentSource for FilesystemSource {
         })
     }
 
-    #[expect(clippy::unnecessary_literal_bound, reason = "trait ContentSource defines return as &str")]
+    #[expect(
+        clippy::unnecessary_literal_bound,
+        reason = "trait ContentSource defines return as &str"
+    )]
     fn source_id(&self) -> &str {
         "filesystem"
     }
@@ -94,9 +97,8 @@ fn scan_directory(
     prefix: &str,
     pages: &mut Vec<DocumentNode>,
 ) -> Result<(), ContentError> {
-    let entries = std::fs::read_dir(dir).map_err(|e| {
-        ContentError::LoadFailed(format!("cannot read {}: {e}", dir.display()))
-    })?;
+    let entries = std::fs::read_dir(dir)
+        .map_err(|e| ContentError::LoadFailed(format!("cannot read {}: {e}", dir.display())))?;
 
     let mut items: Vec<_> = entries.flatten().collect();
     items.sort_by_key(std::fs::DirEntry::file_name);
@@ -132,9 +134,8 @@ fn scan_directory(
 }
 
 fn load_page_file(path: &Path, url_path: &str) -> Result<DocumentNode, ContentError> {
-    let content = std::fs::read_to_string(path).map_err(|e| {
-        ContentError::LoadFailed(format!("cannot read {}: {e}", path.display()))
-    })?;
+    let content = std::fs::read_to_string(path)
+        .map_err(|e| ContentError::LoadFailed(format!("cannot read {}: {e}", path.display())))?;
     Ok(parse_document(&content, url_path))
 }
 
@@ -197,9 +198,7 @@ fn collect_inlines(inlines: &[petal_tongue_scene::document::Inline], buf: &mut S
                 buf.push_str(t);
                 buf.push(' ');
             }
-            Inline::Bold(children)
-            | Inline::Italic(children)
-            | Inline::Strikethrough(children) => {
+            Inline::Bold(children) | Inline::Italic(children) | Inline::Strikethrough(children) => {
                 collect_inlines(children, buf, max);
             }
             Inline::Link { text, .. } => {
@@ -211,7 +210,10 @@ fn collect_inlines(inlines: &[petal_tongue_scene::document::Inline], buf: &mut S
 }
 
 /// Build nav tree with an active section marker based on the current page path.
-#[allow(dead_code, reason = "public API for sporePrint page rendering with active navigation")]
+#[allow(
+    dead_code,
+    reason = "public API for sporePrint page rendering with active navigation"
+)]
 pub fn nav_with_active(nav: &[NavSection], current_path: &str) -> Vec<NavSection> {
     nav.iter()
         .map(|section| {

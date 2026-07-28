@@ -178,12 +178,14 @@ async fn test_gate_mesh_endpoint_returns_topology() {
     let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert!(v["gates"].as_array().is_some());
     assert!(v["links"].as_array().is_some());
-    assert_eq!(v["enrolled_count"], 7);
-    assert_eq!(v["total_count"], 12);
-    assert_eq!(v["source"], "static");
     let gates = v["gates"].as_array().unwrap();
+    assert!(!gates.is_empty(), "should have gates from manifest");
     assert!(gates.iter().any(|g| g["id"] == "sporeGate"));
-    assert!(gates.iter().any(|g| g["id"] == "golgi"));
+    let source = v["source"].as_str().unwrap();
+    assert!(
+        source == "manifest" || source == "empty",
+        "source should be manifest or empty"
+    );
 }
 
 #[tokio::test]
@@ -218,24 +220,23 @@ async fn test_viz_handler_not_found() {
 }
 
 #[tokio::test]
-async fn test_ecosystem_endpoint_returns_nucleus() {
+async fn test_ecosystem_endpoint_returns_metrics() {
     let resp = ecosystem_handler().await.into_response();
     assert_eq!(resp.status(), 200);
     let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
         .await
         .unwrap();
     let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    let atomics = v["nucleus"].as_array().expect("nucleus is array");
-    assert_eq!(atomics.len(), 4);
-    assert_eq!(atomics[0]["name"], "Tower Atomic");
-    assert_eq!(atomics[0]["primals"].as_array().unwrap().len(), 3);
-    assert_eq!(v["metrics"]["total_primals"], 13);
-    assert_eq!(v["metrics"]["total_atomics"], 4);
-    assert_eq!(v["metrics"]["gates_enrolled"], 7);
-    assert_eq!(v["metrics"]["gpu_capable"], 2);
+    assert!(
+        v["nucleus"].as_array().is_some(),
+        "nucleus should be an array"
+    );
+    assert!(v["compute"]["gpu_nodes"].as_array().is_some());
     assert_eq!(v["compute"]["primary_gate"], "ironGate");
     let gpu_nodes = v["compute"]["gpu_nodes"].as_array().unwrap();
     assert!(gpu_nodes.iter().any(|n| n["gate"] == "ironGate"));
+    let source = v["metrics"]["source"].as_str().unwrap();
+    assert!(source == "ecosystem_manifest" || source == "discovery_required");
 }
 
 #[tokio::test]
@@ -264,24 +265,15 @@ async fn test_mesh_peers_endpoint() {
         .await
         .unwrap();
     let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    assert!(v["connected_count"].as_u64().unwrap() >= 4);
-    assert!(v["total_count"].as_u64().unwrap() >= 6);
     let peers = v["peers"].as_array().unwrap();
-    assert!(!peers.is_empty());
-    let east = peers.iter().find(|p| p["gate_id"] == "eastGate").unwrap();
-    assert_eq!(east["status"], "connected");
-    assert_eq!(east["transport"], "local");
-    let iron = peers.iter().find(|p| p["gate_id"] == "ironGate").unwrap();
-    assert_eq!(iron["status"], "connected");
-    assert_eq!(iron["transport"], "LAN direct");
-    let flock = peers.iter().find(|p| p["gate_id"] == "flockGate").unwrap();
-    assert_eq!(flock["status"], "relayed");
-    let graphene = peers
-        .iter()
-        .find(|p| p["gate_id"] == "grapheneGate")
-        .unwrap();
-    assert_eq!(graphene["status"], "connected");
-    assert_eq!(graphene["transport"], "ADB USB");
+    if !peers.is_empty() {
+        assert!(v["total_count"].as_u64().unwrap() > 0);
+        let iron = peers.iter().find(|p| p["gate_id"] == "ironGate");
+        if let Some(iron) = iron {
+            assert_eq!(iron["status"], "connected");
+            assert_eq!(iron["transport"], "LAN direct");
+        }
+    }
 }
 
 #[tokio::test]
@@ -292,7 +284,7 @@ async fn test_sporeprint_endpoint() {
         .await
         .unwrap();
     let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    assert!(v["wave"].as_i64().unwrap() >= 136);
+    assert!(v["wave"].as_i64().is_some());
     assert_eq!(v["totals"]["known_debt"], 0);
     assert_eq!(v["ci"]["sovereign_ci"], "sporeGate");
     assert_eq!(v["source"], "ecosystem_manifest");

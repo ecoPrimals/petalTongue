@@ -658,8 +658,8 @@ mod tests {
     #[test]
     fn capabilities_includes_render_webgl() -> Result<(), PlatformError> {
         let mut rt = test_runtime();
-        let resp =
-            rt.ipc_request(r#"{"jsonrpc":"2.0","id":11,"method":"capabilities.list","params":{}}"#)?;
+        let resp = rt
+            .ipc_request(r#"{"jsonrpc":"2.0","id":11,"method":"capabilities.list","params":{}}"#)?;
         let v: serde_json::Value = serde_json::from_str(&resp).expect("valid JSON");
         let caps = v["result"]["capabilities"].as_array().expect("array");
         assert!(caps.iter().any(|c| c == "pt.render_webgl"));

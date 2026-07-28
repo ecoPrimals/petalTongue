@@ -9,10 +9,10 @@
 //! Default mode is [`Permissive`] (logs violations but allows all calls).
 //! Switch to [`Enforced`] via `PETALTONGUE_AUTH_MODE=enforced`.
 //!
-//! [`Public`]: MethodAccess::Public
-//! [`Protected`]: MethodAccess::Protected
-//! [`Permissive`]: EnforcementMode::Permissive
-//! [`Enforced`]: EnforcementMode::Enforced
+//! [`Public`]: self::MethodAccess::Public
+//! [`Protected`]: self::MethodAccess::Protected
+//! [`Permissive`]: self::EnforcementMode::Permissive
+//! [`Enforced`]: self::EnforcementMode::Enforced
 
 use crate::json_rpc::{JsonRpcResponse, error_codes};
 use petal_tongue_core::constants;

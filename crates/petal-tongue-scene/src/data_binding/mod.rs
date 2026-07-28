@@ -443,10 +443,7 @@ impl DataBindingCompiler {
                     .flat_map(|row| {
                         (0..*cols).map(move |col| {
                             let idx = row * cols + col;
-                            let rgba = colors
-                                .get(idx)
-                                .copied()
-                                .unwrap_or([0.5, 0.5, 0.5, 1.0]);
+                            let rgba = colors.get(idx).copied().unwrap_or([0.5, 0.5, 0.5, 1.0]);
                             let revealed = idx < reveal_count;
                             let [cr, cg, cb, ca] = if revealed {
                                 rgba

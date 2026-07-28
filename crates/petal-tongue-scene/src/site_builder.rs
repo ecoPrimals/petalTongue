@@ -33,8 +33,8 @@ use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
 use crate::document::{DocumentNode, NavSection, SiteContent};
-use crate::modality::document_compiler::{compile_to_description, compile_to_html};
 use crate::modality::ModalityOutput;
+use crate::modality::document_compiler::{compile_to_description, compile_to_html};
 
 /// Trait for content sources that provide site content.
 ///
@@ -239,7 +239,10 @@ impl SiteBuilder {
         )
     }
 
-    #[expect(clippy::unused_self, reason = "will use self for layout-specific nav config")]
+    #[expect(
+        clippy::unused_self,
+        reason = "will use self for layout-specific nav config"
+    )]
     fn render_nav(&self, nav: &[NavSection]) -> String {
         if nav.is_empty() {
             return String::new();
@@ -264,7 +267,10 @@ impl SiteBuilder {
         }
     }
 
-    #[expect(clippy::unused_self, reason = "will use self for base_url prefix logic")]
+    #[expect(
+        clippy::unused_self,
+        reason = "will use self for base_url prefix logic"
+    )]
     fn page_output_path(&self, page_path: &str) -> String {
         let clean = page_path.trim_start_matches('/');
         if clean.is_empty() || clean == "/" {
@@ -316,7 +322,10 @@ fn html_escape(s: &str) -> String {
         .replace('"', "&quot;")
 }
 
-#[expect(clippy::needless_raw_string_hashes, reason = "CSS hex colors read better in r#\"...\"#")]
+#[expect(
+    clippy::needless_raw_string_hashes,
+    reason = "CSS hex colors read better in r#\"...\"#"
+)]
 const fn default_css() -> &'static str {
     r#":root { --fg: #1a1a2e; --bg: #fafafa; --accent: #16697a; --border: #e0e0e0; }
 @media (prefers-color-scheme: dark) { :root { --fg: #e0e0e0; --bg: #1a1a2e; --accent: #82c4c4; --border: #333; } }
@@ -507,9 +516,6 @@ mod tests {
             builder.page_output_path("/primals/beardog"),
             "primals/beardog/index.html"
         );
-        assert_eq!(
-            builder.page_output_path("/docs/api.html"),
-            "docs/api.html"
-        );
+        assert_eq!(builder.page_output_path("/docs/api.html"), "docs/api.html");
     }
 }

@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use super::*;
+use clap::Parser;
+use petal_tongue_core::config_system::Config;
+
+use crate::bootstrap::init_tracing;
+use crate::cli::{Cli, Commands};
+use crate::dispatch::{parse_ipc_bind_host, resolve_bind};
+use crate::error::AppError;
 
 #[test]
 fn test_cli_parse_ui() {

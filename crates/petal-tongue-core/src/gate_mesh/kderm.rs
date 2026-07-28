@@ -55,7 +55,7 @@ pub const KDERM_LAYERS: &[KDermLayer] = &[
             "golgi relay",
             "sporeGate CI",
             "WireGuard mesh",
-            "songBird drawbridge",
+            "mesh.routing",
         ],
         path: "WG overlay → sporeGate → LAN/WAN backends",
         security: &["Authenticated relay", "Signed builds", "Allowlist proxy"],
@@ -85,8 +85,8 @@ pub const KDERM_LAYERS: &[KDermLayer] = &[
         components: &[
             "NUCLEUS primals",
             "Unix domain sockets",
-            "songBird mesh",
-            "bearDog TLS",
+            "mesh.routing",
+            "tls.gateway",
         ],
         path: "localhost-only services, mesh capability.call",
         security: &[
@@ -153,10 +153,10 @@ pub const HARDENING_CONTROLS: &[HardeningControl] = &[
         description: "Automated ban on repeated auth failures",
     },
     HardeningControl {
-        id: "drawbridge",
+        id: "mesh-gateway",
         layer: "Periplasm",
         status: HardeningStatus::Active,
-        description: "songBird external proxy allowlist (OSM, FEMA, USGS, ArcGIS)",
+        description: "External proxy allowlist via mesh gateway (OSM, FEMA, USGS, ArcGIS)",
     },
     HardeningControl {
         id: "cascade-signing",
@@ -168,13 +168,13 @@ pub const HARDENING_CONTROLS: &[HardeningControl] = &[
         id: "lab-auth-gate",
         layer: "Periplasm",
         status: HardeningStatus::Landed,
-        description: "lab.primals.eco access control (songBird drawbridge → Caddy)",
+        description: "lab.primals.eco access control (mesh gateway → Caddy)",
     },
     HardeningControl {
-        id: "bearDog-TLS",
+        id: "tls-gateway",
         layer: "Cytoplasm",
         status: HardeningStatus::Landed,
-        description: "bearDog ACME gateway replacing Caddy TLS termination",
+        description: "ACME TLS gateway replacing Caddy TLS termination",
     },
 ];
 

@@ -117,12 +117,12 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 6,739 passing, 0 failures (`--all-features`) |
+| Tests | 6,605 passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (`--all-features`, pedantic + nursery; `#[expect]` with reasons) |
 | Docs | `cargo doc --workspace --no-deps` zero warnings |
 | Coverage | ~85% line (llvm-cov), 90% target |
-| Unsafe | `#![forbid(unsafe_code)]` on 18 crates + UniBin root; `petal-tongue-platform` allows unsafe in `ffi.rs` only (C-FFI boundary) |
+| Unsafe | `#![forbid(unsafe_code)]` on 21 crates + UniBin root; `petal-tongue-platform` allows unsafe in `ffi.rs` only (C-FFI boundary, 13 tests) |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
 | BTSP Phase 3 | Full encrypted transport (ChaCha20-Poly1305 AEAD); HKDF-SHA256 key derivation; 13/13 ecosystem parity |
 | Files | All production files under 800 LOC (smart domain refactoring, 57+ modules) |
@@ -152,7 +152,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 6,739 tests
+cargo test --workspace                        # 6,605 tests
 cargo clippy --workspace --all-features -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps

@@ -1,7 +1,7 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 155b | **Date**: July 27, 2026 | **From**: petalTongue on eastGate
-**Posture**: **STABLE** — no active glacial goals owned. Infrastructure ready.
+**Wave**: 155g | **Date**: July 28, 2026 | **From**: petalTongue on westGate
+**Posture**: **STABLE** — deep debt evolution complete. Infrastructure ready.
 
 ---
 
@@ -11,7 +11,7 @@
 |--------|-------|
 | Version | 1.7.0 |
 | Crates | 19 workspace members |
-| Tests | 6,739 passing, 0 failures |
+| Tests | 6,605 passing, 0 failures |
 | Clippy | Zero warnings (pedantic + nursery, all targets) |
 | Unsafe | Confined to `petal-tongue-platform/src/ffi.rs` (15 usages, all SAFETY-documented) |
 | BTSP | **13/13** (ClientHello + server-side, full strict mode) |
@@ -36,7 +36,8 @@ petalTongue is the **reference implementation** for Phase 2 Silicon Atheism.
    `PlatformLifecycle` trait, `EmbeddedRuntime`, WebSocket JSON-RPC bridge.
 
 2. **`MeshTopologySource` trait** — runtime topology resolution abstraction.
-   Static gate mesh data behind `offline-topology` feature.
+   `ManifestMeshTopology` loads from `ecosystem_manifest.toml`. Static data behind
+   `offline-topology` feature (default off).
 
 3. **`PlatformMetrics` trait** — cross-platform system resource queries.
    `LinuxProcMetrics` (production), `StubMetrics` (other platforms).
@@ -155,7 +156,9 @@ petalTongue owns **no glacial goals directly** but supports:
 
 ---
 
-*Wave 155b: petalTongue STABLE. BTSP 13/13. 6,739 tests. genomeBin convergence.
-No active glacial goals owned — infrastructure ready for G3 (Nest Atomic CAS),
-G5 (Chimera embedding pattern), G7 (cross-platform via WASM/platform crate).
-All P1/P2 items resolved. Remaining backlog is P2+ ecosystem dependencies.*
+*Wave 155g: petalTongue STABLE. BTSP 13/13. 6,605 tests. Deep debt evolution
+complete — topology evolved to runtime manifest discovery, large files refactored,
+production stubs wired, FFI hardened, all hardcoding eliminated. Infrastructure
+ready for G3 (Nest Atomic CAS), G5 (Chimera embedding pattern), G7 (cross-platform
+via WASM/platform crate). All P0/P1 audit items resolved. Remaining backlog is
+P2+ ecosystem dependencies.*

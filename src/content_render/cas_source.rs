@@ -93,7 +93,7 @@ impl CasSource {
 
     /// Create from environment variables (same discovery as `coord_handlers`).
     ///
-    /// Uses `NESTGATE_STORAGE_BASE_PATH` or XDG/system defaults.
+    /// Uses `COORD_STORAGE_PATH` or XDG/system defaults.
     #[must_use]
     pub fn from_env() -> Self {
         let storage_base = resolve_storage_base();
@@ -117,9 +117,8 @@ impl CasSource {
                 self.manifest_path.display()
             ))
         })?;
-        serde_json::from_str(&content).map_err(|e| {
-            ContentError::InvalidContent(format!("invalid CAS manifest: {e}"))
-        })
+        serde_json::from_str(&content)
+            .map_err(|e| ContentError::InvalidContent(format!("invalid CAS manifest: {e}")))
     }
 
     fn resolve_blob(&self, hash: &str) -> Result<String, ContentError> {
@@ -164,9 +163,7 @@ impl ContentSource for CasSource {
         let entity_registry = manifest
             .config_hash
             .as_deref()
-            .map_or_else(std::collections::HashMap::new, |h| {
-                self.resolve_config(h)
-            });
+            .map_or_else(std::collections::HashMap::new, |h| self.resolve_config(h));
 
         resolve_shortcodes(&mut pages, &entity_registry);
 
@@ -180,23 +177,49 @@ impl ContentSource for CasSource {
         })
     }
 
-    #[expect(clippy::unnecessary_literal_bound, reason = "trait ContentSource defines return as &str")]
+    #[expect(
+        clippy::unnecessary_literal_bound,
+        reason = "trait ContentSource defines return as &str"
+    )]
     fn source_id(&self) -> &str {
         "cas"
     }
 }
 
 fn resolve_storage_base() -> PathBuf {
-    if let Ok(base) = std::env::var("NESTGATE_STORAGE_BASE_PATH") {
+    if let Ok(base) = std::env::var("COORD_STORAGE_PATH") {
         return PathBuf::from(base);
     }
-    if let Ok(home) = std::env::var("HOME") {
-        let xdg = PathBuf::from(home).join(".local/share/nestgate/storage");
-        if xdg.exists() {
-            return xdg;
+
+    if let Ok(xdg) = std::env::var("XDG_DATA_HOME") {
+        let eco_path = PathBuf::from(xdg).join("ecoPrimals/coord-storage");
+        if eco_path.exists() {
+            return eco_path;
         }
     }
-    PathBuf::from("/var/lib/nestgate/storage")
+
+    if let Ok(home) = std::env::var("HOME") {
+        let eco_path = PathBuf::from(&home).join(".local/share/ecoPrimals/coord-storage");
+        if eco_path.exists() {
+            return eco_path;
+        }
+
+        let legacy = PathBuf::from(home).join(".local/share/nestgate/storage");
+        if legacy.exists() {
+            tracing::debug!(
+                path = %legacy.display(),
+                "using legacy nestGate coordination storage path"
+            );
+            return legacy;
+        }
+    }
+
+    let legacy_system = PathBuf::from("/var/lib/nestgate/storage");
+    tracing::debug!(
+        path = %legacy_system.display(),
+        "using legacy nestGate coordination storage path"
+    );
+    legacy_system
 }
 
 fn cas_blob_path(storage_base: &Path, hash: &str) -> PathBuf {
@@ -215,10 +238,7 @@ fn build_cas_search_index(manifest: &CasManifest) -> Vec<SearchEntry> {
             title: entry.title.clone(),
             path: entry.path.clone(),
             description: entry.description.clone(),
-            body_preview: entry
-                .description
-                .clone()
-                .unwrap_or_default(),
+            body_preview: entry.description.clone().unwrap_or_default(),
         })
         .collect()
 }
@@ -239,10 +259,7 @@ pub fn parse_entity_registry_from_table(
         let Some(entry_table) = value.as_table() else {
             continue;
         };
-        registry.insert(
-            key.clone(),
-            parse_entity_entry(key, entry_table),
-        );
+        registry.insert(key.clone(), parse_entity_entry(key, entry_table));
     }
     registry
 }
