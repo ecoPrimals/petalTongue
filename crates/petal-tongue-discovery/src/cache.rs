@@ -60,8 +60,9 @@ pub struct ProviderCache<T> {
     misses: Arc<RwLock<u64>>,
 }
 
-impl<T> ProviderCache<T> {
+impl<T: Send + Sync> ProviderCache<T> {
     /// Create a new cache with specified capacity
+    #[must_use]
     pub fn new(capacity: usize) -> Self {
         Self {
             cache: Arc::new(RwLock::new(LruCache::new(
@@ -76,6 +77,7 @@ impl<T> ProviderCache<T> {
     }
 
     /// Create cache with custom TTLs
+    #[must_use]
     pub fn with_ttls(
         capacity: usize,
         primals_ttl: Duration,

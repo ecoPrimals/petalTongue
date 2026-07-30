@@ -58,7 +58,7 @@ pub fn compute_fps(frames_since_update: u32, elapsed_secs: f64) -> f32 {
     frames_since_update as f32 / elapsed_secs as f32
 }
 
-/// Compute key state diff: (newly_pressed, newly_released).
+/// Compute key state diff: (`newly_pressed`, `newly_released`).
 #[must_use]
 pub fn compute_keys_diff<S: BuildHasher>(
     prev: &HashSet<Key, S>,
