@@ -898,7 +898,7 @@ used on Android where standard XDG paths are unavailable.
 
 ---
 
-**Last Updated**: July 27, 2026 (Wave 155b — genomeBin convergence, petalTongue STABLE, 6,739 tests)  
+**Last Updated**: July 30, 2026 (Wave 155k — P2 divergences fixed, 6,755 tests, zero clippy pedantic+nursery)  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 

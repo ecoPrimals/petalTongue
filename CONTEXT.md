@@ -127,16 +127,17 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # 6,739 workspace tests, ~85-90% coverage
+cargo test --workspace --all-features     # 6,755 workspace tests, ~85-90% coverage
 ```
 
 ## Current State
 
-Wave 155b — STABLE / genomeBin Convergence (July 27, 2026).
+Wave 155k — STABLE / Provenance 7/7 Complete (July 30, 2026).
 
-petalTongue is **stable and feature-complete** for the current ecosystem phase.
-All P1 and P2 work items resolved. No glacial goals directly owned — serves as
-infrastructure for other teams (WebGL rendering for bingoCube, content pipeline
+petalTongue is **stable and feature-complete**. All P1 and P2 items resolved.
+NUCLEUS validated on 3 gates (westGate, blueGate, strandGate). P2 divergences
+fixed (`--family-id` propagation, `PRIMAL_BIND_MODE=tcp` semantics).
+No glacial goals directly owned — serves as infrastructure for other teams.
 for sporePrint, WASM exports for cross-platform embedding).
 
 **BTSP**: 13/13 strict mode (ClientHello + server-side). Wired into outbound
@@ -175,7 +176,8 @@ WebSocket JSON-RPC bridge on `/ws` (port 8080) and standalone (port 8765).
 
 | Wave/Date | Milestone |
 |-----------|-----------|
-| 155b (Jul 27) | STABLE — genomeBin convergence, 6,739 tests, tracks converged |
+| 155k (Jul 30) | STABLE — Provenance 7/7, P2 divergences fixed, 6,755 tests, zero clippy pedantic+nursery |
+| 155b (Jul 27) | genomeBin convergence, tracks converged |
 | 151c (Jul 26) | BTSP ClientHello shipped (12/13), attribute-based mesh topology, 6,589 tests |
 | 151b (Jul 26) | sporePrint pipeline: FilesystemSource + CasSource shipped |
 | 150t (Jul 21) | Sovereignty Evolution: SiteBuilder, WebGL WASM, bingoCube ColorGrid |

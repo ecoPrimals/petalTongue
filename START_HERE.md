@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: July 28, 2026 (Wave 155g — deep debt evolution pass. petalTongue STABLE. 6,605 tests, zero clippy warnings, zero stale markers)
+**Updated**: July 30, 2026 (Wave 155k — P2 divergences fixed, deep debt zero warnings. 6,755 tests, zero clippy pedantic+nursery)
 
 ---
 
@@ -90,7 +90,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace --all-features           # 6,739 workspace tests
+cargo test --workspace --all-features           # 6,755 workspace tests
 cargo clippy --workspace --all-targets -- -W clippy::pedantic -W clippy::nursery -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
