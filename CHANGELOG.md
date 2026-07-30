@@ -6,6 +6,20 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 155k: P2 Divergence Fixes (July 30, 2026)
+
+Fixed two P2 divergences identified during westGate/blueGate NUCLEUS deployment.
+
+#### Fixed
+- `--family-id` CLI flag now propagates to BTSP/IPC layer via `OnceLock` override
+  (was parsed but functionally inert — BTSP only read env var)
+- `PRIMAL_BIND_MODE=tcp`/`tcp_only` now skips UDS entirely on Unix
+  (was only used as post-failure fallback, not as a proactive transport selection)
+
+#### Metrics
+- 6,755 tests pass, 0 failures, 22 ignored
+- Zero clippy warnings (workspace-wide, pedantic + nursery)
+
 ### Wave 155g: Deep Debt Evolution Pass (July 28, 2026)
 
 Major architecture evolution — eliminated static topology overstep, evolved to

@@ -1,7 +1,7 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 155g | **Date**: July 28, 2026 | **From**: petalTongue on westGate
-**Posture**: **STABLE** — deep debt evolution complete. Infrastructure ready.
+**Wave**: 155k | **Date**: July 30, 2026 | **From**: petalTongue on eastGate
+**Posture**: **STABLE** — P2 divergences fixed. No active glacial goals owned.
 
 ---
 
@@ -11,13 +11,14 @@
 |--------|-------|
 | Version | 1.7.0 |
 | Crates | 19 workspace members |
-| Tests | 6,605 passing, 0 failures |
+| Tests | 6,755 passing, 0 failures |
 | Clippy | Zero warnings (pedantic + nursery, all targets) |
 | Unsafe | Confined to `petal-tongue-platform/src/ffi.rs` (15 usages, all SAFETY-documented) |
 | BTSP | **13/13** (ClientHello + server-side, full strict mode) |
 | Cross-arch | x86_64-linux, aarch64-linux, aarch64-android, x86_64-windows |
 | Files | All production files < 800 LOC |
 | Edition | 2024 |
+| P2 fixes | `--family-id` propagation + `PRIMAL_BIND_MODE=tcp` semantics |
 
 ---
 
