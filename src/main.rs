@@ -58,6 +58,12 @@ use crate::error::AppError;
 fn main() -> Result<(), AppError> {
     let cli = Cli::parse();
 
+    // Propagate --family-id to the IPC layer so BTSP/socket resolution uses it.
+    // CLI flag takes precedence over FAMILY_ID env var.
+    if let Some(ref fid) = cli.family_id {
+        petal_tongue_ipc::socket_path::set_family_id_override(fid.clone());
+    }
+
     init_tracing(&cli.log_level, &cli.log_format)?;
 
     let global_socket = cli.socket.clone();

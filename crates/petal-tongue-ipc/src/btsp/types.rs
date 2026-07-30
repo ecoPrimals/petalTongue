@@ -32,6 +32,10 @@ pub enum BtspPosture {
 }
 
 pub(super) fn raw_family_id_from_env() -> Option<String> {
+    // Check OnceLock override first (from --family-id CLI flag)
+    if let Some(ov) = crate::socket_path::FAMILY_ID_OVERRIDE.get() {
+        return Some(ov.clone());
+    }
     env::var(constants::FAMILY_ID)
         .ok()
         .or_else(|| env::var(constants::PETALTONGUE_FAMILY_ID).ok())

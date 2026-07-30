@@ -3,15 +3,15 @@
 #
 # This manifest describes the ecosystem topology from petalTongue's perspective.
 # It is used for visualization layout, dashboard composition, and capability routing.
-# Updated per Wave 155b (genomeBin convergence, BTSP 13/13, tracks converged).
+# Updated per Wave 155k (Provenance 7/7 complete, 3 NUCLEUS gates, Sovereign CI LIVE).
 
 [ecosystem]
 name = "ecoPrimals"
 wave = 155
 nucleus_count = 14
 atomics = 4
-posture = "BTSP strict 13/13 — genomeBin convergence, 9 glacial goals active"
-glacial_criteria_clear = 10
+posture = "BTSP strict 13/13 — Provenance 7/7 COMPLETE, 3 NUCLEUS gates, Sovereign CI LIVE"
+glacial_criteria_clear = 13
 compositions = ["footPrint", "tideGlass"]
 live_surfaces = ["primals.eco", "primals.eco/footprint/", "live.primals.eco"]
 repos = 43

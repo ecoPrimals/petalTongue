@@ -12,6 +12,19 @@ use crate::btsp::BtspPosture;
 use crate::socket_path_error::SocketPathError;
 use std::env;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
+
+/// CLI override for family ID (set before runtime spawn, read thereafter).
+pub(crate) static FAMILY_ID_OVERRIDE: OnceLock<String> = OnceLock::new();
+
+/// Set the family ID override from CLI `--family-id` flag.
+///
+/// Must be called before any threads are spawned (i.e., in `main()` before
+/// tokio runtime creation). After this, `get_family_id()` returns the override
+/// value instead of reading the environment.
+pub fn set_family_id_override(family_id: String) {
+    let _ = FAMILY_ID_OVERRIDE.set(family_id);
+}
 
 /// Get the socket path for this petalTongue instance.
 ///
@@ -65,7 +78,10 @@ pub fn get_petaltongue_socket_path_with_posture(
 
 /// Get the family ID for this instance
 ///
-/// Returns value from `FAMILY_ID` environment variable, or "nat0" as default.
+/// Resolution order:
+/// 1. CLI override (`--family-id` via `set_family_id_override`)
+/// 2. `FAMILY_ID` environment variable
+/// 3. Default: "nat0"
 ///
 /// # TRUE PRIMAL: Self-Knowledge Only
 ///
@@ -73,6 +89,9 @@ pub fn get_petaltongue_socket_path_with_posture(
 /// hardcode any other primal's family IDs.
 #[must_use]
 pub fn get_family_id() -> String {
+    if let Some(override_val) = FAMILY_ID_OVERRIDE.get() {
+        return override_val.clone();
+    }
     env::var("FAMILY_ID").unwrap_or_else(|_| "nat0".to_owned())
 }
 
