@@ -118,12 +118,12 @@ impl DoomPanel {
 
             // Update or create texture
             if let Some(texture) = &mut self.texture {
-                texture.set(color_image, Default::default());
+                texture.set(color_image, egui::TextureOptions::default());
             } else {
                 self.texture = Some(ui.ctx().load_texture(
                     "doom_frame",
                     color_image,
-                    Default::default(),
+                    egui::TextureOptions::default(),
                 ));
             }
 

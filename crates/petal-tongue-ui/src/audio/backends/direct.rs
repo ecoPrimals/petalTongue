@@ -16,7 +16,7 @@
 //!
 //! Discovery of device nodes is implemented, but **playback is not**. Opening a PCM node and
 //! writing raw samples requires ALSA `ioctl` setup (sample rate, format, buffers, etc.), which is
-//! not implemented. Devices managed by PipeWire or PulseAudio can also block if opened without
+//! not implemented. Devices managed by `PipeWire` or `PulseAudio` can also block if opened without
 //! going through those stacks.
 //!
 //! Callers should treat this module as a **stub** until the `audio.play` capability is available.

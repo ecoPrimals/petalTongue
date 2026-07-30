@@ -173,7 +173,7 @@ impl VisualizationDataProvider for OfflineDeviceProvider {
                     .as_secs(),
                 endpoints: None,
                 metadata: None,
-                properties: Default::default(),
+                properties: std::collections::HashMap::default(),
             })
             .collect())
     }

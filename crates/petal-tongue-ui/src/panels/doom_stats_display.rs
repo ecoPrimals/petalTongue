@@ -5,7 +5,7 @@
 
 use doom_core::{DoomState, GameStats, ViewMode};
 
-/// Maps DoomState enum variants to display strings.
+/// Maps `DoomState` enum variants to display strings.
 #[must_use]
 pub const fn format_doom_state(state: &DoomState) -> &'static str {
     match state {
@@ -18,7 +18,7 @@ pub const fn format_doom_state(state: &DoomState) -> &'static str {
     }
 }
 
-/// Maps ViewMode enum variants to display strings.
+/// Maps `ViewMode` enum variants to display strings.
 #[must_use]
 pub const fn format_view_mode(mode: &ViewMode) -> &'static str {
     match mode {
