@@ -117,7 +117,7 @@ pub fn build_nav_tree(content_dir: &std::path::Path) -> Vec<NavSection> {
 
     for entry in dirs {
         let dir_path = entry.path();
-        let dir_name = entry.file_name().to_string_lossy().to_string();
+        let dir_name = entry.file_name().to_string_lossy().into_owned();
 
         let index_path = dir_path.join("_index.md");
         let (title, weight) = read_section_meta(&index_path, &dir_name);

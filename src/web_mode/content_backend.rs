@@ -155,24 +155,24 @@ impl ContentBackendClient {
         for primal in &primals {
             // Prefer endpoints struct with explicit transport info
             if let Some(ref eps) = primal.endpoints {
-                if let Some(ref sock) = eps.unix_socket {
-                    let path = std::path::PathBuf::from(sock);
-                    if path.exists() {
-                        tracing::info!(
-                            primal = %primal.name, socket = %sock,
-                            "content backend: discovered local Unix socket via mesh"
-                        );
-                        return Some(ContentEndpoint::Unix(path));
-                    }
+                if let Some(ref sock) = eps.unix_socket
+                    && let path = std::path::PathBuf::from(sock)
+                    && path.exists()
+                {
+                    tracing::info!(
+                        primal = %primal.name, socket = %sock,
+                        "content backend: discovered local Unix socket via mesh"
+                    );
+                    return Some(ContentEndpoint::Unix(path));
                 }
-                if let Some(ref http) = eps.http {
-                    if let Some(addr) = http.strip_prefix("http://") {
-                        tracing::info!(
-                            primal = %primal.name, endpoint = %addr,
-                            "content backend: discovered TCP endpoint via mesh"
-                        );
-                        return Some(ContentEndpoint::Tcp(addr.to_owned()));
-                    }
+                if let Some(ref http) = eps.http
+                    && let Some(addr) = http.strip_prefix("http://")
+                {
+                    tracing::info!(
+                        primal = %primal.name, endpoint = %addr,
+                        "content backend: discovered TCP endpoint via mesh"
+                    );
+                    return Some(ContentEndpoint::Tcp(addr.to_owned()));
                 }
             }
 
@@ -262,12 +262,11 @@ impl ContentBackendClient {
                 source,
             })?;
 
-        if let Some(btsp_config) = petal_tongue_ipc::BtspClientConfig::from_env() {
-            if let Err(e) =
+        if let Some(btsp_config) = petal_tongue_ipc::BtspClientConfig::from_env()
+            && let Err(e) =
                 petal_tongue_ipc::perform_client_handshake(&mut stream, &btsp_config).await
-            {
-                tracing::debug!(error = %e, "BTSP handshake on content backend — proceeding without");
-            }
+        {
+            tracing::debug!(error = %e, "BTSP handshake on content backend — proceeding without");
         }
 
         stream.write_all(request.as_bytes()).await?;

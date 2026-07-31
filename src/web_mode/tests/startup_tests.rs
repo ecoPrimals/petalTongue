@@ -258,7 +258,7 @@ async fn test_run_content_provider_backend_starts() {
     let mut cfg = OwnedWebConfig::filesystem(port);
     cfg.backend = "content-provider".to_owned();
 
-    let sock_str = sock_path.to_string_lossy().to_string();
+    let sock_str = sock_path.to_string_lossy().into_owned();
     env_test_helpers::with_env_var_async("CONTENT_BACKEND_SOCKET", &sock_str, || async {
         let (handle, port) = spawn_run(cfg);
 

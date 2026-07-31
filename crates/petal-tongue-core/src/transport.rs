@@ -418,6 +418,10 @@ async fn connect_mesh_relay(
 mod tests {
     use super::*;
     use crate::test_fixtures::env_test_helpers;
+    use std::sync::Mutex;
+
+    /// Serializes tests that mutate the shared `MESH_RELAY_CONFIG` static.
+    static RELAY_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn serialize_uds() -> Result<(), Box<dyn std::error::Error>> {
@@ -547,6 +551,7 @@ mod tests {
 
     #[tokio::test]
     async fn connect_transport_mesh_relay_capability_not_discovered() {
+        let _guard = RELAY_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         clear_mesh_relay_config();
         let ep = TransportEndpoint::MeshRelay {
             peer_id: "test".into(),
@@ -563,6 +568,7 @@ mod tests {
     #[tokio::test]
     async fn connect_transport_mesh_relay_uses_discovered_config()
     -> Result<(), Box<dyn std::error::Error>> {
+        let _guard = RELAY_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         clear_mesh_relay_config();
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
             .await
@@ -595,6 +601,7 @@ mod tests {
 
     #[tokio::test]
     async fn connect_transport_mesh_relay_gateway_unreachable() {
+        let _guard = RELAY_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         clear_mesh_relay_config();
         set_mesh_relay_config(MeshRelayConfig {
             relay: TransportEndpoint::tcp("127.0.0.1", 1),
@@ -612,6 +619,7 @@ mod tests {
 
     #[test]
     fn mesh_relay_config_roundtrip() {
+        let _guard = RELAY_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         clear_mesh_relay_config();
         assert!(mesh_relay_config().is_none());
 

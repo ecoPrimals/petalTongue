@@ -1,7 +1,7 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 155k | **Date**: July 30, 2026 | **From**: petalTongue on eastGate
-**Posture**: **STABLE** — P2 divergences fixed. No active glacial goals owned.
+**Wave**: 155m | **Date**: July 30, 2026 | **From**: petalTongue on eastGate
+**Posture**: **STABLE** — Modern idiom evolution pass. Dependencies current. Zero debt.
 
 ---
 
@@ -19,6 +19,7 @@
 | Files | All production files < 800 LOC |
 | Edition | 2024 |
 | P2 fixes | `--family-id` propagation + `PRIMAL_BIND_MODE=tcp` semantics |
+| Idioms | Rust 2024 let-chains, zero redundant allocations, all deps current |
 
 ---
 

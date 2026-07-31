@@ -73,13 +73,13 @@ impl BiomeOsBackend {
             let socket_path =
                 runtime_dir.join(format!("{}.sock", crate::constants::biomeos_socket_name()));
             if socket_path.exists() {
-                return Ok(Self::new(socket_path.to_string_lossy().to_string()));
+                return Ok(Self::new(socket_path.to_string_lossy().into_owned()));
             }
         }
 
         let fallback = crate::constants::biomeos_legacy_socket();
         if fallback.exists() {
-            return Ok(Self::new(fallback.to_string_lossy().to_string()));
+            return Ok(Self::new(fallback.to_string_lossy().into_owned()));
         }
 
         Err(DiscoveryError::BackendUnavailable(

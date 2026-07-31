@@ -241,13 +241,13 @@ fn handle_end(
             }
         }
         TagEnd::Item => {
-            if let Some(StackFrame::ListItem(content)) = stack.pop() {
-                if let Some(StackFrame::List { items, .. }) = stack.last_mut() {
-                    items.push(ListItem {
-                        checked: None,
-                        content,
-                    });
-                }
+            if let Some(StackFrame::ListItem(content)) = stack.pop()
+                && let Some(StackFrame::List { items, .. }) = stack.last_mut()
+            {
+                items.push(ListItem {
+                    checked: None,
+                    content,
+                });
             }
         }
         TagEnd::BlockQuote(_) => {
