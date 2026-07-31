@@ -97,7 +97,7 @@ mod tests {
     async fn test_run_with_tcp_port_some() {
         let temp = tempfile::tempdir().expect("temp dir");
         let socket_path = temp.path().join("petaltongue-test-tcp.sock");
-        let socket_str = socket_path.to_string_lossy().to_string();
+        let socket_str = socket_path.to_string_lossy().into_owned();
 
         let result =
             env_test_helpers::with_env_var_async("PETALTONGUE_SOCKET", &socket_str, || async {
@@ -128,7 +128,7 @@ mod tests {
     async fn test_run_creates_server_with_valid_socket_path() {
         let temp = tempfile::tempdir().expect("temp dir");
         let socket_path = temp.path().join("petaltongue-test.sock");
-        let socket_str = socket_path.to_string_lossy().to_string();
+        let socket_str = socket_path.to_string_lossy().into_owned();
 
         let result =
             env_test_helpers::with_env_var_async("PETALTONGUE_SOCKET", &socket_str, || async {
@@ -160,7 +160,7 @@ mod tests {
     async fn test_run_with_cli_socket_override() {
         let temp = tempfile::tempdir().expect("temp dir");
         let socket_path = temp.path().join("petaltongue-cli-override.sock");
-        let socket_str = socket_path.to_string_lossy().to_string();
+        let socket_str = socket_path.to_string_lossy().into_owned();
 
         let data_service = Arc::new(DataService::new());
         let result = tokio::time::timeout(
@@ -256,7 +256,7 @@ mod tests {
     fn test_server_config_socket_path_from_env() {
         let temp = tempfile::tempdir().expect("temp dir");
         let custom_path = temp.path().join("custom.sock");
-        let path_str = custom_path.to_string_lossy().to_string();
+        let path_str = custom_path.to_string_lossy().into_owned();
 
         let path = env_test_helpers::with_env_var(
             "PETALTONGUE_SOCKET",

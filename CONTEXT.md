@@ -132,7 +132,7 @@ cargo test --workspace --all-features     # 6,755 workspace tests, ~85-90% cover
 
 ## Current State
 
-Wave 155k — STABLE / Provenance 7/7 Complete (July 30, 2026).
+Wave 155m — STABLE / Modern Idiom Evolution (July 30, 2026).
 
 petalTongue is **stable and feature-complete**. All P1 and P2 items resolved.
 NUCLEUS validated on 3 gates (westGate, blueGate, strandGate). P2 divergences
@@ -176,6 +176,7 @@ WebSocket JSON-RPC bridge on `/ws` (port 8080) and standalone (port 8765).
 
 | Wave/Date | Milestone |
 |-----------|-----------|
+| 155m (Jul 30) | STABLE — Modern idiom pass: let-chains, zero redundant alloc, deps current, test race fixed |
 | 155k (Jul 30) | STABLE — Provenance 7/7, P2 divergences fixed, 6,755 tests, zero clippy pedantic+nursery |
 | 155b (Jul 27) | genomeBin convergence, tracks converged |
 | 151c (Jul 26) | BTSP ClientHello shipped (12/13), attribute-based mesh topology, 6,589 tests |

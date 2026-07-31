@@ -6,6 +6,33 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 155m: Modern Idiom Evolution Pass (July 30, 2026)
+
+Deep debt evolution pass — eliminated redundant allocations, modernized to Rust 2024
+let-chains, fixed a pre-existing test race condition, and updated all semver-compatible
+dependencies.
+
+#### Changed
+- `to_string_lossy().to_string()` → `to_string_lossy().into_owned()` across 11 call sites
+  (eliminates redundant re-allocation when the `Cow<str>` is already owned)
+- Front-matter date parsing: tries `as_str()` / `as_datetime()` before fallback
+  (eliminates double allocation from `.to_string().trim_matches('"').to_string()`)
+- `map(|x| x.clone())` → `.cloned()` where type supports it
+- Nested `if let` patterns → Rust 2024 let-chains (content backend, markdown renderer)
+- Redundant closures → method references (`map(|d| d.to_string())` → `map(ToString::to_string)`)
+
+#### Fixed
+- Test race condition: `MESH_RELAY_CONFIG` tests now serialize via `RELAY_LOCK` mutex
+  (was intermittently failing under parallel test execution)
+
+#### Updated
+- 35 semver-compatible dependency bumps (clap 4.6.4, hyper 1.11, tokio, etc.)
+
+#### Metrics
+- 6,755 tests pass, 0 failures, 0 clippy warnings
+- Zero `to_string_lossy().to_string()` remaining in codebase
+- All production files < 800 LOC
+
 ### Wave 155k: P2 Divergence Fixes (July 30, 2026)
 
 Fixed two P2 divergences identified during westGate/blueGate NUCLEUS deployment.

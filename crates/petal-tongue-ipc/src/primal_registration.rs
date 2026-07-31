@@ -126,7 +126,7 @@ impl RegistrationClient {
                     let prefix = constants::LEGACY_TMP_PREFIX;
                     format!("{prefix}/biomeos/{socket_base}.sock")
                 },
-                |p| p.to_string_lossy().to_string(),
+                |p| p.to_string_lossy().into_owned(),
             )
         });
         Self {

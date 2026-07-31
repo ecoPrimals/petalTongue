@@ -42,9 +42,12 @@ pub fn parse_front_matter(toml_str: &str) -> PageMeta {
         .and_then(|v| v.as_str())
         .map(String::from);
 
-    let date = table
-        .get("date")
-        .map(|v| v.to_string().trim_matches('"').to_string());
+    let date = table.get("date").map(|v| {
+        v.as_str()
+            .map(String::from)
+            .or_else(|| v.as_datetime().map(ToString::to_string))
+            .unwrap_or_else(|| v.to_string().trim_matches('"').to_owned())
+    });
 
     let weight = table
         .get("weight")

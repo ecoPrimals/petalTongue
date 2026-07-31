@@ -385,7 +385,7 @@ fn discover_capability_socket(capability: &str) -> Option<String> {
             if path.extension().is_some_and(|ext| ext == "sock") {
                 let name = path.file_stem().unwrap_or_default().to_string_lossy();
                 if capability_matches_socket_name(capability, &name) {
-                    return Some(path.to_string_lossy().to_string());
+                    return Some(path.to_string_lossy().into_owned());
                 }
             }
         }

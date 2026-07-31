@@ -60,7 +60,7 @@ pub async fn announce_to_neural_api() {
     let socket = format!("{socket_dir}/biomeos/neural-api-{family}.sock");
 
     let uds_path = petal_tongue_ipc::socket_path::get_petaltongue_socket_path()
-        .map(|p| p.to_string_lossy().to_string())
+        .map(|p| p.to_string_lossy().into_owned())
         .unwrap_or_default();
 
     let payload = serde_json::json!({
