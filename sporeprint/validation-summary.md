@@ -61,7 +61,7 @@ springs = []
 
 - **Pure Rust**: `pure_rust = true`, `c_dependencies = []`
 - **musl targets**: `x86_64-unknown-linux-musl`, `aarch64-unknown-linux-musl`
-- **plasmidBin**: `manifest.toml` v1.6.6, `checksums.toml` (BLAKE3), `seed_fingerprint`
+- **plasmidBin**: `manifest.toml` v1.7.0, `checksums.toml` (BLAKE3), `seed_fingerprint`
 - **CI**: fmt, clippy (pedantic + nursery, `-D warnings`), test, doc — all green
 - **Stale socket hygiene**: unconditional `unlink()` before `bind()`, PID file,
   Drop cleanup

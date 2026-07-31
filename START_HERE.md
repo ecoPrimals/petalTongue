@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: July 30, 2026 (Wave 155k — P2 divergences fixed, deep debt zero warnings. 6,755 tests, zero clippy pedantic+nursery)
+**Updated**: July 30, 2026 (Wave 155m — Modern idiom evolution, deps current, 6,755 tests, zero clippy pedantic+nursery)
 
 ---
 
@@ -50,7 +50,7 @@ export BIOMEOS_SOCKET_DIR=/run/user/$(id -u)/biomeos  # DH-1: socket base dir
 
 # Transport (Wave 100 — launcher-injected, supersedes CLI args)
 export TRANSPORT_ENDPOINT='{"transport":"uds","path":"/run/user/1000/biomeos/petaltongue.sock"}'
-export PRIMAL_BIND_MODE=fallback  # UDS→TCP fallback for Android/SELinux
+export PRIMAL_BIND_MODE=fallback  # UDS→TCP fallback for Android/SELinux (also: tcp_only to skip UDS)
 
 # JH-0 MethodGate authorization mode (default: permissive)
 export PETALTONGUE_AUTH_MODE=enforced  # reject unauthenticated protected calls

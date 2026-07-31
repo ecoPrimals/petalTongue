@@ -29,14 +29,18 @@ transport — primals never self-bind in production.
 ---
 
 ### **PRIMAL_BIND_MODE**
-**Type**: String (`fallback`)  
+**Type**: String (`fallback` | `tcp` | `tcp_only` | `auto`)  
 **Default**: None (UDS-only, fatal on bind failure)  
 **Required**: No  
-**Example**: `PRIMAL_BIND_MODE=fallback`
+**Example**: `PRIMAL_BIND_MODE=tcp_only`
 
-When set to `fallback`, the UDS server detects `PermissionDenied` on socket bind
-and falls back to TCP on the ecosystem port (9900). Enables Android/SELinux
-deployments (grapheneGate) where UDS bind is denied.
+Transport selection mode for the IPC server:
+
+- **`fallback`** (or `auto`): Bind UDS first; if `PermissionDenied`, fall back to TCP on
+  the ecosystem port (9900). Enables Android/SELinux deployments (grapheneGate).
+- **`tcp`** / **`tcp_only`**: Skip UDS entirely and bind TCP only. Use when Unix sockets
+  are unavailable or undesired (containers, Windows, cross-gate proxying).
+- **Not set**: UDS-only; bind failure is fatal.
 
 ---
 
@@ -898,7 +902,7 @@ used on Android where standard XDG paths are unavailable.
 
 ---
 
-**Last Updated**: July 30, 2026 (Wave 155k — P2 divergences fixed, 6,755 tests, zero clippy pedantic+nursery)  
+**Last Updated**: July 30, 2026 (Wave 155m — Modern idiom evolution, 6,755 tests, zero clippy pedantic+nursery)  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 
