@@ -158,9 +158,11 @@ petalTongue owns **no glacial goals directly** but supports:
 
 ---
 
-*Wave 155g: petalTongue STABLE. BTSP 13/13. 6,605 tests. Deep debt evolution
-complete — topology evolved to runtime manifest discovery, large files refactored,
-production stubs wired, FFI hardened, all hardcoding eliminated. Infrastructure
-ready for G3 (Nest Atomic CAS), G5 (Chimera embedding pattern), G7 (cross-platform
-via WASM/platform crate). All P0/P1 audit items resolved. Remaining backlog is
-P2+ ecosystem dependencies.*
+*Wave 155m: petalTongue STABLE. BTSP 13/13. 6,755 tests. Modern idiom evolution
+pass — Rust 2024 let-chains, zero redundant allocations, all dependencies current,
+test race condition fixed. Deep debt zero across all dimensions: zero clippy warnings,
+zero markers, zero unsafe outside FFI, zero hardcoding, all files < 800 LOC.
+Infrastructure ready for G3 (Nest Atomic CAS), G5 (Chimera embedding pattern),
+G7 (cross-platform via WASM/platform crate). All P0/P1/P2 audit items resolved.
+Remaining backlog is ecosystem-level evolution paths (audio capability provider,
+sporePrint pipeline CLI integration).*

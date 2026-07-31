@@ -37,10 +37,10 @@ via `compile_faceted` for small-multiples output.
 | `render_binding_to_modality(binding, domain, modality)` | Same + modality | Rendered string |
 | `render_binding_with_thresholds(binding, domain, thresholds)` | Same + `ThresholdRange[]` JSON | SVG with status coloring |
 
-All 13 `DataBinding` channel types are supported: `timeseries`,
+All 14 `DataBinding` channel types are supported: `timeseries`,
 `distribution`, `bar`, `gauge`, `heatmap`, `scatter`, `scatter3d`,
 `fieldmap`, `spectrum`, `game_scene`, `soundscape`, `genome_track`,
-`circular_map`.
+`circular_map`, `color_grid`.
 
 ### Dashboard / batch rendering
 
