@@ -4,7 +4,7 @@
 //! All defaults are overridable via environment variables. Socket names use
 //! capability-based naming (no hardcoded primal identities).
 //!
-//! Runtime code should prefer [`NetworkDefaults::resolve()`], which applies
+//! Runtime code should prefer [`super::NetworkDefaults::resolve()`], which applies
 //! the priority chain: capability registry > environment > compile-time const.
 
 use super::env_or;
@@ -211,7 +211,7 @@ pub fn biomeos_legacy_socket_name() -> Cow<'static, str> {
 // Port helpers (env-driven with fallback)
 // ---------------------------------------------------------------------------
 
-/// Display backend port (env-driven with [`NetworkDefaults`] fallback).
+/// Display backend port (env-driven with [`super::NetworkDefaults`] fallback).
 /// Reads `DISPLAY_BACKEND_PORT`; falls back to resolved defaults.
 #[must_use]
 pub fn display_backend_port() -> u16 {

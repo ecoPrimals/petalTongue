@@ -9,8 +9,8 @@
 //! Default mode is [`Permissive`] (logs violations but allows all calls).
 //! Switch to [`Enforced`] via `PETALTONGUE_AUTH_MODE=enforced`.
 //!
-//! [`Public`]: self::MethodAccess::Public
-//! [`Protected`]: self::MethodAccess::Protected
+//! [`Public`]: method_gate::MethodAccess::Public
+//! [`Protected`]: method_gate::MethodAccess::Protected
 //! [`Permissive`]: self::EnforcementMode::Permissive
 //! [`Enforced`]: self::EnforcementMode::Enforced
 

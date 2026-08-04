@@ -38,7 +38,7 @@ pub struct CapabilityRegistry {
 }
 
 impl CapabilityRegistry {
-    /// Load registry from the default path ([`default_registry_path`]).
+    /// Load registry from the default path ([`Self::default_registry_path`]).
     ///
     /// # Errors
     ///
