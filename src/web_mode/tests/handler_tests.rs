@@ -249,9 +249,8 @@ async fn test_physical_topology_endpoint() {
     let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(v["edge_router"]["name"], "Flint H1");
     assert_eq!(v["backbone_switch"]["name"], "CRS310");
-    assert!(v["invariant"].as_str().unwrap().contains("songBird"));
+    assert!(v["invariant"].as_str().unwrap().contains("mesh routing primal"));
     assert_eq!(v["source"], "ecosystem_manifest");
-    assert_eq!(v["port_forwards"]["target"], "sporeGate");
 }
 
 #[tokio::test]

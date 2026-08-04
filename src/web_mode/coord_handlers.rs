@@ -38,7 +38,7 @@ fn load_manifest() -> serde_json::Value {
     if !path.exists() {
         return serde_json::json!({
             "status": "no_data",
-            "note": "No coordination data ingested yet. Run coord.ingest via nestGate JSON-RPC.",
+            "note": "No coordination data ingested yet. Run coord.ingest via content provider JSON-RPC.",
             "artifacts": {}, "heads": {}, "blurb_history": [], "frago_history": []
         });
     }
