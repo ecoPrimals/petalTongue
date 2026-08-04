@@ -1,7 +1,7 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 156b | **Date**: August 4, 2026 | **From**: petalTongue on eastGate
-**Posture**: **STABLE** — G19 PROVEN on ironGate (RTX 5070). Self-knowledge enforced. Zero P0/P1/P2.
+**Wave**: 156d | **Date**: August 4, 2026 | **From**: petalTongue on eastGate
+**Posture**: **STABLE** — G19 PROVEN on ironGate. TCP bind hardened. nestgate.io LIVE on mesh. Zero P0/P1/P2.
 
 ---
 
@@ -22,7 +22,10 @@
 | P2 fixes | `--family-id` propagation + `PRIMAL_BIND_MODE=tcp` semantics |
 | Idioms | Rust 2024 let-chains, zero redundant allocations, all deps current |
 | Self-knowledge | Zero hardcoded peer primal names in production code |
+| Config unity | Zero raw `FAMILY_ID` env reads outside canonical resolution |
+| TCP bind | Localhost-only by default (`--bind 0.0.0.0` for network exposure) |
 | G19 | **PROVEN** — scene push live on ironGate (RTX 5070), exp006 22/22 PASS |
+| nestgate.io | **LIVE** — petalTongue v1.7.0 serving on sporeGate via WG mesh |
 
 ---
 
@@ -138,10 +141,10 @@ petalTongue owns **no glacial goals directly** but supports:
 | From | Capability | Status |
 |------|-----------|--------|
 | nestGate | `site-manifest.json` in CAS dataset (for CasSource) | Awaiting Nest Atomic Phase 0 |
+| nestGate | nestgate.io content backend wiring (4 DIVs identified) | DIVs documented |
 | cellMembrane | Serve `StaticSite` output (path → bytes) | Pattern ready |
 | songBird | `mesh.peers` IPC → live `MeshTopologySource` impl | Pattern ready |
-| songBird | `PROXY_PATH` drawbridge routing | P2 |
-| sporeGate ops | Deploy composition on gate | P2 |
+| sporeGate ops | Deploy composition + dnsmasq for primal.eco (inner membrane) | P2 |
 
 ---
 
@@ -161,12 +164,14 @@ petalTongue owns **no glacial goals directly** but supports:
 
 ---
 
-*Wave 156b (Aug 4): petalTongue STABLE. G19 PROVEN on ironGate (RTX 5070, exp006 22/22 PASS).
+*Wave 156d (Aug 4): petalTongue STABLE. G19 PROVEN on ironGate (RTX 5070, exp006 22/22 PASS).
 BTSP 13/13. 6,755 tests. Zero P0/P1/P2. Zero clippy/doc warnings.
 Self-knowledge enforced: zero hardcoded peer primal names in production code.
-All inter-primal interactions via capability discovery. Dependencies current.
-All production files < 800 LOC. Zero debris.
-Scene push pipeline live — esotericWebb consuming on ironGate, footPrint next.
+TCP bind hardened (localhost-only default). Config unified (zero raw FAMILY_ID reads).
+nestgate.io LIVE on mesh (petalTongue v1.7.0 on sporeGate via WG).
+Dependencies current. All production files < 800 LOC. Zero debris.
+K-derm DNS separation 3/3 COMPLETE (primals.eco outer / nestgate.io peti / primal.eco inner).
+Scene push pipeline live — esotericWebb V30d consuming on ironGate, footPrint 628 tests next.
 Strategic evolution: GpuCompiler→coralReef→toadStool wiring, egui-wgpu backend,
 G53 live science exploration (GPS + QCD viz). All infrastructure present, waiting
 for consumers to mature the pipeline.*

@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: August 4, 2026 (Wave 156b — STABLE, G19 PROVEN, self-knowledge enforced, 6,755 tests, zero warnings)
+**Updated**: August 4, 2026 (Wave 156d — STABLE, TCP bind hardened, config unified, 6,755 tests, zero warnings)
 
 ---
 
