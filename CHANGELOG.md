@@ -6,6 +6,27 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 156b: Self-Knowledge Evolution (August 4, 2026)
+
+Hardcoding elimination pass — petalTongue now has zero knowledge of peer primals
+in production code. All inter-primal interactions are capability-discovered.
+
+#### Changed
+- CAS storage discovery: removed hardcoded `nestgate` paths and `NESTGATE_FAMILY_ID`
+  env var; replaced with ecosystem-standard `FAMILY_ID` and primal-agnostic discovery
+  (`COORD_STORAGE_PATH` > XDG > system-wide `/var/lib/ecoPrimals/coord-storage`)
+- Topology handler: "songBird capability-based mesh routing" → "mesh routing via
+  capability discovery (mesh.route)" — no peer primal names in production responses
+- Coordination handler: "nestGate JSON-RPC" → "content provider JSON-RPC"
+- Port-forward fallback: removed hardcoded "sporeGate" → "unknown"
+- Family ID resolution: unified 3 call sites to use canonical
+  `petal_tongue_ipc::socket_path::get_family_id()` (OnceLock CLI > env > "nat0")
+
+#### Metrics
+- Zero hardcoded primal names in production response payloads
+- Self-knowledge only: `PETALTONGUE` (self) + `BIOMEOS` (orchestration entry point)
+- 6,755 tests pass, 0 failures, 0 clippy warnings, 0 doc warnings
+
 ### Wave 156b: Documentation Hygiene (August 3, 2026)
 
 Zero-warning documentation pass across 19 crates.

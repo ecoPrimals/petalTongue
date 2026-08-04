@@ -1,6 +1,6 @@
-# Deep Debt Standards — Completed Wave 142b
+# Deep Debt Standards — Updated Wave 156b
 
-**Wave**: 142b | **Date**: July 16, 2026 | **For**: All primal teams (reference)
+**Wave**: 156b | **Date**: August 4, 2026 | **For**: All primal teams (reference)
 
 ---
 
@@ -47,6 +47,27 @@ Name explains purpose, not value. Module-scope or function-scope as appropriate.
 Static/fixture data that is deployment-specific (IPs, gate names, topology)
 belongs behind a feature flag. Consumers use traits, not statics.
 
+### Self-knowledge only (Wave 156b)
+
+Production code must not name peer primals. A primal knows only:
+- Its own name (e.g. `primal_names::PETALTONGUE`)
+- The ecosystem orchestration entry point (`primal_names::BIOMEOS` / Neural API socket)
+
+All other primal interactions use **capability discovery** at runtime.
+Error messages and API responses use capability-based language:
+- "content provider" not "nestGate"
+- "mesh routing via capability discovery" not "songBird"
+- "security provider" not "bearDog"
+
+Test code may use primal names for fixtures (behind `#[cfg(test)]`).
+Offline-topology feature may contain static names (feature-gated, default off).
+
+### Unified configuration resolution
+
+For ecosystem-standard config values (family ID, socket dirs), use the
+canonical resolution function rather than raw `std::env::var()` with ad-hoc
+defaults. This ensures CLI overrides (OnceLock) take precedence consistently.
+
 ---
 
 ## Verification Commands
@@ -71,4 +92,14 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ---
 
-*Wave 142b: petalTongue achieves all deep debt standards. Reference for other primals.*
+```bash
+# Self-knowledge audit
+rg '"songBird|"nestGate|"bearDog|"toadStool|"coralReef' --type rust \
+  -g '!*test*' -g '!*_tests*' -g '!*nucleus.rs'
+# Should return empty (only test fixtures and offline-topology feature)
+```
+
+---
+
+*Wave 156b: petalTongue achieves all deep debt standards including self-knowledge.
+Reference for all primal teams.*

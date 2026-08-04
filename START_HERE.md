@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: August 3, 2026 (Wave 156b — STABLE, G19 PROVEN on ironGate, 6,755 tests, zero clippy/doc warnings)
+**Updated**: August 4, 2026 (Wave 156b — STABLE, G19 PROVEN, self-knowledge enforced, 6,755 tests, zero warnings)
 
 ---
 
