@@ -113,9 +113,7 @@ impl ContentBackendClient {
         // Tier 3: socket-dir convention
         let provider = std::env::var(petal_tongue_core::constants::CONTENT_BACKEND_PROVIDER)
             .unwrap_or_else(|_| "content-provider".to_owned());
-        let family = std::env::var(petal_tongue_core::constants::FAMILY_ID)
-            .or_else(|_| std::env::var(petal_tongue_core::constants::PETALTONGUE_FAMILY_ID))
-            .unwrap_or_else(|_| "nat0".to_owned());
+        let family = petal_tongue_ipc::socket_path::get_family_id();
         let dir = petal_tongue_core::constants::resolve_biomeos_socket_dir();
         let convention_sock = dir.join(format!("{provider}-{family}.sock"));
         if convention_sock.exists() {
@@ -140,10 +138,8 @@ impl ContentBackendClient {
     async fn discover_content_endpoint() -> Option<ContentEndpoint> {
         use petal_tongue_discovery::DiscoveryServiceClient;
 
-        let family = std::env::var(petal_tongue_core::constants::FAMILY_ID)
-            .or_else(|_| std::env::var(petal_tongue_core::constants::PETALTONGUE_FAMILY_ID))
-            .ok();
-        let client = DiscoveryServiceClient::discover(family.as_deref())
+        let family = petal_tongue_ipc::socket_path::get_family_id();
+        let client = DiscoveryServiceClient::discover(Some(family.as_str()))
             .map_err(|e| tracing::debug!("content discovery service: {e}"))
             .ok()?;
         let primals = client
