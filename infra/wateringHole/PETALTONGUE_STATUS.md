@@ -13,6 +13,7 @@
 | Crates | 19 workspace members |
 | Tests | 6,755 passing, 0 failures |
 | Clippy | Zero warnings (pedantic + nursery, all targets) |
+| Docs | Zero warnings (`cargo doc --workspace --all-features --no-deps`) |
 | Unsafe | Confined to `petal-tongue-platform/src/ffi.rs` (15 usages, all SAFETY-documented) |
 | BTSP | **13/13** (ClientHello + server-side, full strict mode) |
 | Cross-arch | x86_64-linux, aarch64-linux, aarch64-android, x86_64-windows |
@@ -160,7 +161,8 @@ petalTongue owns **no glacial goals directly** but supports:
 ---
 
 *Wave 156b: petalTongue STABLE. G19 PROVEN on ironGate (RTX 5070, exp006 22/22 PASS).
-BTSP 13/13. 6,755 tests. Zero P0/P1/P2. Dependencies current (17 patch bumps applied).
+BTSP 13/13. 6,755 tests. Zero P0/P1/P2. Zero clippy/doc warnings.
+Dependencies current. All production files < 800 LOC. Zero debris.
 Scene push pipeline live — esotericWebb consuming on ironGate, footPrint next.
 Strategic evolution: GpuCompiler→coralReef→toadStool wiring, egui-wgpu backend,
 G53 live science exploration (GPS + QCD viz). All infrastructure present, waiting

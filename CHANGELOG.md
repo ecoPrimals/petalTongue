@@ -6,6 +6,23 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 156b: Documentation Hygiene (August 3, 2026)
+
+Zero-warning documentation pass across 19 crates.
+
+#### Fixed
+- 9 broken intra-doc links across 3 crates (`petal-tongue-core`, `petal-tongue-ipc`,
+  `petal-tongue-platform`): scope-qualified `Self::`, `super::`, cross-crate paths,
+  removed link syntax from glob patterns
+- Orphaned sentence fragments in `CONTEXT.md` current state section
+- Stale BTSP count (12/13 → 13/13) and test count (6,730 → 6,755) in docs
+
+#### Metrics
+- 6,755 tests pass, 0 failures, 0 clippy warnings, 0 doc warnings
+- Zero debris (no .bak/.tmp/.swp/.log/~ files)
+- All dependencies at latest semver-compatible versions
+- `cargo audit`: zero vulnerabilities
+
 ### Wave 155m: Modern Idiom Evolution Pass (July 30, 2026)
 
 Deep debt evolution pass — eliminated redundant allocations, modernized to Rust 2024
