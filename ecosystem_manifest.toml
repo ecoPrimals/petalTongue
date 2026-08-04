@@ -3,17 +3,17 @@
 #
 # This manifest describes the ecosystem topology from petalTongue's perspective.
 # It is used for visualization layout, dashboard composition, and capability routing.
-# Updated per Wave 156b (G19 PROVEN on ironGate, ~123K+ tests, 12/13 GREEN, ZERO P0/P1/P2).
+# Updated per Wave 156d (K-derm DNS separation COMPLETE, ~135K+ tests, 13/13 GREEN, ZERO P0/P1/P2).
 
 [ecosystem]
 name = "ecoPrimals"
 wave = 156
 nucleus_count = 14
 atomics = 4
-posture = "G19 PROVEN — ironGate downstream host LIVE, ~123K+ tests, 12/13 GREEN, ZERO P0/P1/P2"
+posture = "K-DERM DNS SEPARATION COMPLETE — 3/3 layers live, ~135K+ tests, 13/13 GREEN, ZERO P0/P1/P2"
 glacial_criteria_clear = 13
 compositions = ["footPrint", "tideGlass", "esotericWebb"]
-live_surfaces = ["primals.eco", "primals.eco/footprint/", "live.primals.eco"]
+live_surfaces = ["primals.eco", "nestgate.io", "primals.eco/footprint/", "live.primals.eco"]
 repos = 43
 depot_binaries = 56
 depot_architectures = 4
@@ -50,7 +50,7 @@ lan_ip = "192.168.4.237"
 wg_ip = "10.13.37.7"
 enrollment = "enrolled"
 nucleus_count = 12
-role = "GPU compute + ABG (RTX 5070, JupyterHub)"
+role = "Downstream host + GPU compute (RTX 5070, esotericWebb, footPrint)"
 kderm_layer = "Cytoplasm"
 gpu_target = "sm_70"
 gpu_device = "RTX 5070"
@@ -106,7 +106,7 @@ platform = "x86_64-pc-windows-msvc"
 
 [gates.westGate]
 enrollment = "offline"
-role = "ZFS cold storage (AlphaFold data)"
+role = "Data NAS (519 GB / 130 datasets, ZFS, tideGlass + science springs)"
 
 [compute]
 primary_gate = "ironGate"
