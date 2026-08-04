@@ -48,10 +48,10 @@ impl DiscoveryServiceClient {
             warn!("DISCOVERY_SOCKET set but not found: {explicit}");
         }
 
-        let family = family_id
-            .map(String::from)
-            .or_else(|| std::env::var("FAMILY_ID").ok())
-            .unwrap_or_else(|| "nat0".to_owned());
+        let family = family_id.map_or_else(
+            petal_tongue_ipc::socket_path::get_family_id,
+            String::from,
+        );
 
         let socket_base = petal_tongue_core::constants::discovery_service_socket_name();
         let socket_name = format!("{socket_base}-{family}.sock");

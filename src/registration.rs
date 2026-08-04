@@ -53,8 +53,7 @@ pub async fn announce_to_neural_api() {
     use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
     use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
-    let family = std::env::var(petal_tongue_core::constants::FAMILY_ID)
-        .unwrap_or_else(|_| "nat0".to_owned());
+    let family = petal_tongue_ipc::socket_path::get_family_id();
     let socket_dir = std::env::var(petal_tongue_core::constants::XDG_RUNTIME_DIR)
         .unwrap_or_else(|_| petal_tongue_core::constants::LEGACY_TMP_PREFIX.to_owned());
     let socket = format!("{socket_dir}/biomeos/neural-api-{family}.sock");

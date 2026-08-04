@@ -512,7 +512,7 @@ fn test_resolve_bind_precedence() {
     );
     assert_eq!(
         resolve_bind(None, Some(9000), || "default".into()),
-        "0.0.0.0:9000"
+        "127.0.0.1:9000"
     );
     assert_eq!(
         resolve_bind(None, None, || "0.0.0.0:8080".into()),

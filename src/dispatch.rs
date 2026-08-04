@@ -212,7 +212,10 @@ async fn dispatch_web(
     web_mode::run(cfg, data_service).await
 }
 
-/// Resolve bind address from `--bind` (explicit), `--port` (`UniBin` standard), or config default.
+/// Resolve bind address from `--bind` (explicit), `--port` (localhost-only), or config default.
+///
+/// When only `--port` is provided, binds to `127.0.0.1` (secure default).
+/// Use `--bind 0.0.0.0` explicitly to expose on all interfaces.
 pub fn resolve_bind(
     bind: Option<String>,
     port: Option<u16>,
@@ -222,7 +225,7 @@ pub fn resolve_bind(
         return b;
     }
     if let Some(p) = port {
-        return format!("0.0.0.0:{p}");
+        return format!("127.0.0.1:{p}");
     }
     default()
 }
