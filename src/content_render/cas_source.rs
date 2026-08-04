@@ -97,8 +97,7 @@ impl CasSource {
     #[must_use]
     pub fn from_env() -> Self {
         let storage_base = resolve_storage_base();
-        let family =
-            std::env::var("NESTGATE_FAMILY_ID").unwrap_or_else(|_| String::from("default"));
+        let family = std::env::var("FAMILY_ID").unwrap_or_else(|_| String::from("default"));
         let manifest_path = storage_base
             .join("datasets")
             .join(&family)
@@ -186,7 +185,14 @@ impl ContentSource for CasSource {
     }
 }
 
-fn resolve_storage_base() -> PathBuf {
+/// Resolve the CAS/coordination storage base directory.
+///
+/// Discovery order (capability-based, zero primal-specific knowledge):
+/// 1. `COORD_STORAGE_PATH` env (explicit configuration — highest priority)
+/// 2. `$XDG_DATA_HOME/ecoPrimals/coord-storage` (XDG standard)
+/// 3. `$HOME/.local/share/ecoPrimals/coord-storage` (XDG fallback)
+/// 4. `/var/lib/ecoPrimals/coord-storage` (system-wide default)
+pub fn resolve_storage_base() -> PathBuf {
     if let Ok(base) = std::env::var("COORD_STORAGE_PATH") {
         return PathBuf::from(base);
     }
@@ -203,23 +209,9 @@ fn resolve_storage_base() -> PathBuf {
         if eco_path.exists() {
             return eco_path;
         }
-
-        let legacy = PathBuf::from(home).join(".local/share/nestgate/storage");
-        if legacy.exists() {
-            tracing::debug!(
-                path = %legacy.display(),
-                "using legacy nestGate coordination storage path"
-            );
-            return legacy;
-        }
     }
 
-    let legacy_system = PathBuf::from("/var/lib/nestgate/storage");
-    tracing::debug!(
-        path = %legacy_system.display(),
-        "using legacy nestGate coordination storage path"
-    );
-    legacy_system
+    PathBuf::from("/var/lib/ecoPrimals/coord-storage")
 }
 
 fn cas_blob_path(storage_base: &Path, hash: &str) -> PathBuf {

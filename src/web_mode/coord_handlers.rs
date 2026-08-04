@@ -4,55 +4,18 @@
 //! These handlers expose the coordination manifest (blurbs, waves, heads,
 //! FRAGOs, topology, depot) via HTTP API. The data source is discovered
 //! at runtime via `COORD_STORAGE_PATH` env or XDG defaults.
+//!
+//! Storage base resolution is shared with the CAS content pipeline
+//! ([`crate::content_render::resolve_storage_base`]).
 
 use axum::{Json, response::IntoResponse};
 
-/// Resolve the coordination/CAS storage base directory.
-///
-/// Discovery order (capability-based, no hardcoding):
-/// 1. `COORD_STORAGE_PATH` env (explicit configuration)
-/// 2. `$XDG_DATA_HOME/ecoPrimals/coord-storage` (if exists)
-/// 3. `$HOME/.local/share/ecoPrimals/coord-storage` (if exists)
-/// 4. Legacy nestGate paths (last resort)
 fn storage_base() -> std::path::PathBuf {
-    if let Ok(base) = std::env::var("COORD_STORAGE_PATH") {
-        return std::path::PathBuf::from(base);
-    }
-
-    if let Ok(xdg) = std::env::var("XDG_DATA_HOME") {
-        let eco_path = std::path::PathBuf::from(xdg).join("ecoPrimals/coord-storage");
-        if eco_path.exists() {
-            return eco_path;
-        }
-    }
-
-    if let Ok(home) = std::env::var("HOME") {
-        let eco_path =
-            std::path::PathBuf::from(&home).join(".local/share/ecoPrimals/coord-storage");
-        if eco_path.exists() {
-            return eco_path;
-        }
-
-        let legacy = std::path::PathBuf::from(home).join(".local/share/nestgate/storage");
-        if legacy.exists() {
-            tracing::debug!(
-                path = %legacy.display(),
-                "using legacy nestGate coordination storage path"
-            );
-            return legacy;
-        }
-    }
-
-    let legacy_system = std::path::PathBuf::from("/var/lib/nestgate/storage");
-    tracing::debug!(
-        path = %legacy_system.display(),
-        "using legacy nestGate coordination storage path"
-    );
-    legacy_system
+    crate::content_render::resolve_storage_base()
 }
 
 fn manifest_path() -> std::path::PathBuf {
-    let family = std::env::var("NESTGATE_FAMILY_ID").unwrap_or_else(|_| String::from("default"));
+    let family = std::env::var("FAMILY_ID").unwrap_or_else(|_| String::from("default"));
     storage_base()
         .join("datasets")
         .join(family)
@@ -61,7 +24,7 @@ fn manifest_path() -> std::path::PathBuf {
 }
 
 fn artifact_path(hash: &str) -> std::path::PathBuf {
-    let family = std::env::var("NESTGATE_FAMILY_ID").unwrap_or_else(|_| String::from("default"));
+    let family = std::env::var("FAMILY_ID").unwrap_or_else(|_| String::from("default"));
     storage_base()
         .join("datasets")
         .join(family)

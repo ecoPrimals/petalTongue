@@ -19,7 +19,7 @@ mod shortcodes;
 mod site;
 
 #[allow(unused_imports)]
-pub use cas_source::CasSource;
+pub use cas_source::{CasSource, resolve_storage_base};
 pub use filesystem_source::FilesystemSource;
 pub use front_matter::{parse_front_matter, split_front_matter};
 pub use markdown::compile_markdown;
