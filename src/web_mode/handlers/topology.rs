@@ -198,7 +198,7 @@ pub async fn physical_topology_handler() -> Json<serde_json::Value> {
         .and_then(|p| p.get("port_forwards"))
         .and_then(|pf| pf.get("target"))
         .and_then(toml::Value::as_str)
-        .unwrap_or("sporeGate");
+        .unwrap_or("unknown");
 
     let port_fwd_services: Vec<&str> = phys
         .and_then(|p| p.get("port_forwards"))
@@ -231,9 +231,9 @@ pub async fn physical_topology_handler() -> Json<serde_json::Value> {
         },
         "abg_compute": {
             "entry_point": public_domain,
-            "routing": "songBird capability-based mesh routing",
+            "routing": "mesh routing via capability discovery (mesh.route)",
         },
-        "invariant": "songBird IS the port solver. Services bind to localhost. No ports exposed externally. Mesh handles all routing.",
+        "invariant": "The mesh routing primal solves ports. Services bind to localhost. No ports exposed externally. Mesh handles all routing.",
         "source": "ecosystem_manifest",
     }))
 }
