@@ -191,7 +191,7 @@ impl EmbeddedRuntime {
         }
     }
 
-    /// Render a data binding to WebGL draw commands (JSON-serialized [`WebGlScene`]).
+    /// Render a data binding to WebGL draw commands (JSON-serialized [`petal_tongue_scene::modality::webgl::WebGlScene`]).
     ///
     /// # Errors
     /// Returns error if the runtime is not running or binding JSON is invalid.

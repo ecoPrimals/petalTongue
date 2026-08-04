@@ -13,7 +13,7 @@ use super::network::{
 
 /// Runtime-resolved network defaults with capability-registry awareness.
 ///
-/// Compile-time [`DEFAULT_*`] constants remain the ultimate fallback.
+/// Compile-time `DEFAULT_*` constants remain the ultimate fallback.
 /// Prefer [`Self::resolve()`] in runtime code over reading constants directly.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NetworkDefaults {
