@@ -1,7 +1,7 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 156b | **Date**: August 3, 2026 | **From**: petalTongue on eastGate
-**Posture**: **STABLE** — G19 PROVEN on ironGate (RTX 5070). Zero P0/P1/P2.
+**Wave**: 156b | **Date**: August 4, 2026 | **From**: petalTongue on eastGate
+**Posture**: **STABLE** — G19 PROVEN on ironGate (RTX 5070). Self-knowledge enforced. Zero P0/P1/P2.
 
 ---
 
@@ -21,6 +21,7 @@
 | Edition | 2024 |
 | P2 fixes | `--family-id` propagation + `PRIMAL_BIND_MODE=tcp` semantics |
 | Idioms | Rust 2024 let-chains, zero redundant allocations, all deps current |
+| Self-knowledge | Zero hardcoded peer primal names in production code |
 | G19 | **PROVEN** — scene push live on ironGate (RTX 5070), exp006 22/22 PASS |
 
 ---
@@ -114,7 +115,7 @@ Sovereignty Evolution Tier 1: replace Zola with petalTongue rendering.
 | Item | Priority | Notes |
 |------|----------|-------|
 | `eframe` as opt-in for server builds | P3 | Already feature-gated behind `ui` |
-| Live `MeshTopologySource` via songBird | P2 | Trait ready, awaiting songBird adapter |
+| Live `MeshTopologySource` via mesh routing capability | P2 | Trait ready, awaiting mesh provider adapter |
 | Nest Atomic CAS integration | P2 | `CasSource` ready, blocked on G3 |
 
 ---
@@ -160,9 +161,11 @@ petalTongue owns **no glacial goals directly** but supports:
 
 ---
 
-*Wave 156b: petalTongue STABLE. G19 PROVEN on ironGate (RTX 5070, exp006 22/22 PASS).
+*Wave 156b (Aug 4): petalTongue STABLE. G19 PROVEN on ironGate (RTX 5070, exp006 22/22 PASS).
 BTSP 13/13. 6,755 tests. Zero P0/P1/P2. Zero clippy/doc warnings.
-Dependencies current. All production files < 800 LOC. Zero debris.
+Self-knowledge enforced: zero hardcoded peer primal names in production code.
+All inter-primal interactions via capability discovery. Dependencies current.
+All production files < 800 LOC. Zero debris.
 Scene push pipeline live — esotericWebb consuming on ironGate, footPrint next.
 Strategic evolution: GpuCompiler→coralReef→toadStool wiring, egui-wgpu backend,
 G53 live science exploration (GPS + QCD viz). All infrastructure present, waiting

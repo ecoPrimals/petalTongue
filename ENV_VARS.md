@@ -902,7 +902,7 @@ used on Android where standard XDG paths are unavailable.
 
 ---
 
-**Last Updated**: August 3, 2026 (Wave 156b — STABLE, G19 PROVEN, 6,755 tests, zero clippy/doc warnings)  
+**Last Updated**: August 4, 2026 (Wave 156b — STABLE, G19 PROVEN, self-knowledge enforced, 6,755 tests, zero warnings)  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 
