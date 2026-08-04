@@ -6,6 +6,23 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 156d: Security Hardening + Config Unification (August 4, 2026)
+
+TCP bind security hardening and complete family ID resolution unification.
+
+#### Changed
+- TCP bind default: `0.0.0.0` → `127.0.0.1` when `--port` given without explicit
+  `--bind`. Prevents accidental network exposure. Use `--bind 0.0.0.0` explicitly
+  for Docker/cross-gate deployments.
+- Family ID resolution: unified ALL remaining raw `std::env::var("FAMILY_ID")` call
+  sites (registration.rs, content_backend.rs, neural_api_provider.rs,
+  discovery_service_client.rs) to use canonical `get_family_id()`.
+- Zero raw FAMILY_ID reads remain outside canonical resolution functions.
+
+#### Metrics
+- 6,755 tests pass, 0 failures, 0 clippy warnings, 0 doc warnings
+- Zero raw env reads outside canonical path (OnceLock CLI > env > "nat0")
+
 ### Wave 156b: Self-Knowledge Evolution (August 4, 2026)
 
 Hardcoding elimination pass — petalTongue now has zero knowledge of peer primals

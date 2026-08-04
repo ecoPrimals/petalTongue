@@ -132,7 +132,7 @@ cargo test --workspace --all-features     # 6,755 workspace tests, ~85-90% cover
 
 ## Current State
 
-Wave 156b — STABLE / G19 PROVEN on ironGate (August 4, 2026).
+Wave 156d — STABLE / G19 PROVEN on ironGate (August 4, 2026).
 
 petalTongue is **stable and feature-complete**. G19 live render pipeline PROVEN
 on ironGate (RTX 5070) — scene push firing via `visualization.render.scene`
@@ -140,6 +140,7 @@ on ironGate (RTX 5070) — scene push firing via `visualization.render.scene`
 (westGate, blueGate, strandGate, ironGate). Zero P0/P1/P2 across ecosystem.
 No glacial goals directly owned — serves as infrastructure for other teams.
 Self-knowledge fully enforced — zero hardcoded peer primal names in production code.
+TCP bind hardened (localhost-only by default). nestgate.io LIVE on mesh.
 
 **BTSP**: 13/13 strict mode (ClientHello + server-side). Wired into outbound
 `primal.announce` and `content.resolve` connections (HMAC-SHA256).
@@ -177,6 +178,7 @@ WebSocket JSON-RPC bridge on `/ws` (port 8080) and standalone (port 8765).
 
 | Wave/Date | Milestone |
 |-----------|-----------|
+| 156d (Aug 4) | STABLE — TCP bind hardened, family ID unified, nestgate.io LIVE on mesh, K-derm 3/3 |
 | 156b (Aug 4) | STABLE — G19 PROVEN, self-knowledge enforced (zero peer names in prod), deps current |
 | 155m (Jul 30) | STABLE — Modern idiom pass: let-chains, zero redundant alloc, deps current, test race fixed |
 | 155k (Jul 30) | STABLE — Provenance 7/7, P2 divergences fixed, 6,755 tests, zero clippy pedantic+nursery |
