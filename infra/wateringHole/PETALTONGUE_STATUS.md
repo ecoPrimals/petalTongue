@@ -1,7 +1,7 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 155m | **Date**: July 30, 2026 | **From**: petalTongue on eastGate
-**Posture**: **STABLE** — Modern idiom evolution pass. Dependencies current. Zero debt.
+**Wave**: 156b | **Date**: August 3, 2026 | **From**: petalTongue on eastGate
+**Posture**: **STABLE** — G19 PROVEN on ironGate (RTX 5070). Zero P0/P1/P2.
 
 ---
 
@@ -20,6 +20,7 @@
 | Edition | 2024 |
 | P2 fixes | `--family-id` propagation + `PRIMAL_BIND_MODE=tcp` semantics |
 | Idioms | Rust 2024 let-chains, zero redundant allocations, all deps current |
+| G19 | **PROVEN** — scene push live on ironGate (RTX 5070), exp006 22/22 PASS |
 
 ---
 
@@ -158,11 +159,9 @@ petalTongue owns **no glacial goals directly** but supports:
 
 ---
 
-*Wave 155m: petalTongue STABLE. BTSP 13/13. 6,755 tests. Modern idiom evolution
-pass — Rust 2024 let-chains, zero redundant allocations, all dependencies current,
-test race condition fixed. Deep debt zero across all dimensions: zero clippy warnings,
-zero markers, zero unsafe outside FFI, zero hardcoding, all files < 800 LOC.
-Infrastructure ready for G3 (Nest Atomic CAS), G5 (Chimera embedding pattern),
-G7 (cross-platform via WASM/platform crate). All P0/P1/P2 audit items resolved.
-Remaining backlog is ecosystem-level evolution paths (audio capability provider,
-sporePrint pipeline CLI integration).*
+*Wave 156b: petalTongue STABLE. G19 PROVEN on ironGate (RTX 5070, exp006 22/22 PASS).
+BTSP 13/13. 6,755 tests. Zero P0/P1/P2. Dependencies current (17 patch bumps applied).
+Scene push pipeline live — esotericWebb consuming on ironGate, footPrint next.
+Strategic evolution: GpuCompiler→coralReef→toadStool wiring, egui-wgpu backend,
+G53 live science exploration (GPS + QCD viz). All infrastructure present, waiting
+for consumers to mature the pipeline.*

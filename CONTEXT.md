@@ -132,10 +132,12 @@ cargo test --workspace --all-features     # 6,755 workspace tests, ~85-90% cover
 
 ## Current State
 
-Wave 155m — STABLE / Modern Idiom Evolution (July 30, 2026).
+Wave 156b — STABLE / G19 PROVEN on ironGate (August 3, 2026).
 
-petalTongue is **stable and feature-complete**. All P1 and P2 items resolved.
-NUCLEUS validated on 3 gates (westGate, blueGate, strandGate). P2 divergences
+petalTongue is **stable and feature-complete**. G19 live render pipeline PROVEN
+on ironGate (RTX 5070) — scene push firing via `visualization.render.scene`
+(exp006 22/22 PASS). All P1 and P2 items resolved. NUCLEUS validated on 4 gates
+(westGate, blueGate, strandGate, ironGate). Zero P0/P1/P2 across ecosystem.
 fixed (`--family-id` propagation, `PRIMAL_BIND_MODE=tcp` semantics).
 No glacial goals directly owned — serves as infrastructure for other teams.
 for sporePrint, WASM exports for cross-platform embedding).
@@ -176,6 +178,7 @@ WebSocket JSON-RPC bridge on `/ws` (port 8080) and standalone (port 8765).
 
 | Wave/Date | Milestone |
 |-----------|-----------|
+| 156b (Aug 3) | STABLE — G19 PROVEN on ironGate (RTX 5070), scene push 22/22, deps current |
 | 155m (Jul 30) | STABLE — Modern idiom pass: let-chains, zero redundant alloc, deps current, test race fixed |
 | 155k (Jul 30) | STABLE — Provenance 7/7, P2 divergences fixed, 6,755 tests, zero clippy pedantic+nursery |
 | 155b (Jul 27) | genomeBin convergence, tracks converged |
@@ -205,13 +208,14 @@ Full per-wave changelogs preserved in git history and `infra/wateringHole/` AARs
 ### Remaining Backlog
 
 - Audio backend wire protocols (via `audio.play` capability discovery)
-- Overlay mode (display capability Phase 2)
-- `crypto.sign` delegation to security provider (currently local BLAKE3)
-- sporePrint full deployment: cellMembrane serving of petalTongue-generated StaticSite output
+- `GpuCompiler` → coralReef → toadStool wiring for native WGSL shader execution
+- `egui-wgpu` backend alongside glow (enables custom render passes for science viz)
+- sporePrint full deployment: cellMembrane serving of petalTongue-generated StaticSite
 - Nest Atomic CAS integration: live `CasSource` connected to nestGate (blocked on G3)
+- G53 maturation: footPrint GPS visualization + esotericWebb lattice viz via petalTongue
 
-All items are P2+ and depend on other primals' glacial goal progress.
-None are blockers for petalTongue's stable operation.
+All items are P2+ strategic evolution paths. None are blockers for petalTongue's
+stable operation. G19 is PROVEN — the live render pipeline works on downstream hosts.
 
 ## Stadial Readiness (May 17, 2026)
 

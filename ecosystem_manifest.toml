@@ -3,16 +3,16 @@
 #
 # This manifest describes the ecosystem topology from petalTongue's perspective.
 # It is used for visualization layout, dashboard composition, and capability routing.
-# Updated per Wave 155k (Provenance 7/7 complete, 3 NUCLEUS gates, Sovereign CI LIVE).
+# Updated per Wave 156b (G19 PROVEN on ironGate, ~123K+ tests, 12/13 GREEN, ZERO P0/P1/P2).
 
 [ecosystem]
 name = "ecoPrimals"
-wave = 155
+wave = 156
 nucleus_count = 14
 atomics = 4
-posture = "BTSP strict 13/13 — Provenance 7/7 COMPLETE, 3 NUCLEUS gates, Sovereign CI LIVE"
+posture = "G19 PROVEN — ironGate downstream host LIVE, ~123K+ tests, 12/13 GREEN, ZERO P0/P1/P2"
 glacial_criteria_clear = 13
-compositions = ["footPrint", "tideGlass"]
+compositions = ["footPrint", "tideGlass", "esotericWebb"]
 live_surfaces = ["primals.eco", "primals.eco/footprint/", "live.primals.eco"]
 repos = 43
 depot_binaries = 56
