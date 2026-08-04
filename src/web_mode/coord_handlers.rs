@@ -15,7 +15,7 @@ fn storage_base() -> std::path::PathBuf {
 }
 
 fn manifest_path() -> std::path::PathBuf {
-    let family = std::env::var("FAMILY_ID").unwrap_or_else(|_| String::from("default"));
+    let family = petal_tongue_ipc::socket_path::get_family_id();
     storage_base()
         .join("datasets")
         .join(family)
@@ -24,7 +24,7 @@ fn manifest_path() -> std::path::PathBuf {
 }
 
 fn artifact_path(hash: &str) -> std::path::PathBuf {
-    let family = std::env::var("FAMILY_ID").unwrap_or_else(|_| String::from("default"));
+    let family = petal_tongue_ipc::socket_path::get_family_id();
     storage_base()
         .join("datasets")
         .join(family)

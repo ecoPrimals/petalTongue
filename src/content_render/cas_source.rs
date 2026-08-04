@@ -97,7 +97,7 @@ impl CasSource {
     #[must_use]
     pub fn from_env() -> Self {
         let storage_base = resolve_storage_base();
-        let family = std::env::var("FAMILY_ID").unwrap_or_else(|_| String::from("default"));
+        let family = petal_tongue_ipc::socket_path::get_family_id();
         let manifest_path = storage_base
             .join("datasets")
             .join(&family)
