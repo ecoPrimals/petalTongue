@@ -62,7 +62,7 @@ JSON-line framing, `btsp.session.create`, `btsp.session.verify`, and
 ChaCha20-Poly1305 AEAD encrypted frame I/O after negotiate; HKDF-SHA256
 directional key derivation; 13/13 ecosystem parity. **BTSP ClientHello**
 (Wave 151c): client-side 4-step handshake for authenticated outbound
-connections (HMAC-SHA256 challenge-response). 12/13 primals compliant.
+connections (HMAC-SHA256 challenge-response). 13/13 primals compliant.
 
 JH-0 MethodGate: pre-dispatch authorization on all JSON-RPC calls.
 Public methods (`health.*`, `identity.get`, `capabilities.list`,
@@ -138,9 +138,7 @@ petalTongue is **stable and feature-complete**. G19 live render pipeline PROVEN
 on ironGate (RTX 5070) — scene push firing via `visualization.render.scene`
 (exp006 22/22 PASS). All P1 and P2 items resolved. NUCLEUS validated on 4 gates
 (westGate, blueGate, strandGate, ironGate). Zero P0/P1/P2 across ecosystem.
-fixed (`--family-id` propagation, `PRIMAL_BIND_MODE=tcp` semantics).
 No glacial goals directly owned — serves as infrastructure for other teams.
-for sporePrint, WASM exports for cross-platform embedding).
 
 **BTSP**: 13/13 strict mode (ClientHello + server-side). Wired into outbound
 `primal.announce` and `content.resolve` connections (HMAC-SHA256).
@@ -170,7 +168,7 @@ Android/iOS/desktop host apps. C-FFI surface with SAFETY-documented unsafe block
 WebSocket JSON-RPC bridge on `/ws` (port 8080) and standalone (port 8765).
 
 **Deep debt**: Zero production `unwrap()`, zero TODO/FIXME/HACK, zero clippy warnings
-(pedantic+nursery, all targets), all files <800 LOC, 6,730+ tests passing.
+(pedantic+nursery, all targets), zero doc warnings, all files <800 LOC, 6,755 tests passing.
 
 **Cross-architecture**: x86_64-linux, aarch64-linux, aarch64-android, x86_64-windows.
 

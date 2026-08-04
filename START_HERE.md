@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: July 30, 2026 (Wave 155m — Modern idiom evolution, deps current, 6,755 tests, zero clippy pedantic+nursery)
+**Updated**: August 3, 2026 (Wave 156b — STABLE, G19 PROVEN on ironGate, 6,755 tests, zero clippy/doc warnings)
 
 ---
 
