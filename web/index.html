@@ -278,10 +278,50 @@
         </section>
 
         <section>
-            <h2>Discovered Primals</h2>
-            <div class="grid" id="primals-grid">
-                <div class="empty-state">
-                    <p>Waiting for topology data&hellip;</p>
+            <h2>Tower Atomic — Primal Architecture</h2>
+            <div id="tower-atomic">
+                <div class="empty-state"><p>Waiting for topology data&hellip;</p></div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Neural API Routing</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <h3>Capability → Primal Routes</h3>
+                    <div id="routing-table-container" style="max-height:24rem;overflow:auto">
+                        <table class="gate-table" id="routing-table">
+                            <thead><tr><th>Capability</th><th>Routed To</th><th>Socket</th></tr></thead>
+                            <tbody id="routing-tbody">
+                                <tr><td colspan="3" class="empty-state">Loading&hellip;</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Namespace Distribution</h3>
+                    <div id="namespace-chart" style="max-height:24rem;overflow:auto"></div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Data Braids (CAS Surface)</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <h3>Local CAS (sporeGate)</h3>
+                    <div id="cas-local" style="font-size:0.8rem">
+                        <div class="empty-state"><p>Querying content backend&hellip;</p></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Federation (westGate → ironGate)</h3>
+                    <div id="cas-federation" style="font-size:0.8rem">
+                        <p style="color:var(--fg-dim)">westGate CAS: 452 GB (convoy at 145/s)</p>
+                        <p style="color:var(--fg-dim)">ironGate CAS: 12.7 TB (NUCLEUS storage)</p>
+                        <p style="margin-top:0.5rem;color:var(--accent)">Federation via songBird <code>content.replicate.pull</code></p>
+                        <p style="color:var(--fg-dim);font-size:0.75rem;margin-top:0.25rem">Blocked: westGate needs nestGate TCP + content capability registration</p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -324,6 +364,7 @@
 
         loadGateMesh();
         loadCoordination();
+        loadCASStatus();
 
         const es = new EventSource('/api/events');
         es.onopen = function() {
@@ -688,19 +729,184 @@
 
         function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
+        var TOWER_LAYERS = {
+            'Tower Atomic — Security': {
+                color: 'var(--red)',
+                primals: ['beardog'],
+                desc: 'Cryptographic identity, BLAKE3 hashing, BTSP auth'
+            },
+            'Tower Atomic — Transport': {
+                color: 'var(--blue)',
+                primals: ['songbird'],
+                desc: 'Mesh routing, LAN-first TCP, drawbridge bonds, federation'
+            },
+            'Tower Atomic — Defense': {
+                color: 'var(--purple)',
+                primals: ['skunkbat'],
+                desc: 'Threat detection, protocol negotiation, connectivity anomaly'
+            },
+            'Data Layer': {
+                color: 'var(--green)',
+                primals: ['nestgate', 'rhizocrypt', 'loamspine', 'sweetgrass'],
+                desc: 'CAS storage, DAG provenance, spine ledger, braid assembly'
+            },
+            'Compute Layer': {
+                color: 'var(--yellow)',
+                primals: ['barracuda', 'coralreef', 'toadstool'],
+                desc: 'GPU math, shader compilation, compute dispatch'
+            },
+            'Composition & Intelligence': {
+                color: 'var(--accent)',
+                primals: ['biomeos', 'squirrel', 'neural', 'petaltongue'],
+                desc: 'NUCLEUS composition, agent dispatch, Neural API routing, visualization'
+            }
+        };
+
         function renderPrimals(primals) {
-            const grid = document.getElementById('primals-grid');
+            var container = document.getElementById('tower-atomic');
             if (!primals.length) {
-                grid.innerHTML = '<div class="empty-state"><p>No primals discovered yet. Discovery runs automatically.</p></div>';
+                container.innerHTML = '<div class="empty-state"><p>No primals discovered yet.</p></div>';
                 return;
             }
-            grid.innerHTML = primals.map(function(p) {
-                const caps = (p.capabilities || []).map(function(c) { return '<span class="cap">' + esc(c) + '</span>'; }).join('');
-                return '<div class="card">' +
-                    '<div class="primal-name">' + esc(p.name || p.id) + ' ' + healthPill(p.health) + '</div>' +
-                    '<div class="primal-type">' + esc(p.primal_type || '') + '</div>' +
-                    (caps ? '<div class="caps">' + caps + '</div>' : '') +
-                    (p.endpoint ? '<div class="endpoint">' + esc(p.endpoint) + '</div>' : '') +
+
+            var fullPrimals = primals.filter(function(p) { return (p.capabilities || []).length > 1; });
+            var routeStubs = primals.filter(function(p) { return (p.capabilities || []).length <= 1; });
+
+            var layerHtml = '';
+            var assigned = {};
+
+            Object.keys(TOWER_LAYERS).forEach(function(layerName) {
+                var layer = TOWER_LAYERS[layerName];
+                var layerPrimals = fullPrimals.filter(function(p) {
+                    var n = (p.name || '').toLowerCase().replace(/[-_]/g, '');
+                    return layer.primals.some(function(lp) { return n.indexOf(lp) >= 0; });
+                });
+                layerPrimals.forEach(function(p) { assigned[(p.name || '') + (p.endpoint || '')] = true; });
+
+                var primalCards = layerPrimals.map(function(p) {
+                    var caps = (p.capabilities || []);
+                    var nsByPrefix = {};
+                    caps.forEach(function(c) {
+                        var ns = c.indexOf('.') >= 0 ? c.split('.')[0] : c;
+                        nsByPrefix[ns] = (nsByPrefix[ns] || 0) + 1;
+                    });
+                    var sorted = Object.keys(nsByPrefix).sort(function(a,b) { return nsByPrefix[b] - nsByPrefix[a]; });
+                    var nsHtml = sorted.slice(0, 8).map(function(ns) {
+                        return '<span class="cap" style="background:rgba(123,160,212,0.18)">' + esc(ns) + ' <b>' + nsByPrefix[ns] + '</b></span>';
+                    }).join(' ');
+                    if (sorted.length > 8) nsHtml += ' <span class="cap">+' + (sorted.length - 8) + '</span>';
+
+                    return '<div class="card" style="border-left:3px solid ' + layer.color + '">' +
+                        '<div class="primal-name">' + esc(p.name || p.id) + ' ' + healthPill(p.health) +
+                            ' <span style="font-size:0.7rem;color:var(--fg-dim)">' + caps.length + ' caps</span></div>' +
+                        '<div class="caps" style="margin-top:0.3rem">' + nsHtml + '</div>' +
+                        (p.endpoint ? '<div class="endpoint">' + esc(p.endpoint) + '</div>' : '') +
+                    '</div>';
+                }).join('');
+
+                if (layerPrimals.length > 0 || layer.primals.length > 0) {
+                    var missing = layer.primals.filter(function(lp) {
+                        return !layerPrimals.some(function(p) { return (p.name || '').toLowerCase().indexOf(lp) >= 0; });
+                    });
+                    var routedMissing = missing.filter(function(m) {
+                        return routeStubs.some(function(s) { return (s.name || '').toLowerCase().indexOf(m) >= 0; });
+                    });
+                    var trueMissing = missing.filter(function(m) {
+                        return !routeStubs.some(function(s) { return (s.name || '').toLowerCase().indexOf(m) >= 0; });
+                    });
+                    var missingHtml = '';
+                    if (routedMissing.length) {
+                        missingHtml += '<div style="font-size:0.72rem;color:var(--fg-dim);margin-top:0.3rem">' +
+                            routedMissing.map(function(m) { return '<span class="pill pill-info" style="margin:0.1rem">' + esc(m) + ' via routing</span>'; }).join('') +
+                        '</div>';
+                    }
+                    if (trueMissing.length) {
+                        missingHtml += '<div style="font-size:0.72rem;color:var(--fg-dim);margin-top:0.3rem">' +
+                            trueMissing.map(function(m) { return '<span class="pill pill-warn" style="margin:0.1rem">' + esc(m) + ' not discovered</span>'; }).join('') +
+                        '</div>';
+                    }
+
+                    layerHtml += '<div style="margin-bottom:1rem">' +
+                        '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem">' +
+                            '<span style="display:inline-block;width:4px;height:1rem;background:' + layer.color + ';border-radius:2px"></span>' +
+                            '<span style="font-weight:600;font-size:0.9rem">' + esc(layerName) + '</span>' +
+                            '<span style="font-size:0.72rem;color:var(--fg-dim)">' + esc(layer.desc) + '</span>' +
+                        '</div>' +
+                        '<div class="grid">' + (primalCards || '<div class="empty-state" style="padding:0.5rem"><p style="font-size:0.8rem">Not discovered on this gate</p></div>') + '</div>' +
+                        missingHtml +
+                    '</div>';
+                }
+            });
+
+            var unassigned = fullPrimals.filter(function(p) { return !assigned[(p.name || '') + (p.endpoint || '')]; });
+            if (unassigned.length) {
+                var otherCards = unassigned.map(function(p) {
+                    var caps = (p.capabilities || []);
+                    var top5 = caps.slice(0, 5).map(function(c) { return '<span class="cap">' + esc(c) + '</span>'; }).join(' ');
+                    if (caps.length > 5) top5 += ' <span class="cap">+' + (caps.length - 5) + '</span>';
+                    return '<div class="card">' +
+                        '<div class="primal-name">' + esc(p.name || p.id) + ' ' + healthPill(p.health) + '</div>' +
+                        '<div class="caps">' + top5 + '</div>' +
+                        (p.endpoint ? '<div class="endpoint">' + esc(p.endpoint) + '</div>' : '') +
+                    '</div>';
+                }).join('');
+                layerHtml += '<div style="margin-bottom:1rem">' +
+                    '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem">' +
+                        '<span style="font-weight:600;font-size:0.9rem;color:var(--fg-dim)">Other Primals</span>' +
+                    '</div>' +
+                    '<div class="grid">' + otherCards + '</div>' +
+                '</div>';
+            }
+
+            container.innerHTML = layerHtml;
+
+            renderRoutingTable(routeStubs, fullPrimals);
+            renderNamespaceChart(fullPrimals);
+        }
+
+        function renderRoutingTable(stubs, fullPrimals) {
+            var tbody = document.getElementById('routing-tbody');
+            if (!stubs.length) {
+                tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No routing entries</td></tr>';
+                return;
+            }
+            tbody.innerHTML = stubs.map(function(s) {
+                var cap = (s.capabilities || [])[0] || '—';
+                var socketName = (s.endpoint || '').split('/').pop().replace('.sock','');
+                return '<tr>' +
+                    '<td><span class="cap">' + esc(cap) + '</span></td>' +
+                    '<td class="gate-id">' + esc(s.name || s.id) + '</td>' +
+                    '<td class="wg-ip" style="font-size:0.65rem">' + esc(socketName) + '</td>' +
+                '</tr>';
+            }).join('');
+        }
+
+        function renderNamespaceChart(primals) {
+            var chart = document.getElementById('namespace-chart');
+            var nsMap = {};
+            primals.forEach(function(p) {
+                (p.capabilities || []).forEach(function(c) {
+                    var ns = c.indexOf('.') >= 0 ? c.split('.')[0] : c;
+                    if (!nsMap[ns]) nsMap[ns] = { count: 0, primals: {} };
+                    nsMap[ns].count++;
+                    nsMap[ns].primals[p.name || p.id] = true;
+                });
+            });
+            var sorted = Object.keys(nsMap).sort(function(a,b) { return nsMap[b].count - nsMap[a].count; });
+            var maxCount = sorted.length ? nsMap[sorted[0]].count : 1;
+
+            chart.innerHTML = sorted.slice(0, 20).map(function(ns) {
+                var d = nsMap[ns];
+                var pct = Math.round(d.count / maxCount * 100);
+                var owners = Object.keys(d.primals).join(', ');
+                return '<div style="margin-bottom:0.3rem">' +
+                    '<div style="display:flex;justify-content:space-between;font-size:0.75rem">' +
+                        '<span style="font-weight:500">' + esc(ns) + '</span>' +
+                        '<span style="color:var(--fg-dim)">' + d.count + ' (' + esc(owners) + ')</span>' +
+                    '</div>' +
+                    '<div style="background:var(--border);border-radius:2px;height:4px;margin-top:2px">' +
+                        '<div style="background:var(--accent);border-radius:2px;height:4px;width:' + pct + '%"></div>' +
+                    '</div>' +
                 '</div>';
             }).join('');
         }
@@ -720,6 +926,33 @@
                     (e.label ? ' <em style="color:var(--fg-dim)">' + esc(e.label) + '</em>' : '') +
                 '</li>';
             }).join('');
+        }
+
+        function loadCASStatus() {
+            fetch('/api/content/stats')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var el = document.getElementById('cas-local');
+                    if (data.status === 'unavailable' || data.error) {
+                        el.innerHTML = '<p style="color:var(--fg-dim)">Content backend not connected</p>' +
+                            '<p style="font-size:0.72rem;color:var(--fg-dim);margin-top:0.25rem">Wire nestGate UDS or wait for federation from westGate/ironGate</p>';
+                        return;
+                    }
+                    var objCount = data.object_count || 0;
+                    var totalSize = data.total_size || 0;
+                    var sizeMB = (totalSize / 1024 / 1024).toFixed(1);
+                    el.innerHTML = '<div class="stat-row">' +
+                        '<div class="stat"><span class="stat-val">' + objCount.toLocaleString() + '</span><span class="stat-label">Objects</span></div>' +
+                        '<div class="stat"><span class="stat-val">' + sizeMB + ' MB</span><span class="stat-label">Total Size</span></div>' +
+                    '</div>' +
+                    (data.namespaces ? '<div style="margin-top:0.5rem">' + (data.namespaces || []).map(function(ns) {
+                        return '<span class="cap">' + esc(ns.name) + ' (' + ns.count + ')</span> ';
+                    }).join('') + '</div>' : '');
+                })
+                .catch(function() {
+                    document.getElementById('cas-local').innerHTML =
+                        '<p style="color:var(--fg-dim)">Content backend query pending — nestGate socket connecting</p>';
+                });
         }
 
         function loadCoordination() {
