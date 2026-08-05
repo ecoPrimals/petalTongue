@@ -9,6 +9,7 @@
 //! - Zero duplication
 //! - Capability-based discovery
 
+pub(crate) mod health;
 pub(crate) mod mesh;
 mod types;
 
