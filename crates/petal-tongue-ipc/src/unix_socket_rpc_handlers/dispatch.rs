@@ -97,6 +97,9 @@ impl RpcHandlers {
             "visualization.texture.upload" => visualization::handle_texture_upload(self, req),
             "visualization.texture.attach" => visualization::handle_texture_attach(self, req),
             "visualization.scene.verify" => visualization::handle_scene_verify(self, req),
+            "visualization.scene.declarative" => {
+                visualization::handle_declarative_list(self, req.id)
+            }
             "interaction.subscribe" | "visualization.interact.subscribe" => {
                 self.handle_interaction_subscribe(req)
             }

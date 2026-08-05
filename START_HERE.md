@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: August 4, 2026 (Wave 156d — STABLE, TCP bind hardened, config unified, 6,755 tests, zero warnings)
+**Updated**: August 5, 2026 (Wave 156d — STABLE, declarative scene passthrough, nestgate.io UX hardened, 6,606 tests, zero warnings)
 
 ---
 

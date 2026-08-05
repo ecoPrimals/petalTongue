@@ -24,6 +24,22 @@ pub struct CompiledBinding {
     pub source_binding: Option<petal_tongue_core::DataBinding>,
 }
 
+/// A declarative scene request from an external primal (e.g. tideGlass).
+///
+/// Stores the raw scene declaration for downstream WebGL/WebSocket clients
+/// to consume directly, bypassing the Grammar of Graphics pipeline.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct DeclarativeScene {
+    /// Scene type identifier (e.g. "rges_volcano", "enrichment_curve").
+    pub scene_type: String,
+    /// Arbitrary data payload for the scene renderer.
+    pub data: serde_json::Value,
+    /// Requested output format (e.g. "webgl", "svg").
+    pub format: String,
+    /// Whether the scene supports user interaction.
+    pub interactive: bool,
+}
+
 /// Manages active visualization sessions from springs/primals
 pub struct VisualizationState {
     /// Active visualization sessions keyed by session ID.
@@ -33,6 +49,9 @@ pub struct VisualizationState {
     pub(super) backpressure_config: BackpressureConfig,
     /// Raster textures uploaded via `visualization.texture.upload` IPC.
     pub texture_registry: super::texture_registry::TextureRegistry,
+    /// Declarative scene requests from external primals, stored for passthrough
+    /// to WebGL/WebSocket clients without Grammar pipeline compilation.
+    pub declarative_scenes: std::collections::HashMap<String, DeclarativeScene>,
 }
 
 /// A single visualization session with its bindings and metadata
@@ -68,6 +87,7 @@ impl VisualizationState {
             grammar_scenes: std::collections::HashMap::new(),
             backpressure_config: BackpressureConfig::default(),
             texture_registry: super::texture_registry::TextureRegistry::new(),
+            declarative_scenes: std::collections::HashMap::new(),
         }
     }
 
