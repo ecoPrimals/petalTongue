@@ -159,6 +159,7 @@ petalTongue owns **no glacial goals directly** but supports:
 | bingoCube | ColorGrid commitment rendering | `pt.render_webgl` → WebGL draw commands |
 | sporePrint | Static site generation + serving | `FilesystemSource` + `CasSource` + `petaltongue web --docroot` |
 | primalSpring | Scenario validation, grammar tests | 30 JSON scenarios |
+| tideGlass | 5 science viz scenes (declarative passthrough) | `visualization.render.scene` with string scene type |
 | Any primal | Visualization IPC | `visualization.render.*` over UDS/TCP |
 | Mobile hosts | Embedded rendering | C-FFI via `petal-tongue-platform` |
 | 3D consumers | Scene unification | `flatten_3d()` + Camera/Projection |
@@ -166,14 +167,15 @@ petalTongue owns **no glacial goals directly** but supports:
 
 ---
 
-*Wave 156d (Aug 4): petalTongue STABLE. G19 PROVEN on ironGate (RTX 5070, exp006 22/22 PASS).
-BTSP 13/13. 6,755 tests. Zero P0/P1/P2. Zero clippy/doc warnings.
+*Wave 156d (Aug 5): petalTongue STABLE. G19 PROVEN on ironGate (RTX 5070, exp006 22/22 PASS).
+BTSP 13/13. 6,606 tests. Zero P0/P1/P2. Zero clippy/doc warnings.
+Declarative scene passthrough LIVE — tideGlass/science primals submit by name + data.
+nestgate.io dashboard gracefully degrades (no perpetual "Loading...").
 Self-knowledge enforced: zero hardcoded peer primal names in production code.
 TCP bind hardened (localhost-only default). Config unified (zero raw FAMILY_ID reads).
 nestgate.io LIVE on mesh (petalTongue v1.7.0 on sporeGate via WG).
 Dependencies current. All production files < 800 LOC. Zero debris.
 K-derm DNS separation 3/3 COMPLETE (primals.eco outer / nestgate.io peti / primal.eco inner).
-Scene push pipeline live — esotericWebb V30d consuming on ironGate, footPrint 628 tests next.
-Strategic evolution: GpuCompiler→coralReef→toadStool wiring, egui-wgpu backend,
-G53 live science exploration (GPS + QCD viz). All infrastructure present, waiting
-for consumers to mature the pipeline.*
+Scene push pipeline live — esotericWebb consuming on ironGate, footPrint 708 tests.
+Data Flow Activation era: tideGlass cell boot ready, squirrel dispatch LIVE (9 providers),
+ironGate 12.7 TB CAS. Conjugation layer (`@protokarya/rustscript`) established.*

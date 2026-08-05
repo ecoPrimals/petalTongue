@@ -1,6 +1,6 @@
-# Deep Debt Standards — Updated Wave 156b
+# Deep Debt Standards — Updated Wave 156d
 
-**Wave**: 156b | **Date**: August 4, 2026 | **For**: All primal teams (reference)
+**Wave**: 156d | **Date**: August 5, 2026 | **For**: All primal teams (reference)
 
 ---
 
@@ -101,5 +101,18 @@ rg '"songBird|"nestGate|"bearDog|"toadStool|"coralReef' --type rust \
 
 ---
 
-*Wave 156b: petalTongue achieves all deep debt standards including self-knowledge.
-Reference for all primal teams.*
+### Declarative scene passthrough (Wave 156d)
+
+External primals (tideGlass, footPrint) submit scenes by **name + data** rather
+than constructing a full `SceneGraph`. Stored as typed `DeclarativeScene`:
+```json
+{ "scene": "rges_volcano", "data": {...}, "format": "webgl", "interactive": true }
+```
+
+This avoids coupling consumers to petalTongue's internal graph representation.
+Query stored scenes via `visualization.scene.declarative` IPC method.
+
+---
+
+*Wave 156d: petalTongue achieves all deep debt standards including self-knowledge
+and declarative scene passthrough. Reference for all primal teams.*
