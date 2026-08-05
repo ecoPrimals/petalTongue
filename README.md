@@ -77,6 +77,7 @@ petaltongue
 - **Domain-aware rendering** -- automatic palette selection per domain
 - **Multi-modal output** -- visual (SVG/WebGL), audio, haptic, terminal, braille, JSON API (tiered)
 - **WebGL modality compiler** -- scene graph to GPU draw commands (vertex/index buffers + draw calls)
+- **Declarative scene passthrough** -- external primals submit scenes by name + data payload; stored for downstream WebGL/WS clients
 - **Static site builder** -- SiteBuilder + ContentSource trait + FilesystemSource + CasSource (Zola replacement, sporePrint pipeline)
 - **Sensory Capability Matrix** -- formal input×output negotiation (`capabilities.sensory` IPC)
 - **Accessibility adapters** -- switch access, audio inverse pipeline, agent adapter for AI
@@ -117,7 +118,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 6,755 passing, 0 failures |
+| Tests | 6,606 passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (`--all-features`, pedantic + nursery; `#[expect]` with reasons) |
 | Docs | `cargo doc --workspace --no-deps` zero warnings |
@@ -152,7 +153,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace                        # 6,755 tests
+cargo test --workspace                        # 6,606 tests
 cargo clippy --workspace --all-features -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
