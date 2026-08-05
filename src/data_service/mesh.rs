@@ -5,16 +5,51 @@ use petal_tongue_core::{GraphEngine, gate_mesh};
 
 use super::types::{LiveEdge, LiveMeshPeer, LivePrimal, LiveTopology};
 
-/// Get current mesh peer state via manifest topology.
+const SONGBIRD_SOCKET: &str = "/run/membrane/songbird.sock";
+
+/// Get current mesh peer state via manifest topology (static fallback).
 ///
 /// Loads topology from `ecosystem_manifest.toml` at runtime and derives
-/// peer connectivity. When a discovery service is available, callers
-/// should prefer the live `mesh.peers` capability call.
+/// peer connectivity.
 #[must_use]
 pub fn mesh_peers() -> Vec<gate_mesh::MeshPeer> {
     let source = gate_mesh::ManifestMeshTopology::discover();
     let nodes = source.nodes();
     gate_mesh::derive_mesh_peers(&nodes)
+}
+
+/// Query songBird `mesh.peers` via UDS JSON-RPC for live peer state.
+///
+/// Returns `None` if the socket is unavailable or the RPC fails,
+/// allowing callers to fall back to static topology.
+pub async fn query_songbird_peers() -> Option<serde_json::Value> {
+    use tokio::net::UnixStream;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    let mut stream = UnixStream::connect(SONGBIRD_SOCKET).await.ok()?;
+
+    let request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "method": "mesh.peers",
+        "params": {},
+        "id": 1
+    });
+    let payload = serde_json::to_vec(&request).ok()?;
+
+    stream.write_all(&payload).await.ok()?;
+    stream.shutdown().await.ok()?;
+
+    let mut buf = Vec::with_capacity(8192);
+    tokio::time::timeout(
+        std::time::Duration::from_secs(3),
+        stream.read_to_end(&mut buf),
+    )
+    .await
+    .ok()?
+    .ok()?;
+
+    let response: serde_json::Value = serde_json::from_slice(&buf).ok()?;
+    response.get("result").cloned()
 }
 
 /// Get live topology for TOPO-VIS visualization.
@@ -63,12 +98,14 @@ pub fn live_topology(has_api: bool, graph: Option<&GraphEngine>) -> LiveTopology
 
     let mesh_peers = mesh_peers_live();
 
+    let source = if has_api && !primals.is_empty() {
+        "neural_api"
+    } else {
+        "static_fallback"
+    };
+
     LiveTopology {
-        source: if has_api && !primals.is_empty() {
-            "neural_api"
-        } else {
-            "static_fallback"
-        },
+        source,
         primal_count: primals.len(),
         edge_count: edges.len(),
         mesh_peer_count: mesh_peers.len(),
@@ -94,6 +131,29 @@ fn mesh_peers_live() -> Vec<LiveMeshPeer> {
                 Some(p.latency_ms)
             },
             capabilities: p.capabilities,
+        })
+        .collect()
+}
+
+/// Convert songBird live peer data to `LiveMeshPeer` format.
+pub fn songbird_peers_to_live(result: &serde_json::Value) -> Vec<LiveMeshPeer> {
+    result
+        .get("peers")
+        .and_then(|p| p.as_array())
+        .into_iter()
+        .flatten()
+        .map(|p| LiveMeshPeer {
+            gate_id: p["node_id"]
+                .as_str()
+                .unwrap_or("unknown")
+                .to_string(),
+            status: "connected".to_string(),
+            transport: p["path_type"]
+                .as_str()
+                .unwrap_or("unknown")
+                .to_string(),
+            latency_ms: p["priority"].as_u64().map(|v| v as u32),
+            capabilities: Vec::new(),
         })
         .collect()
 }

@@ -9,7 +9,7 @@
 //! - Zero duplication
 //! - Capability-based discovery
 
-mod mesh;
+pub(crate) mod mesh;
 mod types;
 
 #[cfg(test)]
