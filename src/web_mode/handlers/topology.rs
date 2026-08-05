@@ -493,6 +493,23 @@ pub async fn viz_handler(
     }
 }
 
+/// Returns per-primal health liveness state from UDS queries.
+///
+/// Queries `health.liveness` on each primal's UDS socket concurrently
+/// with BTSP framing. Returns alive/dead status, version, and errors.
+pub async fn primal_health_handler() -> Json<serde_json::Value> {
+    let health = crate::data_service::health::query_all_health().await;
+
+    let alive_count = health.iter().filter(|h| h.alive).count();
+
+    Json(serde_json::json!({
+        "primals": health,
+        "alive_count": alive_count,
+        "total_count": health.len(),
+        "source": "uds_liveness",
+    }))
+}
+
 #[derive(serde::Deserialize)]
 pub struct VizQuery {
     pub format: Option<String>,

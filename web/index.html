@@ -306,6 +306,18 @@
         </section>
 
         <section>
+            <h2>Primal Health (UDS Liveness) <span id="health-summary" style="margin-left:0.5rem"></span></h2>
+            <div class="card">
+                <table class="gate-table">
+                    <thead><tr><th>Primal</th><th>Status</th><th>Version</th><th>Detail</th></tr></thead>
+                    <tbody id="health-tbody">
+                        <tr><td colspan="4" class="empty-state">Loading&hellip;</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section>
             <h2>Data Braids (CAS Surface)</h2>
             <div class="grid-2">
                 <div class="card">
@@ -448,6 +460,11 @@
                 .catch(() => {
                     document.getElementById('sporeprint-grid').innerHTML = '<div class="empty-state"><p>sporePrint data unavailable</p></div>';
                 });
+
+            fetch('/api/primal-health')
+                .then(r => r.json())
+                .then(renderPrimalHealth)
+                .catch(() => {});
         }
 
         function enrollmentPill(e) {
@@ -726,12 +743,49 @@
             renderEdges(edges, primals);
         }
 
-        function healthPill(h) {
+        var _healthMap = {};
+
+        function healthPill(h, primalName) {
+            var key = (primalName || '').toLowerCase().replace(/[-_]/g, '');
+            var live = _healthMap[key];
+            if (live) {
+                if (live.alive) return '<span class="pill pill-ok">alive</span>';
+                if (live.status === 'timeout') return '<span class="pill pill-warn">timeout</span>';
+                return '<span class="pill pill-err">' + esc(live.status) + '</span>';
+            }
             const s = (h || 'unknown').toLowerCase();
             if (s === 'healthy') return '<span class="pill pill-ok">healthy</span>';
             if (s === 'warning') return '<span class="pill pill-warn">warning</span>';
             if (s === 'critical' || s === 'error') return '<span class="pill pill-err">' + s + '</span>';
             return '<span class="pill pill-info">' + esc(s) + '</span>';
+        }
+
+        function renderPrimalHealth(data) {
+            var primals = data.primals || [];
+            primals.forEach(function(p) {
+                _healthMap[p.primal.toLowerCase()] = p;
+            });
+
+            var el = document.getElementById('health-summary');
+            if (el) {
+                el.innerHTML = '<span class="pill pill-ok">' + (data.alive_count || 0) + '/' + (data.total_count || 0) + ' alive</span>' +
+                    ' <span class="pill pill-info">source: ' + esc(data.source || 'unknown') + '</span>';
+            }
+
+            var tbody = document.getElementById('health-tbody');
+            if (tbody) {
+                tbody.innerHTML = primals.map(function(p) {
+                    var statusPill = p.alive
+                        ? '<span class="pill pill-ok">alive</span>'
+                        : (p.status === 'timeout' ? '<span class="pill pill-warn">timeout</span>' : '<span class="pill pill-err">' + esc(p.status) + '</span>');
+                    return '<tr>' +
+                        '<td class="gate-id">' + esc(p.primal) + '</td>' +
+                        '<td>' + statusPill + '</td>' +
+                        '<td style="font-size:0.75rem;color:var(--fg-dim)">' + esc(p.version || '-') + '</td>' +
+                        '<td style="font-size:0.75rem;color:var(--fg-dim)">' + esc(p.error || '-') + '</td>' +
+                    '</tr>';
+                }).join('');
+            }
         }
 
         function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
@@ -804,7 +858,7 @@
                     if (sorted.length > 8) nsHtml += ' <span class="cap">+' + (sorted.length - 8) + '</span>';
 
                     return '<div class="card" style="border-left:3px solid ' + layer.color + '">' +
-                        '<div class="primal-name">' + esc(p.name || p.id) + ' ' + healthPill(p.health) +
+                        '<div class="primal-name">' + esc(p.name || p.id) + ' ' + healthPill(p.health, p.name || p.id) +
                             ' <span style="font-size:0.7rem;color:var(--fg-dim)">' + caps.length + ' caps</span></div>' +
                         '<div class="caps" style="margin-top:0.3rem">' + nsHtml + '</div>' +
                         (p.endpoint ? '<div class="endpoint">' + esc(p.endpoint) + '</div>' : '') +
@@ -852,7 +906,7 @@
                     var top5 = caps.slice(0, 5).map(function(c) { return '<span class="cap">' + esc(c) + '</span>'; }).join(' ');
                     if (caps.length > 5) top5 += ' <span class="cap">+' + (caps.length - 5) + '</span>';
                     return '<div class="card">' +
-                        '<div class="primal-name">' + esc(p.name || p.id) + ' ' + healthPill(p.health) + '</div>' +
+                        '<div class="primal-name">' + esc(p.name || p.id) + ' ' + healthPill(p.health, p.name || p.id) + '</div>' +
                         '<div class="caps">' + top5 + '</div>' +
                         (p.endpoint ? '<div class="endpoint">' + esc(p.endpoint) + '</div>' : '') +
                     '</div>';
