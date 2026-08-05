@@ -298,10 +298,15 @@ fn method_schemas() -> serde_json::Value {
     })
 }
 
-/// Handle visualization.render.scene: directly submit a serialized `SceneGraph`.
+/// Handle visualization.render.scene: submit a `SceneGraph` or declarative scene.
 ///
-/// Bypasses the grammar/data-binding pipeline; the `SceneGraph` is stored directly
-/// so springs can submit arbitrary visual scenes.
+/// Accepts two formats:
+/// 1. **SceneGraph** (petalTongue native): `{ "nodes": {...}, "root_id": "..." }`
+/// 2. **Declarative** (spring passthrough): `{ "scene": "<name>", "data": {...}, "format": "webgl" }`
+///
+/// Declarative scenes from springs (tideGlass, footPrint) are wrapped in a minimal
+/// `SceneGraph` with the raw data attached as `data_source` on the root node. The
+/// render pipeline can inspect `data_source` to select a scene-specific renderer.
 pub fn handle_render_scene(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> JsonRpcResponse {
     let session_id = req
         .params
@@ -310,7 +315,15 @@ pub fn handle_render_scene(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> J
         .unwrap_or("scene-session")
         .to_string();
 
-    let Some(scene_value) = req.params.as_object_mut().and_then(|m| m.remove("scene")) else {
+    let scene_value = if req.params.get("scene").is_some() {
+        req.params
+            .as_object_mut()
+            .and_then(|m| m.remove("scene"))
+    } else {
+        Some(req.params.clone())
+    };
+
+    let Some(scene_value) = scene_value else {
         return JsonRpcResponse::error(
             req.id,
             error_codes::INVALID_PARAMS,
@@ -318,9 +331,14 @@ pub fn handle_render_scene(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> J
         );
     };
 
-    let scene: petal_tongue_scene::scene_graph::SceneGraph =
-        match serde_json::from_value(scene_value) {
-            Ok(s) => s,
+    let (scene, is_passthrough) =
+        match serde_json::from_value::<petal_tongue_scene::scene_graph::SceneGraph>(
+            scene_value.clone(),
+        ) {
+            Ok(s) => (s, false),
+            Err(_) if is_declarative_scene(&scene_value) => {
+                (wrap_declarative_scene(&scene_value), true)
+            }
             Err(e) => {
                 return JsonRpcResponse::error(
                     req.id,
@@ -359,14 +377,44 @@ pub fn handle_render_scene(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> J
 
     let mut result = serde_json::json!({
         "session_id": session_id,
+        "scene_id": session_id,
         "nodes_accepted": node_count,
         "status": "scene_stored",
         "signed": signature.is_some(),
+        "passthrough": is_passthrough,
     });
     if let Some(sig) = signature {
         result["signature"] = serde_json::json!(sig);
     }
     JsonRpcResponse::success(req.id, result)
+}
+
+/// Checks if a JSON value looks like a declarative scene from a spring.
+/// Declarative scenes have `"scene"` (string slug) and `"data"` (object).
+fn is_declarative_scene(value: &Value) -> bool {
+    value.get("scene").and_then(Value::as_str).is_some()
+        && value.get("data").and_then(Value::as_object).is_some()
+}
+
+/// Wraps a declarative scene JSON in a minimal `SceneGraph`.
+/// The scene slug is stored as `label` and the serialized JSON as `data_source`
+/// on the root node, allowing the render pipeline to inspect it.
+fn wrap_declarative_scene(value: &Value) -> petal_tongue_scene::scene_graph::SceneGraph {
+    let slug = value
+        .get("scene")
+        .and_then(Value::as_str)
+        .unwrap_or("unknown");
+    let data_json = serde_json::to_string(value).unwrap_or_default();
+    let root_id = {
+        let graph = petal_tongue_scene::scene_graph::SceneGraph::new();
+        graph.root_id().to_owned()
+    };
+    let mut graph = petal_tongue_scene::scene_graph::SceneGraph::new();
+    if let Some(root) = graph.get_mut(&root_id) {
+        root.label = Some(format!("spring:{slug}"));
+        root.data_source = Some(data_json);
+    }
+    graph
 }
 
 /// Handle `visualization.texture.upload`: store base64-decoded RGBA pixel data.
