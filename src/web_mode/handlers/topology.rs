@@ -240,13 +240,34 @@ pub async fn physical_topology_handler() -> Json<serde_json::Value> {
 
 // ── Mesh peers (songBird mesh.peers) ────────────────────────────────────
 
-/// Returns live mesh peer connectivity state.
+/// Returns live mesh peer connectivity state from songBird UDS.
 ///
-/// In production, this calls songBird's `mesh.peers` IPC method.
-/// Currently returns derived static state as the offline fallback.
+/// Queries songBird's `mesh.peers` via JSON-RPC on the UDS socket.
+/// Falls back to static manifest-derived peers if songBird is unavailable.
 pub async fn mesh_peers_handler(
     State(service): State<Arc<DataService>>,
 ) -> Json<serde_json::Value> {
+    use crate::data_service::mesh::query_songbird_peers;
+
+    if let Some(live_result) = query_songbird_peers().await {
+        let peers = live_result
+            .get("peers")
+            .and_then(|p| p.as_array())
+            .cloned()
+            .unwrap_or_default();
+        let online = live_result
+            .get("online")
+            .and_then(|o| o.as_u64())
+            .unwrap_or(0);
+
+        return Json(serde_json::json!({
+            "peers": peers,
+            "connected_count": online,
+            "total_count": peers.len(),
+            "source": "songbird_live",
+        }));
+    }
+
     let peers: Vec<serde_json::Value> = DataService::mesh_peers()
         .iter()
         .map(|p| {

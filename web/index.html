@@ -175,15 +175,15 @@
             <h2>Mesh Peers (songBird mesh.peers)</h2>
             <div class="grid-2">
                 <div class="card">
-                    <h3>Peer Connectivity</h3>
+                    <h3>Peer Connectivity <span id="mesh-source" style="margin-left:0.5rem"></span></h3>
                     <div class="stat-row" id="peers-stats">
                         <div class="stat"><span class="stat-val" id="stat-connected">-</span><span class="stat-label">Connected</span></div>
                         <div class="stat"><span class="stat-val" id="stat-peers-total">-</span><span class="stat-label">Total Peers</span></div>
                     </div>
                     <table class="gate-table" id="peers-table">
-                        <thead><tr><th>Gate</th><th>Status</th><th>Transport</th><th>Latency</th><th>Capabilities</th></tr></thead>
+                        <thead><tr><th>Gate</th><th>Status</th><th>Transport</th><th>Address</th><th>Priority</th><th>Latency</th></tr></thead>
                         <tbody id="peers-tbody">
-                            <tr><td colspan="5" class="empty-state">Loading&hellip;</td></tr>
+                            <tr><td colspan="6" class="empty-state">Loading&hellip;</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -425,7 +425,7 @@
                 .then(r => r.json())
                 .then(renderMeshPeers)
                 .catch(() => {
-                    document.getElementById('peers-tbody').innerHTML = '<tr><td colspan="5" class="empty-state">Mesh peers unavailable (requires live mesh bridge)</td></tr>';
+                    document.getElementById('peers-tbody').innerHTML = '<tr><td colspan="6" class="empty-state">Mesh peers unavailable</td></tr>';
                 });
 
             fetch('/api/topology-layers')
@@ -575,27 +575,34 @@
             document.getElementById('stat-connected').textContent = data.connected_count || 0;
             document.getElementById('stat-peers-total').textContent = data.total_count || 0;
 
+            var srcEl = document.getElementById('mesh-source');
+            if (srcEl) {
+                var src = data.source || 'unknown';
+                srcEl.innerHTML = src === 'songbird_live'
+                    ? '<span class="pill pill-ok">songBird live</span>'
+                    : '<span class="pill pill-warn">' + esc(src) + '</span>';
+            }
+
             var peers = data.peers || [];
             var tbody = document.getElementById('peers-tbody');
             if (!peers.length) {
-                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No peers</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No peers (songBird UDS at /run/membrane/songbird.sock)</td></tr>';
                 return;
             }
             tbody.innerHTML = peers.map(function(p) {
-                var statusPill = p.status === 'connected' ? '<span class="pill pill-ok">connected</span>' :
-                                 p.status === 'relayed' ? '<span class="pill pill-info">relayed</span>' :
-                                 p.status === 'pending' ? '<span class="pill pill-warn">pending</span>' :
-                                 '<span class="pill pill-err">unreachable</span>';
-                var latency = p.latency_ms !== null ? p.latency_ms + 'ms' : '-';
-                var caps = (p.capabilities || []).map(function(c) {
-                    return '<span class="cap">' + esc(c) + '</span>';
-                }).join(' ');
+                var gateId = p.node_id || p.gate_id || 'unknown';
+                var pathType = p.path_type || p.transport || 'unknown';
+                var addr = p.address || '-';
+                var prio = p.priority !== undefined ? 'p' + p.priority : '-';
+                var statusPill = '<span class="pill pill-ok">online</span>';
+                var latency = p.latency_ms !== null && p.latency_ms !== undefined ? p.latency_ms + 'ms' : '-';
                 return '<tr>' +
-                    '<td class="gate-id">' + esc(p.gate_id) + '</td>' +
+                    '<td class="gate-id">' + esc(gateId) + '</td>' +
                     '<td>' + statusPill + '</td>' +
-                    '<td style="font-size:0.75rem;color:var(--fg-dim)">' + esc(p.transport) + '</td>' +
-                    '<td class="wg-ip">' + latency + '</td>' +
-                    '<td>' + caps + '</td>' +
+                    '<td style="font-size:0.75rem;color:var(--fg-dim)">' + esc(pathType) + '</td>' +
+                    '<td class="wg-ip">' + esc(addr) + '</td>' +
+                    '<td>' + prio + '</td>' +
+                    '<td>' + latency + '</td>' +
                 '</tr>';
             }).join('');
         }
