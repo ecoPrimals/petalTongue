@@ -6,6 +6,33 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 156d: Declarative Scene Passthrough + Dashboard UX (August 5, 2026)
+
+Scene pipeline evolution and nestgate.io dashboard resilience.
+
+#### Added
+- `visualization.render.scene` now accepts **declarative scene format** (string scene
+  type + data payload) alongside structured `SceneGraph`. tideGlass and other science
+  primals can submit `{ "scene": "rges_volcano", "data": {...}, "format": "webgl" }`
+  directly — stored for downstream WebGL/WebSocket clients without Grammar pipeline.
+- `visualization.scene.declarative` JSON-RPC method: lists all stored declarative
+  scenes for client retrieval.
+- `DeclarativeScene` type in `VisualizationState` for passthrough storage.
+
+#### Changed
+- Eliminated hardcoded `"sporeGate"` from topology CI response — now derived from
+  `ecosystem_manifest.toml` gate roles at runtime.
+- nestgate.io dashboard (`web/index.html`): added `<noscript>` fallback and
+  meaningful error messages for all fetch failures (previously stuck on "Loading...").
+  Each section now shows specific unavailability reason rather than generic loading.
+- Method schema for `visualization.render.scene` updated to document dual-format
+  accept (object SceneGraph or string declarative).
+
+#### Metrics
+- 6,606 tests pass, 0 failures, 0 clippy warnings
+- Zero hardcoded primal names in production code
+- All production files < 800 LOC
+
 ### Wave 156d: Security Hardening + Config Unification (August 4, 2026)
 
 TCP bind security hardening and complete family ID resolution unification.

@@ -15,4 +15,4 @@ mod types;
 mod tests;
 
 pub use texture_registry::{TextureFormat, TextureRegistry};
-pub use types::{CompiledBinding, RenderSession, VisualizationState};
+pub use types::{CompiledBinding, DeclarativeScene, RenderSession, VisualizationState};

@@ -28,7 +28,8 @@ pub use interaction::{
 pub use pipeline::PipelineRegistry;
 pub use sensor_stream::SensorStreamRegistry;
 pub use state::{
-    CompiledBinding, RenderSession, TextureFormat, TextureRegistry, VisualizationState,
+    CompiledBinding, DeclarativeScene, RenderSession, TextureFormat, TextureRegistry,
+    VisualizationState,
 };
 pub use stream::{apply_operation, binding_id};
 pub use types::{

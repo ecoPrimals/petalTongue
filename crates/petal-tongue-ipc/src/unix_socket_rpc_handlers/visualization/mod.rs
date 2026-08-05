@@ -262,14 +262,25 @@ fn method_schemas() -> serde_json::Value {
             }
         },
         "visualization.render.scene": {
-            "description": "Submit a serialized SceneGraph directly (bypasses grammar pipeline)",
+            "description": "Submit a scene for rendering. Accepts SceneGraph (object) or declarative (string name + data).",
             "params": {
                 "required": {
-                    "scene": { "type": "object", "description": "SceneGraph JSON (nodes + edges)" }
+                    "scene": { "type": ["object", "string"], "description": "SceneGraph JSON (object) or scene type name (string) for declarative passthrough" }
                 },
                 "optional": {
-                    "session_id": { "type": "string", "default": "scene-session" }
+                    "session_id": { "type": "string", "default": "scene-session" },
+                    "data": { "type": "object", "description": "Data payload (declarative mode only)" },
+                    "format": { "type": "string", "default": "webgl", "description": "Output format hint (declarative mode only)" },
+                    "interactive": { "type": "boolean", "default": false, "description": "Interactivity flag (declarative mode only)" }
                 }
+            }
+        },
+        "visualization.scene.declarative": {
+            "description": "List all stored declarative scenes (passthrough entries from external primals)",
+            "params": {},
+            "result": {
+                "count": { "type": "integer" },
+                "scenes": { "type": "object", "description": "Map of session_id → DeclarativeScene" }
             }
         },
         "visualization.render": {
@@ -298,15 +309,18 @@ fn method_schemas() -> serde_json::Value {
     })
 }
 
-/// Handle visualization.render.scene: submit a `SceneGraph` or declarative scene.
+/// Handle visualization.render.scene: submit a scene for rendering.
 ///
 /// Accepts two formats:
-/// 1. **SceneGraph** (petalTongue native): `{ "nodes": {...}, "root_id": "..." }`
-/// 2. **Declarative** (spring passthrough): `{ "scene": "<name>", "data": {...}, "format": "webgl" }`
+/// 1. **SceneGraph** (structured): `{ "scene": { "nodes": {...}, ... } }` — stored
+///    directly in the grammar pipeline. Alternatively the entire `params` can be
+///    the SceneGraph if no explicit `"scene"` key is present.
+/// 2. **Declarative** (passthrough): `{ "scene": "rges_volcano", "data": {...},
+///    "format": "webgl", "interactive": true }` — stored as typed `DeclarativeScene`
+///    for downstream WebGL/WebSocket clients (e.g. tideGlass viz scenes).
 ///
-/// Declarative scenes from springs (tideGlass, footPrint) are wrapped in a minimal
-/// `SceneGraph` with the raw data attached as `data_source` on the root node. The
-/// render pipeline can inspect `data_source` to select a scene-specific renderer.
+/// Detection: if the `"scene"` field is a string, treat as declarative; if it's
+/// an object, attempt `SceneGraph` deserialization.
 pub fn handle_render_scene(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> JsonRpcResponse {
     let session_id = req
         .params
@@ -331,14 +345,13 @@ pub fn handle_render_scene(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> J
         );
     };
 
-    let (scene, is_passthrough) =
-        match serde_json::from_value::<petal_tongue_scene::scene_graph::SceneGraph>(
-            scene_value.clone(),
-        ) {
-            Ok(s) => (s, false),
-            Err(_) if is_declarative_scene(&scene_value) => {
-                (wrap_declarative_scene(&scene_value), true)
-            }
+    if scene_value.is_string() {
+        return handle_declarative_scene(handlers, req.id, session_id, scene_value, &req.params);
+    }
+
+    let scene: petal_tongue_scene::scene_graph::SceneGraph =
+        match serde_json::from_value(scene_value) {
+            Ok(s) => s,
             Err(e) => {
                 return JsonRpcResponse::error(
                     req.id,
@@ -350,7 +363,6 @@ pub fn handle_render_scene(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> J
 
     let node_count = scene.node_count();
 
-    // Sign the canonical scene JSON for integrity verification
     let signature = serde_json::to_vec(&scene)
         .ok()
         .and_then(|canonical| handlers.scene_signer.sign(&canonical));
@@ -381,7 +393,6 @@ pub fn handle_render_scene(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> J
         "nodes_accepted": node_count,
         "status": "scene_stored",
         "signed": signature.is_some(),
-        "passthrough": is_passthrough,
     });
     if let Some(sig) = signature {
         result["signature"] = serde_json::json!(sig);
@@ -389,32 +400,60 @@ pub fn handle_render_scene(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> J
     JsonRpcResponse::success(req.id, result)
 }
 
-/// Checks if a JSON value looks like a declarative scene from a spring.
-/// Declarative scenes have `"scene"` (string slug) and `"data"` (object).
-fn is_declarative_scene(value: &Value) -> bool {
-    value.get("scene").and_then(Value::as_str).is_some()
-        && value.get("data").and_then(Value::as_object).is_some()
-}
+/// Store a declarative scene request (passthrough for WebGL/WebSocket clients).
+fn handle_declarative_scene(
+    handlers: &RpcHandlers,
+    id: Value,
+    session_id: String,
+    scene_name: Value,
+    params: &Value,
+) -> JsonRpcResponse {
+    let scene_type = scene_name
+        .as_str()
+        .unwrap_or("unknown")
+        .to_owned();
 
-/// Wraps a declarative scene JSON in a minimal `SceneGraph`.
-/// The scene slug is stored as `label` and the serialized JSON as `data_source`
-/// on the root node, allowing the render pipeline to inspect it.
-fn wrap_declarative_scene(value: &Value) -> petal_tongue_scene::scene_graph::SceneGraph {
-    let slug = value
-        .get("scene")
+    let data = params
+        .get("data")
+        .cloned()
+        .unwrap_or(Value::Object(serde_json::Map::new()));
+
+    let format = params
+        .get("format")
         .and_then(Value::as_str)
-        .unwrap_or("unknown");
-    let data_json = serde_json::to_string(value).unwrap_or_default();
-    let root_id = {
-        let graph = petal_tongue_scene::scene_graph::SceneGraph::new();
-        graph.root_id().to_owned()
+        .unwrap_or("webgl")
+        .to_owned();
+
+    let interactive = params
+        .get("interactive")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+
+    let declarative = crate::visualization_handler::DeclarativeScene {
+        scene_type: scene_type.clone(),
+        data,
+        format: format.clone(),
+        interactive,
     };
-    let mut graph = petal_tongue_scene::scene_graph::SceneGraph::new();
-    if let Some(root) = graph.get_mut(&root_id) {
-        root.label = Some(format!("spring:{slug}"));
-        root.data_source = Some(data_json);
+
+    {
+        let mut state = handlers
+            .viz_state
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state.declarative_scenes.insert(session_id.clone(), declarative);
     }
-    graph
+
+    JsonRpcResponse::success(
+        id,
+        serde_json::json!({
+            "session_id": session_id,
+            "scene_type": scene_type,
+            "format": format,
+            "interactive": interactive,
+            "status": "declarative_stored",
+        }),
+    )
 }
 
 /// Handle `visualization.texture.upload`: store base64-decoded RGBA pixel data.
@@ -615,6 +654,35 @@ pub fn handle_scene_verify(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonR
         serde_json::json!({
             "session_id": session_id,
             "valid": valid,
+        }),
+    )
+}
+
+/// List all stored declarative scenes (passthrough entries from external primals).
+pub fn handle_declarative_list(
+    handlers: &RpcHandlers,
+    id: Value,
+) -> JsonRpcResponse {
+    let state = handlers
+        .viz_state
+        .read()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+
+    let scenes: serde_json::Map<String, Value> = state
+        .declarative_scenes
+        .iter()
+        .filter_map(|(session_id, decl)| {
+            serde_json::to_value(decl)
+                .ok()
+                .map(|v| (session_id.clone(), v))
+        })
+        .collect();
+
+    JsonRpcResponse::success(
+        id,
+        serde_json::json!({
+            "count": scenes.len(),
+            "scenes": scenes,
         }),
     )
 }

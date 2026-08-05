@@ -1,7 +1,7 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 156d | **Date**: August 4, 2026 | **From**: petalTongue on eastGate
-**Posture**: **STABLE** — G19 PROVEN on ironGate. TCP bind hardened. nestgate.io LIVE on mesh. Zero P0/P1/P2.
+**Wave**: 156d | **Date**: August 5, 2026 | **From**: petalTongue on eastGate
+**Posture**: **STABLE** — G19 PROVEN on ironGate. Declarative scene passthrough LIVE. nestgate.io dashboard UX hardened. Zero P0/P1/P2.
 
 ---
 
@@ -11,7 +11,7 @@
 |--------|-------|
 | Version | 1.7.0 |
 | Crates | 19 workspace members |
-| Tests | 6,755 passing, 0 failures |
+| Tests | 6,606 passing, 0 failures |
 | Clippy | Zero warnings (pedantic + nursery, all targets) |
 | Docs | Zero warnings (`cargo doc --workspace --all-features --no-deps`) |
 | Unsafe | Confined to `petal-tongue-platform/src/ffi.rs` (15 usages, all SAFETY-documented) |
@@ -26,6 +26,8 @@
 | TCP bind | Localhost-only by default (`--bind 0.0.0.0` for network exposure) |
 | G19 | **PROVEN** — scene push live on ironGate (RTX 5070), exp006 22/22 PASS |
 | nestgate.io | **LIVE** — petalTongue v1.7.0 serving on sporeGate via WG mesh |
+| Declarative scenes | `visualization.render.scene` accepts string scene type + data for tideGlass |
+| Dashboard UX | Graceful degradation with specific error messages (no infinite "Loading...") |
 
 ---
 

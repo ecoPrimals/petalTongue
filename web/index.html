@@ -97,6 +97,12 @@
     </header>
 
     <main>
+        <noscript>
+            <div class="card" style="margin-bottom:1rem;border-color:var(--yellow)">
+                <p style="color:var(--yellow)">JavaScript is required for live mesh data. Static topology available at <code>/api/gate-mesh</code>.</p>
+            </div>
+        </noscript>
+
         <section>
             <h2>Gate Mesh Topology</h2>
             <div class="grid-2">
@@ -304,8 +310,12 @@
             .then(d => {
                 document.getElementById('version').textContent = 'v' + (d.version || '?');
                 document.getElementById('sb-mode').textContent = 'mode: ' + (d.mode || '?');
+                document.getElementById('sb-backend').textContent = 'backend: ' + (d.backend || 'mesh');
             })
-            .catch(() => {});
+            .catch(() => {
+                document.getElementById('conn-status').textContent = 'offline';
+                document.getElementById('conn-status').className = 'pill pill-err';
+            });
 
         fetch('/api/snapshot')
             .then(r => r.json())
@@ -346,43 +356,57 @@
                     document.getElementById('mesh-viz').innerHTML = svg;
                 })
                 .catch(() => {
-                    document.getElementById('mesh-viz').innerHTML = '<span class="empty-state">Mesh visualization unavailable</span>';
+                    document.getElementById('mesh-viz').innerHTML = '<span class="empty-state">Mesh visualization unavailable — check petalTongue deployment has ecosystem_manifest.toml</span>';
                 });
 
             fetch('/api/gate-mesh')
                 .then(r => r.json())
                 .then(renderGateStatus)
-                .catch(() => {});
+                .catch(() => {
+                    document.getElementById('gate-tbody').innerHTML = '<tr><td colspan="6" class="empty-state">Gate mesh API unreachable</td></tr>';
+                });
 
             fetch('/api/ecosystem')
                 .then(r => r.json())
                 .then(renderNucleus)
-                .catch(() => {});
+                .catch(() => {
+                    document.getElementById('nucleus-grid').innerHTML = '<div class="empty-state"><p>NUCLEUS data unavailable</p></div>';
+                });
 
             fetch('/api/physical-topology')
                 .then(r => r.json())
                 .then(renderPhysicalTopology)
-                .catch(() => {});
+                .catch(() => {
+                    document.getElementById('topo-path').textContent = 'Physical topology unavailable';
+                });
 
             fetch('/api/mesh-peers')
                 .then(r => r.json())
                 .then(renderMeshPeers)
-                .catch(() => {});
+                .catch(() => {
+                    document.getElementById('peers-tbody').innerHTML = '<tr><td colspan="5" class="empty-state">Mesh peers unavailable (requires live mesh bridge)</td></tr>';
+                });
 
             fetch('/api/topology-layers')
                 .then(r => r.json())
                 .then(renderKDermLayers)
-                .catch(() => {});
+                .catch(() => {
+                    document.getElementById('kderm-layers').innerHTML = '<div class="empty-state"><p>K-Derm layers unavailable</p></div>';
+                });
 
             fetch('/api/topology/live')
                 .then(r => r.json())
                 .then(renderLiveTopology)
-                .catch(() => {});
+                .catch(() => {
+                    document.getElementById('topo-primals-tbody').innerHTML = '<tr><td colspan="4" class="empty-state">Live topology unavailable (no Neural API connection)</td></tr>';
+                });
 
             fetch('/api/sporeprint')
                 .then(r => r.json())
                 .then(renderSporePrint)
-                .catch(() => {});
+                .catch(() => {
+                    document.getElementById('sporeprint-grid').innerHTML = '<div class="empty-state"><p>sporePrint data unavailable</p></div>';
+                });
         }
 
         function enrollmentPill(e) {

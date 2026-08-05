@@ -341,11 +341,35 @@ fn handle_render_scene_invalid_scene_returns_error() {
     let h = test_handlers();
     let req = JsonRpcRequest::new(
         "visualization.render.scene",
-        json!({"session_id": "s1", "scene": "not a valid scene"}),
+        json!({"session_id": "s1", "scene": {"invalid_field": true}}),
         json!(1),
     );
     let resp = handle_render_scene(&h, req);
     assert!(resp.error.is_some());
+}
+
+#[test]
+fn handle_render_scene_declarative_passthrough() {
+    let h = test_handlers();
+    let req = JsonRpcRequest::new(
+        "visualization.render.scene",
+        json!({
+            "session_id": "tideglass-volcano",
+            "scene": "rges_volcano",
+            "data": {"genes": ["TP53", "BRCA1"], "threshold": 0.05},
+            "format": "webgl",
+            "interactive": true
+        }),
+        json!(1),
+    );
+    let resp = handle_render_scene(&h, req);
+    assert!(resp.error.is_none());
+    let result = resp.result.unwrap();
+    assert_eq!(result["status"], "declarative_stored");
+    assert_eq!(result["scene_type"], "rges_volcano");
+    assert_eq!(result["format"], "webgl");
+    assert_eq!(result["interactive"], true);
+    assert_eq!(result["session_id"], "tideglass-volcano");
 }
 
 #[test]

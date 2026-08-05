@@ -384,6 +384,16 @@ pub async fn sporeprint_handler() -> Json<serde_json::Value> {
         .map(|(name, _)| name.as_str())
         .collect();
 
+    let ci_gate = gates_table
+        .into_iter()
+        .flat_map(|t| t.iter())
+        .find(|(_, v)| {
+            v.get("role")
+                .and_then(|r| r.as_str())
+                .is_some_and(|r| r.contains("CI"))
+        })
+        .map_or("unknown", |(name, _)| name.as_str());
+
     Json(serde_json::json!({
         "wave": wave,
         "posture": posture,
@@ -396,7 +406,7 @@ pub async fn sporeprint_handler() -> Json<serde_json::Value> {
             "known_debt": 0,
         },
         "ci": {
-            "sovereign_ci": "sporeGate",
+            "sovereign_ci": ci_gate,
             "targets": ["x86_64-unknown-linux-musl", "x86_64-unknown-linux-gnu"],
         },
         "source": "ecosystem_manifest",
