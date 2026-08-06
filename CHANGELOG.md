@@ -6,6 +6,36 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 156m: G65 Protocol Negotiation — Single-Socket Phase 3 (August 6, 2026)
+
+Independent implementation of G65 protocol negotiation spec. Single-socket
+protocol selection at connection time, backward-compatible with legacy clients.
+
+#### Added
+- **`protocol_negotiation` module** — G65 single-socket protocol negotiation:
+  - `ProtocolId` enum (`JsonRpc`, `Tarpc`) with wire format serialization
+  - `ProtocolRequest` / `ProtocolResponse` — wire format types (`PROTOCOLS: ...\n` / `PROTOCOL: ...\n`)
+  - `negotiate_client()` — async client-side negotiation
+  - `negotiate_server()` — async server-side negotiation with 100ms timeout fallback
+  - `select_protocol()` — best-match protocol selection logic
+  - `NegotiateServer` — UDS listener on `petaltongue.negotiate.sock`
+  - `NegotiateServerError` — typed error enum
+- **`get_petaltongue_negotiate_socket_path()`** — socket path resolution for G65.
+  Override: `PETALTONGUE_NEGOTIATE_SOCKET` env var.
+- 29 tests: wire format, selection logic, async duplex negotiation, timeout, EOF, error display.
+
+#### Changed
+- `server_mode::run()` spawns G65 negotiate server alongside C2 dual-socket
+  (three concurrent listeners via `tokio::select!`).
+- Updated all documentation to reflect G65 implementation.
+
+#### Metrics
+- 6,644 tests pass, 0 failures, 0 clippy warnings, 0 doc warnings
+- Three-socket transitional: `.sock` + `.tarpc.sock` + `.negotiate.sock`
+- All production files < 800 LOC
+
+---
+
 ### Wave 156l: Deep Debt — Zero Clippy Pedantic+Nursery (August 6, 2026)
 
 Final clippy sweep: eliminated all 23 remaining pedantic+nursery warnings.

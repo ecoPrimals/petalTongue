@@ -91,6 +91,8 @@ pub mod physics_bridge;
 pub mod primal_registration;
 pub mod primal_registration_error;
 pub mod protocol;
+/// G65 protocol negotiation: single-socket protocol selection at connection time.
+pub mod protocol_negotiation;
 /// Provenance trio: ephemeral DAG + attribution + ledger session lineage
 pub mod provenance_trio;
 /// Push delivery for callback dispatches (PT-06 transport upgrade)
@@ -151,4 +153,10 @@ pub use tarpc_server::{TarpcServer, TarpcServerError};
 pub use tarpc_types::{
     HealthStatus, PetalTongueRpc, PetalTongueRpcClient, PrimalEndpoint, PrimalMetrics,
     ProtocolInfo, RenderError, RenderRequest, RenderResponse, VersionInfo,
+};
+
+// G65 protocol negotiation (Phase 3 — single-socket)
+pub use protocol_negotiation::{
+    NegotiateServer, NegotiateServerError, NegotiationError, NegotiationResult, ProtocolId,
+    ProtocolRequest, ProtocolResponse, negotiate_client, negotiate_server, select_protocol,
 };

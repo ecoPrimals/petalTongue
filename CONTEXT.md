@@ -132,19 +132,23 @@ cargo test --workspace --all-features     # 6,755 workspace tests, ~85-90% cover
 
 ## Current State
 
-Wave 156m — C2 14/15 + G65 STANDARD (August 6, 2026).
+Wave 156m — G65 PROTOCOL NEGOTIATION IMPLEMENTED (August 6, 2026).
 
-petalTongue is **cephalization-operational**. C2 dual-socket pattern deployed:
-`petaltongue.sock` (JSON-RPC, universal) + `petaltongue.tarpc.sock` (binary bincode,
-sub-ms intra-gate). tarpc 0.37 (C1 DONE). Server mode spawns both listeners
-concurrently via `tokio::select!`. G19 live render pipeline PROVEN on ironGate.
-All P1 and P2 items resolved. Zero P0/P1/P2 across ecosystem. Self-knowledge enforced.
+petalTongue is **G65-operational**. Three-socket transitional pattern deployed:
+- `petaltongue.sock` (JSON-RPC, universal — C2 Phase 2)
+- `petaltongue.tarpc.sock` (binary bincode — C2 Phase 2)
+- `petaltongue.negotiate.sock` (G65 Phase 3 — single-socket protocol negotiation)
+
+tarpc 0.37 (C1 DONE). Server mode spawns all three listeners concurrently via
+`tokio::select!`. G19 live render pipeline PROVEN on ironGate.
+All P1 and P2 items resolved. Zero P0/P1/P2. Self-knowledge enforced.
 Declarative scene passthrough LIVE (O6 DONE).
 
-**G65 (Phase 3)**: Single-socket protocol negotiation will replace C2 dual-socket.
-squirrel has 432-line reference impl. sourDough implements as reference by example —
-no shared crate (primal violation). Each primal implements independently.
-Backward-compatible: no negotiation header = JSON-RPC default.
+**G65 (Phase 3)**: Independently implemented from squirrel reference pattern.
+Client sends `PROTOCOLS: tarpc,jsonrpc\n`, server selects best match.
+No negotiation header = JSON-RPC (backward-compatible).
+Transitional: C2 sockets remain for legacy clients. Once ecosystem adopts G65,
+dual-socket paths deprecate → single `petaltongue.negotiate.sock` becomes canonical.
 
 **BTSP**: 13/13 strict mode (ClientHello + server-side). Wired into outbound
 `primal.announce` and `content.resolve` connections (HMAC-SHA256).

@@ -64,16 +64,23 @@ pub async fn run(
     });
 
     if tcp_port.is_some() {
-        tracing::info!("IPC server starting (UDS + TCP + tarpc dual transport, no display)");
+        tracing::info!("IPC server starting (UDS + TCP + tarpc + G65 negotiate, no display)");
     } else {
-        tracing::info!("IPC server starting (UDS + tarpc dual-socket, no TCP bind, no display)");
+        tracing::info!("IPC server starting (UDS + tarpc + G65 negotiate, no display)");
     }
 
     let tarpc_server = petal_tongue_ipc::TarpcServer::from_default_path()
         .map_err(|e| AppError::Other(format!("tarpc server init: {e}")))?;
     tracing::info!(
-        "tarpc UDS: {} (C2 dual-socket pattern)",
+        "tarpc UDS: {} (C2 dual-socket)",
         tarpc_server.socket_path().display()
+    );
+
+    let negotiate_server = petal_tongue_ipc::NegotiateServer::from_default_path()
+        .map_err(|e| AppError::Other(format!("G65 negotiate server init: {e}")))?;
+    tracing::info!(
+        "G65 negotiate: {} (Phase 3 single-socket)",
+        negotiate_server.socket_path().display()
     );
 
     tokio::select! {
@@ -83,6 +90,11 @@ pub async fn run(
         result = tarpc_server.serve() => {
             if let Err(e) = result {
                 tracing::error!("tarpc server error: {e}");
+            }
+        }
+        result = negotiate_server.serve() => {
+            if let Err(e) = result {
+                tracing::error!("G65 negotiate server error: {e}");
             }
         }
         () = crate::signal::shutdown_signal() => {

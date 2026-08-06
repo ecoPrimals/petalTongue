@@ -1,7 +1,7 @@
 # petalTongue — Ecosystem Status
 
 **Wave**: 156m | **Date**: August 6, 2026 | **From**: petalTongue on eastGate
-**Posture**: **C2 14/15 + G65 STANDARD** — petalTongue C2 LIVE (tarpc UDS + JSON-RPC UDS). tarpc 0.37. G65 Phase 3: sourDough reference by example, each primal implements independently (no shared crate). Zero P0/P1/P2.
+**Posture**: **G65 IMPLEMENTED** — petalTongue G65 negotiate server LIVE (`petaltongue.negotiate.sock`). C2 dual-socket retained for backward compat. tarpc 0.37. Zero P0/P1/P2.
 
 ---
 
@@ -11,7 +11,7 @@
 |--------|-------|
 | Version | 1.7.0 |
 | Crates | 19 workspace members |
-| Tests | 6,615 passing, 0 failures |
+| Tests | 6,644 passing, 0 failures |
 | Clippy | Zero warnings (pedantic + nursery, all targets) |
 | Docs | Zero warnings (`cargo doc --workspace --all-features --no-deps`) |
 | Unsafe | Confined to `petal-tongue-platform/src/ffi.rs` (15 usages, all SAFETY-documented) |
@@ -19,7 +19,7 @@
 | Cross-arch | x86_64-linux, aarch64-linux, aarch64-android, x86_64-windows |
 | Files | All production files < 800 LOC |
 | Edition | 2024 |
-| tarpc | **0.37** — C1 DONE, C2 LIVE. G65 Phase 3: implement independently from sourDough reference |
+| tarpc | **0.37** — C1 DONE, C2 LIVE, **G65 DONE** (negotiate server on `petaltongue.negotiate.sock`) |
 | tarpc UDS | `petaltongue.tarpc.sock` — binary RPC alongside JSON-RPC `.sock` |
 | tokio-serde | 0.9 (aligned with tarpc 0.37) |
 | Idioms | Rust 2024 let-chains, zero redundant allocations, all deps current |
@@ -169,8 +169,9 @@ petalTongue owns **no glacial goals directly** but supports:
 
 ---
 
-*Wave 156m (Aug 6): C2 14/15 (skunkBat shipped, only bingoCube remains). G65 corrected:
-sourDough is reference by example — no shared crate (primal violation). Each primal
-implements G65 independently. petalTongue C1b+C2 DONE. Zero clippy pedantic+nursery.
-6,615 tests. Zero P0/P1/P2. Next for petalTongue: G65 independent implementation
-(single-socket protocol negotiation) once sourDough publishes reference pattern.*
+*Wave 156m (Aug 6): G65 IMPLEMENTED independently from squirrel reference pattern.
+`protocol_negotiation` module: `ProtocolId`, `ProtocolRequest/Response`, wire format,
+`negotiate_client/server`, `NegotiateServer` on `petaltongue.negotiate.sock`.
+29 new tests (+6,644 total). C2 dual-socket retained for backward compat.
+Server mode: three concurrent listeners (JSON-RPC .sock + tarpc .tarpc.sock + G65 .negotiate.sock).
+Zero clippy pedantic+nursery. Zero doc warnings. Zero P0/P1/P2.*
