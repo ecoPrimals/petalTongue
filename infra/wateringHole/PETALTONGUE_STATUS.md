@@ -1,7 +1,7 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 156l | **Date**: August 6, 2026 | **From**: petalTongue on eastGate
-**Posture**: **G65 PROTOCOL NEGOTIATION ERA** — C2 dual-socket LIVE (tarpc UDS + JSON-RPC UDS). tarpc 0.37. G65 Phase 3 spec published (petalTongue adopts after sourDough extraction). Zero P0/P1/P2.
+**Wave**: 156m | **Date**: August 6, 2026 | **From**: petalTongue on eastGate
+**Posture**: **C2 14/15 + G65 STANDARD** — petalTongue C2 LIVE (tarpc UDS + JSON-RPC UDS). tarpc 0.37. G65 Phase 3: sourDough reference by example, each primal implements independently (no shared crate). Zero P0/P1/P2.
 
 ---
 
@@ -19,7 +19,7 @@
 | Cross-arch | x86_64-linux, aarch64-linux, aarch64-android, x86_64-windows |
 | Files | All production files < 800 LOC |
 | Edition | 2024 |
-| tarpc | **0.37** — C1 DONE, C2 LIVE. G65 Phase 3 pending (single-socket negotiation) |
+| tarpc | **0.37** — C1 DONE, C2 LIVE. G65 Phase 3: implement independently from sourDough reference |
 | tarpc UDS | `petaltongue.tarpc.sock` — binary RPC alongside JSON-RPC `.sock` |
 | tokio-serde | 0.9 (aligned with tarpc 0.37) |
 | Idioms | Rust 2024 let-chains, zero redundant allocations, all deps current |
@@ -169,11 +169,8 @@ petalTongue owns **no glacial goals directly** but supports:
 
 ---
 
-*Wave 156l (Aug 6): G65 Protocol Negotiation Standard published. petalTongue C1b+C2 DONE.
-`petaltongue.sock` (JSON-RPC) + `petaltongue.tarpc.sock` (binary) — C2 canonical pattern.
-TarpcServer serves PetalTongueRpc over UDS with bincode framing (sub-ms intra-gate).
-6,615 tests. Zero P0/P1/P2. Zero clippy warnings (pedantic+nursery, all targets).
-C1 DONE (tarpc 0.37). C2 DONE (dual-socket). O6 DONE (declarative scene passthrough).
-G65 Phase 3 (single-socket protocol negotiation) published — petalTongue adopts after
-sourDough extraction (C7). Eliminates dual-socket → single socket with protocol header.
-C2 13/15 ecosystem-wide (skunkBat + bingoCube remain).*
+*Wave 156m (Aug 6): C2 14/15 (skunkBat shipped, only bingoCube remains). G65 corrected:
+sourDough is reference by example — no shared crate (primal violation). Each primal
+implements G65 independently. petalTongue C1b+C2 DONE. Zero clippy pedantic+nursery.
+6,615 tests. Zero P0/P1/P2. Next for petalTongue: G65 independent implementation
+(single-socket protocol negotiation) once sourDough publishes reference pattern.*
