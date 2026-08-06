@@ -1,7 +1,7 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 156h | **Date**: August 5, 2026 | **From**: petalTongue on eastGate
-**Posture**: **CEPHALIZATION ERA** — tarpc 0.37 aligned (C1 DONE). G64 Phase 1 ready. Declarative scene passthrough LIVE. Zero P0/P1/P2.
+**Wave**: 156i | **Date**: August 6, 2026 | **From**: petalTongue on eastGate
+**Posture**: **CEPHALIZATION ERA** — C2 dual-socket LIVE (tarpc UDS + JSON-RPC UDS). tarpc 0.37. G64 Phase 1 operational. Zero P0/P1/P2.
 
 ---
 
@@ -11,7 +11,7 @@
 |--------|-------|
 | Version | 1.7.0 |
 | Crates | 19 workspace members |
-| Tests | 6,606 passing, 0 failures |
+| Tests | 6,615 passing, 0 failures |
 | Clippy | Zero warnings (pedantic + nursery, all targets) |
 | Docs | Zero warnings (`cargo doc --workspace --all-features --no-deps`) |
 | Unsafe | Confined to `petal-tongue-platform/src/ffi.rs` (15 usages, all SAFETY-documented) |
@@ -19,7 +19,8 @@
 | Cross-arch | x86_64-linux, aarch64-linux, aarch64-android, x86_64-windows |
 | Files | All production files < 800 LOC |
 | Edition | 2024 |
-| tarpc | **0.37** — cephalization convergent (C1 DONE, Phase 1 ready) |
+| tarpc | **0.37** — cephalization convergent (C1 DONE, C2 dual-socket LIVE) |
+| tarpc UDS | `petaltongue.tarpc.sock` — binary RPC alongside JSON-RPC `.sock` |
 | tokio-serde | 0.9 (aligned with tarpc 0.37) |
 | Idioms | Rust 2024 let-chains, zero redundant allocations, all deps current |
 | Self-knowledge | Zero hardcoded peer primal names in production code |
@@ -168,10 +169,9 @@ petalTongue owns **no glacial goals directly** but supports:
 
 ---
 
-*Wave 156h (Aug 5 LATE): petalTongue CEPHALIZATION ERA. tarpc 0.37 aligned (C1 DONE).
-G64 Phase 1 ready — dual-protocol convergence (JSON-RPC bootstrap + tarpc binary hot path).
-BTSP 13/13. 6,606 tests. Zero P0/P1/P2. Zero clippy/doc warnings.
-tokio-serde 0.9 (tracks tarpc 0.37). bincode 1.3 (unchanged — tarpc 0.37 does not require 2.x).
-Declarative scene passthrough LIVE (O6 DONE). Self-knowledge enforced.
-All production files < 800 LOC. Zero debris. Dependencies current at HEAD.
-Next: C2 (UDS dual-socket canonical pattern), then Phase 2 (cross-gate elevated tarpc on songBird relay).*
+*Wave 156i (Aug 6): petalTongue CEPHALIZATION ERA. C2 dual-socket LIVE.
+`petaltongue.sock` (JSON-RPC) + `petaltongue.tarpc.sock` (binary) — canonical pattern.
+TarpcServer serves PetalTongueRpc over UDS with bincode framing (sub-ms intra-gate).
+6,615 tests (+9 tarpc server integration). Zero P0/P1/P2. Zero clippy/doc warnings.
+C1 DONE (tarpc 0.37). C2 DONE (dual-socket). O6 DONE (declarative scene passthrough).
+Next: other primals adopt C2 pattern. Phase 2 (cross-gate elevated tarpc on songBird relay).*
