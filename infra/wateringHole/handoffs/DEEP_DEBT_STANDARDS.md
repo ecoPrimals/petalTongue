@@ -1,6 +1,6 @@
-# Deep Debt Standards — Updated Wave 156h
+# Deep Debt Standards — Updated Wave 156i
 
-**Wave**: 156h | **Date**: August 5, 2026 | **For**: All primal teams (reference)
+**Wave**: 156i | **Date**: August 6, 2026 | **For**: All primal teams (reference)
 
 ---
 
@@ -131,5 +131,23 @@ OpenTelemetry integration (0.37 requires OTel 0.30+).
 
 ---
 
-*Wave 156h: petalTongue cephalization-convergent. tarpc 0.37 aligned (C1 DONE).
-Reference for all primal teams undertaking G64 convergent evolution.*
+### C2 dual-socket pattern (Wave 156i)
+
+Every primal exposes two UDS sockets for port-agnostic IPC:
+- `<primal>.sock` → JSON-RPC (universal, debuggable, browser-compatible)
+- `<primal>.tarpc.sock` → tarpc binary bincode (sub-ms, Rust-to-Rust only)
+
+petalTongue is the **first implementation** of this pattern:
+- `get_petaltongue_tarpc_socket_path()` resolves the tarpc socket
+- `discover_primal_tarpc_socket("songbird")` → `songbird.tarpc.sock`
+- Env override: `<PRIMAL>_TARPC_SOCKET` (same pattern as JSON-RPC)
+- Server mode spawns both in `tokio::select!` — zero ordering dependency
+
+Other primals adopting C2: create a tarpc server module, implement your
+`#[tarpc::service]` trait, bind to `<primal>.tarpc.sock`, add to your
+server startup alongside existing JSON-RPC listener.
+
+---
+
+*Wave 156i: petalTongue cephalization-operational. C1 (tarpc 0.37) + C2 (dual-socket)
+DONE. Reference for all primal teams undertaking G64 convergent evolution.*

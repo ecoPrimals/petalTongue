@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: August 5, 2026 (Wave 156h — CEPHALIZATION ERA, tarpc 0.37 aligned, 6,606 tests, zero warnings)
+**Updated**: August 6, 2026 (Wave 156i — CEPHALIZATION ERA, C2 dual-socket LIVE, 6,615 tests, zero warnings)
 
 ---
 

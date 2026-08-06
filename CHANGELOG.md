@@ -6,6 +6,30 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 156i: C2 Dual-Socket Pattern — tarpc UDS Server (August 6, 2026)
+
+G64 cephalization Phase 1: tarpc UDS server alongside JSON-RPC.
+
+#### Added
+- **`TarpcServer`** — tarpc UDS server module (`tarpc_server/`) serving
+  `PetalTongueRpc` over binary bincode framing at `petaltongue.tarpc.sock`.
+  Runs concurrently with JSON-RPC `.sock` in server mode (C2 dual-socket pattern).
+- **`get_petaltongue_tarpc_socket_path()`** — socket path resolution for tarpc UDS.
+  Override: `PETALTONGUE_TARPC_SOCKET` env var.
+- **`discover_primal_tarpc_socket()`** — discover any primal's tarpc socket
+  (convention: `<primal>.tarpc.sock`). Override: `<PRIMAL>_TARPC_SOCKET`.
+- 5 integration tests: real UDS connect, bincode framing, capabilities/health/version/protocols.
+- 4 unit tests for socket path resolution.
+
+#### Changed
+- `server_mode::run()` now spawns tarpc UDS alongside JSON-RPC (tokio::select!).
+- Added `futures-util` dep to `petal-tongue-ipc` for `StreamExt` (tarpc channel).
+
+#### Metrics
+- 6,615 tests pass, 0 failures, 0 clippy warnings, 0 doc warnings
+- Dual-socket: `.sock` (JSON-RPC) + `.tarpc.sock` (binary) per C2 standard
+- All production files < 800 LOC
+
 ### Wave 156h: Cephalization — tarpc 0.37 Convergence (August 5, 2026)
 
 tarpc version alignment for G64 cephalization Phase 1.

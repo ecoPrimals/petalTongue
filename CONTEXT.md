@@ -132,15 +132,14 @@ cargo test --workspace --all-features     # 6,755 workspace tests, ~85-90% cover
 
 ## Current State
 
-Wave 156h — CEPHALIZATION ERA / tarpc 0.37 aligned (August 5, 2026).
+Wave 156i — CEPHALIZATION ERA / C2 dual-socket LIVE (August 6, 2026).
 
-petalTongue is **stable and cephalization-convergent**. tarpc upgraded from 0.34 to 0.37
-(C1 DONE) — unblocks G64 Phase 1 dual-protocol composition. JSON-RPC bootstraps
-discovery; tarpc carries performance on the binary hot path. G19 live render pipeline
-PROVEN on ironGate (RTX 5070). All P1 and P2 items resolved. NUCLEUS validated on
-4 gates. Zero P0/P1/P2 across ecosystem. Self-knowledge fully enforced.
-Declarative scene passthrough LIVE (O6 DONE) — tideGlass and science primals
-submit scenes by name + data without structuring a full SceneGraph.
+petalTongue is **cephalization-operational**. Dual-socket pattern (C2) deployed:
+`petaltongue.sock` (JSON-RPC, universal) + `petaltongue.tarpc.sock` (binary bincode,
+sub-ms intra-gate). tarpc 0.37 (C1 DONE). Server mode spawns both listeners
+concurrently via `tokio::select!`. G19 live render pipeline PROVEN on ironGate.
+All P1 and P2 items resolved. Zero P0/P1/P2 across ecosystem. Self-knowledge enforced.
+Declarative scene passthrough LIVE (O6 DONE).
 
 **BTSP**: 13/13 strict mode (ClientHello + server-side). Wired into outbound
 `primal.announce` and `content.resolve` connections (HMAC-SHA256).
