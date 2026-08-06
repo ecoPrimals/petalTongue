@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: August 5, 2026 (Wave 156d — STABLE, declarative scene passthrough, nestgate.io UX hardened, 6,606 tests, zero warnings)
+**Updated**: August 5, 2026 (Wave 156h — CEPHALIZATION ERA, tarpc 0.37 aligned, 6,606 tests, zero warnings)
 
 ---
 
