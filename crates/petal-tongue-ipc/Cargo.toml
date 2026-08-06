@@ -47,6 +47,7 @@ tarpc = { workspace = true }
 tokio-util = { workspace = true }
 tokio-serde = { workspace = true }
 bincode = { workspace = true }
+futures-util = { workspace = true }
 
 [features]
 default = []
