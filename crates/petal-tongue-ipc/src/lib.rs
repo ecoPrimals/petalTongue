@@ -102,6 +102,7 @@ pub mod server;
 pub mod socket_path;
 pub mod socket_path_error;
 pub mod tarpc_client;
+pub mod tarpc_server;
 pub mod tarpc_types;
 /// Unix socket connection handling (JSON-RPC over newline-delimited JSON)
 pub mod unix_socket_connection;
@@ -146,6 +147,7 @@ pub use visualization_handler::{
 
 // tarpc (PRIMARY - primal-to-primal)
 pub use tarpc_client::{TarpcClient, TarpcClientError, TarpcResult};
+pub use tarpc_server::{TarpcServer, TarpcServerError};
 pub use tarpc_types::{
     HealthStatus, PetalTongueRpc, PetalTongueRpcClient, PrimalEndpoint, PrimalMetrics,
     ProtocolInfo, RenderError, RenderRequest, RenderResponse, VersionInfo,

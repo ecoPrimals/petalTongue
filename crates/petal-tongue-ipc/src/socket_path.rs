@@ -170,6 +170,44 @@ pub fn discover_primal_socket(
         .join(format!("{primal_name}.sock")))
 }
 
+/// Get the tarpc UDS socket path for this petalTongue instance.
+///
+/// Default path: `$XDG_RUNTIME_DIR/biomeos/petaltongue.tarpc.sock`
+///
+/// Per C2 (UDS dual-socket pattern), every primal exposes two sockets:
+/// - `<primal>.sock` → JSON-RPC (universal, debuggable)
+/// - `<primal>.tarpc.sock` → tarpc binary (high-performance Rust-to-Rust)
+///
+/// Environment override: `PETALTONGUE_TARPC_SOCKET` (highest priority).
+pub fn get_petaltongue_tarpc_socket_path() -> Result<PathBuf, SocketPathError> {
+    if let Ok(socket_path) = env::var("PETALTONGUE_TARPC_SOCKET") {
+        let path = PathBuf::from(socket_path);
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        return Ok(path);
+    }
+
+    let sock_dir = petal_tongue_core::constants::resolve_biomeos_socket_dir();
+    std::fs::create_dir_all(&sock_dir)?;
+    Ok(sock_dir.join("petaltongue.tarpc.sock"))
+}
+
+/// Discover another primal's tarpc UDS socket path.
+///
+/// Follows the C2 dual-socket convention: `<primal>.tarpc.sock`.
+///
+/// Env override: `<PRIMAL>_TARPC_SOCKET`.
+pub fn discover_primal_tarpc_socket(primal_name: &str) -> Result<PathBuf, SocketPathError> {
+    let env_var = format!("{}_TARPC_SOCKET", primal_name.to_uppercase());
+    if let Ok(socket_path) = env::var(&env_var) {
+        return Ok(PathBuf::from(socket_path));
+    }
+
+    Ok(petal_tongue_core::constants::resolve_biomeos_socket_dir()
+        .join(format!("{primal_name}.tarpc.sock")))
+}
+
 /// Check if a socket path exists and is accessible
 ///
 /// # Capability-Based Discovery
@@ -360,5 +398,61 @@ mod tests {
             let result = get_runtime_dir();
             assert!(result.is_ok(), "parent /tmp exists");
         });
+    }
+
+    #[test]
+    fn test_tarpc_socket_path_default() {
+        env_test_helpers::with_env_vars(
+            &[("PETALTONGUE_TARPC_SOCKET", None), ("XDG_RUNTIME_DIR", None)],
+            || {
+                if let Ok(path) = get_petaltongue_tarpc_socket_path() {
+                    let path_str = path.to_string_lossy();
+                    assert!(
+                        path_str.ends_with("biomeos/petaltongue.tarpc.sock"),
+                        "Expected path ending with 'biomeos/petaltongue.tarpc.sock', got: {path_str}"
+                    );
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_tarpc_socket_path_override() {
+        env_test_helpers::with_env_var(
+            "PETALTONGUE_TARPC_SOCKET",
+            "/tmp/custom-pt.tarpc.sock",
+            || {
+                let path = get_petaltongue_tarpc_socket_path().unwrap();
+                assert_eq!(path, PathBuf::from("/tmp/custom-pt.tarpc.sock"));
+            },
+        );
+    }
+
+    #[test]
+    fn test_discover_primal_tarpc_socket() {
+        env_test_helpers::with_env_vars(
+            &[("SONGBIRD_TARPC_SOCKET", None), ("XDG_RUNTIME_DIR", None)],
+            || {
+                if let Ok(path) = discover_primal_tarpc_socket("songbird") {
+                    let path_str = path.to_string_lossy();
+                    assert!(
+                        path_str.ends_with("biomeos/songbird.tarpc.sock"),
+                        "Expected biomeos/songbird.tarpc.sock, got: {path_str}"
+                    );
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_discover_primal_tarpc_socket_override() {
+        env_test_helpers::with_env_var(
+            "LOAMSPINE_TARPC_SOCKET",
+            "/tmp/loam.tarpc.sock",
+            || {
+                let path = discover_primal_tarpc_socket("loamspine").unwrap();
+                assert_eq!(path, PathBuf::from("/tmp/loam.tarpc.sock"));
+            },
+        );
     }
 }

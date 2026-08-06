@@ -64,14 +64,26 @@ pub async fn run(
     });
 
     if tcp_port.is_some() {
-        tracing::info!("IPC server starting (UDS + TCP dual transport, no display)");
+        tracing::info!("IPC server starting (UDS + TCP + tarpc dual transport, no display)");
     } else {
-        tracing::info!("IPC server starting (UDS-only, no TCP bind, no display)");
+        tracing::info!("IPC server starting (UDS + tarpc dual-socket, no TCP bind, no display)");
     }
+
+    let tarpc_server = petal_tongue_ipc::TarpcServer::from_default_path()
+        .map_err(|e| AppError::Other(format!("tarpc server init: {e}")))?;
+    tracing::info!(
+        "tarpc UDS: {} (C2 dual-socket pattern)",
+        tarpc_server.socket_path().display()
+    );
 
     tokio::select! {
         result = server.start() => {
             result?;
+        }
+        result = tarpc_server.serve() => {
+            if let Err(e) = result {
+                tracing::error!("tarpc server error: {e}");
+            }
         }
         () = crate::signal::shutdown_signal() => {
             tracing::info!("Server mode shut down gracefully");
