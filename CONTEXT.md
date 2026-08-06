@@ -132,7 +132,7 @@ cargo test --workspace --all-features     # 6,755 workspace tests, ~85-90% cover
 
 ## Current State
 
-Wave 156l — G65 PROTOCOL NEGOTIATION STANDARD PUBLISHED (August 6, 2026).
+Wave 156m — C2 14/15 + G65 STANDARD (August 6, 2026).
 
 petalTongue is **cephalization-operational**. C2 dual-socket pattern deployed:
 `petaltongue.sock` (JSON-RPC, universal) + `petaltongue.tarpc.sock` (binary bincode,
@@ -142,7 +142,8 @@ All P1 and P2 items resolved. Zero P0/P1/P2 across ecosystem. Self-knowledge enf
 Declarative scene passthrough LIVE (O6 DONE).
 
 **G65 (Phase 3)**: Single-socket protocol negotiation will replace C2 dual-socket.
-squirrel has 432-line reference impl. petalTongue adopts after sourDough extraction.
+squirrel has 432-line reference impl. sourDough implements as reference by example —
+no shared crate (primal violation). Each primal implements independently.
 Backward-compatible: no negotiation header = JSON-RPC default.
 
 **BTSP**: 13/13 strict mode (ClientHello + server-side). Wired into outbound

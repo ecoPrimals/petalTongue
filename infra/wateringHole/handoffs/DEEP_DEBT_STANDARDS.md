@@ -1,6 +1,6 @@
-# Deep Debt Standards — Updated Wave 156l
+# Deep Debt Standards — Updated Wave 156m
 
-**Wave**: 156l | **Date**: August 6, 2026 | **For**: All primal teams (reference)
+**Wave**: 156m | **Date**: August 6, 2026 | **For**: All primal teams (reference)
 
 ---
 
@@ -159,13 +159,14 @@ Single-socket protocol negotiation replaces C2 dual-socket as the Phase 3 destin
 - Protocol-transparent for songBird routing
 
 **Reference implementation**: squirrel (432 lines, full test coverage).
-**Extraction target**: sourDough or cellMembrane (C7 work item).
-**Adoption**: All 15 primals + cellMembrane adopt after extraction.
+**Reference by example**: sourDough implements the pattern (C7 work item).
+**Adoption**: Each primal implements independently — NO shared crate (primal violation).
 
-petalTongue will evolve from C2 dual-socket to G65 single-socket once sourDough
-publishes the extracted pattern. No action needed until C7 completes.
+petalTongue will evolve from C2 dual-socket to G65 single-socket by implementing
+the negotiation protocol independently, reading sourDough's published pattern.
 
 ---
 
-*Wave 156l: G65 spec published. petalTongue C1+C2 DONE. Phase 3 (single-socket
-protocol negotiation) pending C7 extraction. Zero clippy pedantic+nursery. 6,615 tests.*
+*Wave 156m: C2 14/15, G65 standard corrected (no shared crate — primal violation).
+petalTongue C1+C2 DONE. G65 Phase 3 pending sourDough reference by example.
+Zero clippy pedantic+nursery. 6,615 tests. All production files < 800 LOC.*

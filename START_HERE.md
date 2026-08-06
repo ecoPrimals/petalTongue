@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: August 6, 2026 (Wave 156l — G65 published, C2 13/15 ecosystem, 6,615 tests, zero clippy pedantic+nursery)
+**Updated**: August 6, 2026 (Wave 156m — C2 14/15, G65 standard, 6,615 tests, zero clippy pedantic+nursery)
 
 ---
 
