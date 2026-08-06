@@ -208,6 +208,24 @@ pub fn discover_primal_tarpc_socket(primal_name: &str) -> Result<PathBuf, Socket
         .join(format!("{primal_name}.tarpc.sock")))
 }
 
+/// Resolve the G65 negotiated socket path for petalTongue.
+///
+/// Convention: `petaltongue.negotiate.sock` — single socket that handles protocol
+/// negotiation (G65 Phase 3). Override: `PETALTONGUE_NEGOTIATE_SOCKET` env var.
+pub fn get_petaltongue_negotiate_socket_path() -> Result<PathBuf, SocketPathError> {
+    if let Ok(socket_path) = env::var("PETALTONGUE_NEGOTIATE_SOCKET") {
+        let path = PathBuf::from(socket_path);
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        return Ok(path);
+    }
+
+    let sock_dir = petal_tongue_core::constants::resolve_biomeos_socket_dir();
+    std::fs::create_dir_all(&sock_dir)?;
+    Ok(sock_dir.join("petaltongue.negotiate.sock"))
+}
+
 /// Check if a socket path exists and is accessible
 ///
 /// # Capability-Based Discovery
