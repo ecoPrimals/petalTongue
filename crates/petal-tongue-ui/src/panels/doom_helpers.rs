@@ -110,6 +110,7 @@ pub fn prepare_doom_display(
 }
 
 #[cfg(test)]
+#[allow(clippy::float_cmp, reason = "tests compare exact known float constants")]
 mod tests {
     use super::*;
 

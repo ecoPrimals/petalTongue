@@ -153,7 +153,7 @@ pub fn songbird_peers_to_live(result: &serde_json::Value) -> Vec<LiveMeshPeer> {
                 .as_str()
                 .unwrap_or("unknown")
                 .to_string(),
-            latency_ms: p["priority"].as_u64().map(|v| v as u32),
+            latency_ms: p["priority"].as_u64().and_then(|v| u32::try_from(v).ok()),
             capabilities: Vec::new(),
         })
         .collect()

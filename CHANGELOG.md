@@ -6,6 +6,25 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 156l: Deep Debt — Zero Clippy Pedantic+Nursery (August 6, 2026)
+
+Final clippy sweep: eliminated all 23 remaining pedantic+nursery warnings.
+
+#### Fixed
+- Redundant closures → method references (`serde_json::Value::as_bool`, `as_u64`)
+- `u64` to `u32` truncation → safe `u32::try_from().ok()`
+- Pass-by-value where reference suffices (`handle_declarative_scene` params)
+- `unwrap_or` with function call → `unwrap_or_else`
+- Doc markdown: backtick type names (`SceneGraph`, scene identifiers)
+- Float comparisons in tests: `#[allow(clippy::float_cmp)]` on test modules
+- MutexGuard-across-await in tests: `#[allow(clippy::await_holding_lock)]` (intentional serialization)
+
+#### Metrics
+- 6,615 tests pass, 0 failures, **0 clippy warnings** (pedantic + nursery, all targets)
+- All production files < 800 LOC
+
+---
+
 ### Wave 156i: C2 Dual-Socket Pattern — tarpc UDS Server (August 6, 2026)
 
 G64 cephalization Phase 1: tarpc UDS server alongside JSON-RPC.
