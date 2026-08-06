@@ -1,33 +1,37 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Per-primal health liveness queries via UDS.
 //!
-//! Connects to each primal's UDS socket and issues a `health.liveness`
-//! JSON-RPC call with BTSP framing. Returns structured health state
-//! for the nestgate.io dashboard.
+//! G65 primals enforce riboCipher transport signal (0xEC prefix).
+//! Some primals (beardog) require a full BTSP handshake on their main
+//! socket but offer a `-default.sock` for plaintext health checks.
+//!
+//! Strategy: try BTSP-framed query first; on connection reset / EOF,
+//! retry with plain JSON-RPC (handles coralReef's G65 plain mode).
 
 use serde::Serialize;
 use tokio::net::UnixStream;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use std::time::Duration;
 
-const QUERY_TIMEOUT: Duration = Duration::from_secs(2);
+const QUERY_TIMEOUT: Duration = Duration::from_secs(3);
 
-/// Known primal socket mappings (name → full socket path).
+/// Known primal socket mappings (name → primary socket, optional fallback).
 ///
-/// Most primals use `/run/membrane/{name}.sock`, but some use
-/// family-qualified names or live in the user biomeos directory.
+/// After G65, beardog's main socket requires a full BTSP handshake;
+/// use `beardog-default.sock` for plaintext health. skunkBat runs as
+/// root with a family-qualified socket under `/run/user/0/biomeos/`.
 const PRIMAL_SOCKETS: &[(&str, &str)] = &[
     ("sweetgrass", "/run/membrane/sweetgrass.sock"),
     ("loamspine", "/run/membrane/loamspine.sock"),
     ("rhizocrypt", "/run/membrane/rhizocrypt.sock"),
-    ("beardog", "/run/membrane/beardog.sock"),
+    ("beardog", "/run/membrane/beardog-default.sock"),
     ("squirrel", "/run/membrane/squirrel.sock"),
     ("toadstool", "/run/membrane/toadstool.sock"),
     ("biomeos", "/run/membrane/biomeos.sock"),
     ("songbird", "/run/membrane/songbird.sock"),
     ("barracuda", "/run/membrane/barracuda.sock"),
     ("coralreef", "/run/membrane/coralreef.sock"),
-    ("skunkbat", "/run/membrane/security.sock"),
+    ("skunkbat", "/run/user/0/biomeos/skunkbat-e8b62b6e.sock"),
     ("nestgate", "/run/membrane/nestgate-e8b62b6e.sock"),
     ("petaltongue", "/run/user/1000/biomeos/petaltongue-e8b62b6e.sock"),
 ];
@@ -43,12 +47,14 @@ pub struct PrimalHealth {
     pub error: Option<String>,
 }
 
-/// Query `health.liveness` on a single primal via UDS with BTSP framing.
+/// Query `health.liveness` on a single primal via UDS.
+///
+/// Tries BTSP-framed request first (riboCipher 0xEC 0x01 prefix),
+/// then falls back to plain JSON-RPC for primals that accept it
+/// natively (beardog-default, coralReef).
 async fn query_health(primal: &str, socket_path: &str) -> PrimalHealth {
 
     let result = tokio::time::timeout(QUERY_TIMEOUT, async {
-        let mut stream = UnixStream::connect(&socket_path).await?;
-
         let request = serde_json::json!({
             "jsonrpc": "2.0",
             "method": "health.liveness",
@@ -57,28 +63,14 @@ async fn query_health(primal: &str, socket_path: &str) -> PrimalHealth {
         });
         let payload = serde_json::to_vec(&request)?;
 
-        // BTSP frame: 0xEC 0x01 prefix
-        let mut frame = vec![0xEC, 0x01];
-        frame.extend_from_slice(&payload);
-        stream.write_all(&frame).await?;
-        stream.shutdown().await?;
+        // Try BTSP-framed first
+        let resp = send_uds(socket_path, &payload, true).await;
+        if let Ok(val) = resp {
+            return Ok(val);
+        }
 
-        let mut buf = Vec::with_capacity(4096);
-        stream.read_to_end(&mut buf).await?;
-
-        // Strip BTSP prefix if present
-        let json_start = if buf.len() >= 2 && buf[0] == 0xEC && buf[1] == 0x01 {
-            2
-        } else {
-            0
-        };
-
-        // Some primals send multiple JSON objects (e.g., an error then a result).
-        // Find the first valid JSON-RPC response with a "result" field.
-        let raw = &buf[json_start..];
-        let response = parse_first_result(raw)?;
-
-        Ok::<serde_json::Value, Box<dyn std::error::Error + Send + Sync>>(response)
+        // Fallback: plain JSON-RPC (for coralReef, beardog-default, etc.)
+        send_uds(socket_path, &payload, false).await
     })
     .await;
 
@@ -122,6 +114,35 @@ async fn query_health(primal: &str, socket_path: &str) -> PrimalHealth {
             error: Some("UDS query timed out".to_string()),
         },
     }
+}
+
+/// Send a JSON-RPC payload over UDS, optionally with BTSP framing.
+async fn send_uds(
+    path: &str,
+    payload: &[u8],
+    btsp: bool,
+) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> {
+    let mut stream = UnixStream::connect(path).await?;
+
+    if btsp {
+        let mut frame = vec![0xEC, 0x01];
+        frame.extend_from_slice(payload);
+        stream.write_all(&frame).await?;
+    } else {
+        stream.write_all(payload).await?;
+    }
+    stream.shutdown().await?;
+
+    let mut buf = Vec::with_capacity(4096);
+    stream.read_to_end(&mut buf).await?;
+
+    let json_start = if buf.len() >= 2 && buf[0] == 0xEC && buf[1] == 0x01 {
+        2
+    } else {
+        0
+    };
+
+    parse_first_result(&buf[json_start..])
 }
 
 /// Parse the first JSON-RPC response that contains a "result" field.
