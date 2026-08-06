@@ -1,6 +1,6 @@
-# Deep Debt Standards — Updated Wave 156d
+# Deep Debt Standards — Updated Wave 156h
 
-**Wave**: 156d | **Date**: August 5, 2026 | **For**: All primal teams (reference)
+**Wave**: 156h | **Date**: August 5, 2026 | **For**: All primal teams (reference)
 
 ---
 
@@ -114,5 +114,22 @@ Query stored scenes via `visualization.scene.declarative` IPC method.
 
 ---
 
-*Wave 156d: petalTongue achieves all deep debt standards including self-knowledge
-and declarative scene passthrough. Reference for all primal teams.*
+### tarpc 0.37 cephalization alignment (Wave 156h)
+
+petalTongue upgraded tarpc 0.34 → 0.37 for G64 convergent evolution. Key facts:
+
+- **No bincode 2.x required** — tarpc 0.37 still uses bincode 1.3 on the wire.
+- **tokio-serde 0.8 → 0.9** is the only transitive dependency change.
+- **Zero API changes** — `#[tarpc::service]`, `tarpc::context::current()`,
+  `tarpc::serde_transport::new()`, `tarpc::client::Config` all unchanged.
+- **Wire-compatible** — existing tarpc 0.34 servers can communicate with 0.37
+  clients (same bincode 1.3 framing).
+
+Other primals upgrading from tarpc 0.34: bump `tarpc` version and `tokio-serde`
+version in workspace `Cargo.toml`. No code changes needed unless using
+OpenTelemetry integration (0.37 requires OTel 0.30+).
+
+---
+
+*Wave 156h: petalTongue cephalization-convergent. tarpc 0.37 aligned (C1 DONE).
+Reference for all primal teams undertaking G64 convergent evolution.*

@@ -132,17 +132,15 @@ cargo test --workspace --all-features     # 6,755 workspace tests, ~85-90% cover
 
 ## Current State
 
-Wave 156d — STABLE / G19 PROVEN on ironGate (August 5, 2026).
+Wave 156h — CEPHALIZATION ERA / tarpc 0.37 aligned (August 5, 2026).
 
-petalTongue is **stable and feature-complete**. G19 live render pipeline PROVEN
-on ironGate (RTX 5070) — scene push firing via `visualization.render.scene`
-(exp006 22/22 PASS). All P1 and P2 items resolved. NUCLEUS validated on 4 gates
-(westGate, blueGate, strandGate, ironGate). Zero P0/P1/P2 across ecosystem.
-No glacial goals directly owned — serves as infrastructure for other teams.
-Self-knowledge fully enforced — zero hardcoded peer primal names in production code.
-TCP bind hardened (localhost-only by default). nestgate.io LIVE on mesh.
-Declarative scene passthrough: tideGlass and other science primals can submit
-scenes by name + data without structuring a full SceneGraph.
+petalTongue is **stable and cephalization-convergent**. tarpc upgraded from 0.34 to 0.37
+(C1 DONE) — unblocks G64 Phase 1 dual-protocol composition. JSON-RPC bootstraps
+discovery; tarpc carries performance on the binary hot path. G19 live render pipeline
+PROVEN on ironGate (RTX 5070). All P1 and P2 items resolved. NUCLEUS validated on
+4 gates. Zero P0/P1/P2 across ecosystem. Self-knowledge fully enforced.
+Declarative scene passthrough LIVE (O6 DONE) — tideGlass and science primals
+submit scenes by name + data without structuring a full SceneGraph.
 
 **BTSP**: 13/13 strict mode (ClientHello + server-side). Wired into outbound
 `primal.announce` and `content.resolve` connections (HMAC-SHA256).

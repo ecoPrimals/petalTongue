@@ -1,7 +1,7 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 156d | **Date**: August 5, 2026 | **From**: petalTongue on eastGate
-**Posture**: **STABLE** — G19 PROVEN on ironGate. Declarative scene passthrough LIVE. nestgate.io dashboard UX hardened. Zero P0/P1/P2.
+**Wave**: 156h | **Date**: August 5, 2026 | **From**: petalTongue on eastGate
+**Posture**: **CEPHALIZATION ERA** — tarpc 0.37 aligned (C1 DONE). G64 Phase 1 ready. Declarative scene passthrough LIVE. Zero P0/P1/P2.
 
 ---
 
@@ -19,7 +19,8 @@
 | Cross-arch | x86_64-linux, aarch64-linux, aarch64-android, x86_64-windows |
 | Files | All production files < 800 LOC |
 | Edition | 2024 |
-| P2 fixes | `--family-id` propagation + `PRIMAL_BIND_MODE=tcp` semantics |
+| tarpc | **0.37** — cephalization convergent (C1 DONE, Phase 1 ready) |
+| tokio-serde | 0.9 (aligned with tarpc 0.37) |
 | Idioms | Rust 2024 let-chains, zero redundant allocations, all deps current |
 | Self-knowledge | Zero hardcoded peer primal names in production code |
 | Config unity | Zero raw `FAMILY_ID` env reads outside canonical resolution |
@@ -167,15 +168,10 @@ petalTongue owns **no glacial goals directly** but supports:
 
 ---
 
-*Wave 156d (Aug 5): petalTongue STABLE. G19 PROVEN on ironGate (RTX 5070, exp006 22/22 PASS).
+*Wave 156h (Aug 5 LATE): petalTongue CEPHALIZATION ERA. tarpc 0.37 aligned (C1 DONE).
+G64 Phase 1 ready — dual-protocol convergence (JSON-RPC bootstrap + tarpc binary hot path).
 BTSP 13/13. 6,606 tests. Zero P0/P1/P2. Zero clippy/doc warnings.
-Declarative scene passthrough LIVE — tideGlass/science primals submit by name + data.
-nestgate.io dashboard gracefully degrades (no perpetual "Loading...").
-Self-knowledge enforced: zero hardcoded peer primal names in production code.
-TCP bind hardened (localhost-only default). Config unified (zero raw FAMILY_ID reads).
-nestgate.io LIVE on mesh (petalTongue v1.7.0 on sporeGate via WG).
-Dependencies current. All production files < 800 LOC. Zero debris.
-K-derm DNS separation 3/3 COMPLETE (primals.eco outer / nestgate.io peti / primal.eco inner).
-Scene push pipeline live — esotericWebb consuming on ironGate, footPrint 708 tests.
-Data Flow Activation era: tideGlass cell boot ready, squirrel dispatch LIVE (9 providers),
-ironGate 12.7 TB CAS. Conjugation layer (`@protokarya/rustscript`) established.*
+tokio-serde 0.9 (tracks tarpc 0.37). bincode 1.3 (unchanged — tarpc 0.37 does not require 2.x).
+Declarative scene passthrough LIVE (O6 DONE). Self-knowledge enforced.
+All production files < 800 LOC. Zero debris. Dependencies current at HEAD.
+Next: C2 (UDS dual-socket canonical pattern), then Phase 2 (cross-gate elevated tarpc on songBird relay).*

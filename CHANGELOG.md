@@ -6,6 +6,22 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 156h: Cephalization — tarpc 0.37 Convergence (August 5, 2026)
+
+tarpc version alignment for G64 cephalization Phase 1.
+
+#### Changed
+- **tarpc 0.34 → 0.37**: Upgraded tarpc transport layer for cephalization convergence.
+  Aligns petalTongue with ecosystem-wide dual-protocol target (JSON-RPC bootstrap +
+  tarpc binary hot path). No API changes required — transport wire format unchanged.
+- **tokio-serde 0.8 → 0.9**: Tracks tarpc 0.37 internal dep bump.
+- Suppressed dead-code warning on `songbird_peers_to_live` (runtime-only utility).
+
+#### Metrics
+- 6,606 tests pass, 0 failures, 0 clippy warnings, 0 doc warnings
+- tarpc binary framing ready for cephalization Phase 2 (cross-gate elevated)
+- All production files < 800 LOC
+
 ### Wave 156d: Declarative Scene Passthrough + Dashboard UX (August 5, 2026)
 
 Scene pipeline evolution and nestgate.io dashboard resilience.
