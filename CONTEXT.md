@@ -132,14 +132,18 @@ cargo test --workspace --all-features     # 6,755 workspace tests, ~85-90% cover
 
 ## Current State
 
-Wave 156i — CEPHALIZATION ERA / C2 dual-socket LIVE (August 6, 2026).
+Wave 156l — G65 PROTOCOL NEGOTIATION STANDARD PUBLISHED (August 6, 2026).
 
-petalTongue is **cephalization-operational**. Dual-socket pattern (C2) deployed:
+petalTongue is **cephalization-operational**. C2 dual-socket pattern deployed:
 `petaltongue.sock` (JSON-RPC, universal) + `petaltongue.tarpc.sock` (binary bincode,
 sub-ms intra-gate). tarpc 0.37 (C1 DONE). Server mode spawns both listeners
 concurrently via `tokio::select!`. G19 live render pipeline PROVEN on ironGate.
 All P1 and P2 items resolved. Zero P0/P1/P2 across ecosystem. Self-knowledge enforced.
 Declarative scene passthrough LIVE (O6 DONE).
+
+**G65 (Phase 3)**: Single-socket protocol negotiation will replace C2 dual-socket.
+squirrel has 432-line reference impl. petalTongue adopts after sourDough extraction.
+Backward-compatible: no negotiation header = JSON-RPC default.
 
 **BTSP**: 13/13 strict mode (ClientHello + server-side). Wired into outbound
 `primal.announce` and `content.resolve` connections (HMAC-SHA256).

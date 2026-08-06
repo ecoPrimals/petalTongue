@@ -84,7 +84,7 @@ async fn query_health(primal: &str, socket_path: &str) -> PrimalHealth {
 
     match result {
         Ok(Ok(resp)) => {
-            let alive = resp.get("alive").and_then(|v| v.as_bool()).unwrap_or(false)
+            let alive = resp.get("alive").and_then(serde_json::Value::as_bool).unwrap_or(false)
                 || resp
                     .get("status")
                     .and_then(|v| v.as_str())

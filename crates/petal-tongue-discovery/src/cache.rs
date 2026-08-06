@@ -244,6 +244,7 @@ impl std::fmt::Display for CacheStats {
 }
 
 #[cfg(test)]
+#[allow(clippy::float_cmp, reason = "tests compare exact known float constants")]
 mod tests {
     use super::*;
 

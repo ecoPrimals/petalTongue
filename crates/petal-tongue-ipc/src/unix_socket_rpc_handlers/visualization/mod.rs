@@ -312,9 +312,9 @@ fn method_schemas() -> serde_json::Value {
 /// Handle visualization.render.scene: submit a scene for rendering.
 ///
 /// Accepts two formats:
-/// 1. **SceneGraph** (structured): `{ "scene": { "nodes": {...}, ... } }` — stored
+/// 1. **`SceneGraph`** (structured): `{ "scene": { "nodes": {...}, ... } }` — stored
 ///    directly in the grammar pipeline. Alternatively the entire `params` can be
-///    the SceneGraph if no explicit `"scene"` key is present.
+///    the `SceneGraph` if no explicit `"scene"` key is present.
 /// 2. **Declarative** (passthrough): `{ "scene": "rges_volcano", "data": {...},
 ///    "format": "webgl", "interactive": true }` — stored as typed `DeclarativeScene`
 ///    for downstream WebGL/WebSocket clients (e.g. tideGlass viz scenes).
@@ -346,7 +346,7 @@ pub fn handle_render_scene(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> J
     };
 
     if scene_value.is_string() {
-        return handle_declarative_scene(handlers, req.id, session_id, scene_value, &req.params);
+        return handle_declarative_scene(handlers, req.id, &session_id, &scene_value, &req.params);
     }
 
     let scene: petal_tongue_scene::scene_graph::SceneGraph =
@@ -404,8 +404,8 @@ pub fn handle_render_scene(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> J
 fn handle_declarative_scene(
     handlers: &RpcHandlers,
     id: Value,
-    session_id: String,
-    scene_name: Value,
+    session_id: &str,
+    scene_name: &Value,
     params: &Value,
 ) -> JsonRpcResponse {
     let scene_type = scene_name
@@ -416,7 +416,7 @@ fn handle_declarative_scene(
     let data = params
         .get("data")
         .cloned()
-        .unwrap_or(Value::Object(serde_json::Map::new()));
+        .unwrap_or_else(|| Value::Object(serde_json::Map::new()));
 
     let format = params
         .get("format")
@@ -441,7 +441,7 @@ fn handle_declarative_scene(
             .viz_state
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.declarative_scenes.insert(session_id.clone(), declarative);
+        state.declarative_scenes.insert(session_id.to_owned(), declarative);
     }
 
     JsonRpcResponse::success(

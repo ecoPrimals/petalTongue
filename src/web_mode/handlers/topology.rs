@@ -257,7 +257,7 @@ pub async fn mesh_peers_handler(
             .unwrap_or_default();
         let online = live_result
             .get("online")
-            .and_then(|o| o.as_u64())
+            .and_then(serde_json::Value::as_u64)
             .unwrap_or(0);
 
         return Json(serde_json::json!({

@@ -30,7 +30,7 @@ pub struct CompiledBinding {
 /// to consume directly, bypassing the Grammar of Graphics pipeline.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DeclarativeScene {
-    /// Scene type identifier (e.g. "rges_volcano", "enrichment_curve").
+    /// Scene type identifier (e.g. `rges_volcano`, `enrichment_curve`).
     pub scene_type: String,
     /// Arbitrary data payload for the scene renderer.
     pub data: serde_json::Value,

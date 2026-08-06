@@ -1,6 +1,6 @@
-# Deep Debt Standards — Updated Wave 156i
+# Deep Debt Standards — Updated Wave 156l
 
-**Wave**: 156i | **Date**: August 6, 2026 | **For**: All primal teams (reference)
+**Wave**: 156l | **Date**: August 6, 2026 | **For**: All primal teams (reference)
 
 ---
 
@@ -149,5 +149,23 @@ server startup alongside existing JSON-RPC listener.
 
 ---
 
-*Wave 156i: petalTongue cephalization-operational. C1 (tarpc 0.37) + C2 (dual-socket)
-DONE. Reference for all primal teams undertaking G64 convergent evolution.*
+### G65 Protocol Negotiation (Wave 156l — Phase 3)
+
+Single-socket protocol negotiation replaces C2 dual-socket as the Phase 3 destination:
+- Client sends `PROTOCOLS: tarpc,jsonrpc\n` as first bytes on connection
+- Server selects best match and responds
+- No negotiation header = JSON-RPC (backward-compatible with Phase 1 clients)
+- Eliminates socket proliferation (30→15 ecosystem-wide)
+- Protocol-transparent for songBird routing
+
+**Reference implementation**: squirrel (432 lines, full test coverage).
+**Extraction target**: sourDough or cellMembrane (C7 work item).
+**Adoption**: All 15 primals + cellMembrane adopt after extraction.
+
+petalTongue will evolve from C2 dual-socket to G65 single-socket once sourDough
+publishes the extracted pattern. No action needed until C7 completes.
+
+---
+
+*Wave 156l: G65 spec published. petalTongue C1+C2 DONE. Phase 3 (single-socket
+protocol negotiation) pending C7 extraction. Zero clippy pedantic+nursery. 6,615 tests.*
