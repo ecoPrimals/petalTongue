@@ -9,17 +9,17 @@
 //! retry with plain JSON-RPC (handles coralReef's G65 plain mode).
 
 use serde::Serialize;
+#[cfg(unix)]
 use tokio::net::UnixStream;
+#[cfg(unix)]
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+#[cfg(unix)]
 use std::time::Duration;
 
+#[cfg(unix)]
 const QUERY_TIMEOUT: Duration = Duration::from_secs(3);
 
-/// Known primal socket mappings (name → primary socket, optional fallback).
-///
-/// After G65, beardog's main socket requires a full BTSP handshake;
-/// use `beardog-default.sock` for plaintext health. skunkBat runs as
-/// root with a family-qualified socket under `/run/user/0/biomeos/`.
+#[cfg(unix)]
 const PRIMAL_SOCKETS: &[(&str, &str)] = &[
     ("sweetgrass", "/run/membrane/sweetgrass.sock"),
     ("loamspine", "/run/membrane/loamspine.sock"),
@@ -47,6 +47,7 @@ pub struct PrimalHealth {
     pub error: Option<String>,
 }
 
+#[cfg(unix)]
 /// Query `health.liveness` on a single primal via UDS.
 ///
 /// Tries BTSP-framed request first (riboCipher 0xEC 0x01 prefix),
@@ -116,6 +117,7 @@ async fn query_health(primal: &str, socket_path: &str) -> PrimalHealth {
     }
 }
 
+#[cfg(unix)]
 /// Send a JSON-RPC payload over UDS, optionally with BTSP framing.
 async fn send_uds(
     path: &str,
@@ -145,8 +147,7 @@ async fn send_uds(
     parse_first_result(&buf[json_start..])
 }
 
-/// Parse the first JSON-RPC response that contains a "result" field.
-/// Handles multi-object streams (e.g., bearDog sends error + result).
+#[cfg(unix)]
 fn parse_first_result(
     raw: &[u8],
 ) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> {
@@ -171,6 +172,7 @@ fn parse_first_result(
 }
 
 /// Query health.liveness on all known primals concurrently.
+#[cfg(unix)]
 pub async fn query_all_health() -> Vec<PrimalHealth> {
     let mut set = tokio::task::JoinSet::new();
     for (name, sock) in PRIMAL_SOCKETS {
@@ -185,4 +187,10 @@ pub async fn query_all_health() -> Vec<PrimalHealth> {
     }
     results.sort_by(|a, b| a.primal.cmp(&b.primal));
     results
+}
+
+/// Non-unix stub: UDS health queries unavailable.
+#[cfg(not(unix))]
+pub async fn query_all_health() -> Vec<PrimalHealth> {
+    Vec::new()
 }

@@ -6,6 +6,32 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 156v: Cross-Architecture Compliance — Windows Build (August 7, 2026)
+
+Migrated all production and library code to compile cleanly on
+`x86_64-pc-windows-gnu`. Unix-specific servers (UDS, tarpc, G65 negotiate)
+guarded with `#[cfg(unix)]`; non-unix stubs provided for health/mesh queries.
+Live mode gated to unix platforms.
+
+#### Changed
+- `petal-tongue-ipc`: `unix_socket_server`, `tarpc_server`, `protocol_negotiation::server`
+  modules gated with `#[cfg(unix)]` — unavailable on Windows target.
+- `btsp::phase3`: `NegotiateResult` and `try_phase3_negotiate` gated `#[cfg(unix)]`.
+- `server.rs`: `is_platform_constrained()` helper gated `#[cfg(unix)]`.
+- `server_mode::run()`: Unix-specific IPC (UDS + tarpc + G65) isolated in
+  `#[cfg(unix)]` block; non-unix gets TCP-only signal-wait mode.
+- `live_mode`: entire module gated `#[cfg(unix)]` (requires UDS + display).
+- `main.rs`: `Commands::Live` arm gated `#[cfg(all(feature = "ui", unix))]`.
+- `data_service/health.rs`: UDS health queries gated `#[cfg(unix)]`; non-unix
+  returns empty `Vec`.
+- `data_service/mesh.rs`: `query_songbird_peers` gated `#[cfg(unix)]`; non-unix
+  returns `None`.
+
+#### Metrics
+- `cargo check --target x86_64-pc-windows-gnu`: **ZERO errors, ZERO warnings**
+- 6,644 tests pass, 0 failures, 0 clippy warnings (pedantic + nursery)
+- New pre-push standard: `cargo check --target x86_64-pc-windows-gnu`
+
 ### Wave 156m: G65 Protocol Negotiation — Single-Socket Phase 3 (August 6, 2026)
 
 Independent implementation of G65 protocol negotiation spec. Single-socket

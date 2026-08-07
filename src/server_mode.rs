@@ -9,6 +9,7 @@
 
 use crate::data_service::DataService;
 use crate::error::AppError;
+#[cfg(unix)]
 use petal_tongue_ipc::UnixSocketServer;
 use std::sync::Arc;
 
@@ -31,25 +32,6 @@ pub async fn run(
 ) -> Result<(), AppError> {
     let graph = data_service.graph();
 
-    let (motor_tx, motor_rx) = std::sync::mpsc::channel();
-
-    let socket_override = socket_path.map(std::path::PathBuf::from);
-    let mut server = UnixSocketServer::new_with_socket(graph, socket_override)?
-        .with_motor_sender(motor_tx)
-        .with_tcp_bind_host(tcp_bind_host);
-
-    if let Some(port) = tcp_port {
-        server = server.with_tcp_port(port);
-    }
-
-    let server = Arc::new(server);
-
-    tokio::task::spawn_blocking(move || {
-        while let Ok(cmd) = motor_rx.recv() {
-            tracing::debug!(?cmd, "motor command received (no display attached)");
-        }
-    });
-
     // PT-07: periodic capability discovery refresh so server mode has live data
     let refresh_service = Arc::clone(&data_service);
     tokio::spawn(async move {
@@ -63,42 +45,75 @@ pub async fn run(
         }
     });
 
-    if tcp_port.is_some() {
-        tracing::info!("IPC server starting (UDS + TCP + tarpc + G65 negotiate, no display)");
-    } else {
-        tracing::info!("IPC server starting (UDS + tarpc + G65 negotiate, no display)");
+    #[cfg(unix)]
+    {
+        let (motor_tx, motor_rx) = std::sync::mpsc::channel();
+
+        let socket_override = socket_path.map(std::path::PathBuf::from);
+        let mut server = UnixSocketServer::new_with_socket(graph, socket_override)?
+            .with_motor_sender(motor_tx)
+            .with_tcp_bind_host(tcp_bind_host);
+
+        if let Some(port) = tcp_port {
+            server = server.with_tcp_port(port);
+        }
+
+        let server = Arc::new(server);
+
+        tokio::task::spawn_blocking(move || {
+            while let Ok(cmd) = motor_rx.recv() {
+                tracing::debug!(?cmd, "motor command received (no display attached)");
+            }
+        });
+
+        if tcp_port.is_some() {
+            tracing::info!("IPC server starting (UDS + TCP + tarpc + G65 negotiate, no display)");
+        } else {
+            tracing::info!("IPC server starting (UDS + tarpc + G65 negotiate, no display)");
+        }
+
+        let tarpc_server = petal_tongue_ipc::TarpcServer::from_default_path()
+            .map_err(|e| AppError::Other(format!("tarpc server init: {e}")))?;
+        tracing::info!(
+            "tarpc UDS: {} (C2 dual-socket)",
+            tarpc_server.socket_path().display()
+        );
+
+        let negotiate_server = petal_tongue_ipc::NegotiateServer::from_default_path()
+            .map_err(|e| AppError::Other(format!("G65 negotiate server init: {e}")))?;
+        tracing::info!(
+            "G65 negotiate: {} (Phase 3 single-socket)",
+            negotiate_server.socket_path().display()
+        );
+
+        tokio::select! {
+            result = server.start() => {
+                result?;
+            }
+            result = tarpc_server.serve() => {
+                if let Err(e) = result {
+                    tracing::error!("tarpc server error: {e}");
+                }
+            }
+            result = negotiate_server.serve() => {
+                if let Err(e) = result {
+                    tracing::error!("G65 negotiate server error: {e}");
+                }
+            }
+            () = crate::signal::shutdown_signal() => {
+                tracing::info!("Server mode shut down gracefully");
+            }
+        }
     }
 
-    let tarpc_server = petal_tongue_ipc::TarpcServer::from_default_path()
-        .map_err(|e| AppError::Other(format!("tarpc server init: {e}")))?;
-    tracing::info!(
-        "tarpc UDS: {} (C2 dual-socket)",
-        tarpc_server.socket_path().display()
-    );
-
-    let negotiate_server = petal_tongue_ipc::NegotiateServer::from_default_path()
-        .map_err(|e| AppError::Other(format!("G65 negotiate server init: {e}")))?;
-    tracing::info!(
-        "G65 negotiate: {} (Phase 3 single-socket)",
-        negotiate_server.socket_path().display()
-    );
-
-    tokio::select! {
-        result = server.start() => {
-            result?;
-        }
-        result = tarpc_server.serve() => {
-            if let Err(e) = result {
-                tracing::error!("tarpc server error: {e}");
+    #[cfg(not(unix))]
+    {
+        let _ = (tcp_port, tcp_bind_host, socket_path, graph);
+        tracing::info!("IPC server starting (TCP-only mode, no display)");
+        tokio::select! {
+            () = crate::signal::shutdown_signal() => {
+                tracing::info!("Server mode shut down gracefully");
             }
-        }
-        result = negotiate_server.serve() => {
-            if let Err(e) = result {
-                tracing::error!("G65 negotiate server error: {e}");
-            }
-        }
-        () = crate::signal::shutdown_signal() => {
-            tracing::info!("Server mode shut down gracefully");
         }
     }
 

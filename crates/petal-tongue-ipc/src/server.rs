@@ -439,12 +439,7 @@ fn remove_discovery_file() -> Result<(), IpcServerError> {
     Ok(())
 }
 
-/// Detect if platform has constraints requiring TCP fallback (Phase 2)
-///
-/// Checks for:
-/// - Android (Unix sockets in /data/local/tmp may fail)
-/// - Permission issues
-/// - Other platform-specific constraints
+#[cfg(unix)]
 const fn is_platform_constrained() -> bool {
     // Check if we're on Android
     #[cfg(target_os = "android")]

@@ -5,6 +5,7 @@ use petal_tongue_core::{GraphEngine, gate_mesh};
 
 use super::types::{LiveEdge, LiveMeshPeer, LivePrimal, LiveTopology};
 
+#[cfg(unix)]
 const SONGBIRD_SOCKET: &str = "/run/membrane/songbird.sock";
 
 /// Get current mesh peer state via manifest topology (static fallback).
@@ -22,6 +23,7 @@ pub fn mesh_peers() -> Vec<gate_mesh::MeshPeer> {
 ///
 /// Returns `None` if the socket is unavailable or the RPC fails,
 /// allowing callers to fall back to static topology.
+#[cfg(unix)]
 pub async fn query_songbird_peers() -> Option<serde_json::Value> {
     use tokio::net::UnixStream;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -50,6 +52,12 @@ pub async fn query_songbird_peers() -> Option<serde_json::Value> {
 
     let response: serde_json::Value = serde_json::from_slice(&buf).ok()?;
     response.get("result").cloned()
+}
+
+/// Non-unix stub: UDS mesh queries unavailable.
+#[cfg(not(unix))]
+pub async fn query_songbird_peers() -> Option<serde_json::Value> {
+    None
 }
 
 /// Get live topology for TOPO-VIS visualization.
