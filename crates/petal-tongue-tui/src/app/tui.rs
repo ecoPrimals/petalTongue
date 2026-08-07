@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Rich TUI application struct and main loop
+//!
+//! Platform-agnostic: crossterm handles terminal mode on all targets
+//! (`enable_raw_mode`/`disable_raw_mode` are #[cfg(unix)] + #[cfg(windows)] internally).
 
 use crate::error::TuiError;
 use crate::events::EventHandler;

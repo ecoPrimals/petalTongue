@@ -8,6 +8,7 @@
 //! - Works on servers, containers, CI/CD
 //! - Exports to multiple formats
 //! - Runs over SSH
+//! - Cross-platform: #[cfg(unix)] and #[cfg(windows)] via `platform_substrate`
 //!
 //! # Philosophy
 //!

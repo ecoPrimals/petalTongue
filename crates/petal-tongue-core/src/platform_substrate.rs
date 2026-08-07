@@ -158,6 +158,35 @@ pub fn effective_uid() -> u32 {
     }
 }
 
+/// Check if a process with the given PID exists.
+///
+/// - Linux: probes `/proc/{pid}` (always available on Linux)
+/// - Other Unix: sends signal 0 via `kill(pid, 0)` (existence check)
+/// - Windows: returns `true` conservatively (proper check would use `OpenProcess`)
+#[must_use]
+pub fn process_exists(pid: u32) -> bool {
+    #[cfg(target_os = "linux")]
+    {
+        std::path::Path::new(&format!("/proc/{pid}")).exists()
+    }
+
+    #[cfg(all(unix, not(target_os = "linux")))]
+    {
+        // signal 0 checks process existence without sending a signal
+        rustix::process::kill_process(
+            rustix::process::Pid::from_raw(pid as i32).unwrap_or(rustix::process::Pid::INIT),
+            rustix::process::Signal::from_raw(0).unwrap_or(rustix::process::Signal::Hup),
+        )
+        .is_ok()
+    }
+
+    #[cfg(not(unix))]
+    {
+        let _ = pid;
+        true
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -217,5 +246,17 @@ mod tests {
     fn effective_uid_reasonable() {
         let euid = effective_uid();
         assert!(euid < 1_000_000);
+    }
+
+    #[test]
+    fn process_exists_self() {
+        let pid = std::process::id();
+        assert!(process_exists(pid));
+    }
+
+    #[test]
+    fn process_exists_bogus_pid() {
+        // PID 4_000_000 is extremely unlikely to exist
+        assert!(!process_exists(4_000_000) || cfg!(windows));
     }
 }
