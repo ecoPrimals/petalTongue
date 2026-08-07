@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Unit tests for proprioception panel and helpers.
+// Compiled only under #[cfg(test)] (see parent module).
 
 mod proprioception_tests {
     use super::super::*;

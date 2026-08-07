@@ -20,20 +20,10 @@ pub(super) fn current_timestamp() -> u64 {
 
 /// Check if a process exists.
 ///
-/// On Unix: probes `/proc/{pid}` (Linux) which is always available.
-/// On non-Unix: conservatively returns `true` (assume process is alive)
-/// to avoid false-positive stale instance cleanup.
+/// Delegates to [`crate::platform_substrate::process_exists`] for platform-agnostic
+/// process liveness detection.
 pub(super) fn process_exists(pid: u32) -> bool {
-    #[cfg(unix)]
-    {
-        std::path::Path::new(&format!("/proc/{pid}")).exists()
-    }
-
-    #[cfg(not(unix))]
-    {
-        let _ = pid;
-        true
-    }
+    crate::platform_substrate::process_exists(pid)
 }
 
 /// Get the base directory for petalTongue data

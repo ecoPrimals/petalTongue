@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+// This module is only compiled under #[cfg(test)] (see parent mod.rs).
 
 use chrono::Utc;
 

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Doom-core integration tests.
+// Compiled only under #[cfg(test)] (see lib.rs).
 
 use crate::error::DoomError;
 use crate::instance::DoomInstance;
