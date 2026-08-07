@@ -23,14 +23,7 @@ pub const SOURCE_ID: &str = "proc";
 /// Linux page size (bytes), queried from the kernel at runtime.
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 fn page_size() -> u64 {
-    #[cfg(target_os = "linux")]
-    {
-        u64::try_from(rustix::param::page_size()).unwrap_or(4096)
-    }
-    #[cfg(not(target_os = "linux"))]
-    {
-        4096
-    }
+    petal_tongue_core::platform_substrate::page_size()
 }
 
 /// CPU and memory stats — delegates system metrics to [`PlatformMetrics`],

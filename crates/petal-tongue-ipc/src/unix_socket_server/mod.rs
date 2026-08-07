@@ -304,8 +304,8 @@ impl UnixSocketServer {
                     if let Some(parent) = self.socket_path.parent() {
                         let symlink_name = crate::btsp::domain_symlink_filename(&posture);
                         let symlink_path = parent.join(&symlink_name);
-                        let _ = std::fs::remove_file(&symlink_path);
-                        if let Err(e) = std::os::unix::fs::symlink(&self.socket_path, &symlink_path) {
+                        let _ = petal_tongue_core::platform_substrate::remove_link(&symlink_path);
+                        if let Err(e) = petal_tongue_core::platform_substrate::platform_link(&self.socket_path, &symlink_path) {
                             debug!("Could not create capability symlink {symlink_name}: {e}");
                         } else {
                             info!(

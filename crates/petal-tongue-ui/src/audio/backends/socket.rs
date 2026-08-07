@@ -102,28 +102,11 @@ impl SocketBackend {
 
     /// Check if path is an audio socket (runtime heuristics)
     fn is_audio_socket(path: &Path) -> bool {
-        // Verify it's actually a socket
         if let Ok(metadata) = path.metadata() {
-            #[cfg(unix)]
-            {
-                use std::os::unix::fs::FileTypeExt;
-                use std::os::unix::fs::PermissionsExt;
-
-                if !metadata.file_type().is_socket() {
-                    return false;
-                }
-
-                // Check accessibility
-                let mode = metadata.permissions().mode();
-
-                (mode & 0o600) != 0 || (mode & 0o006) != 0
+            if !petal_tongue_core::platform_substrate::is_socket(&metadata) {
+                return !cfg!(unix);
             }
-            #[cfg(not(unix))]
-            {
-                // On non-Unix, just check if file exists
-                let _ = metadata;
-                true
-            }
+            petal_tongue_core::platform_substrate::is_user_accessible(&metadata)
         } else {
             false
         }

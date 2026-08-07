@@ -6,6 +6,38 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 157a: G68 Platform Substrate Abstraction (August 7, 2026)
+
+New `platform_substrate` module in `petal-tongue-core` centralizes platform-specific
+operations behind architecture-agnostic APIs. All inline `#[cfg(unix)]` usage of
+symlinks, permissions, and system queries now routes through a single abstraction
+layer. Direct `rustix` dependency removed from `petal-tongue-ui`.
+
+#### Added
+- `petal-tongue-core::platform_substrate` module (L1 links, L2 permissions, L3 system)
+- `platform_link()` — symlink on Unix, `symlink_file`/`symlink_dir` on Windows
+- `remove_link()` — platform-agnostic link removal
+- `is_user_accessible()` — mode-bit check on Unix, `true` on Windows (ACL at open)
+- `is_socket()` — `FileTypeExt::is_socket()` on Unix, `false` on non-Unix
+- `page_size()` — `rustix::param::page_size()` on Linux, 4096 elsewhere
+- `current_uid()` / `effective_uid()` — kernel UID on Unix, 0 on Windows
+- 6 unit tests covering all substrate functions
+
+#### Changed
+- `unix_socket_server`: capability symlink creation uses `platform_link()` + `remove_link()`
+- `audio_discovery`: PipeWire/PulseAudio accessibility checks use `is_user_accessible()`
+- `audio/backends/socket`: `is_audio_socket()` uses `is_socket()` + `is_user_accessible()`
+- `system_info`: `get_current_uid()` / `get_current_euid()` delegate to substrate
+- `proc_stats`: `page_size()` delegates to substrate (removed direct `rustix` call)
+
+#### Removed
+- `rustix` dependency from `petal-tongue-ui` (consolidated into `petal-tongue-core`)
+
+#### Metrics
+- `cargo check --target x86_64-pc-windows-gnu`: **ZERO errors, ZERO warnings**
+- 6,649 tests pass, 0 failures
+- Zero new clippy warnings (pedantic + nursery)
+
 ### Wave 156v: Cross-Architecture Compliance — Windows Build (August 7, 2026)
 
 Migrated all production and library code to compile cleanly on

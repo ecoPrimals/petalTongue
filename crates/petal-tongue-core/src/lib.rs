@@ -53,6 +53,7 @@ pub mod metrics; // System metrics (CPU, memory, Neural API stats)
 pub mod or_exit; // OrExit trait for zero-panic validation binaries
 pub mod platform_dirs; // Pure Rust directory resolution (zero deps!)
 pub mod platform_metrics; // Platform metrics trait (Phase 2 abstraction over /proc)
+pub mod platform_substrate; // G68 Platform Substrate (links, permissions, system queries)
 pub mod primal_types;
 pub mod property; // Generic property system
 pub mod proprioception;
