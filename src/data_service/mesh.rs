@@ -5,8 +5,9 @@ use petal_tongue_core::{GraphEngine, gate_mesh};
 
 use super::types::{LiveEdge, LiveMeshPeer, LivePrimal, LiveTopology};
 
-#[cfg(unix)]
-const SONGBIRD_SOCKET: &str = "/run/membrane/songbird.sock";
+use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
+
+const SONGBIRD_ENDPOINT_PATH: &str = "/run/membrane/songbird.sock";
 
 /// Get current mesh peer state via manifest topology (static fallback).
 ///
@@ -19,16 +20,15 @@ pub fn mesh_peers() -> Vec<gate_mesh::MeshPeer> {
     gate_mesh::derive_mesh_peers(&nodes)
 }
 
-/// Query songBird `mesh.peers` via UDS JSON-RPC for live peer state.
+/// Query songBird `mesh.peers` via G66 transport for live peer state.
 ///
-/// Returns `None` if the socket is unavailable or the RPC fails,
+/// Returns `None` if the transport is unavailable or the RPC fails,
 /// allowing callers to fall back to static topology.
-#[cfg(unix)]
 pub async fn query_songbird_peers() -> Option<serde_json::Value> {
-    use tokio::net::UnixStream;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-    let mut stream = UnixStream::connect(SONGBIRD_SOCKET).await.ok()?;
+    let endpoint = TransportEndpoint::uds(SONGBIRD_ENDPOINT_PATH);
+    let mut stream = connect_transport(&endpoint).await.ok()?;
 
     let request = serde_json::json!({
         "jsonrpc": "2.0",
@@ -52,12 +52,6 @@ pub async fn query_songbird_peers() -> Option<serde_json::Value> {
 
     let response: serde_json::Value = serde_json::from_slice(&buf).ok()?;
     response.get("result").cloned()
-}
-
-/// Non-unix stub: UDS mesh queries unavailable.
-#[cfg(not(unix))]
-pub async fn query_songbird_peers() -> Option<serde_json::Value> {
-    None
 }
 
 /// Get live topology for TOPO-VIS visualization.

@@ -286,6 +286,116 @@ impl tokio::io::AsyncWrite for TransportStream {
     }
 }
 
+/// A bound transport listener — platform-appropriate server-side analog to
+/// [`TransportStream`].
+///
+/// On Unix: UDS (`UnixListener`) or TCP. On Windows: TCP (UDS endpoints are
+/// mapped to TCP via convention). Accepts connections as [`TransportStream`].
+#[derive(Debug)]
+pub enum TransportListener {
+    /// Unix domain socket listener (Unix only).
+    #[cfg(unix)]
+    Uds(tokio::net::UnixListener),
+    /// TCP listener (all platforms).
+    Tcp(tokio::net::TcpListener),
+}
+
+impl TransportListener {
+    /// Accept the next inbound connection as a [`TransportStream`].
+    ///
+    /// # Errors
+    ///
+    /// Returns I/O error if the accept call fails.
+    pub async fn accept(&self) -> Result<TransportStream, std::io::Error> {
+        match self {
+            #[cfg(unix)]
+            Self::Uds(listener) => {
+                let (stream, _addr) = listener.accept().await?;
+                Ok(TransportStream::Uds(stream))
+            }
+            Self::Tcp(listener) => {
+                let (stream, _addr) = listener.accept().await?;
+                Ok(TransportStream::Tcp(stream))
+            }
+        }
+    }
+
+    /// Human-readable description of the local address this listener is bound to.
+    #[must_use]
+    pub fn local_addr_display(&self) -> String {
+        match self {
+            #[cfg(unix)]
+            Self::Uds(listener) => listener
+                .local_addr()
+                .ok()
+                .and_then(|addr| addr.as_pathname().map(|p| format!("uds:{}", p.display())))
+                .unwrap_or_else(|| "uds:<unnamed>".to_owned()),
+            Self::Tcp(listener) => listener
+                .local_addr()
+                .map_or_else(|_| "tcp:<unknown>".to_owned(), |addr| format!("tcp:{addr}")),
+        }
+    }
+}
+
+/// Bind a [`TransportListener`] to the given endpoint.
+///
+/// Platform behavior:
+/// - `Uds { path }` on Unix: binds a `UnixListener` at the path (removes stale socket first).
+/// - `Uds { path }` on Windows: maps path to TCP via port convention and binds TCP.
+/// - `Tcp { host, port }` everywhere: binds a `TcpListener`.
+/// - `MeshRelay`: not supported for binding (returns error).
+///
+/// # Errors
+///
+/// Returns [`TransportError`] if the bind operation fails.
+pub async fn bind_transport(endpoint: &TransportEndpoint) -> Result<TransportListener, TransportError> {
+    match endpoint {
+        #[cfg(unix)]
+        TransportEndpoint::Uds { path } => {
+            if path.exists() {
+                let _ = std::fs::remove_file(path);
+            }
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+            let listener = tokio::net::UnixListener::bind(path)?;
+            Ok(TransportListener::Uds(listener))
+        }
+        #[cfg(not(unix))]
+        TransportEndpoint::Uds { path } => {
+            let port = uds_path_to_fallback_port(path);
+            let listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{port}")).await?;
+            Ok(TransportListener::Tcp(listener))
+        }
+        TransportEndpoint::Tcp { host, port } => {
+            let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await?;
+            Ok(TransportListener::Tcp(listener))
+        }
+        TransportEndpoint::MeshRelay { .. } => Err(TransportError::TransportUnavailable {
+            message: "mesh relay endpoints cannot be bound as a listener".to_owned(),
+        }),
+    }
+}
+
+/// Derive a deterministic fallback TCP port from a UDS path (non-Unix).
+///
+/// Uses a hash of the socket stem to pick a port in the dynamic range
+/// (49152..65535). This ensures each primal socket maps to a consistent port.
+#[cfg(not(unix))]
+fn uds_path_to_fallback_port(path: &std::path::Path) -> u16 {
+    use std::hash::{Hash, Hasher};
+    let stem = path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unknown");
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    stem.hash(&mut hasher);
+    let hash = hasher.finish();
+    #[allow(clippy::cast_possible_truncation)]
+    let port = 49152 + (hash % 16384) as u16;
+    port
+}
+
 /// Connect to a `TransportEndpoint`, returning a [`TransportStream`].
 ///
 /// `Uds` and `Tcp` open direct connections. [`TransportEndpoint::MeshRelay`] is

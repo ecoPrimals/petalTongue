@@ -266,7 +266,7 @@ where
     Ok(())
 }
 
-#[cfg(unix)]
+#[cfg_attr(not(unix), allow(dead_code))]
 pub(crate) struct NegotiateResult {
     /// Client nonce (raw bytes, decoded from base64).
     pub client_nonce: Vec<u8>,
@@ -280,7 +280,7 @@ pub(crate) struct NegotiateResult {
 /// `server_nonce`, writes the negotiate response, and returns the result.
 ///
 /// If the first line is a regular JSON-RPC request, processes it normally
-#[cfg(unix)]
+#[cfg_attr(not(unix), allow(dead_code))]
 pub(crate) async fn try_phase3_negotiate<R, W>(
     reader: &mut R,
     writer: &mut W,

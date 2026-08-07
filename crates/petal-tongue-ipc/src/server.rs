@@ -439,7 +439,7 @@ fn remove_discovery_file() -> Result<(), IpcServerError> {
     Ok(())
 }
 
-#[cfg(unix)]
+#[cfg_attr(not(unix), allow(dead_code))]
 const fn is_platform_constrained() -> bool {
     // Check if we're on Android
     #[cfg(target_os = "android")]

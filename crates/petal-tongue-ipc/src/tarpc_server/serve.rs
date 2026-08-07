@@ -1,39 +1,39 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! tarpc server implementation serving `PetalTongueRpc` over UDS.
+//! tarpc server implementation serving `PetalTongueRpc` over G66 transport.
 
 use crate::tarpc_types::{
     HealthStatus, PetalTongueRpc, PrimalEndpoint, PrimalMetrics, ProtocolInfo, RenderRequest,
     RenderResponse, VersionInfo,
 };
 use futures_util::StreamExt;
-use std::path::{Path, PathBuf};
+use petal_tongue_core::transport::{TransportEndpoint, bind_transport};
 use std::time::Instant;
 use tarpc::server::{self, Channel};
 use thiserror::Error;
 use tracing::{debug, error, info};
 
-/// Errors from the tarpc UDS server.
+/// Errors from the tarpc server.
 #[derive(Debug, Error)]
 pub enum TarpcServerError {
-    /// Socket bind failure (path conflict, permissions, etc.).
-    #[error("socket bind failed: {0}")]
+    /// Transport bind failure.
+    #[error("transport bind failed: {0}")]
     Bind(String),
     /// Underlying IO error.
     #[error("io error: {0}")]
     Io(#[from] std::io::Error),
 }
 
-/// tarpc UDS server state.
+/// tarpc server state — transport-agnostic.
 pub struct TarpcServer {
-    socket_path: PathBuf,
+    endpoint: TransportEndpoint,
     start_time: Instant,
 }
 
 impl TarpcServer {
-    /// Create a new tarpc server that will bind to the given UDS path.
-    pub fn new(socket_path: PathBuf) -> Self {
+    /// Create a new tarpc server that will bind to the given endpoint.
+    pub fn new(endpoint: TransportEndpoint) -> Self {
         Self {
-            socket_path,
+            endpoint,
             start_time: Instant::now(),
         }
     }
@@ -42,42 +42,30 @@ impl TarpcServer {
     pub fn from_default_path() -> Result<Self, TarpcServerError> {
         let path = crate::socket_path::get_petaltongue_tarpc_socket_path()
             .map_err(|e| TarpcServerError::Bind(e.to_string()))?;
-        Ok(Self::new(path))
+        Ok(Self::new(TransportEndpoint::uds(path)))
     }
 
-    /// The socket path this server will bind to.
+    /// The endpoint this server will bind to.
     #[must_use]
-    pub fn socket_path(&self) -> &Path {
-        &self.socket_path
+    pub fn endpoint(&self) -> &TransportEndpoint {
+        &self.endpoint
     }
 
-    /// Start accepting tarpc connections on the UDS socket.
+    /// Start accepting tarpc connections via transport abstraction.
     ///
     /// This future runs indefinitely (until cancelled).
     pub async fn serve(self) -> Result<(), TarpcServerError> {
-        if let Err(e) = std::fs::remove_file(&self.socket_path)
-            && e.kind() != std::io::ErrorKind::NotFound
-        {
-            return Err(TarpcServerError::Io(e));
-        }
+        let listener = bind_transport(&self.endpoint)
+            .await
+            .map_err(|e| TarpcServerError::Bind(format!("{}: {e}", self.endpoint)))?;
 
-        if let Some(parent) = self.socket_path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-
-        let listener = tokio::net::UnixListener::bind(&self.socket_path)
-            .map_err(|e| TarpcServerError::Bind(format!("{}: {e}", self.socket_path.display())))?;
-
-        info!(
-            "tarpc UDS server listening: {} (C2 dual-socket)",
-            self.socket_path.display()
-        );
+        info!("tarpc server listening: {} (C2)", listener.local_addr_display());
 
         let start_time = self.start_time;
 
         loop {
-            let (stream, _addr) = listener.accept().await?;
-            debug!("tarpc UDS connection accepted");
+            let stream = listener.accept().await?;
+            debug!("tarpc connection accepted");
 
             let codec = tokio_util::codec::LengthDelimitedCodec::builder()
                 .max_frame_length(16 * 1024 * 1024)
@@ -100,10 +88,12 @@ impl TarpcServer {
 
 impl Drop for TarpcServer {
     fn drop(&mut self) {
-        if let Err(e) = std::fs::remove_file(&self.socket_path)
-            && e.kind() != std::io::ErrorKind::NotFound
-        {
-            error!("Failed to remove tarpc socket: {e}");
+        if let TransportEndpoint::Uds { path } = &self.endpoint {
+            if let Err(e) = std::fs::remove_file(path)
+                && e.kind() != std::io::ErrorKind::NotFound
+            {
+                error!("Failed to remove tarpc socket: {e}");
+            }
         }
     }
 }

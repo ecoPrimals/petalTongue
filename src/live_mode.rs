@@ -10,18 +10,14 @@
 //! domain logic pushes scene data via `visualization.render.scene`, the egui
 //! window renders it, user input flows back via `interaction.poll`.
 
-#[cfg(unix)]
 use crate::data_service::DataService;
-#[cfg(unix)]
 use crate::error::AppError;
 #[cfg(unix)]
 use petal_tongue_core::constants::PRIMAL_NAME;
 #[cfg(unix)]
 use petal_tongue_ipc::UnixSocketServer;
-#[cfg(unix)]
 use std::sync::Arc;
 
-#[cfg(unix)]
 type Result<T> = std::result::Result<T, AppError>;
 
 #[cfg(unix)]
@@ -145,6 +141,22 @@ pub fn run_on_main_thread(
         }),
     )
     .map_err(|e| AppError::Eframe(e.to_string()))
+}
+
+#[cfg(not(unix))]
+#[allow(clippy::needless_pass_by_value)]
+pub fn run_on_main_thread(
+    _scenario: Option<String>,
+    _no_audio: bool,
+    _data_service: &Arc<DataService>,
+    _tcp_port: Option<u16>,
+    _tcp_bind_host: std::net::IpAddr,
+    _socket_path: Option<String>,
+    _runtime: &tokio::runtime::Runtime,
+) -> Result<()> {
+    Err(AppError::Other(
+        "live mode requires UDS transport (not available on this platform yet)".to_owned(),
+    ))
 }
 
 #[cfg(test)]

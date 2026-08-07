@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Per-primal health liveness queries via UDS.
+//! Per-primal health liveness queries via G66 transport abstraction.
 //!
 //! G65 primals enforce riboCipher transport signal (0xEC prefix).
 //! Some primals (beardog) require a full BTSP handshake on their main
@@ -8,19 +8,18 @@
 //! Strategy: try BTSP-framed query first; on connection reset / EOF,
 //! retry with plain JSON-RPC (handles coralReef's G65 plain mode).
 
+use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
 use serde::Serialize;
-#[cfg(unix)]
-use tokio::net::UnixStream;
-#[cfg(unix)]
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-#[cfg(unix)]
 use std::time::Duration;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-#[cfg(unix)]
 const QUERY_TIMEOUT: Duration = Duration::from_secs(3);
 
-#[cfg(unix)]
-const PRIMAL_SOCKETS: &[(&str, &str)] = &[
+/// Known primal endpoints (name, default UDS path).
+///
+/// On Unix these resolve to UDS connections; on other platforms the transport
+/// layer maps them to the appropriate mechanism (named pipes, TCP fallback).
+const PRIMAL_ENDPOINTS: &[(&str, &str)] = &[
     ("sweetgrass", "/run/membrane/sweetgrass.sock"),
     ("loamspine", "/run/membrane/loamspine.sock"),
     ("rhizocrypt", "/run/membrane/rhizocrypt.sock"),
@@ -47,14 +46,7 @@ pub struct PrimalHealth {
     pub error: Option<String>,
 }
 
-#[cfg(unix)]
-/// Query `health.liveness` on a single primal via UDS.
-///
-/// Tries BTSP-framed request first (riboCipher 0xEC 0x01 prefix),
-/// then falls back to plain JSON-RPC for primals that accept it
-/// natively (beardog-default, coralReef).
-async fn query_health(primal: &str, socket_path: &str) -> PrimalHealth {
-
+async fn query_health(primal: &str, endpoint: &TransportEndpoint) -> PrimalHealth {
     let result = tokio::time::timeout(QUERY_TIMEOUT, async {
         let request = serde_json::json!({
             "jsonrpc": "2.0",
@@ -64,14 +56,12 @@ async fn query_health(primal: &str, socket_path: &str) -> PrimalHealth {
         });
         let payload = serde_json::to_vec(&request)?;
 
-        // Try BTSP-framed first
-        let resp = send_uds(socket_path, &payload, true).await;
+        let resp = send_rpc(endpoint, &payload, true).await;
         if let Ok(val) = resp {
             return Ok(val);
         }
 
-        // Fallback: plain JSON-RPC (for coralReef, beardog-default, etc.)
-        send_uds(socket_path, &payload, false).await
+        send_rpc(endpoint, &payload, false).await
     })
     .await;
 
@@ -112,19 +102,18 @@ async fn query_health(primal: &str, socket_path: &str) -> PrimalHealth {
             alive: false,
             status: "timeout".to_string(),
             version: None,
-            error: Some("UDS query timed out".to_string()),
+            error: Some("health query timed out".to_string()),
         },
     }
 }
 
-#[cfg(unix)]
-/// Send a JSON-RPC payload over UDS, optionally with BTSP framing.
-async fn send_uds(
-    path: &str,
+/// Send a JSON-RPC payload via transport abstraction, optionally with BTSP framing.
+async fn send_rpc(
+    endpoint: &TransportEndpoint,
     payload: &[u8],
     btsp: bool,
 ) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> {
-    let mut stream = UnixStream::connect(path).await?;
+    let mut stream = connect_transport(endpoint).await?;
 
     if btsp {
         let mut frame = vec![0xEC, 0x01];
@@ -147,13 +136,11 @@ async fn send_uds(
     parse_first_result(&buf[json_start..])
 }
 
-#[cfg(unix)]
 fn parse_first_result(
     raw: &[u8],
 ) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> {
     let text = std::str::from_utf8(raw)?;
 
-    // Try to find multiple JSON objects separated by newlines or concatenated
     let mut decoder = serde_json::Deserializer::from_str(text).into_iter::<serde_json::Value>();
 
     while let Some(Ok(val)) = decoder.next() {
@@ -162,7 +149,6 @@ fn parse_first_result(
         }
     }
 
-    // Fallback: try parsing the whole thing as one object
     let val: serde_json::Value = serde_json::from_str(text)?;
     if let Some(result) = val.get("result") {
         return Ok(result.clone());
@@ -172,25 +158,18 @@ fn parse_first_result(
 }
 
 /// Query health.liveness on all known primals concurrently.
-#[cfg(unix)]
 pub async fn query_all_health() -> Vec<PrimalHealth> {
     let mut set = tokio::task::JoinSet::new();
-    for (name, sock) in PRIMAL_SOCKETS {
+    for (name, path) in PRIMAL_ENDPOINTS {
         let name = name.to_string();
-        let sock = sock.to_string();
-        set.spawn(async move { query_health(&name, &sock).await });
+        let endpoint = TransportEndpoint::uds(path);
+        set.spawn(async move { query_health(&name, &endpoint).await });
     }
 
-    let mut results = Vec::with_capacity(PRIMAL_SOCKETS.len());
+    let mut results = Vec::with_capacity(PRIMAL_ENDPOINTS.len());
     while let Some(Ok(health)) = set.join_next().await {
         results.push(health);
     }
     results.sort_by(|a, b| a.primal.cmp(&b.primal));
     results
-}
-
-/// Non-unix stub: UDS health queries unavailable.
-#[cfg(not(unix))]
-pub async fn query_all_health() -> Vec<PrimalHealth> {
-    Vec::new()
 }

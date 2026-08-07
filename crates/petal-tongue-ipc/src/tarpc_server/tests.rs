@@ -1,24 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Tests for the tarpc UDS server.
+//! Tests for the tarpc server (transport-agnostic).
 
 use super::*;
 use crate::tarpc_types::PetalTongueRpcClient;
-use std::path::PathBuf;
+use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
 use tempfile::TempDir;
 
 #[tokio::test]
 async fn tarpc_server_binds_and_serves_capabilities() {
     let tmp = TempDir::new().unwrap();
     let sock = tmp.path().join("test.tarpc.sock");
+    let endpoint = TransportEndpoint::uds(&sock);
 
-    let server = TarpcServer::new(sock.clone());
+    let server = TarpcServer::new(endpoint.clone());
     let server_handle = tokio::spawn(async move {
         let _ = server.serve().await;
     });
 
     tokio::time::sleep(std::time::Duration::from_millis(50)).await;
 
-    let stream = tokio::net::UnixStream::connect(&sock).await.unwrap();
+    let stream = connect_transport(&endpoint).await.unwrap();
     let codec = tokio_util::codec::LengthDelimitedCodec::builder()
         .max_frame_length(16 * 1024 * 1024)
         .new_framed(stream);
@@ -39,15 +40,16 @@ async fn tarpc_server_binds_and_serves_capabilities() {
 async fn tarpc_server_health_check() {
     let tmp = TempDir::new().unwrap();
     let sock = tmp.path().join("health.tarpc.sock");
+    let endpoint = TransportEndpoint::uds(&sock);
 
-    let server = TarpcServer::new(sock.clone());
+    let server = TarpcServer::new(endpoint.clone());
     let server_handle = tokio::spawn(async move {
         let _ = server.serve().await;
     });
 
     tokio::time::sleep(std::time::Duration::from_millis(50)).await;
 
-    let stream = tokio::net::UnixStream::connect(&sock).await.unwrap();
+    let stream = connect_transport(&endpoint).await.unwrap();
     let codec = tokio_util::codec::LengthDelimitedCodec::builder()
         .max_frame_length(16 * 1024 * 1024)
         .new_framed(stream);
@@ -68,15 +70,16 @@ async fn tarpc_server_health_check() {
 async fn tarpc_server_version_reports_037() {
     let tmp = TempDir::new().unwrap();
     let sock = tmp.path().join("version.tarpc.sock");
+    let endpoint = TransportEndpoint::uds(&sock);
 
-    let server = TarpcServer::new(sock.clone());
+    let server = TarpcServer::new(endpoint.clone());
     let server_handle = tokio::spawn(async move {
         let _ = server.serve().await;
     });
 
     tokio::time::sleep(std::time::Duration::from_millis(50)).await;
 
-    let stream = tokio::net::UnixStream::connect(&sock).await.unwrap();
+    let stream = connect_transport(&endpoint).await.unwrap();
     let codec = tokio_util::codec::LengthDelimitedCodec::builder()
         .max_frame_length(16 * 1024 * 1024)
         .new_framed(stream);
@@ -97,15 +100,16 @@ async fn tarpc_server_version_reports_037() {
 async fn tarpc_server_protocols_list_dual_socket() {
     let tmp = TempDir::new().unwrap();
     let sock = tmp.path().join("proto.tarpc.sock");
+    let endpoint = TransportEndpoint::uds(&sock);
 
-    let server = TarpcServer::new(sock.clone());
+    let server = TarpcServer::new(endpoint.clone());
     let server_handle = tokio::spawn(async move {
         let _ = server.serve().await;
     });
 
     tokio::time::sleep(std::time::Duration::from_millis(50)).await;
 
-    let stream = tokio::net::UnixStream::connect(&sock).await.unwrap();
+    let stream = connect_transport(&endpoint).await.unwrap();
     let codec = tokio_util::codec::LengthDelimitedCodec::builder()
         .max_frame_length(16 * 1024 * 1024)
         .new_framed(stream);
@@ -126,8 +130,8 @@ async fn tarpc_server_protocols_list_dual_socket() {
 }
 
 #[test]
-fn tarpc_socket_path_resolution() {
-    let path = PathBuf::from("/tmp/biomeos/petaltongue.tarpc.sock");
-    let server = TarpcServer::new(path.clone());
-    assert_eq!(server.socket_path(), path);
+fn tarpc_endpoint_resolution() {
+    let endpoint = TransportEndpoint::uds("/tmp/biomeos/petaltongue.tarpc.sock");
+    let server = TarpcServer::new(endpoint.clone());
+    assert_eq!(server.endpoint(), &endpoint);
 }
