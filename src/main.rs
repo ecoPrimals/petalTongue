@@ -48,7 +48,9 @@ use petal_tongue_core::config_system::Config;
 
 use crate::bootstrap::init_tracing;
 use crate::cli::{Cli, Commands};
-use crate::dispatch::{dispatch_async, parse_ipc_bind_host, resolve_server_transport};
+use crate::dispatch::{dispatch_async, parse_ipc_bind_host};
+#[cfg(all(feature = "ui", unix))]
+use crate::dispatch::resolve_server_transport;
 use crate::error::AppError;
 
 #[expect(
@@ -149,7 +151,7 @@ fn main() -> Result<(), AppError> {
         #[cfg(not(feature = "ui"))]
         Commands::Ui { .. } => Err(AppError::UiNotAvailable),
 
-        #[cfg(feature = "ui")]
+        #[cfg(all(feature = "ui", unix))]
         Commands::Live {
             scenario,
             no_audio,
@@ -176,7 +178,7 @@ fn main() -> Result<(), AppError> {
                 &runtime,
             )
         }
-        #[cfg(not(feature = "ui"))]
+        #[cfg(not(all(feature = "ui", unix)))]
         Commands::Live { .. } => Err(AppError::UiNotAvailable),
 
         other => runtime.block_on(dispatch_async(

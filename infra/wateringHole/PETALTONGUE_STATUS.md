@@ -1,7 +1,7 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 156m | **Date**: August 6, 2026 | **From**: petalTongue on eastGate
-**Posture**: **G65 IMPLEMENTED** — petalTongue G65 negotiate server LIVE (`petaltongue.negotiate.sock`). C2 dual-socket retained for backward compat. tarpc 0.37. Zero P0/P1/P2.
+**Wave**: 156v | **Date**: August 7, 2026 | **From**: petalTongue on eastGate
+**Posture**: **CROSS-ARCH COMPLIANT** — `cargo check --target x86_64-pc-windows-gnu` passes ZERO errors/warnings. G65+G66 complete. UDS servers gated `#[cfg(unix)]`. tarpc 0.37. Zero P0/P1/P2.
 
 ---
 
@@ -16,7 +16,7 @@
 | Docs | Zero warnings (`cargo doc --workspace --all-features --no-deps`) |
 | Unsafe | Confined to `petal-tongue-platform/src/ffi.rs` (15 usages, all SAFETY-documented) |
 | BTSP | **13/13** (ClientHello + server-side, full strict mode) |
-| Cross-arch | x86_64-linux, aarch64-linux, aarch64-android, x86_64-windows |
+| Cross-arch | x86_64-linux, aarch64-linux, aarch64-android, **x86_64-windows (ZERO warnings)** |
 | Files | All production files < 800 LOC |
 | Edition | 2024 |
 | tarpc | **0.37** — C1 DONE, C2 LIVE, **G65 DONE** (negotiate server on `petaltongue.negotiate.sock`) |

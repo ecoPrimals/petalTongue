@@ -19,6 +19,7 @@
 //! without modification.
 
 mod negotiate;
+#[cfg(unix)]
 mod server;
 mod wire;
 
@@ -26,5 +27,6 @@ mod wire;
 mod tests;
 
 pub use negotiate::{NegotiationResult, negotiate_client, negotiate_server, select_protocol};
+#[cfg(unix)]
 pub use server::{NegotiateServer, NegotiateServerError};
 pub use wire::{NegotiationError, ProtocolId, ProtocolRequest, ProtocolResponse};

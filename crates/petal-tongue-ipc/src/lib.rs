@@ -104,6 +104,7 @@ pub mod server;
 pub mod socket_path;
 pub mod socket_path_error;
 pub mod tarpc_client;
+#[cfg(unix)]
 pub mod tarpc_server;
 pub mod tarpc_types;
 /// Unix socket connection handling (JSON-RPC over newline-delimited JSON)
@@ -111,6 +112,7 @@ pub mod unix_socket_connection;
 /// JSON-RPC method dispatch and handlers
 pub mod unix_socket_rpc_handlers;
 /// Unix socket server for petalTongue IPC
+#[cfg(unix)]
 pub mod unix_socket_server;
 pub mod visualization_handler;
 
@@ -136,6 +138,7 @@ pub use protocol::{InstanceStatus, IpcCommand, IpcResponse};
 pub use resilience::{CircuitBreaker, CircuitState, RetryPolicy};
 pub use scene_signer::SceneSigner;
 pub use server::{IpcServer, IpcServerError};
+#[cfg(unix)]
 pub use unix_socket_server::UnixSocketServer;
 pub use visualization_handler::{
     BackpressureConfig, CallbackDispatch, CompiledBinding, ConstraintResult, DismissRequest,
@@ -149,6 +152,7 @@ pub use visualization_handler::{
 
 // tarpc (PRIMARY - primal-to-primal)
 pub use tarpc_client::{TarpcClient, TarpcClientError, TarpcResult};
+#[cfg(unix)]
 pub use tarpc_server::{TarpcServer, TarpcServerError};
 pub use tarpc_types::{
     HealthStatus, PetalTongueRpc, PetalTongueRpcClient, PrimalEndpoint, PrimalMetrics,
@@ -156,7 +160,9 @@ pub use tarpc_types::{
 };
 
 // G65 protocol negotiation (Phase 3 — single-socket)
+#[cfg(unix)]
+pub use protocol_negotiation::{NegotiateServer, NegotiateServerError};
 pub use protocol_negotiation::{
-    NegotiateServer, NegotiateServerError, NegotiationError, NegotiationResult, ProtocolId,
-    ProtocolRequest, ProtocolResponse, negotiate_client, negotiate_server, select_protocol,
+    NegotiationError, NegotiationResult, ProtocolId, ProtocolRequest, ProtocolResponse,
+    negotiate_client, negotiate_server, select_protocol,
 };

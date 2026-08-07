@@ -10,18 +10,21 @@
 //! domain logic pushes scene data via `visualization.render.scene`, the egui
 //! window renders it, user input flows back via `interaction.poll`.
 
+#[cfg(unix)]
 use crate::data_service::DataService;
+#[cfg(unix)]
 use crate::error::AppError;
+#[cfg(unix)]
 use petal_tongue_core::constants::PRIMAL_NAME;
+#[cfg(unix)]
 use petal_tongue_ipc::UnixSocketServer;
+#[cfg(unix)]
 use std::sync::Arc;
 
+#[cfg(unix)]
 type Result<T> = std::result::Result<T, AppError>;
 
-/// Create the IPC server with shared state handles for live mode.
-///
-/// Returns the server and motor channel endpoints. Separated from
-/// [`run_on_main_thread`] so the server setup can be tested without a display.
+#[cfg(unix)]
 fn create_live_server(
     data_service: &Arc<DataService>,
     tcp_port: Option<u16>,
@@ -51,12 +54,7 @@ fn create_live_server(
     Ok((server, motor_tx, motor_rx))
 }
 
-/// Run live mode: IPC server (background tokio tasks) + egui window (main thread).
-///
-/// winit requires the event loop on the main thread (Linux X11/Wayland).
-/// Background tasks (IPC server, motor drain, discovery refresh) are spawned
-/// on the provided tokio `runtime`. The eframe event loop runs directly on
-/// the calling (main) thread and blocks until the window is closed.
+#[cfg(unix)]
 pub fn run_on_main_thread(
     scenario: Option<String>,
     _no_audio: bool,
