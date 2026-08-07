@@ -31,7 +31,7 @@ const PRIMAL_SOCKETS: &[(&str, &str)] = &[
     ("songbird", "/run/membrane/songbird.sock"),
     ("barracuda", "/run/membrane/barracuda.sock"),
     ("coralreef", "/run/membrane/coralreef.sock"),
-    ("skunkbat", "/run/user/0/biomeos/skunkbat-e8b62b6e.sock"),
+    ("skunkbat", "/run/membrane/skunkbat.sock"),
     ("nestgate", "/run/membrane/nestgate-e8b62b6e.sock"),
     ("petaltongue", "/run/user/1000/biomeos/petaltongue-e8b62b6e.sock"),
 ];
