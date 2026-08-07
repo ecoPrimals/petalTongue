@@ -34,7 +34,7 @@ toml = { workspace = true }
 # Universal Rendering System dependencies
 indexmap = { workspace = true }
 # System information (pure Rust Unix syscalls via rustix)
-rustix = { workspace = true, features = ["process"] }
+rustix = { workspace = true, features = ["process", "param"] }
 # Terminal dimensions for CLI/adaptive rendering (screen size detection)
 terminal_size = { workspace = true }
 

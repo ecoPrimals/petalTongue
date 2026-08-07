@@ -14,78 +14,28 @@ use std::path::PathBuf;
 
 /// Get the current user's UID (User ID)
 ///
-/// Uses `rustix::process::getuid()` - 100% safe Rust, no unsafe code.
-/// The function is always safe because `getuid()` cannot fail
-/// and returns the process's effective user ID.
+/// Delegates to [`crate::platform_substrate::current_uid`] — the canonical G68 abstraction.
 ///
 /// # Platform Support
 ///
-/// - **Linux**: ✅ Supported
-/// - **macOS**: ✅ Supported  
-/// - **Windows**: ❌ Not applicable (Windows uses SIDs, not UIDs)
-///
-/// # Examples
-///
-/// ```
-/// use petal_tongue_core::system_info::get_current_uid;
-///
-/// let uid = get_current_uid();
-/// println!("Running as UID: {}", uid);
-/// ```
-///
-/// # TRUE PRIMAL Principles
-///
-/// - **Self-Knowledge**: Discover own UID at runtime
-/// - **No Hardcoding**: Never assume a specific UID
-/// - **Capability-Based**: Use for socket paths, not authentication
+/// - **Linux/macOS**: ✅ Supported (kernel UID)
+/// - **Windows**: Returns 0 (Windows uses SIDs, not UIDs)
 #[must_use]
-#[cfg_attr(
-    not(unix),
-    expect(
-        clippy::missing_const_for_fn,
-        reason = "not const on Unix (calls rustix::process::getuid)"
-    )
-)]
 pub fn get_current_uid() -> u32 {
-    #[cfg(unix)]
-    {
-        rustix::process::getuid().as_raw()
-    }
-
-    #[cfg(not(unix))]
-    {
-        0
-    }
+    crate::platform_substrate::current_uid()
 }
 
 /// Get the current effective user ID (EUID)
 ///
-/// Uses `rustix::process::geteuid()` - 100% safe Rust.
-/// For root check (e.g. framebuffer access): `get_current_euid() == 0`.
+/// Delegates to [`crate::platform_substrate::effective_uid`] — the canonical G68 abstraction.
 ///
 /// # Platform Support
 ///
-/// - **Linux**: ✅ Supported
-/// - **macOS**: ✅ Supported
-/// - **Windows**: ❌ Returns 0 (not applicable)
+/// - **Linux/macOS**: ✅ Supported
+/// - **Windows**: Returns 0
 #[must_use]
-#[cfg_attr(
-    not(unix),
-    expect(
-        clippy::missing_const_for_fn,
-        reason = "not const on Unix (calls rustix::process::geteuid)"
-    )
-)]
 pub fn get_current_euid() -> u32 {
-    #[cfg(unix)]
-    {
-        rustix::process::geteuid().as_raw()
-    }
-
-    #[cfg(not(unix))]
-    {
-        0
-    }
+    crate::platform_substrate::effective_uid()
 }
 
 /// System information (hostname, OS, etc.) from /proc on Linux.

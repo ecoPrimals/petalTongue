@@ -117,19 +117,9 @@ impl AudioDiscovery {
         if socket_path.exists() {
             debug!("Found PipeWire socket: {}", socket_path.display());
 
-            let accessible = socket_path.metadata().is_ok_and(|m| {
-                #[cfg(unix)]
-                {
-                    use std::os::unix::fs::PermissionsExt;
-                    let mode = m.permissions().mode();
-                    (mode & 0o600) != 0 || (mode & 0o006) != 0
-                }
-                #[cfg(not(unix))]
-                {
-                    let _ = m;
-                    true
-                }
-            });
+            let accessible = socket_path
+                .metadata()
+                .is_ok_and(|m| petal_tongue_core::platform_substrate::is_user_accessible(&m));
 
             Some(AudioSocket {
                 path: socket_path,
@@ -157,19 +147,9 @@ impl AudioDiscovery {
         if socket_path.exists() {
             debug!("Found PulseAudio socket: {}", socket_path.display());
 
-            let accessible = socket_path.metadata().is_ok_and(|m| {
-                #[cfg(unix)]
-                {
-                    use std::os::unix::fs::PermissionsExt;
-                    let mode = m.permissions().mode();
-                    (mode & 0o600) != 0 || (mode & 0o006) != 0
-                }
-                #[cfg(not(unix))]
-                {
-                    let _ = m;
-                    true
-                }
-            });
+            let accessible = socket_path
+                .metadata()
+                .is_ok_and(|m| petal_tongue_core::platform_substrate::is_user_accessible(&m));
 
             Some(AudioSocket {
                 path: socket_path,

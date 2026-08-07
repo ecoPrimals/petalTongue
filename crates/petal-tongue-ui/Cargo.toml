@@ -55,7 +55,6 @@ symphonia = { workspace = true, features = ["mp3", "wav"] }
 winit = { workspace = true }
 
 # External tool integrations - ecoBin v3.0: pure Rust /proc parsing (see proc_stats.rs)
-rustix = { workspace = true, features = ["param"] }  # Runtime page_size() for /proc RSS
 
 # Pure Rust display system (crossterm = 100% pure Rust)
 crossterm = { workspace = true }

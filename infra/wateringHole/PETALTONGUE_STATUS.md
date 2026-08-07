@@ -1,7 +1,7 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 156v | **Date**: August 7, 2026 | **From**: petalTongue on eastGate
-**Posture**: **CROSS-ARCH COMPLIANT** — `cargo check --target x86_64-pc-windows-gnu` passes ZERO errors/warnings. G65+G66 complete. UDS servers gated `#[cfg(unix)]`. tarpc 0.37. Zero P0/P1/P2.
+**Wave**: 157a | **Date**: August 7, 2026 | **From**: petalTongue on eastGate
+**Posture**: **G68 SUBSTRATE COMPLETE** — `platform_substrate` module ships L1 links, L2 permissions, L3 system queries. All inline `#[cfg(unix)]` platform checks migrated to abstraction. G65+G66+G68 complete. Zero P0/P1/P2.
 
 ---
 
