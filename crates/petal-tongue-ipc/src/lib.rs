@@ -104,7 +104,6 @@ pub mod server;
 pub mod socket_path;
 pub mod socket_path_error;
 pub mod tarpc_client;
-#[cfg(unix)]
 pub mod tarpc_server;
 pub mod tarpc_types;
 /// Unix socket connection handling (JSON-RPC over newline-delimited JSON)
@@ -152,7 +151,6 @@ pub use visualization_handler::{
 
 // tarpc (PRIMARY - primal-to-primal)
 pub use tarpc_client::{TarpcClient, TarpcClientError, TarpcResult};
-#[cfg(unix)]
 pub use tarpc_server::{TarpcServer, TarpcServerError};
 pub use tarpc_types::{
     HealthStatus, PetalTongueRpc, PetalTongueRpcClient, PrimalEndpoint, PrimalMetrics,
@@ -160,9 +158,7 @@ pub use tarpc_types::{
 };
 
 // G65 protocol negotiation (Phase 3 — single-socket)
-#[cfg(unix)]
-pub use protocol_negotiation::{NegotiateServer, NegotiateServerError};
 pub use protocol_negotiation::{
-    NegotiationError, NegotiationResult, ProtocolId, ProtocolRequest, ProtocolResponse,
-    negotiate_client, negotiate_server, select_protocol,
+    NegotiateServer, NegotiateServerError, NegotiationError, NegotiationResult, ProtocolId,
+    ProtocolRequest, ProtocolResponse, negotiate_client, negotiate_server, select_protocol,
 };

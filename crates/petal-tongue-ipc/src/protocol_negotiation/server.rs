@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! G65 negotiating server: single-socket listener with protocol dispatch.
 //!
-//! Binds `petaltongue.negotiate.sock` and for each connection:
+//! Binds via G66 transport abstraction and for each connection:
 //! 1. Attempts protocol negotiation (100 ms timeout)
-//! 2. If tarpc selected → connection is ready for binary framing
-//! 3. If JSON-RPC (or no negotiation) → connection is ready for newline-delimited JSON
+//! 2. If tarpc selected — connection is ready for binary framing
+//! 3. If JSON-RPC (or no negotiation) — connection is ready for newline-delimited JSON
 
 use super::negotiate::{negotiate_server, NegotiationResult};
 use super::wire::ProtocolId;
 use crate::socket_path;
-use std::path::{Path, PathBuf};
+use petal_tongue_core::transport::{TransportEndpoint, bind_transport};
 use tracing::{debug, error, info};
 
 /// G65 negotiating server errors.
@@ -19,37 +19,39 @@ pub enum NegotiateServerError {
     #[error("socket path: {0}")]
     SocketPath(#[from] crate::socket_path_error::SocketPathError),
     /// Bind failed.
-    #[error("bind {path}: {source}")]
+    #[error("bind {endpoint}: {detail}")]
     Bind {
-        /// Socket path that failed to bind.
-        path: String,
-        /// Underlying I/O error.
-        source: std::io::Error,
+        /// Endpoint description that failed to bind.
+        endpoint: String,
+        /// Error detail.
+        detail: String,
     },
     /// I/O error during accept loop.
     #[error("accept: {0}")]
     Accept(#[from] std::io::Error),
 }
 
-/// G65 negotiating server.
+/// G65 negotiating server — transport-agnostic.
 ///
-/// Listens on `petaltongue.negotiate.sock` and dispatches each connection
+/// Listens on the configured transport endpoint and dispatches each connection
 /// to either tarpc or JSON-RPC based on the negotiation header.
 pub struct NegotiateServer {
-    socket_path: PathBuf,
+    endpoint: TransportEndpoint,
 }
 
 impl NegotiateServer {
     /// Create from the default negotiated socket path.
     pub fn from_default_path() -> Result<Self, NegotiateServerError> {
         let socket_path = socket_path::get_petaltongue_negotiate_socket_path()?;
-        Ok(Self { socket_path })
+        Ok(Self {
+            endpoint: TransportEndpoint::uds(socket_path),
+        })
     }
 
-    /// The socket path this server will bind to.
+    /// The endpoint this server will bind to.
     #[must_use]
-    pub fn socket_path(&self) -> &Path {
-        &self.socket_path
+    pub fn endpoint(&self) -> &TransportEndpoint {
+        &self.endpoint
     }
 
     /// Run the accept loop. Each connection is spawned into a task that
@@ -58,34 +60,20 @@ impl NegotiateServer {
     /// Full dispatch (routing to tarpc codec or JSON-RPC handler) is wired
     /// in a future phase once the negotiation socket replaces the dual-socket.
     pub async fn serve(self) -> Result<(), NegotiateServerError> {
-        if let Err(e) = std::fs::remove_file(&self.socket_path)
-            && e.kind() != std::io::ErrorKind::NotFound
-        {
-            return Err(NegotiateServerError::Bind {
-                path: self.socket_path.display().to_string(),
-                source: e,
-            });
-        }
-
-        if let Some(parent) = self.socket_path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-
-        let listener =
-            tokio::net::UnixListener::bind(&self.socket_path).map_err(|e| {
-                NegotiateServerError::Bind {
-                    path: self.socket_path.display().to_string(),
-                    source: e,
-                }
-            })?;
+        let listener = bind_transport(&self.endpoint).await.map_err(|e| {
+            NegotiateServerError::Bind {
+                endpoint: self.endpoint.to_string(),
+                detail: e.to_string(),
+            }
+        })?;
 
         info!(
             "G65 negotiate server: {} (single-socket Phase 3)",
-            self.socket_path.display()
+            listener.local_addr_display()
         );
 
         loop {
-            let (mut stream, _addr) = listener.accept().await?;
+            let mut stream = listener.accept().await?;
             debug!("G65: connection accepted");
 
             tokio::spawn(async move {
@@ -114,6 +102,8 @@ impl NegotiateServer {
 
 impl Drop for NegotiateServer {
     fn drop(&mut self) {
-        let _ = std::fs::remove_file(&self.socket_path);
+        if let TransportEndpoint::Uds { path } = &self.endpoint {
+            let _ = std::fs::remove_file(path);
+        }
     }
 }

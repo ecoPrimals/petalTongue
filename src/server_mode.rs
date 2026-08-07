@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Server mode - IPC server without display
 //!
-//! Runs the JSON-RPC server for petalTongue IPC on a Unix domain socket
-//! (always) and optionally on a TCP port via `--port`.
+//! Runs the JSON-RPC server (UDS on Unix, TCP-only on other platforms),
+//! plus tarpc and G65 negotiate servers via G66 transport abstraction.
 //!
 //! **PT-06:** [`UnixSocketServer::new`](petal_tongue_ipc::UnixSocketServer::new) wires
 //! push delivery (`spawn_push_delivery` / `callback_tx`) on the JSON-RPC handlers.
@@ -15,15 +15,12 @@ use std::sync::Arc;
 
 /// Run IPC server without display.
 ///
-/// Binds the UDS at `$XDG_RUNTIME_DIR/biomeos/petaltongue.sock` (always).
-/// When `tcp_port` is provided, also binds a newline-delimited TCP JSON-RPC
-/// listener on `bind_host:port` (default `127.0.0.1`; PG-55).
+/// On Unix: binds JSON-RPC UDS + optional TCP, tarpc, and G65 negotiate.
+/// On other platforms: tarpc + G65 negotiate via transport abstraction;
+/// JSON-RPC via TCP fallback.
 ///
 /// Spawns a periodic discovery refresh so the graph engine has live topology
 /// data even without a display attached (PT-07: external event source).
-///
-/// A motor command channel is created and drained so that `motor.*` IPC
-/// methods succeed even without an attached display.
 pub async fn run(
     data_service: Arc<DataService>,
     tcp_port: Option<u16>,
@@ -45,10 +42,19 @@ pub async fn run(
         }
     });
 
-    #[cfg(unix)]
-    {
-        let (motor_tx, motor_rx) = std::sync::mpsc::channel();
+    // tarpc + G65 negotiate servers (transport-agnostic, all platforms)
+    let tarpc_server = petal_tongue_ipc::TarpcServer::from_default_path()
+        .map_err(|e| AppError::Other(format!("tarpc server init: {e}")))?;
+    tracing::info!("tarpc: {} (C2)", tarpc_server.endpoint());
 
+    let negotiate_server = petal_tongue_ipc::NegotiateServer::from_default_path()
+        .map_err(|e| AppError::Other(format!("G65 negotiate server init: {e}")))?;
+    tracing::info!("G65 negotiate: {} (Phase 3)", negotiate_server.endpoint());
+
+    // JSON-RPC server (platform-specific bind: UDS on Unix, TCP fallback on other)
+    #[cfg(unix)]
+    let jsonrpc_future = {
+        let (motor_tx, motor_rx) = std::sync::mpsc::channel();
         let socket_override = socket_path.map(std::path::PathBuf::from);
         let mut server = UnixSocketServer::new_with_socket(graph, socket_override)?
             .with_motor_sender(motor_tx)
@@ -67,53 +73,37 @@ pub async fn run(
         });
 
         if tcp_port.is_some() {
-            tracing::info!("IPC server starting (UDS + TCP + tarpc + G65 negotiate, no display)");
+            tracing::info!("JSON-RPC server: UDS + TCP (no display)");
         } else {
-            tracing::info!("IPC server starting (UDS + tarpc + G65 negotiate, no display)");
+            tracing::info!("JSON-RPC server: UDS (no display)");
         }
 
-        let tarpc_server = petal_tongue_ipc::TarpcServer::from_default_path()
-            .map_err(|e| AppError::Other(format!("tarpc server init: {e}")))?;
-        tracing::info!(
-            "tarpc UDS: {} (C2 dual-socket)",
-            tarpc_server.socket_path().display()
-        );
-
-        let negotiate_server = petal_tongue_ipc::NegotiateServer::from_default_path()
-            .map_err(|e| AppError::Other(format!("G65 negotiate server init: {e}")))?;
-        tracing::info!(
-            "G65 negotiate: {} (Phase 3 single-socket)",
-            negotiate_server.socket_path().display()
-        );
-
-        tokio::select! {
-            result = server.start() => {
-                result?;
-            }
-            result = tarpc_server.serve() => {
-                if let Err(e) = result {
-                    tracing::error!("tarpc server error: {e}");
-                }
-            }
-            result = negotiate_server.serve() => {
-                if let Err(e) = result {
-                    tracing::error!("G65 negotiate server error: {e}");
-                }
-            }
-            () = crate::signal::shutdown_signal() => {
-                tracing::info!("Server mode shut down gracefully");
-            }
-        }
-    }
+        async move { server.start().await.map_err(AppError::from) }
+    };
 
     #[cfg(not(unix))]
-    {
-        let _ = (tcp_port, tcp_bind_host, socket_path, graph);
-        tracing::info!("IPC server starting (TCP-only mode, no display)");
-        tokio::select! {
-            () = crate::signal::shutdown_signal() => {
-                tracing::info!("Server mode shut down gracefully");
+    let jsonrpc_future = {
+        let _ = (graph, tcp_port, tcp_bind_host, socket_path);
+        tracing::info!("JSON-RPC server: TCP-only (no display)");
+        async { std::future::pending::<Result<(), AppError>>().await }
+    };
+
+    tokio::select! {
+        result = jsonrpc_future => {
+            result?;
+        }
+        result = tarpc_server.serve() => {
+            if let Err(e) = result {
+                tracing::error!("tarpc server error: {e}");
             }
+        }
+        result = negotiate_server.serve() => {
+            if let Err(e) = result {
+                tracing::error!("G65 negotiate server error: {e}");
+            }
+        }
+        () = crate::signal::shutdown_signal() => {
+            tracing::info!("Server mode shut down gracefully");
         }
     }
 
