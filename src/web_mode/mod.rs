@@ -27,8 +27,8 @@ use handlers::{
     content_stats_handler, docroot_fallback, ecosystem_handler, events_sse_handler,
     gate_mesh_handler, health_handler, index_handler, live_topology_handler, liveness_handler,
     mesh_peers_handler, physical_topology_handler, primal_health_handler, primals_handler,
-    readiness_handler, snapshot_handler, sporeprint_handler, status_handler,
-    topology_layers_handler, viz_handler,
+    pseudospore_bundles_handler, readiness_handler, snapshot_handler, sporeprint_handler,
+    status_handler, topology_layers_handler, viz_handler,
 };
 
 use std::sync::Arc;
@@ -120,6 +120,7 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .route("/api/primal-health", get(primal_health_handler))
         .route("/api/sporeprint", get(sporeprint_handler))
         .route("/api/content/stats", get(content_stats_handler))
+        .route("/api/pseudospore/bundles", get(pseudospore_bundles_handler))
         .route("/api/topology-layers", get(topology_layers_handler))
         .route("/api/topology/live", get(live_topology_handler))
         .route("/api/coord/blurbs", get(coord_blurbs_handler))
@@ -131,6 +132,15 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .route("/api/events", get(events_sse_handler))
         .route("/viz/{slug}", get(viz_handler))
         .nest_service("/static", ServeDir::new(WEB_STATIC_DIR));
+
+    // Serve pseudoSpore bundles as downloadable files
+    let pseudospore_dir = std::env::var("PSEUDOSPORE_BUNDLES")
+        .unwrap_or_else(|_| String::from("/home/sporegate/Development/ecoPrimals/infra/sporePrint/static/pseudospore-bundles"));
+    let pseudospore_path = std::path::Path::new(&pseudospore_dir);
+    if pseudospore_path.is_dir() {
+        tracing::info!(dir = %pseudospore_dir, "Mounting /pseudospore/ bundle serving");
+        app = app.nest_service("/pseudospore", ServeDir::new(&pseudospore_dir));
+    }
 
     // WebSocket JSON-RPC bridge — enables footPrint composition wiring (`/ws` → petalTongue)
     let ws_runtime = {
