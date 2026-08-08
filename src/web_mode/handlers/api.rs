@@ -5,7 +5,8 @@ use std::time::Duration;
 
 use axum::{Json, extract::State, response::IntoResponse};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::UnixStream;
+
+use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
 
 use crate::data_service::DataService;
 
@@ -230,7 +231,8 @@ async fn send_uds_raw(
     payload: &[u8],
     btsp: bool,
 ) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> {
-    let mut stream = UnixStream::connect(path).await?;
+    let endpoint = TransportEndpoint::uds(path);
+    let mut stream = connect_transport(&endpoint).await?;
 
     if btsp {
         let mut frame = vec![0xEC, 0x01];

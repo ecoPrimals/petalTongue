@@ -9,7 +9,6 @@
 
 use crate::data_service::DataService;
 use crate::error::AppError;
-#[cfg(unix)]
 use petal_tongue_ipc::UnixSocketServer;
 use std::sync::Arc;
 
@@ -51,8 +50,7 @@ pub async fn run(
         .map_err(|e| AppError::Other(format!("G65 negotiate server init: {e}")))?;
     tracing::info!("G65 negotiate: {} (Phase 3)", negotiate_server.endpoint());
 
-    // JSON-RPC server (platform-specific bind: UDS on Unix, TCP fallback on other)
-    #[cfg(unix)]
+    // JSON-RPC server (UDS on Unix, TCP-only on Windows/Android)
     let jsonrpc_future = {
         let (motor_tx, motor_rx) = std::sync::mpsc::channel();
         let socket_override = socket_path.map(std::path::PathBuf::from);
@@ -75,17 +73,10 @@ pub async fn run(
         if tcp_port.is_some() {
             tracing::info!("JSON-RPC server: UDS + TCP (no display)");
         } else {
-            tracing::info!("JSON-RPC server: UDS (no display)");
+            tracing::info!("JSON-RPC server: IPC (no display)");
         }
 
         async move { server.start().await.map_err(AppError::from) }
-    };
-
-    #[cfg(not(unix))]
-    let jsonrpc_future = {
-        let _ = (graph, tcp_port, tcp_bind_host, socket_path);
-        tracing::info!("JSON-RPC server: TCP-only (no display)");
-        async { std::future::pending::<Result<(), AppError>>().await }
     };
 
     tokio::select! {

@@ -64,6 +64,7 @@ fn pid_path(socket_path: &std::path::Path) -> PathBuf {
 /// Write a PID file alongside the socket so consumers can do instant
 /// `kill(pid, 0)` liveness checks without connect overhead.
 /// Per `DEPLOYMENT_VALIDATION_STANDARD.md` §stale-socket-cleanup.
+#[cfg_attr(not(unix), allow(dead_code))]
 fn write_pid_file(socket_path: &std::path::Path) {
     let path = pid_path(socket_path);
     if let Err(e) = std::fs::write(&path, std::process::id().to_string()) {
@@ -85,6 +86,7 @@ fn remove_pid_file(socket_path: &std::path::Path) {
 /// for newline-delimited JSON-RPC per `IPC_COMPLIANCE_MATRIX.md` v1.2.
 pub struct UnixSocketServer {
     socket_path: PathBuf,
+    #[cfg_attr(not(unix), allow(dead_code))]
     family_id: String,
     handlers: RpcHandlers,
     motor_tx: Option<std::sync::mpsc::Sender<petal_tongue_core::MotorCommand>>,

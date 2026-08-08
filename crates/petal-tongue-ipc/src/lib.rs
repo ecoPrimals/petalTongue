@@ -110,8 +110,7 @@ pub mod tarpc_types;
 pub mod unix_socket_connection;
 /// JSON-RPC method dispatch and handlers
 pub mod unix_socket_rpc_handlers;
-/// Unix socket server for petalTongue IPC
-#[cfg(unix)]
+/// JSON-RPC IPC server (UDS on Unix, TCP-only on Windows/other platforms)
 pub mod unix_socket_server;
 pub mod visualization_handler;
 
@@ -137,7 +136,6 @@ pub use protocol::{InstanceStatus, IpcCommand, IpcResponse};
 pub use resilience::{CircuitBreaker, CircuitState, RetryPolicy};
 pub use scene_signer::SceneSigner;
 pub use server::{IpcServer, IpcServerError};
-#[cfg(unix)]
 pub use unix_socket_server::UnixSocketServer;
 pub use visualization_handler::{
     BackpressureConfig, CallbackDispatch, CompiledBinding, ConstraintResult, DismissRequest,

@@ -28,11 +28,13 @@ pub(super) enum UdsHandshakeOutcome {
 /// cellMembrane probes prepend this 2-byte prefix before JSON-RPC on UDS.
 /// Per Wave 113 guideStone amendment, all primals MUST accept and strip
 /// this prefix rather than rejecting the connection.
+#[cfg_attr(not(unix), allow(dead_code))]
 pub(super) const RIBOCIPHER_PREFIX: [u8; 2] = [0xEC, 0x01];
 
 /// Peek the UDS `BufReader` for a riboCipher `[0xEC, 0x01]` prefix and
 /// consume it if present. This runs before BTSP classification so the
 /// remaining bytes start with `{` (JSON-RPC) or a BTSP framing byte.
+#[cfg_attr(not(unix), allow(dead_code))]
 pub(super) async fn strip_ribocipher_prefix<R: tokio::io::AsyncBufRead + Unpin>(reader: &mut R) {
     use tokio::io::AsyncBufReadExt;
 
