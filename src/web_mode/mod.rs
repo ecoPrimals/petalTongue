@@ -14,6 +14,7 @@ mod handlers;
 pub mod scene_stream;
 #[cfg(test)]
 mod tests;
+pub mod webgl_bridge;
 pub mod ws_handler;
 
 pub use handlers::{build_response, is_ipynb};

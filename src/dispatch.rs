@@ -225,7 +225,7 @@ pub fn resolve_bind(
         return b;
     }
     if let Some(p) = port {
-        return format!("127.0.0.1:{p}");
+        return format!("{}:{p}", petal_tongue_core::constants::DEFAULT_LOOPBACK_HOST);
     }
     default()
 }

@@ -6,6 +6,28 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 157d: G19 WebGL Pipeline — Compilation Bridge + FD Self-Healing (August 9, 2026)
+
+WebGL compilation bridge wires DoomFrame rectangles and SceneGraph data through the
+`/ws/scene` broadcast channel. FD limit self-healing eliminates gate-by-gate systemd
+configuration for server processes. Last hardcoded loopback address in production code
+centralized through `constants::DEFAULT_LOOPBACK_HOST`.
+
+#### Added
+- `web_mode::webgl_bridge` module — DoomFrame/SceneGraph → WebGlScene compilation
+- `compile_rects_to_webgl()`: converts colored rectangles to vertex/index buffers
+- `compile_and_publish_scene()`: SceneGraph → WebGL → broadcast in one call
+- `compile_rects_and_publish()`: rectangles → WebGL → broadcast in one call
+- `RectInput` type: DoomFrame-compatible rectangle for WebGL compilation
+- `platform_substrate::raise_fd_limit()` — self-healing NOFILE soft limit (G68 L4)
+- 5 new tests (4 webgl_bridge + 1 raise_fd_limit)
+
+#### Changed
+- `main.rs` startup: calls `raise_fd_limit()` before runtime — self-heals on gates
+  without `LimitNOFILE=65536` (mirrors biomeOS pattern)
+- `dispatch.rs`: `resolve_bind()` uses `constants::DEFAULT_LOOPBACK_HOST` instead of
+  hardcoded `"127.0.0.1"` literal
+
 ### Wave 157d: G19 WebGL Pipeline — Scene Streaming (August 9, 2026)
 
 New `/ws/scene` WebSocket endpoint enables server-push scene streaming to browser

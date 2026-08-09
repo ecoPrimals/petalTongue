@@ -187,6 +187,51 @@ pub fn process_exists(pid: u32) -> bool {
     }
 }
 
+// ─── L4: Resource Limits ────────────────────────────────────────────────────
+
+/// Target NOFILE (max open file descriptors) for server processes.
+const TARGET_FD_LIMIT: u64 = 65536;
+
+/// Raise the soft file descriptor limit to [`TARGET_FD_LIMIT`] (or hard limit, whichever is lower).
+///
+/// Server primals that open many sockets (IPC, WebSocket, mesh connections) should
+/// call this at startup to self-heal on gates where `LimitNOFILE` hasn't been configured.
+///
+/// - Unix: `setrlimit(RLIMIT_NOFILE, min(target, hard_limit))`
+/// - Windows: no-op (Windows doesn't have per-process FD limits in the same way)
+///
+/// Returns the new soft limit (or current limit if unchanged).
+pub fn raise_fd_limit() -> u64 {
+    #[cfg(unix)]
+    {
+        use rustix::process::{Rlimit, Resource, getrlimit, setrlimit};
+
+        let current = getrlimit(Resource::Nofile);
+        let hard = current.maximum.unwrap_or(TARGET_FD_LIMIT);
+        let target = TARGET_FD_LIMIT.min(hard);
+
+        if current.current.unwrap_or(0) >= target {
+            return current.current.unwrap_or(target);
+        }
+
+        let new_limit = Rlimit {
+            current: Some(target),
+            maximum: current.maximum,
+        };
+
+        if setrlimit(Resource::Nofile, new_limit).is_ok() {
+            target
+        } else {
+            current.current.unwrap_or(1024)
+        }
+    }
+
+    #[cfg(not(unix))]
+    {
+        TARGET_FD_LIMIT
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -258,5 +303,12 @@ mod tests {
     fn process_exists_bogus_pid() {
         // PID 4_000_000 is extremely unlikely to exist
         assert!(!process_exists(4_000_000) || cfg!(windows));
+    }
+
+    #[test]
+    fn raise_fd_limit_returns_reasonable_value() {
+        let limit = raise_fd_limit();
+        // On any modern system the limit should be at least 1024
+        assert!(limit >= 256, "FD limit unexpectedly low: {limit}");
     }
 }

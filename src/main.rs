@@ -68,6 +68,10 @@ fn main() -> Result<(), AppError> {
 
     init_tracing(&cli.log_level, &cli.log_format)?;
 
+    // Self-heal FD limits on gates without systemd LimitNOFILE configuration.
+    let fd_limit = petal_tongue_core::platform_substrate::raise_fd_limit();
+    tracing::debug!(fd_limit, "NOFILE soft limit");
+
     let global_socket = cli.socket.clone();
     let global_port = cli.port;
 
