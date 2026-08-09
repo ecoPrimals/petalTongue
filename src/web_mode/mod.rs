@@ -11,6 +11,7 @@ pub mod content_backend;
 pub mod content_direct;
 mod coord_handlers;
 mod handlers;
+pub mod scene_stream;
 #[cfg(test)]
 mod tests;
 pub mod ws_handler;
@@ -172,6 +173,17 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
             .with_state(ws_state);
         app = app.merge(ws_router);
     }
+
+    // G19: WebGL scene streaming via WebSocket push
+    let (scene_tx, _) = tokio::sync::broadcast::channel::<scene_stream::SceneFrame>(64);
+    let scene_state = scene_stream::SceneStreamState {
+        data_service: Arc::clone(&data_service),
+        scene_tx,
+    };
+    let scene_ws_router = Router::new()
+        .route("/ws/scene", get(scene_stream::scene_stream_handler))
+        .with_state(scene_state);
+    app = app.merge(scene_ws_router);
 
     for comp in &cfg.compositions {
         if comp.path.is_dir() {

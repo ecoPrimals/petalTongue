@@ -14,6 +14,7 @@ mod content_render_tests;
 mod docroot_tests;
 mod handler_tests;
 mod router_tests;
+mod scene_stream_tests;
 mod startup_tests;
 mod viz_registry_tests;
 mod ws_bridge_tests;

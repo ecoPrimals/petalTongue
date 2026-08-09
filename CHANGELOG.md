@@ -6,6 +6,24 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 157d: G19 WebGL Pipeline — Scene Streaming (August 9, 2026)
+
+New `/ws/scene` WebSocket endpoint enables server-push scene streaming to browser
+clients. Browser connects, subscribes to a session, receives compiled `WebGlScene`
+frames in real-time. Foundation for esotericWebb browser surface and footPrint GIS.
+
+#### Added
+- `web_mode::scene_stream` module — WebSocket scene streaming handler (G19)
+- `/ws/scene` endpoint: subscribe/unsubscribe protocol, frame push
+- `SceneStreamState`: broadcast channel for scene frame distribution
+- `publish_scene_frame()`: API for IPC handlers to push scenes to browser clients
+- 2 integration tests (subscribe ack, frame delivery)
+
+#### Notes
+- P2 `--port` flag: code fix shipped in `355a44e` (Wave 157a). Depot rebuild will
+  deploy to blueGate. Verified code path: CLI → `resolve_server_transport()` →
+  `UnixSocketServer::with_tcp_port()` → TCP bind on all platforms.
+
 ### Wave 157a: Vertebrate Evolution — Self-Audit + doom-core Decoupling (August 9, 2026)
 
 RPC surface self-audit: verified all 57 served JSON-RPC methods match dispatch table.

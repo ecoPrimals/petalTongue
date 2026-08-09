@@ -1,7 +1,7 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 157a | **Date**: August 9, 2026 | **From**: petalTongue on eastGate
-**Posture**: **VERTEBRATE EVOLUTION** — RPC surface self-audited (57 methods verified). `doom-core` decoupled from `petal-tongue-scene` (ludoSpring extraction ready). 8 unused deps pruned. G65+G66+G68 complete. Zero P0/P1/P2 for petalTongue.
+**Wave**: 157d | **Date**: August 9, 2026 | **From**: petalTongue on eastGate
+**Posture**: **G19 SCENE STREAMING LIVE** — `/ws/scene` WebSocket push endpoint ships. Browser clients subscribe to sessions, receive compiled `WebGlScene` frames in real-time. esotericWebb + footPrint browser surface foundation complete. P2 `--port` fix verified (depot rebuild deploys). G65+G66+G68 complete. Zero P0/P1/P2 for petalTongue.
 
 ---
 
