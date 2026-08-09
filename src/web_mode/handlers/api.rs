@@ -226,6 +226,115 @@ pub async fn pseudospore_bundles_handler() -> impl IntoResponse {
     }))
 }
 
+const SWARMVINE_SOCK_DIR: &str = "/run/membrane";
+const FEDERATION_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// `/api/content/federation` — federated data braids view.
+///
+/// Combines local CAS stats (rhizoCrypt) with data-layer gossip entries
+/// from swarmVine, providing a mesh-wide content availability picture.
+/// As gates inject `cas.have` and `braid.head` gossip entries, they
+/// appear here automatically — no SSH required.
+pub async fn content_federation_handler() -> impl IntoResponse {
+    let result = tokio::time::timeout(FEDERATION_TIMEOUT, build_federation_view()).await;
+
+    match result {
+        Ok(Ok(view)) => Json(view),
+        Ok(Err(e)) => {
+            tracing::debug!("federation view failed: {e}");
+            Json(serde_json::json!({
+                "status": "partial",
+                "error": e.to_string(),
+                "local": null,
+                "gossip": null,
+            }))
+        }
+        Err(_) => Json(serde_json::json!({
+            "status": "timeout",
+            "error": "federation query exceeded 5s",
+        })),
+    }
+}
+
+async fn build_federation_view(
+) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> {
+    let local_fut = tokio::time::timeout(CONTENT_STATS_TIMEOUT, query_content_stats());
+    let gossip_fut = tokio::time::timeout(CONTENT_STATS_TIMEOUT, query_swarmvine_data());
+
+    let (local_result, gossip_result) = tokio::join!(local_fut, gossip_fut);
+
+    let local = match local_result {
+        Ok(Ok(v)) => v,
+        _ => serde_json::json!({ "status": "unavailable" }),
+    };
+
+    let gossip = match gossip_result {
+        Ok(Ok(v)) => v,
+        _ => serde_json::json!({ "status": "unavailable" }),
+    };
+
+    let remote_count = gossip
+        .get("entries")
+        .and_then(|e| e.as_array())
+        .map(|a| a.len())
+        .unwrap_or(0);
+
+    let mut gates = vec!["sporeGate".to_string()];
+    if let Some(entries) = gossip.get("entries").and_then(|e| e.as_array()) {
+        for entry in entries {
+            if let Some(gate) = entry.get("origin_gate").and_then(|g| g.as_str()) {
+                let g = gate.to_string();
+                if !gates.contains(&g) {
+                    gates.push(g);
+                }
+            }
+        }
+    }
+
+    Ok(serde_json::json!({
+        "status": "ok",
+        "local": local,
+        "gossip": {
+            "data_entries": gossip.get("count").and_then(|c| c.as_u64()).unwrap_or(0),
+            "remote_gates": remote_count,
+            "entries": gossip.get("entries"),
+        },
+        "federation": {
+            "gates_visible": gates,
+            "gate_count": gates.len(),
+            "transport": "tower_atomic",
+        },
+    }))
+}
+
+/// Query swarmVine's data-topic gossip table for cross-gate CAS entries.
+async fn query_swarmvine_data(
+) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> {
+    let socket = discover_swarmvine_socket()
+        .ok_or_else(|| -> Box<dyn std::error::Error + Send + Sync> {
+            "swarmVine socket not found".into()
+        })?;
+
+    let path_str = socket.to_string_lossy().to_string();
+    rpc_query(&path_str, "gossip.query", serde_json::json!({ "topic": "data" })).await
+}
+
+fn discover_swarmvine_socket() -> Option<std::path::PathBuf> {
+    if let Ok(entries) = std::fs::read_dir(SWARMVINE_SOCK_DIR) {
+        for entry in entries.flatten() {
+            let name = entry.file_name();
+            let name_str = name.to_string_lossy();
+            if name_str.starts_with("swarmvine-")
+                && name_str.ends_with(".sock")
+                && !name_str.contains("tarpc")
+            {
+                return Some(entry.path());
+            }
+        }
+    }
+    None
+}
+
 async fn send_uds_raw(
     path: &str,
     payload: &[u8],

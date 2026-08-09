@@ -7,8 +7,8 @@ mod static_content;
 mod topology;
 
 pub(super) use api::{
-    content_stats_handler, primals_handler, pseudospore_bundles_handler, snapshot_handler,
-    status_handler,
+    content_federation_handler, content_stats_handler, primals_handler,
+    pseudospore_bundles_handler, snapshot_handler, status_handler,
 };
 #[allow(unused_imports)]
 pub(super) use static_content::resolve_docroot_path;

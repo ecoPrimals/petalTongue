@@ -24,11 +24,11 @@ use coord_handlers::{
     coord_topology_handler, coord_waves_handler,
 };
 use handlers::{
-    content_stats_handler, docroot_fallback, ecosystem_handler, events_sse_handler,
-    gate_mesh_handler, health_handler, index_handler, live_topology_handler, liveness_handler,
-    mesh_peers_handler, physical_topology_handler, primal_health_handler, primals_handler,
-    pseudospore_bundles_handler, readiness_handler, snapshot_handler, sporeprint_handler,
-    status_handler, topology_layers_handler, viz_handler,
+    content_federation_handler, content_stats_handler, docroot_fallback, ecosystem_handler,
+    events_sse_handler, gate_mesh_handler, health_handler, index_handler, live_topology_handler,
+    liveness_handler, mesh_peers_handler, physical_topology_handler, primal_health_handler,
+    primals_handler, pseudospore_bundles_handler, readiness_handler, snapshot_handler,
+    sporeprint_handler, status_handler, topology_layers_handler, viz_handler,
 };
 
 use std::sync::Arc;
@@ -120,6 +120,7 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .route("/api/primal-health", get(primal_health_handler))
         .route("/api/sporeprint", get(sporeprint_handler))
         .route("/api/content/stats", get(content_stats_handler))
+        .route("/api/content/federation", get(content_federation_handler))
         .route("/api/pseudospore/bundles", get(pseudospore_bundles_handler))
         .route("/api/topology-layers", get(topology_layers_handler))
         .route("/api/topology/live", get(live_topology_handler))
