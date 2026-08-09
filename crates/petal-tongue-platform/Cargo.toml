@@ -28,7 +28,6 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 petal-tongue-core = { path = "../petal-tongue-core" }
 petal-tongue-scene = { path = "../petal-tongue-scene" }
-petal-tongue-ui-core = { path = "../petal-tongue-ui-core" }
 petal-tongue-types = { path = "../petal-tongue-types" }
 futures-util = { workspace = true }
 serde = { workspace = true }

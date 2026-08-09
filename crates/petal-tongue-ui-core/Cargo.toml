@@ -31,7 +31,6 @@ bytes = { workspace = true }
 tracing = { workspace = true }
 
 # Terminal UI (pure Rust, cross-platform)
-crossterm = { workspace = true }
 terminal_size = { workspace = true }
 
 # 2D rendering (pure Rust, no native deps)

@@ -2,10 +2,10 @@
 //! Doom instance - main game loop and state management.
 
 use crate::error::{DoomError, Result};
+use crate::frame::DoomFrame;
 use crate::key::DoomKey;
 use crate::state::{DoomState, GameStats, ViewMode};
 use crate::{map_renderer, raycast_renderer, wad_loader};
-use petal_tongue_scene::scene_graph::SceneGraph;
 use std::collections::HashSet;
 use std::path::Path;
 
@@ -208,20 +208,20 @@ impl DoomInstance {
         }
     }
 
-    /// Render the current frame as a scene graph.
+    /// Render the current frame as a `DoomFrame` (vector of colored rectangles).
     ///
-    /// Every pixel region in the output maps to a `Primitive::Rect` with a
+    /// Every pixel region in the output maps to a `FrameRect` with a
     /// `data_id` so the full frame is traceable.
     #[must_use]
-    pub fn render_scene(&self) -> SceneGraph {
+    pub fn render_frame(&self) -> DoomFrame {
         if let (Some(wad_data), Some(map_name)) = (&self.wad_data, &self.current_map)
             && let Some(map) = wad_data.get_map(map_name)
             && self.first_person_mode
             && let Some(renderer) = &self.raycast_renderer
         {
-            return renderer.render_to_scene(map);
+            return renderer.render_to_frame(map);
         }
-        SceneGraph::new()
+        DoomFrame::new()
     }
 
     /// Get the current framebuffer (RGBA format).

@@ -195,7 +195,7 @@ fn test_calculate_wall_height_capped() {
 }
 
 #[test]
-fn test_render_to_scene_empty_map() {
+fn test_render_to_frame_empty_map() {
     use crate::wad_loader::MapData;
 
     let renderer = RaycastRenderer::new(64, 64);
@@ -206,9 +206,9 @@ fn test_render_to_scene_empty_map() {
         sectors: vec![],
         things: vec![],
     };
-    let scene = renderer.render_to_scene(&map);
-    assert!(scene.get("sky").is_some());
-    assert!(scene.get("floor").is_some());
+    let frame = renderer.render_to_frame(&map);
+    assert!(frame.rects.iter().any(|r| r.data_id == "sky"));
+    assert!(frame.rects.iter().any(|r| r.data_id == "floor"));
 }
 
 #[test]
@@ -282,7 +282,7 @@ fn test_linedef_flags_blocking() {
 }
 
 #[test]
-fn test_render_to_scene_with_wall() {
+fn test_render_to_frame_with_wall() {
     use crate::wad_loader::{LineDef, MapData, Vertex};
 
     let mut renderer = RaycastRenderer::new(64, 64);
@@ -303,7 +303,7 @@ fn test_render_to_scene_with_wall() {
         sectors: vec![],
         things: vec![],
     };
-    let scene = renderer.render_to_scene(&map);
-    assert!(scene.get("sky").is_some());
-    assert!(scene.get("floor").is_some());
+    let frame = renderer.render_to_frame(&map);
+    assert!(frame.rects.iter().any(|r| r.data_id == "sky"));
+    assert!(frame.rects.iter().any(|r| r.data_id == "floor"));
 }

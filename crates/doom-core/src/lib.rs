@@ -31,6 +31,7 @@
 //! Game mechanics: ORC (Open RPG Creative License)
 
 pub mod error;
+pub mod frame;
 pub mod instance;
 pub mod key;
 pub mod map_renderer;
@@ -43,6 +44,7 @@ mod tests;
 
 // Re-exports for public API stability
 pub use error::{DoomError, Result};
+pub use frame::{DoomFrame, FrameRect};
 pub use instance::DoomInstance;
 pub use key::DoomKey;
 pub use state::{DoomState, GameStats, ViewMode};

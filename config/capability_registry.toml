@@ -2,14 +2,62 @@
 #
 # Capability Registry — petalTongue
 #
-# Mirrors primalSpring canonical registry pattern. Lists every JSON-RPC
-# method petalTongue SERVES (as the visualization primal) and CONSUMES
-# (from other primals for content, discovery, orchestration).
+# Self-audit: verified against dispatch.rs (Wave 157a vertebrate evolution).
+# Lists every JSON-RPC method petalTongue SERVES (as the visualization primal)
+# and CONSUMES (from other primals).
 #
-# The served methods here must match the [visualization], [interaction],
-# [render], and [viz] domains in primalSpring's capability_registry.toml.
+# The served methods here MUST match the actual dispatch table in
+# crates/petal-tongue-ipc/src/unix_socket_rpc_handlers/dispatch.rs
 
-# ─── Methods petalTongue SERVES ───────────────────────────────────────
+# ─── System / Health ─────────────────────────────────────────────────
+
+[health]
+owner = "petaltongue"
+role = "server"
+methods = [
+    "health.check",
+    "health.liveness",
+    "health.readiness",
+    "health.get",
+]
+
+[identity]
+owner = "petaltongue"
+role = "server"
+methods = [
+    "identity.get",
+    "lifecycle.status",
+]
+
+[capabilities]
+owner = "petaltongue"
+role = "server"
+methods = [
+    "capabilities.list",
+    "capability.list",
+    "capability.announce",
+    "capabilities.sensory",
+    "capabilities.sensory.negotiate",
+    "provider.register_capability",
+]
+
+[auth]
+owner = "petaltongue"
+role = "server"
+methods = [
+    "auth.check",
+    "auth.mode",
+    "auth.peer_info",
+]
+
+[btsp]
+owner = "petaltongue"
+role = "server"
+methods = [
+    "btsp.capabilities",
+]
+
+# ─── Visualization ───────────────────────────────────────────────────
 
 [visualization]
 owner = "petaltongue"
@@ -20,55 +68,83 @@ methods = [
     "visualization.render",
     "visualization.render.dashboard",
     "visualization.render.grammar",
+    "visualization.render.graph",
     "visualization.render.scene",
     "visualization.render.stream",
-    "visualization.session.create",
+    "visualization.validate",
+    "visualization.dismiss",
+    "visualization.interact.apply",
+    "visualization.interact.perspectives",
+    "visualization.introspect",
+    "visualization.panels",
+    "visualization.showing",
     "visualization.session.list",
+    "visualization.session.status",
+    "visualization.texture.upload",
+    "visualization.texture.attach",
+    "visualization.scene.verify",
+    "visualization.scene.declarative",
 ]
+
+# ─── Interaction ─────────────────────────────────────────────────────
 
 [interaction]
 owner = "petaltongue"
 role = "server"
 methods = [
-    "interaction.poll",
-    "interaction.sensor_stream.poll",
     "interaction.subscribe",
+    "interaction.poll",
+    "interaction.unsubscribe",
+    "interaction.sensor_stream.subscribe",
+    "interaction.sensor_stream.unsubscribe",
+    "interaction.sensor_stream.poll",
 ]
 
-[render]
+# ─── Topology / Mesh ─────────────────────────────────────────────────
+
+[topology]
 owner = "petaltongue"
 role = "server"
 methods = [
-    "render.dashboard",
+    "topology.get",
+    "gate.mesh.status",
+    "proprioception.get",
 ]
 
-[viz]
+# ─── UI / Motor ──────────────────────────────────────────────────────
+
+[ui]
 owner = "petaltongue"
 role = "server"
 methods = [
-    "viz.dashboard",
-    "viz.query",
-    "viz.render",
-    "viz.stream",
+    "ui.render",
+    "ui.display_status",
 ]
 
-[health]
+[motor]
 owner = "petaltongue"
 role = "server"
 methods = [
-    "health.check",
-    "health.liveness",
-    "health.version",
+    "motor.set_panel",
+    "motor.set_zoom",
+    "motor.fit_to_view",
+    "motor.set_mode",
+    "motor.navigate",
+    "motor.set_awakening",
+    "motor.panel.update",
+    "motor.notification",
 ]
 
-[capabilities]
+# ─── Audio ───────────────────────────────────────────────────────────
+
+[audio]
 owner = "petaltongue"
 role = "server"
 methods = [
-    "capability.list",
+    "audio.synthesize",
 ]
 
-# ─── Methods petalTongue CONSUMES ─────────────────────────────────────
+# ─── Methods petalTongue CONSUMES ────────────────────────────────────
 
 [content]
 owner = "content-provider"
@@ -88,23 +164,23 @@ methods = [
     "ipc.resolve",
 ]
 
-# ─── Meta-Tier Signal Participation ───────────────────────────────────
+# ─── Meta-Tier Signal Participation ──────────────────────────────────
 #
 # petalTongue participates in 3 meta signals:
 # - meta.intent: STARTS loop (capture_intent via interaction.poll)
-# - meta.render: ENDS loop (render_output via viz.render)
-# - meta.observe: participates (render_state via viz.stream)
+# - meta.render: ENDS loop (render_output via visualization.render)
+# - meta.observe: participates (render_state via visualization.render.stream)
 
 [signals.meta]
 tier = "meta"
 role = "participant"
 signals = [
     { name = "intent", role = "entry", capability = "interaction.poll" },
-    { name = "render", role = "exit", capability = "viz.render" },
-    { name = "observe", role = "participant", capability = "viz.stream" },
+    { name = "render", role = "exit", capability = "visualization.render" },
+    { name = "observe", role = "participant", capability = "visualization.render.stream" },
 ]
 
-# ─── Network fallbacks (registry > env > const) ───────────────────────
+# ─── Network fallbacks (registry > env > const) ─────────────────────
 #
 # Ports are discovery fallbacks, not authoritative endpoints.
 # Runtime resolution via ipc.resolve / HTTP probing takes precedence.
@@ -131,7 +207,7 @@ discovery = 8080
 compute = 9001
 security = 9000
 
-# ─── Test fixtures ────────────────────────────────────────────────────
+# ─── Test fixtures ───────────────────────────────────────────────────
 
 [test_fixtures]
 owner = "tests"

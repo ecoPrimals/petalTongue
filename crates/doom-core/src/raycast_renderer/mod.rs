@@ -7,13 +7,12 @@ mod math;
 #[cfg(test)]
 mod tests;
 
+use crate::frame::{DoomFrame, FrameRect};
 use crate::wad_loader::MapData;
 use math::{
     distance_shading, normalize_angle_0_two_pi, projected_wall_height, ray_line_intersection,
     screen_ray_angle, shade_wall_rgba,
 };
-use petal_tongue_scene::primitive::{Color as SceneColor, Primitive};
-use petal_tongue_scene::scene_graph::{SceneGraph, SceneNode};
 use std::f32::consts::PI;
 
 /// First-person raycasting renderer.
@@ -144,20 +143,20 @@ impl RaycastRenderer {
         projected_wall_height(distance, self.width, self.height, self.fov)
     }
 
-    /// Render the map to a `SceneGraph` instead of a raw framebuffer.
+    /// Render the map to a `DoomFrame` instead of a raw framebuffer.
     ///
-    /// Every pixel region is represented by a `Primitive::Rect` with a `data_id`
+    /// Every pixel region is represented by a `FrameRect` with a `data_id`
     /// encoding its origin: `"sky"`, `"floor"`, or `"wall:<linedef_index>:<column>"`.
     #[expect(
         clippy::cast_precision_loss,
         reason = "screen dimensions and indices fit losslessly in f64/f32"
     )]
     #[must_use]
-    pub fn render_to_scene(&self, map: &MapData) -> SceneGraph {
-        let mut scene = SceneGraph::new();
+    pub fn render_to_frame(&self, map: &MapData) -> DoomFrame {
+        let mut frame = DoomFrame::new();
         let scene_width = self.width as f64;
         let scene_height = self.height as f64;
-        add_sky_and_floor_planes(&mut scene, scene_width, scene_height);
+        add_sky_and_floor_rects(&mut frame, scene_width, scene_height);
 
         for x in 0..self.width {
             let ray_angle = self.calculate_ray_angle(x);
@@ -171,8 +170,8 @@ impl RaycastRenderer {
                     (f32::from(wall_color[1]) * shading) / 255.0,
                     (f32::from(wall_color[2]) * shading) / 255.0,
                 ];
-                append_scene_wall_column(
-                    &mut scene,
+                append_wall_column_rect(
+                    &mut frame,
                     x,
                     self.height,
                     wall_height,
@@ -182,7 +181,7 @@ impl RaycastRenderer {
             }
         }
 
-        scene
+        frame
     }
 
     /// Get the rendered framebuffer.
@@ -210,37 +209,39 @@ impl RaycastRenderer {
     }
 }
 
-fn add_sky_and_floor_planes(scene: &mut SceneGraph, scene_width: f64, scene_height: f64) {
+fn add_sky_and_floor_rects(frame: &mut DoomFrame, scene_width: f64, scene_height: f64) {
     let half_height = scene_height / 2.0;
 
-    scene.add_to_root(SceneNode::new("sky").with_primitive(Primitive::Rect {
+    frame.push(FrameRect {
         x: 0.0,
         y: 0.0,
         width: scene_width,
         height: half_height,
-        fill: Some(SceneColor::from_rgba8(100, 150, 200, 255)),
-        stroke: None,
-        corner_radius: 0.0,
-        data_id: Some("sky".to_owned()),
-    }));
-    scene.add_to_root(SceneNode::new("floor").with_primitive(Primitive::Rect {
+        r: 100.0 / 255.0,
+        g: 150.0 / 255.0,
+        b: 200.0 / 255.0,
+        a: 1.0,
+        data_id: "sky".to_owned(),
+    });
+    frame.push(FrameRect {
         x: 0.0,
         y: half_height,
         width: scene_width,
         height: half_height,
-        fill: Some(SceneColor::from_rgba8(64, 64, 64, 255)),
-        stroke: None,
-        corner_radius: 0.0,
-        data_id: Some("floor".to_owned()),
-    }));
+        r: 64.0 / 255.0,
+        g: 64.0 / 255.0,
+        b: 64.0 / 255.0,
+        a: 1.0,
+        data_id: "floor".to_owned(),
+    });
 }
 
 #[expect(
     clippy::cast_precision_loss,
     reason = "scene column geometry uses f64 screen space"
 )]
-fn append_scene_wall_column(
-    scene: &mut SceneGraph,
+fn append_wall_column_rect(
+    frame: &mut DoomFrame,
     column_x: usize,
     screen_height: usize,
     wall_height: usize,
@@ -258,18 +259,18 @@ fn append_scene_wall_column(
         return;
     }
 
-    let node_id = format!("wall_{column_x}");
     let data_id = format!("wall:{linedef_idx}:{column_x}");
-    scene.add_to_root(SceneNode::new(node_id).with_primitive(Primitive::Rect {
+    frame.push(FrameRect {
         x: column_x as f64,
         y: y_start as f64,
         width: 1.0,
         height: col_height,
-        fill: Some(SceneColor::rgba(r, g, b, 1.0)),
-        stroke: None,
-        corner_radius: 0.0,
-        data_id: Some(data_id),
-    }));
+        r,
+        g,
+        b,
+        a: 1.0,
+        data_id,
+    });
 }
 
 fn fill_sky_and_floor(framebuffer: &mut [u8], width: usize, height: usize) {

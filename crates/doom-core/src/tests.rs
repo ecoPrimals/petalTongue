@@ -208,10 +208,10 @@ fn test_doom_error_initialization_failed() {
 }
 
 #[test]
-fn test_render_scene_empty_when_uninitialized() {
+fn test_render_frame_empty_when_uninitialized() {
     let doom = DoomInstance::new(320, 240).unwrap();
-    let scene = doom.render_scene();
-    assert_eq!(scene.node_count(), 1);
+    let frame = doom.render_frame();
+    assert!(frame.is_empty());
 }
 
 #[test]
@@ -300,7 +300,7 @@ fn test_tick_when_menu() {
 }
 
 #[test]
-fn test_render_scene_with_wad() {
+fn test_render_frame_with_wad() {
     let wad_bytes = create_minimal_wad_bytes();
     let path = std::env::temp_dir().join("petaltongue_doom_render_test.wad");
     std::fs::write(&path, &wad_bytes).unwrap();
@@ -308,8 +308,8 @@ fn test_render_scene_with_wad() {
     doom.init_with_wad(Some(&path)).unwrap();
     std::fs::remove_file(&path).ok();
     doom.new_game().unwrap();
-    let scene = doom.render_scene();
-    assert!(scene.node_count() > 1);
+    let frame = doom.render_frame();
+    assert!(!frame.is_empty());
 }
 
 #[test]

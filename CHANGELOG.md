@@ -6,6 +6,39 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 157a: Vertebrate Evolution — Self-Audit + doom-core Decoupling (August 9, 2026)
+
+RPC surface self-audit: verified all 57 served JSON-RPC methods match dispatch table.
+`doom-core` decoupled from `petal-tongue-scene` — ready for `ludoSpring` extraction.
+8 unused workspace deps removed across 5 crates.
+
+#### Added
+- `doom-core::frame` module (`DoomFrame`, `FrameRect`) — scene-agnostic rendering output
+- `DoomInstance::render_frame()` replaces `render_scene()` (returns `DoomFrame` not `SceneGraph`)
+- `RaycastRenderer::render_to_frame()` replaces `render_to_scene()`
+
+#### Changed
+- `config/capability_registry.toml`: full self-audit — 57 served methods now match dispatch.rs exactly
+  - Removed phantom `viz.*` and `render.dashboard` namespaces (never implemented)
+  - Removed phantom `visualization.session.create` (never implemented)
+  - Added all actually-served methods: auth, btsp, topology, motor, audio, ui domains
+  - Fixed meta signal references to use actual method names
+
+#### Removed
+- `petal-tongue-scene` dependency from `doom-core` (decoupled for ludoSpring extraction)
+- `bytes` dependency from `doom-core` (unused)
+- `thiserror` + `tracing` from `petal-tongue-animation` (unused)
+- `petal-tongue-graph` from `petal-tongue-headless` (unused)
+- `petal-tongue-ui-core` from `petal-tongue-platform` (unused)
+- `clap` + `petal-tongue-telemetry` from `petal-tongue-ui` (unused)
+- `crossterm` from `petal-tongue-ui-core` (unused)
+
+#### Metrics
+- `cargo check --target x86_64-pc-windows-gnu`: **ZERO errors, ZERO warnings**
+- 101 test suites pass, 0 failures
+- Zero clippy warnings (pedantic + nursery)
+- doom-core: **3 deps** (was 5) — fully extractable to ludoSpring
+
 ### Wave 157a: G68 Platform Substrate Abstraction (August 7, 2026)
 
 New `platform_substrate` module in `petal-tongue-core` centralizes platform-specific
