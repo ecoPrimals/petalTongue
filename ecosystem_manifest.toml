@@ -7,10 +7,10 @@
 
 [ecosystem]
 name = "ecoPrimals"
-wave = 156
+wave = 157
 nucleus_count = 14
 atomics = 4
-posture = "G19 PIPELINE + GOSSIP INJECTION. Ant colony active. surface.web.live + scene.streaming + content.serve gossip. WebGL auto-publish through /ws/scene. 15/15 cross-arch. 101/101 tests. ZERO P0/P1"
+posture = "G72 DEPENDENCY PANDEMIC Tier 1. Stadial shift — vestigial deps shed. tokio-tungstenite/rand/png aligned. Headless deploys: 469 deps. 4-gate gossip mesh LIVE. 6,635 tests. ZERO P0/P1"
 glacial_criteria_clear = 13
 compositions = ["footPrint", "tideGlass", "esotericWebb"]
 live_surfaces = ["primals.eco", "nestgate.io", "primals.eco/footprint/", "live.primals.eco"]

@@ -1,7 +1,7 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 157e | **Date**: August 10, 2026 | **From**: petalTongue on eastGate
-**Posture**: **ANT COLONY ACTIVE** — Gossip injection module ships. petalTongue announces `surface.web.live`, `surface.scene.streaming`, `content.serve.available`, and `viz.session.*` to swarmVine mesh. WebGL auto-publish wired: `visualization.render.grammar` with GPU modality pushes compiled scenes through `/ws/scene` broadcast. Centralized swarmVine socket discovery. G19 pipeline complete end-to-end. Zero P0/P1.
+**Wave**: 157g | **Date**: August 10, 2026 | **From**: petalTongue on eastGate
+**Posture**: **G72 DEPENDENCY PANDEMIC — TIER 1 COMPLETE.** Stadial shift engaged. Vestigial crate excised (`petal-tongue-telemetry`). Version alignment: `tokio-tungstenite` 0.21→0.24, `rand` 0.8→0.9, `png` 0.17→0.18. Duplicate transitive crates reduced 44→40. Headless deploy deps: 469. Lockfile: 653 packages. Tokio features already trimmed (no `["full"]`). 4-gate gossip mesh live. Zero P0/P1.
 
 ---
 
@@ -10,8 +10,8 @@
 | Metric | Value |
 |--------|-------|
 | Version | 1.7.0 |
-| Crates | 19 workspace members |
-| Tests | 6,644 passing, 0 failures |
+| Crates | 18 workspace members |
+| Tests | 6,635 passing, 0 failures |
 | Clippy | Zero warnings (pedantic + nursery, all targets) |
 | Docs | Zero warnings (`cargo doc --workspace --all-features --no-deps`) |
 | Unsafe | Confined to `petal-tongue-platform/src/ffi.rs` (15 usages, all SAFETY-documented) |
@@ -19,9 +19,12 @@
 | Cross-arch | x86_64-linux, aarch64-linux, aarch64-android, **x86_64-windows (ZERO warnings)** |
 | Files | All production files < 800 LOC |
 | Edition | 2024 |
+| Lockfile | **653 packages** (from 656). Headless: 469 |
+| Duplicates | **40** transitive dupes (down from 44; remaining are egui ecosystem) |
 | tarpc | **0.37** — C1 DONE, C2 LIVE, **G65 DONE** (negotiate server on `petaltongue.negotiate.sock`) |
 | tarpc UDS | `petaltongue.tarpc.sock` — binary RPC alongside JSON-RPC `.sock` |
 | tokio-serde | 0.9 (aligned with tarpc 0.37) |
+| tokio features | `["rt-multi-thread", "net", "io-util", "sync", "signal", "time", "fs", "macros"]` — no `["full"]` |
 | Idioms | Rust 2024 let-chains, zero redundant allocations, all deps current |
 | Self-knowledge | Zero hardcoded peer primal names in production code |
 | Config unity | Zero raw `FAMILY_ID` env reads outside canonical resolution |
@@ -31,6 +34,26 @@
 | nestgate.io | **LIVE** — petalTongue v1.7.0 serving on sporeGate via WG mesh |
 | Declarative scenes | `visualization.render.scene` accepts string scene type + data for tideGlass |
 | Dashboard UX | Graceful degradation with specific error messages (no infinite "Loading...") |
+
+---
+
+## G72 Dependency Pandemic — petalTongue Status
+
+**Tier 1 COMPLETE** (Wave 157g). Tier 2 begins.
+
+| Action | Status | Impact |
+|--------|--------|--------|
+| Trim tokio `["full"]` | **N/A** — already specific features | Already lean |
+| Dead dep removal (`cargo +nightly udeps`) | **DONE** — "All deps seem to have been used" | Clean |
+| Vestigial crate excision | **DONE** — `petal-tongue-telemetry` removed (zero imports) | −1 workspace member |
+| Version alignment: `tokio-tungstenite` | **DONE** — 0.21→0.24 (matches axum transitive) | −2 duplicate crates |
+| Version alignment: `rand` | **DONE** — 0.8→0.9 | Aligns with getrandom 0.3+ |
+| Version alignment: `png` | **DONE** — 0.17→0.18 (matches egui transitive) | |
+| Remaining duplicates (40) | **EGUI ECOSYSTEM** — bitflags v1/v2, calloop, smithay, syn v2/v3 | Needs egui 0.30+ |
+| **Tier 2 (next)**: tarpc→feature-gate | PLANNED | −146 deps for JSON-RPC-only deploys |
+| **Tier 2 (next)**: HTTP→songBird/capability.call | PLANNED | Removes hyper-util direct dep |
+
+**Headless deploy profile** (no-default-features): **469 packages** — 28% fewer than full (653).
 
 ---
 

@@ -6,6 +6,26 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 157g: G72 Dependency Pandemic — Tier 1 (August 10, 2026)
+
+Stadial shift: petalTongue sheds vestigial dependencies. Version alignment
+eliminates duplicate transitive crates, dead workspace member excised,
+rand/tokio-tungstenite/png aligned with upstream ecosystem.
+
+#### Removed
+- `petal-tongue-telemetry` — vestigial crate (zero imports anywhere in workspace)
+
+#### Changed
+- `tokio-tungstenite`: 0.21 → 0.24 (aligns with axum's transitive, eliminates dupe)
+- `rand`: 0.8 → 0.9 (aligns with getrandom 0.3/0.4 transitives)
+- `png`: 0.17 → 0.18 (aligns with egui's transitive)
+- Duplicate crate entries reduced: 44 → 40
+
+#### Metrics
+- Lockfile packages: 656 → 653
+- Headless (no-default-features) dep count: 469 (vs 653 full)
+- Tests: 6,635 passing, 0 clippy warnings, Windows cross-arch clean
+
 ### Wave 157e: Gossip Injection + G19 Auto-Publish (August 10, 2026)
 
 petalTongue joins the ant colony. Gossip injection module announces surface
