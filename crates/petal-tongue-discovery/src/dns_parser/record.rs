@@ -61,14 +61,14 @@ impl SrvRecord {
             .collect();
 
         let sum: u32 = candidates.iter().map(|r| u32::from(r.weight)).sum();
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         if sum == 0 {
-            let idx = rng.gen_range(0..candidates.len());
+            let idx = rng.random_range(0..candidates.len());
             return Some(candidates[idx]);
         }
 
-        let mut roll = rng.gen_range(0..sum);
+        let mut roll = rng.random_range(0..sum);
         for r in &candidates {
             let w = u32::from(r.weight);
             if w == 0 {

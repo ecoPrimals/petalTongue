@@ -167,7 +167,7 @@ impl RetryPolicy {
 /// Add random jitter to duration (±20%)
 fn add_jitter(duration: Duration) -> Duration {
     use rand::Rng;
-    let jitter_factor = rand::thread_rng().gen_range(0.8..1.2);
+    let jitter_factor = rand::rng().random_range(0.8..1.2);
     duration.mul_f64(jitter_factor)
 }
 

@@ -110,7 +110,7 @@ impl Phase3Session {
     /// Encrypt plaintext into `[12B random nonce][ciphertext + 16B tag]`.
     pub fn encrypt_frame(&self, plaintext: &[u8]) -> Result<Vec<u8>, BtspHandshakeError> {
         let mut nonce_bytes = [0u8; NONCE_SIZE];
-        rand::Rng::fill(&mut rand::thread_rng(), &mut nonce_bytes);
+        rand::Rng::fill(&mut rand::rng(), &mut nonce_bytes);
 
         let nonce = Nonce::from_slice(&nonce_bytes);
         let ciphertext = self.encrypt_cipher.encrypt(nonce, plaintext).map_err(|_| {
@@ -361,7 +361,7 @@ where
     }
 
     let mut server_nonce = vec![0u8; 32];
-    rand::Rng::fill(&mut rand::thread_rng(), server_nonce.as_mut_slice());
+    rand::Rng::fill(&mut rand::rng(), server_nonce.as_mut_slice());
     let server_nonce_b64 = base64::engine::general_purpose::STANDARD.encode(&server_nonce);
 
     let negotiate_response = JsonRpcResponse {
