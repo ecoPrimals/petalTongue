@@ -332,6 +332,15 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
 
     let listener = tokio::net::TcpListener::bind(&addr).await?;
 
+    // Gossip injection: announce web surface availability to the mesh
+    let bind_str = cfg.bind.to_owned();
+    tokio::spawn(async move {
+        let gate = std::env::var("GATE_NAME").unwrap_or_else(|_| "unknown".to_owned());
+        let entry = petal_tongue_core::gossip_injection::surface_web_live(&gate, &bind_str);
+        if let Err(e) = petal_tongue_core::gossip_injection::inject_gossip(&entry).await {
+            tracing::debug!("gossip inject (surface.web.live): {e}");
+        }
+    });
     axum::serve(listener, app)
         .with_graceful_shutdown(crate::signal::shutdown_signal())
         .await?;

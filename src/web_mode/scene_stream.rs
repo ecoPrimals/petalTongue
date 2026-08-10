@@ -71,6 +71,16 @@ async fn handle_scene_stream(
                                     let session_id = req.session_id.unwrap_or_else(|| "default".to_owned());
                                     if !subscriptions.contains(&session_id) {
                                         subscriptions.push(session_id.clone());
+                                        // Gossip: announce active scene streaming
+                                        let gate = std::env::var("GATE_NAME").unwrap_or_else(|_| "unknown".to_owned());
+                                        let sub_count = subscriptions.len();
+                                        let sid = session_id.clone();
+                                        tokio::spawn(async move {
+                                            let entry = petal_tongue_core::gossip_injection::scene_stream_active(&gate, &sid, sub_count);
+                                            if let Err(e) = petal_tongue_core::gossip_injection::inject_gossip(&entry).await {
+                                                tracing::debug!("gossip inject (scene.stream): {e}");
+                                            }
+                                        });
                                     }
                                     let ack = serde_json::json!({
                                         "type": "subscribed",

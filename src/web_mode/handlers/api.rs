@@ -226,7 +226,6 @@ pub async fn pseudospore_bundles_handler() -> impl IntoResponse {
     }))
 }
 
-const SWARMVINE_SOCK_DIR: &str = "/run/membrane";
 const FEDERATION_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// `/api/content/federation` — federated data braids view.
@@ -320,19 +319,7 @@ async fn query_swarmvine_data(
 }
 
 fn discover_swarmvine_socket() -> Option<std::path::PathBuf> {
-    if let Ok(entries) = std::fs::read_dir(SWARMVINE_SOCK_DIR) {
-        for entry in entries.flatten() {
-            let name = entry.file_name();
-            let name_str = name.to_string_lossy();
-            if name_str.starts_with("swarmvine-")
-                && name_str.ends_with(".sock")
-                && !name_str.contains("tarpc")
-            {
-                return Some(entry.path());
-            }
-        }
-    }
-    None
+    petal_tongue_core::gossip_injection::discover_swarmvine_socket()
 }
 
 async fn send_uds_raw(

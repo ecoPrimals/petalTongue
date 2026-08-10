@@ -42,6 +42,7 @@ pub mod error;
 #[cfg(test)]
 mod error_tests;
 pub mod gate_mesh; // Shared gate mesh topology (single source of truth)
+pub mod gossip_injection; // swarmVine gossip injection (ant colony scouts)
 pub mod graph_builder; // SAME DAVE proprioception data (Neural API)
 pub mod graph_engine;
 pub mod graph_validation; // Graph validation (cycle detection, dependencies)

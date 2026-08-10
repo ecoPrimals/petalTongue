@@ -6,6 +6,33 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 157e: Gossip Injection + G19 Auto-Publish (August 10, 2026)
+
+petalTongue joins the ant colony. Gossip injection module announces surface
+availability, scene streaming, and content serving to the swarmVine mesh.
+WebGL compilation now auto-publishes to `/ws/scene` subscribers when
+`visualization.render.grammar` is called with GPU modality.
+
+#### Added
+- `gossip_injection` module in `petal-tongue-core` — swarmVine mesh announcements
+  - `GossipEntry` type with topic/key/value/TTL semantics
+  - `inject_gossip()` / `inject_gossip_via()` — async best-effort spread
+  - Convenience constructors: `surface_web_live()`, `scene_stream_active()`,
+    `content_serve_available()`, `viz_session_event()`
+  - `discover_swarmvine_socket()` — centralized socket discovery (checks
+    `/run/user/1000/ecoPrimals` + `/run/membrane`)
+- `ScenePublishFrame` in `petal-tongue-ipc` — bridge type for scene stream push
+- `scene_publish_tx` field on `RpcHandlers` — optional broadcast channel for G19
+- 9 new tests (gossip_injection)
+
+#### Changed
+- `visualization.render.grammar` handler: auto-publishes GPU-compiled scenes to
+  `/ws/scene` WebSocket subscribers when `scene_publish_tx` is set
+- `web_mode::run()`: injects `surface.web.live` gossip on server start
+- `scene_stream`: injects `surface.scene.streaming` gossip on subscriber connect
+- `web_mode/handlers/api.rs`: delegates to centralized `discover_swarmvine_socket()`
+  (removed duplicate implementation and hardcoded `/run/membrane` constant)
+
 ### Wave 157d: G19 WebGL Pipeline — Compilation Bridge + FD Self-Healing (August 9, 2026)
 
 WebGL compilation bridge wires DoomFrame rectangles and SceneGraph data through the

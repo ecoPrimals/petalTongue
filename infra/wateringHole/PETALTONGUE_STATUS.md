@@ -1,7 +1,7 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 157d | **Date**: August 9, 2026 | **From**: petalTongue on eastGate
-**Posture**: **G19 WEBGL PIPELINE COMPLETE** — WebGL compilation bridge (`webgl_bridge`) compiles DoomFrame rectangles and SceneGraph data to vertex/index buffers, publishes through `/ws/scene` broadcast channel. FD self-healing (`raise_fd_limit()`) eliminates gate-by-gate systemd config. Last hardcoded loopback centralized. P2 `--port` fix in depot. G65+G66+G68 complete. Zero P0/P1.
+**Wave**: 157e | **Date**: August 10, 2026 | **From**: petalTongue on eastGate
+**Posture**: **ANT COLONY ACTIVE** — Gossip injection module ships. petalTongue announces `surface.web.live`, `surface.scene.streaming`, `content.serve.available`, and `viz.session.*` to swarmVine mesh. WebGL auto-publish wired: `visualization.render.grammar` with GPU modality pushes compiled scenes through `/ws/scene` broadcast. Centralized swarmVine socket discovery. G19 pipeline complete end-to-end. Zero P0/P1.
 
 ---
 
@@ -26,7 +26,8 @@
 | Self-knowledge | Zero hardcoded peer primal names in production code |
 | Config unity | Zero raw `FAMILY_ID` env reads outside canonical resolution |
 | TCP bind | Localhost-only by default (`--bind 0.0.0.0` for network exposure) |
-| G19 | **COMPLETE** — scene stream + compilation bridge live. ironGate (RTX 5070) exp006 22/22 PASS |
+| G19 | **COMPLETE** — scene stream + compilation bridge + auto-publish. ironGate (RTX 5070) exp006 22/22 PASS |
+| Gossip | **ACTIVE** — 4 injection points: `surface.web.live`, `scene.streaming`, `content.serve`, `viz.session.*` |
 | nestgate.io | **LIVE** — petalTongue v1.7.0 serving on sporeGate via WG mesh |
 | Declarative scenes | `visualization.render.scene` accepts string scene type + data for tideGlass |
 | Dashboard UX | Graceful degradation with specific error messages (no infinite "Loading...") |

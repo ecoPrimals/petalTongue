@@ -28,6 +28,15 @@ use std::time::SystemTime;
 use crate::json_rpc::{JsonRpcRequest, JsonRpcResponse, error_codes};
 use crate::method_gate::MethodGate;
 
+/// A compiled scene frame for WebSocket push delivery (G19 pipeline).
+#[derive(Debug, Clone)]
+pub struct ScenePublishFrame {
+    /// Session that produced this frame.
+    pub session_id: String,
+    /// JSON-serialized scene payload (WebGlScene or equivalent).
+    pub payload: String,
+}
+
 /// JSON-RPC request handlers for petalTongue IPC
 pub struct RpcHandlers {
     /// Shared graph engine state
@@ -57,6 +66,10 @@ pub struct RpcHandlers {
     pub scene_signer: crate::scene_signer::SceneSigner,
     /// JH-0: Pre-dispatch authorization gate.
     pub method_gate: MethodGate,
+    /// Optional scene publish channel for G19 WebGL pipeline.
+    /// When set, grammar renders with GPU modality push compiled scenes to
+    /// `/ws/scene` WebSocket subscribers via broadcast.
+    pub scene_publish_tx: Option<tokio::sync::broadcast::Sender<ScenePublishFrame>>,
 }
 
 impl RpcHandlers {
@@ -83,6 +96,7 @@ impl RpcHandlers {
             callback_tx: None,
             scene_signer: crate::scene_signer::SceneSigner::from_env(),
             method_gate: MethodGate::from_env(),
+            scene_publish_tx: None,
         }
     }
 

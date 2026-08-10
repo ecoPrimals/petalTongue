@@ -137,6 +137,7 @@ pub use resilience::{CircuitBreaker, CircuitState, RetryPolicy};
 pub use scene_signer::SceneSigner;
 pub use server::{IpcServer, IpcServerError};
 pub use unix_socket_server::UnixSocketServer;
+pub use unix_socket_rpc_handlers::ScenePublishFrame;
 pub use visualization_handler::{
     BackpressureConfig, CallbackDispatch, CompiledBinding, ConstraintResult, DismissRequest,
     DismissResponse, ExportRequest, ExportResponse, GrammarRenderRequest, GrammarRenderResponse,
