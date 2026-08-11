@@ -126,14 +126,22 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # 6,755 workspace tests, ~85-90% coverage
+cargo test --workspace --all-features     # 6,644 workspace tests, ~85-90% coverage
 ```
 
 ## Current State
 
-Wave 156m — G65 PROTOCOL NEGOTIATION IMPLEMENTED (August 6, 2026).
+Wave 157i — POST-PANDEMIC CASCADE + TIER 2 EVOLUTION (August 11, 2026).
 
-petalTongue is **G65-operational**. Three-socket transitional pattern deployed:
+petalTongue is **G72 Tier 1 + Tier 2 operational**:
+- axum 0.8, tokio-tungstenite 0.29, tower-http 0.6
+- 650 lockfile packages, 40 duplicate transitives
+- Zero hardcoded peer socket paths in production code
+- Darwin (`aarch64-apple-darwin`) compilation fixed — `test_kill_process` API
+- 6,644 tests, 0 failures, 0 clippy warnings, 0 doc warnings
+- 5-gate gossip mesh active, runtime discovery for all peers
+
+Three-socket transitional pattern deployed:
 - `petaltongue.sock` (JSON-RPC, universal — C2 Phase 2)
 - `petaltongue.tarpc.sock` (binary bincode — C2 Phase 2)
 - `petaltongue.negotiate.sock` (G65 Phase 3 — single-socket protocol negotiation)

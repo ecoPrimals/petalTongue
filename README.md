@@ -88,7 +88,7 @@ petaltongue
 - **Zero-copy state management** -- Arc-wrapped shared state
 - **Centralized configurable constants** -- all timeouts, ports env-overridable
 
-### Crates (19)
+### Crates (18)
 
 | Crate | Purpose |
 |-------|---------|

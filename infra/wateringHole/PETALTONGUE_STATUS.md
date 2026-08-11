@@ -193,9 +193,8 @@ petalTongue owns **no glacial goals directly** but supports:
 
 ---
 
-*Wave 156m (Aug 6): G65 IMPLEMENTED independently from squirrel reference pattern.
-`protocol_negotiation` module: `ProtocolId`, `ProtocolRequest/Response`, wire format,
-`negotiate_client/server`, `NegotiateServer` on `petaltongue.negotiate.sock`.
-29 new tests (+6,644 total). C2 dual-socket retained for backward compat.
-Server mode: three concurrent listeners (JSON-RPC .sock + tarpc .tarpc.sock + G65 .negotiate.sock).
-Zero clippy pedantic+nursery. Zero doc warnings. Zero P0/P1/P2.*
+*Wave 157i (Aug 11): POST-PANDEMIC CASCADE + TIER 2 EVOLUTION. axum 0.7→0.8.9 +
+tokio-tungstenite 0.29 + tower-http 0.6. All hardcoded socket paths eliminated via
+runtime discovery (`BIOMEOS_RUNTIME_DIR` / `XDG_RUNTIME_DIR` / `/run/membrane` fallback).
+Darwin `aarch64-apple-darwin` fix (`test_kill_process` API). 650 lockfile packages.
+6,644 tests / 0 failures. Zero clippy/doc warnings. Zero P0/P1/P2.*

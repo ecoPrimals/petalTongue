@@ -1,7 +1,7 @@
 +++
 title = "petalTongue Validation Summary"
-description = "Universal user interface primal — 6,635 workspace tests, 56+ IPC methods, 18 crates, 7 modes, pure Rust, BTSP 13/13 + WebGL + sporePrint pipeline"
-date = 2026-08-10
+description = "Universal user interface primal — 6,644 workspace tests, 56+ IPC methods, 18 crates, 7 modes, pure Rust, BTSP 13/13 + WebGL + sporePrint pipeline"
+date = 2026-08-11
 
 [taxonomies]
 primals = ["petaltongue"]
@@ -11,10 +11,10 @@ springs = []
 ## Status
 
 - **v1.7.0** — workspace edition 2024, `forbid(unsafe_code)`
-- **6,755 workspace tests** passing, 0 failed (unit + integration + doc + property)
+- **6,644 workspace tests** passing, 0 failed (unit + integration + doc + property)
 - **56+ IPC methods** across 10 domain categories (health, identity, auth,
   capabilities, visualization, interaction, audio, UI, motor, BTSP, gate mesh)
-- **19 workspace crates** (core, IPC, graph, scene, discovery, adapters,
+- **18 workspace crates** (core, IPC, graph, scene, discovery, adapters,
   entropy, UI, TUI, headless, API, WASM, platform, and domain crates)
 - **7 runtime modes**: `server`, `web`, `ui`, `tui`, `live`, `headless`, `status`
 - **Zero unsafe code** (except confined C-FFI in `petal-tongue-platform/ffi.rs`, 15 SAFETY-documented usages)
