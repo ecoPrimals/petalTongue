@@ -7,7 +7,18 @@ use super::types::{LiveEdge, LiveMeshPeer, LivePrimal, LiveTopology};
 
 use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
 
-const SONGBIRD_ENDPOINT_PATH: &str = "/run/membrane/songbird.sock";
+fn resolve_songbird_sock() -> std::path::PathBuf {
+    if let Ok(dir) = std::env::var("BIOMEOS_RUNTIME_DIR") {
+        return std::path::PathBuf::from(dir).join("songbird.sock");
+    }
+    if let Ok(xdg) = std::env::var("XDG_RUNTIME_DIR") {
+        let p = std::path::PathBuf::from(xdg).join("biomeos/songbird.sock");
+        if p.exists() {
+            return p;
+        }
+    }
+    std::path::PathBuf::from("/run/membrane/songbird.sock")
+}
 
 /// Get current mesh peer state via manifest topology (static fallback).
 ///
@@ -27,7 +38,7 @@ pub fn mesh_peers() -> Vec<gate_mesh::MeshPeer> {
 pub async fn query_songbird_peers() -> Option<serde_json::Value> {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-    let endpoint = TransportEndpoint::uds(SONGBIRD_ENDPOINT_PATH);
+    let endpoint = TransportEndpoint::uds(resolve_songbird_sock());
     let mut stream = connect_transport(&endpoint).await.ok()?;
 
     let request = serde_json::json!({

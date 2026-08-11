@@ -137,11 +137,9 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .nest_service("/static", ServeDir::new(WEB_STATIC_DIR));
 
     // Serve pseudoSpore bundles as downloadable files
-    let pseudospore_dir = std::env::var("PSEUDOSPORE_BUNDLES")
-        .unwrap_or_else(|_| String::from("/home/sporegate/Development/ecoPrimals/infra/sporePrint/static/pseudospore-bundles"));
-    let pseudospore_path = std::path::Path::new(&pseudospore_dir);
-    if pseudospore_path.is_dir() {
-        tracing::info!(dir = %pseudospore_dir, "Mounting /pseudospore/ bundle serving");
+    let pseudospore_dir = crate::web_mode::handlers::resolve_pseudospore_dir();
+    if pseudospore_dir.is_dir() {
+        tracing::info!(dir = ?pseudospore_dir, "Mounting /pseudospore/ bundle serving");
         app = app.nest_service("/pseudospore", ServeDir::new(&pseudospore_dir));
     }
 

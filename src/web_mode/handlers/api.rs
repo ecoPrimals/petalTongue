@@ -71,7 +71,7 @@ fn resolve_rhizocrypt_sock() -> std::path::PathBuf {
     std::path::PathBuf::from("/run/membrane/rhizocrypt.sock")
 }
 
-fn resolve_pseudospore_dir() -> std::path::PathBuf {
+pub(crate) fn resolve_pseudospore_dir() -> std::path::PathBuf {
     if let Ok(dir) = std::env::var("PSEUDOSPORE_BUNDLES") {
         return std::path::PathBuf::from(dir);
     }

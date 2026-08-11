@@ -8,7 +8,7 @@ mod topology;
 
 pub(super) use api::{
     content_federation_handler, content_stats_handler, primals_handler,
-    pseudospore_bundles_handler, snapshot_handler, status_handler,
+    pseudospore_bundles_handler, resolve_pseudospore_dir, snapshot_handler, status_handler,
 };
 #[cfg(test)]
 pub(super) use static_content::resolve_docroot_path;
