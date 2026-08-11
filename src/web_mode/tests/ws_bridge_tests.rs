@@ -64,7 +64,7 @@ async fn ws_health_check_via_web_server() {
         .expect("WS connect");
 
     let req = r#"{"jsonrpc":"2.0","id":1,"method":"health.check","params":{}}"#;
-    ws.send(Message::Text(req.to_owned())).await.expect("send");
+    ws.send(Message::Text(req.into())).await.expect("send");
 
     let resp = ws.next().await.expect("response").expect("no error");
     let v: serde_json::Value =
@@ -90,7 +90,7 @@ async fn ws_metrics_via_web_server() {
         .expect("WS connect");
 
     let req = r#"{"jsonrpc":"2.0","id":2,"method":"pt.metrics","params":{}}"#;
-    ws.send(Message::Text(req.to_owned())).await.expect("send");
+    ws.send(Message::Text(req.into())).await.expect("send");
 
     let resp = ws.next().await.expect("response").expect("no error");
     let v: serde_json::Value =
@@ -117,7 +117,7 @@ async fn ws_capabilities_via_web_server() {
         .expect("WS connect");
 
     let req = r#"{"jsonrpc":"2.0","id":3,"method":"capabilities.list","params":{}}"#;
-    ws.send(Message::Text(req.to_owned())).await.expect("send");
+    ws.send(Message::Text(req.into())).await.expect("send");
 
     let resp = ws.next().await.expect("response").expect("no error");
     let v: serde_json::Value =

@@ -52,9 +52,8 @@ fn discover_primal_sockets() -> Vec<DiscoveredEndpoint> {
     let mut seen_primals: std::collections::HashSet<String> = std::collections::HashSet::new();
 
     for dir in socket_search_dirs() {
-        let entries = match std::fs::read_dir(&dir) {
-            Ok(e) => e,
-            Err(_) => continue,
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            continue;
         };
 
         for entry in entries.flatten() {
@@ -93,20 +92,16 @@ fn is_candidate_socket(path: &Path) -> bool {
     if ext != Some("sock") {
         return false;
     }
-    let name = path.file_name().map(|f| f.to_string_lossy());
-    let name = match name {
-        Some(n) => n,
-        None => return false,
+    let Some(name) = path.file_name().map(|f| f.to_string_lossy()) else {
+        return false;
     };
     // Skip tarpc sockets (binary RPC, not JSON-RPC health)
     !name.contains(".tarpc.") && !name.contains(".negotiate.")
 }
 
 fn extract_primal_name(path: &Path) -> String {
-    let stem = path.file_stem().map(|s| s.to_string_lossy().into_owned());
-    let stem = match stem {
-        Some(s) => s,
-        None => return String::new(),
+    let Some(stem) = path.file_stem().map(|s| s.to_string_lossy().into_owned()) else {
+        return String::new();
     };
 
     // Strip common suffixes: "-default", "-e8b62b6e" (family hash), "-nat0"

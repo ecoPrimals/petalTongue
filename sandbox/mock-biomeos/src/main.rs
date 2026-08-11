@@ -213,7 +213,7 @@ async fn main() {
         .route("/api/v1/topology", get(get_topology))
         .route("/api/v1/health", get(get_health))
         .route("/api/v1/capabilities", get(get_capabilities))
-        .route("/api/v1/primals/:id", get(get_primal))
+        .route("/api/v1/primals/{id}", get(get_primal))
         .layer(CorsLayer::permissive());
 
     // Start server
@@ -223,7 +223,7 @@ async fn main() {
     println!("   - GET  /api/v1/topology");
     println!("   - GET  /api/v1/health");
     println!("   - GET  /api/v1/capabilities");
-    println!("   - GET  /api/v1/primals/:id");
+    println!("   - GET  /api/v1/primals/{{id}}");
     println!();
     println!("   Test with: curl http://localhost:{DEFAULT_WEB_PORT}/api/v1/topology | jq");
     println!();

@@ -54,7 +54,7 @@ async fn handle_ws_connection(mut socket: axum::extract::ws::WebSocket, runtime:
             }
         };
 
-        if socket.send(Message::Text(response)).await.is_err() {
+        if socket.send(Message::Text(response.into())).await.is_err() {
             break;
         }
     }

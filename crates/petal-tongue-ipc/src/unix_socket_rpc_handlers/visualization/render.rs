@@ -144,16 +144,15 @@ pub fn handle_grammar_render(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
         .handle_grammar_render(params);
 
     // G19: auto-publish GPU-compiled scenes to /ws/scene subscribers
-    if response.modality == "gpu" {
-        if let Some(tx) = &handlers.scene_publish_tx {
-            if let Some(payload) = response.output.as_str() {
-                let frame = super::super::ScenePublishFrame {
-                    session_id: response.session_id.clone(),
-                    payload: payload.to_owned(),
-                };
-                let _ = tx.send(frame);
-            }
-        }
+    if response.modality == "gpu"
+        && let Some(tx) = &handlers.scene_publish_tx
+        && let Some(payload) = response.output.as_str()
+    {
+        let frame = super::super::ScenePublishFrame {
+            session_id: response.session_id.clone(),
+            payload: payload.to_owned(),
+        };
+        let _ = tx.send(frame);
     }
 
     let value = match serde_json::to_value(&response) {

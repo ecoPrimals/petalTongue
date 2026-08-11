@@ -62,7 +62,7 @@ async fn scene_stream_subscribe_ack() {
     use tokio_tungstenite::tungstenite;
 
     ws.send(tungstenite::Message::Text(
-        r#"{"action":"subscribe","session_id":"test-sess"}"#.to_owned(),
+        r#"{"action":"subscribe","session_id":"test-sess"}"#.into(),
     ))
     .await
     .unwrap();
@@ -114,7 +114,7 @@ async fn scene_stream_receives_published_frame() {
     use tokio_tungstenite::tungstenite;
 
     ws.send(tungstenite::Message::Text(
-        r#"{"action":"subscribe","session_id":"live"}"#.to_owned(),
+        r#"{"action":"subscribe","session_id":"live"}"#.into(),
     ))
     .await
     .unwrap();

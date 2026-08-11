@@ -159,7 +159,7 @@ impl BiomeOsBackend {
         });
         let _ = write
             .send(tokio_tungstenite::tungstenite::Message::Text(
-                subscribe_msg.to_string(),
+                subscribe_msg.to_string().into(),
             ))
             .await;
 

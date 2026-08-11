@@ -128,7 +128,7 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "serd
 uuid = { version = "1.9", features = ["v4", "serde"] }
 
 # Pure-Rust WebSocket for Collaborative Intelligence streams
-tokio-tungstenite = "0.24"
+tokio-tungstenite = "0.29"
 
 # Property testing
 proptest = "1.4"
@@ -187,8 +187,8 @@ predicates = "3.0"
 criterion = { version = "0.5", features = ["html_reports"] }
 
 # Web server (axum stack — only root binary uses these)
-axum = { version = "0.7", features = ["tokio", "ws"] }
-tower-http = { version = "0.5", features = ["fs", "trace", "cors", "compression-gzip", "compression-br"] }
+axum = { version = "0.8", features = ["tokio", "ws"] }
+tower-http = { version = "0.6", features = ["fs", "trace", "cors", "compression-gzip", "compression-br"] }
 tower = { version = "0.5", features = ["util"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
 

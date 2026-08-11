@@ -87,7 +87,7 @@ async fn handle_scene_stream(
                                         "session_id": session_id,
                                         "modality": req.modality.as_deref().unwrap_or("webgl"),
                                     });
-                                    if socket.send(Message::Text(ack.to_string())).await.is_err() {
+                                    if socket.send(Message::Text(ack.to_string().into())).await.is_err() {
                                         break;
                                     }
                                 }
@@ -112,7 +112,7 @@ async fn handle_scene_stream(
                         "session_id": frame.session_id,
                         "scene": serde_json::from_str::<serde_json::Value>(&frame.payload).unwrap_or(serde_json::Value::String(frame.payload.clone())),
                     });
-                    if socket.send(Message::Text(msg.to_string())).await.is_err() {
+                    if socket.send(Message::Text(msg.to_string().into())).await.is_err() {
                         break;
                     }
                 }

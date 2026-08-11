@@ -56,11 +56,31 @@ pub async fn snapshot_handler(State(service): State<Arc<DataService>>) -> impl I
     }
 }
 
-/// Default path for pseudoSpore data bundles (override with `PSEUDOSPORE_BUNDLES`).
-const DEFAULT_PSEUDOSPORE_DIR: &str = "/home/sporegate/Development/ecoPrimals/infra/sporePrint/static/pseudospore-bundles";
-
-const RHIZOCRYPT_SOCK: &str = "/run/membrane/rhizocrypt.sock";
 const CONTENT_STATS_TIMEOUT: Duration = Duration::from_secs(3);
+
+fn resolve_rhizocrypt_sock() -> std::path::PathBuf {
+    if let Ok(dir) = std::env::var("BIOMEOS_RUNTIME_DIR") {
+        return std::path::PathBuf::from(dir).join("rhizocrypt.sock");
+    }
+    if let Ok(xdg) = std::env::var("XDG_RUNTIME_DIR") {
+        let p = std::path::PathBuf::from(xdg).join("biomeos/rhizocrypt.sock");
+        if p.exists() {
+            return p;
+        }
+    }
+    std::path::PathBuf::from("/run/membrane/rhizocrypt.sock")
+}
+
+fn resolve_pseudospore_dir() -> std::path::PathBuf {
+    if let Ok(dir) = std::env::var("PSEUDOSPORE_BUNDLES") {
+        return std::path::PathBuf::from(dir);
+    }
+    if let Ok(home) = std::env::var("HOME") {
+        return std::path::PathBuf::from(home)
+            .join("Development/ecoPrimals/infra/sporePrint/static/pseudospore-bundles");
+    }
+    std::path::PathBuf::from("/var/lib/ecoPrimals/pseudospore-bundles")
+}
 
 /// `/api/content/stats` — query rhizoCrypt for local CAS statistics.
 ///
@@ -88,7 +108,9 @@ pub async fn content_stats_handler() -> impl IntoResponse {
 
 async fn query_content_stats(
 ) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> {
-    let sessions = rpc_query(RHIZOCRYPT_SOCK, "dag.session.list", serde_json::json!({})).await?;
+    let sock = resolve_rhizocrypt_sock();
+    let sock_str = sock.to_string_lossy();
+    let sessions = rpc_query(&sock_str, "dag.session.list", serde_json::json!({})).await?;
 
     let session_list = sessions
         .get("sessions")
@@ -109,11 +131,11 @@ async fn query_content_stats(
         let count = session
             .get("event_count")
             .or_else(|| session.get("vertex_count"))
-            .and_then(|v| v.as_u64())
+            .and_then(serde_json::Value::as_u64)
             .unwrap_or(0);
         let size = session
             .get("size_bytes")
-            .and_then(|v| v.as_u64())
+            .and_then(serde_json::Value::as_u64)
             .unwrap_or(0);
 
         total_objects += count;
@@ -126,18 +148,18 @@ async fn query_content_stats(
     // If session.list returned no size info, try health.metrics for storage stats
     if total_size == 0 {
         if let Ok(metrics) =
-            rpc_query(RHIZOCRYPT_SOCK, "health.metrics", serde_json::json!({})).await
+            rpc_query(&sock_str, "health.metrics", serde_json::json!({})).await
         {
             total_size = metrics
                 .get("storage_bytes")
                 .or_else(|| metrics.get("disk_usage"))
-                .and_then(|v| v.as_u64())
+                .and_then(serde_json::Value::as_u64)
                 .unwrap_or(0);
             if total_objects == 0 {
                 total_objects = metrics
                     .get("total_events")
                     .or_else(|| metrics.get("object_count"))
-                    .and_then(|v| v.as_u64())
+                    .and_then(serde_json::Value::as_u64)
                     .unwrap_or(0);
             }
         }
@@ -176,9 +198,8 @@ async fn rpc_query(
 
 /// `/api/pseudospore/bundles` — list available pseudoSpore data bundles.
 pub async fn pseudospore_bundles_handler() -> impl IntoResponse {
-    let dir = std::env::var("PSEUDOSPORE_BUNDLES")
-        .unwrap_or_else(|_| DEFAULT_PSEUDOSPORE_DIR.to_string());
-    let path = std::path::Path::new(&dir);
+    let dir = resolve_pseudospore_dir();
+    let path = dir.as_path();
 
     if !path.is_dir() {
         return Json(serde_json::json!({
@@ -208,7 +229,7 @@ pub async fn pseudospore_bundles_handler() -> impl IntoResponse {
                 "has_provenance": has_provenance,
                 "has_data": has_data,
                 "description": description,
-                "is_dir": meta.as_ref().is_some_and(|m| m.is_dir()),
+                "is_dir": meta.as_ref().is_some_and(std::fs::Metadata::is_dir),
             }));
         }
     }
@@ -274,14 +295,14 @@ async fn build_federation_view(
 
     let remote_count = gossip
         .get("entries")
-        .and_then(|e| e.as_array())
-        .map(|a| a.len())
+        .and_then(serde_json::Value::as_array)
+        .map(Vec::len)
         .unwrap_or(0);
 
     let mut gates = vec!["sporeGate".to_string()];
-    if let Some(entries) = gossip.get("entries").and_then(|e| e.as_array()) {
+    if let Some(entries) = gossip.get("entries").and_then(serde_json::Value::as_array) {
         for entry in entries {
-            if let Some(gate) = entry.get("origin_gate").and_then(|g| g.as_str()) {
+            if let Some(gate) = entry.get("origin_gate").and_then(serde_json::Value::as_str) {
                 let g = gate.to_string();
                 if !gates.contains(&g) {
                     gates.push(g);
@@ -294,7 +315,7 @@ async fn build_federation_view(
         "status": "ok",
         "local": local,
         "gossip": {
-            "data_entries": gossip.get("count").and_then(|c| c.as_u64()).unwrap_or(0),
+            "data_entries": gossip.get("count").and_then(serde_json::Value::as_u64).unwrap_or(0),
             "remote_gates": remote_count,
             "entries": gossip.get("entries"),
         },

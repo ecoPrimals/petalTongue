@@ -174,7 +174,7 @@ async fn handle_connection(
         };
 
         if let Err(e) = sink
-            .send(tokio_tungstenite::tungstenite::Message::Text(response))
+            .send(tokio_tungstenite::tungstenite::Message::Text(response.into()))
             .await
         {
             warn!(%peer, "WebSocket write error: {e}");
@@ -215,7 +215,7 @@ mod tests {
 
         let req = r#"{"jsonrpc":"2.0","id":1,"method":"health.check","params":{}}"#;
         ws.send(tokio_tungstenite::tungstenite::Message::Text(
-            req.to_owned(),
+            req.into(),
         ))
         .await
         .expect("send should succeed");
@@ -253,7 +253,7 @@ mod tests {
 
         let req = r#"{"jsonrpc":"2.0","id":2,"method":"capabilities.list","params":{}}"#;
         ws.send(tokio_tungstenite::tungstenite::Message::Text(
-            req.to_owned(),
+            req.into(),
         ))
         .await
         .expect("send");
@@ -289,7 +289,7 @@ mod tests {
 
         let req = r#"{"jsonrpc":"2.0","id":99,"method":"bogus.method","params":{}}"#;
         ws.send(tokio_tungstenite::tungstenite::Message::Text(
-            req.to_owned(),
+            req.into(),
         ))
         .await
         .expect("send");
@@ -323,7 +323,7 @@ mod tests {
 
         let req = r#"{"jsonrpc":"2.0","id":7,"method":"pt.metrics","params":{}}"#;
         ws.send(tokio_tungstenite::tungstenite::Message::Text(
-            req.to_owned(),
+            req.into(),
         ))
         .await
         .expect("send");
