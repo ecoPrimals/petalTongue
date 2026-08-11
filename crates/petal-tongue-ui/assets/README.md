@@ -1,0 +1,1 @@
+startup_music.mp3 was stripped during Wave 157g Forgejo history rewrite (11MB binary blob). This empty placeholder allows compilation. External music can be provided via PETALTONGUE_STARTUP_MUSIC env var.
