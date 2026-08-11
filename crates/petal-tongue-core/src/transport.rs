@@ -391,7 +391,7 @@ fn uds_path_to_fallback_port(path: &std::path::Path) -> u16 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     stem.hash(&mut hasher);
     let hash = hasher.finish();
-    #[allow(clippy::cast_possible_truncation)]
+    #[expect(clippy::cast_possible_truncation, reason = "hash % 16384 always fits u16")]
     let port = 49152 + (hash % 16384) as u16;
     port
 }

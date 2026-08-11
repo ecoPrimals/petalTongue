@@ -1,7 +1,7 @@
 # petalTongue — Ecosystem Status
 
-**Wave**: 157g | **Date**: August 10, 2026 | **From**: petalTongue on eastGate
-**Posture**: **G72 DEPENDENCY PANDEMIC — TIER 1 COMPLETE.** Stadial shift engaged. Vestigial crate excised (`petal-tongue-telemetry`). Version alignment: `tokio-tungstenite` 0.21→0.24, `rand` 0.8→0.9, `png` 0.17→0.18. Duplicate transitive crates reduced 44→40. Headless deploy deps: 469. Lockfile: 653 packages. Tokio features already trimmed (no `["full"]`). 4-gate gossip mesh live. Zero P0/P1.
+**Wave**: 157i | **Date**: August 11, 2026 | **From**: petalTongue on eastGate
+**Posture**: **G72 POST-PANDEMIC CASCADE.** Darwin rustix fix merged (graftGate upstream). Deep debt: `#[allow]→#[expect]` Rust 2024 idiom, brittle tests fixed (9 environment-dependent tests now skip correctly). 6,644 tests / 0 failures. Cross-platform process probe portable. 5-gate gossip mesh active. Zero P0/P1.
 
 ---
 
@@ -11,12 +11,12 @@
 |--------|-------|
 | Version | 1.7.0 |
 | Crates | 18 workspace members |
-| Tests | 6,635 passing, 0 failures |
+| Tests | 6,644 passing, 0 failures |
 | Clippy | Zero warnings (pedantic + nursery, all targets) |
 | Docs | Zero warnings (`cargo doc --workspace --all-features --no-deps`) |
 | Unsafe | Confined to `petal-tongue-platform/src/ffi.rs` (15 usages, all SAFETY-documented) |
 | BTSP | **13/13** (ClientHello + server-side, full strict mode) |
-| Cross-arch | x86_64-linux, aarch64-linux, aarch64-android, **x86_64-windows (ZERO warnings)** |
+| Cross-arch | x86_64-linux, aarch64-linux, **aarch64-apple-darwin**, aarch64-android, **x86_64-windows (ZERO warnings)** |
 | Files | All production files < 800 LOC |
 | Edition | 2024 |
 | Lockfile | **653 packages** (from 656). Headless: 469 |

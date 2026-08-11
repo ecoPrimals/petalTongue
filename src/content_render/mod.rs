@@ -7,7 +7,7 @@
 //!
 //! Pipeline: content source → split front matter → compile markdown → resolve shortcodes → modality output.
 
-#[allow(
+#[expect(
     dead_code,
     reason = "sporePrint pipeline API — wired via tests, awaiting CLI integration"
 )]
@@ -18,7 +18,7 @@ mod markdown;
 mod shortcodes;
 mod site;
 
-#[allow(unused_imports)]
+#[expect(unused_imports, reason = "pre-wired for sporePrint CLI integration")]
 pub use cas_source::{CasSource, resolve_storage_base};
 pub use filesystem_source::FilesystemSource;
 pub use front_matter::{parse_front_matter, split_front_matter};

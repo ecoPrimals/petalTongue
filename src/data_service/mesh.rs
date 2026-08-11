@@ -138,7 +138,7 @@ fn mesh_peers_live() -> Vec<LiveMeshPeer> {
 }
 
 /// Convert songBird live peer data to `LiveMeshPeer` format.
-#[allow(dead_code, reason = "wired at runtime when songBird mesh relay is reachable")]
+#[expect(dead_code, reason = "wired at runtime when songBird mesh relay is reachable")]
 pub fn songbird_peers_to_live(result: &serde_json::Value) -> Vec<LiveMeshPeer> {
     result
         .get("peers")

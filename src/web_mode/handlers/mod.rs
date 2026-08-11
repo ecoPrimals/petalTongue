@@ -10,13 +10,13 @@ pub(super) use api::{
     content_federation_handler, content_stats_handler, primals_handler,
     pseudospore_bundles_handler, snapshot_handler, status_handler,
 };
-#[allow(unused_imports)]
+#[cfg(test)]
 pub(super) use static_content::resolve_docroot_path;
 pub(super) use static_content::{
     docroot_fallback, events_sse_handler, health_handler, index_handler, liveness_handler,
     readiness_handler,
 };
-#[allow(unused_imports)]
+#[cfg(test)]
 pub(super) use topology::VizQuery;
 pub(super) use topology::{
     ecosystem_handler, gate_mesh_handler, live_topology_handler, mesh_peers_handler,

@@ -32,7 +32,7 @@ use crate::data_service::DataService;
 /// Scene stream shared state.
 #[derive(Clone)]
 pub struct SceneStreamState {
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "reserved for G19 scene data queries")]
     pub data_service: Arc<DataService>,
     pub scene_tx: broadcast::Sender<SceneFrame>,
 }

@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: August 10, 2026 (Wave 157g — G72 Dep Pandemic Tier 1, runtime discovery, 6,635 tests, zero clippy pedantic+nursery)
+**Updated**: August 11, 2026 (Wave 157i — Darwin rustix fix, deep debt, 6,644 tests, zero failures)
 
 ---
 

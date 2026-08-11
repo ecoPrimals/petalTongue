@@ -172,12 +172,13 @@ pub fn process_exists(pid: u32) -> bool {
 
     #[cfg(all(unix, not(target_os = "linux")))]
     {
-        // signal 0 checks process existence without sending a signal
-        rustix::process::kill_process(
-            rustix::process::Pid::from_raw(pid as i32).unwrap_or(rustix::process::Pid::INIT),
-            rustix::process::Signal::from_raw(0).unwrap_or(rustix::process::Signal::Hup),
-        )
-        .is_ok()
+        match rustix::process::Pid::from_raw(pid as i32) {
+            Some(p) => match rustix::process::test_kill_process(p) {
+                Ok(()) | Err(rustix::io::Errno::PERM) => true,
+                Err(_) => false,
+            },
+            None => false,
+        }
     }
 
     #[cfg(not(unix))]
