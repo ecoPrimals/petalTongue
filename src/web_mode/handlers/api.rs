@@ -191,7 +191,7 @@ pub async fn pseudospore_bundles_handler() -> impl IntoResponse {
     let mut bundles = Vec::new();
     if let Ok(entries) = std::fs::read_dir(path) {
         for entry in entries.flatten() {
-            let name = entry.file_name().to_string_lossy().to_string();
+            let name = entry.file_name().to_string_lossy().into_owned();
             if !name.starts_with("pseudospore-") {
                 continue;
             }
@@ -314,7 +314,7 @@ async fn query_swarmvine_data(
             "swarmVine socket not found".into()
         })?;
 
-    let path_str = socket.to_string_lossy().to_string();
+    let path_str = socket.to_string_lossy().into_owned();
     rpc_query(&path_str, "gossip.query", serde_json::json!({ "topic": "data" })).await
 }
 

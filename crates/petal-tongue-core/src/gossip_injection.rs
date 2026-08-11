@@ -26,11 +26,22 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 
-/// Default directories where primal sockets live.
-const SOCK_DIRS: &[&str] = &[
-    "/run/user/1000/ecoPrimals",
-    "/run/membrane",
-];
+/// Resolves the runtime socket directories for this platform.
+///
+/// Checks `BIOMEOS_RUNTIME_DIR` env var first, then `XDG_RUNTIME_DIR/ecoPrimals`,
+/// and falls back to `/run/membrane` (the biomeOS system-wide socket dir).
+fn socket_search_dirs() -> Vec<PathBuf> {
+    let mut dirs = Vec::with_capacity(3);
+
+    if let Ok(dir) = std::env::var("BIOMEOS_RUNTIME_DIR") {
+        dirs.push(PathBuf::from(dir));
+    }
+    if let Ok(xdg) = std::env::var("XDG_RUNTIME_DIR") {
+        dirs.push(PathBuf::from(xdg).join("ecoPrimals"));
+    }
+    dirs.push(PathBuf::from("/run/membrane"));
+    dirs
+}
 
 /// Timeout for gossip injection RPC calls.
 const INJECT_TIMEOUT: Duration = Duration::from_millis(500);
@@ -76,9 +87,8 @@ impl GossipEntry {
 /// Scans standard socket directories for `swarmvine-*.sock` (excluding tarpc sockets).
 #[must_use]
 pub fn discover_swarmvine_socket() -> Option<PathBuf> {
-    for dir in SOCK_DIRS {
-        let path = Path::new(dir);
-        if let Some(found) = discover_swarmvine_socket_in(path) {
+    for dir in socket_search_dirs() {
+        if let Some(found) = discover_swarmvine_socket_in(&dir) {
             return Some(found);
         }
     }

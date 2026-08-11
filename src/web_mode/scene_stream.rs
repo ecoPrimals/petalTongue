@@ -125,7 +125,6 @@ async fn handle_scene_stream(
 ///
 /// Called by IPC handlers (e.g., `visualization.render.scene`) to push
 /// compiled scenes to browser consumers. No-op if no clients are subscribed.
-#[allow(dead_code)]
 pub fn publish_scene_frame(tx: &broadcast::Sender<SceneFrame>, session_id: &str, payload: String) {
     let frame = SceneFrame {
         session_id: session_id.to_owned(),

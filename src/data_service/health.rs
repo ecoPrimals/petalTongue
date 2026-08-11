@@ -7,33 +7,136 @@
 //!
 //! Strategy: try BTSP-framed query first; on connection reset / EOF,
 //! retry with plain JSON-RPC (handles coralReef's G65 plain mode).
+//!
+//! **G72 evolution**: Primal endpoints are now discovered at runtime by scanning
+//! the biomeOS socket directories. No hardcoded peer knowledge.
 
 use petal_tongue_core::transport::{TransportEndpoint, connect_transport};
 use serde::Serialize;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 const QUERY_TIMEOUT: Duration = Duration::from_secs(3);
 
-/// Known primal endpoints (name, default UDS path).
+/// Directories to scan for primal sockets at runtime.
 ///
-/// On Unix these resolve to UDS connections; on other platforms the transport
-/// layer maps them to the appropriate mechanism (named pipes, TCP fallback).
-const PRIMAL_ENDPOINTS: &[(&str, &str)] = &[
-    ("sweetgrass", "/run/membrane/sweetgrass.sock"),
-    ("loamspine", "/run/membrane/loamspine.sock"),
-    ("rhizocrypt", "/run/membrane/rhizocrypt.sock"),
-    ("beardog", "/run/membrane/beardog-default.sock"),
-    ("squirrel", "/run/membrane/squirrel.sock"),
-    ("toadstool", "/run/membrane/toadstool.sock"),
-    ("biomeos", "/run/membrane/biomeos.sock"),
-    ("songbird", "/run/membrane/songbird.sock"),
-    ("barracuda", "/run/membrane/barracuda.sock"),
-    ("coralreef", "/run/membrane/coralreef.sock"),
-    ("skunkbat", "/run/membrane/skunkbat.sock"),
-    ("nestgate", "/run/membrane/nestgate-e8b62b6e.sock"),
-    ("petaltongue", "/run/user/1000/biomeos/petaltongue-e8b62b6e.sock"),
-];
+/// Resolved dynamically: `BIOMEOS_RUNTIME_DIR` (env override) → `XDG_RUNTIME_DIR/biomeos` →
+/// `/run/membrane` (system-wide biomeOS).
+fn socket_search_dirs() -> Vec<PathBuf> {
+    let mut dirs = Vec::with_capacity(3);
+
+    if let Ok(dir) = std::env::var("BIOMEOS_RUNTIME_DIR") {
+        dirs.push(PathBuf::from(dir));
+    }
+    if let Ok(xdg) = std::env::var("XDG_RUNTIME_DIR") {
+        dirs.push(PathBuf::from(xdg).join("biomeos"));
+    }
+    dirs.push(PathBuf::from("/run/membrane"));
+    dirs
+}
+
+/// Discovered primal endpoint for health probing.
+#[derive(Debug)]
+struct DiscoveredEndpoint {
+    name: String,
+    path: PathBuf,
+}
+
+/// Scan socket directories for primal sockets (`.sock` files).
+///
+/// Extracts primal name from socket filename. Prefers `-default.sock` variants
+/// for health checks (avoids BTSP-only main sockets where alternatives exist).
+fn discover_primal_sockets() -> Vec<DiscoveredEndpoint> {
+    let mut endpoints = Vec::new();
+    let mut seen_primals: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+    for dir in socket_search_dirs() {
+        let entries = match std::fs::read_dir(&dir) {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
+
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if !is_candidate_socket(&path) {
+                continue;
+            }
+
+            let name = extract_primal_name(&path);
+            if name.is_empty() {
+                continue;
+            }
+
+            let is_default = path
+                .file_name()
+                .map_or(false, |f| f.to_string_lossy().contains("-default"));
+
+            if seen_primals.contains(&name) && !is_default {
+                continue;
+            }
+
+            if is_default {
+                endpoints.retain(|e: &DiscoveredEndpoint| e.name != name);
+            }
+
+            seen_primals.insert(name.clone());
+            endpoints.push(DiscoveredEndpoint { name, path });
+        }
+    }
+
+    endpoints
+}
+
+fn is_candidate_socket(path: &Path) -> bool {
+    let ext = path.extension().and_then(|e| e.to_str());
+    if ext != Some("sock") {
+        return false;
+    }
+    let name = path.file_name().map(|f| f.to_string_lossy());
+    let name = match name {
+        Some(n) => n,
+        None => return false,
+    };
+    // Skip tarpc sockets (binary RPC, not JSON-RPC health)
+    !name.contains(".tarpc.") && !name.contains(".negotiate.")
+}
+
+fn extract_primal_name(path: &Path) -> String {
+    let stem = path.file_stem().map(|s| s.to_string_lossy().into_owned());
+    let stem = match stem {
+        Some(s) => s,
+        None => return String::new(),
+    };
+
+    // Strip common suffixes: "-default", "-e8b62b6e" (family hash), "-nat0"
+    let name = stem
+        .split('-')
+        .next()
+        .unwrap_or(&stem);
+
+    // Handle longer primal names with internal dashes (e.g., "sweetgrass", "loamspine")
+    // by checking if the full stem without the known suffixes is a better name
+    let cleaned = stem
+        .trim_end_matches("-default")
+        .trim_end_matches("-desktop-nucleus");
+
+    // If the cleaned version has no hyphens or matches known patterns, use it
+    // Otherwise, take just the first segment
+    let candidate = if cleaned.contains('-') {
+        // Check if remaining dashes are part of a family hash pattern (8 hex chars)
+        let parts: Vec<&str> = cleaned.rsplitn(2, '-').collect();
+        if parts.len() == 2 && parts[0].len() == 8 && parts[0].chars().all(|c| c.is_ascii_hexdigit()) {
+            parts[1].to_string()
+        } else {
+            cleaned.to_string()
+        }
+    } else {
+        cleaned.to_string()
+    };
+
+    if candidate.is_empty() { name.to_string() } else { candidate }
+}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct PrimalHealth {
@@ -157,19 +260,109 @@ fn parse_first_result(
     Err("no result field in response".into())
 }
 
-/// Query health.liveness on all known primals concurrently.
+/// Query health.liveness on all discovered primals concurrently.
+///
+/// Scans biomeOS socket directories at call time — zero hardcoded peer knowledge.
 pub async fn query_all_health() -> Vec<PrimalHealth> {
+    let discovered = discover_primal_sockets();
     let mut set = tokio::task::JoinSet::new();
-    for (name, path) in PRIMAL_ENDPOINTS {
-        let name = name.to_string();
-        let endpoint = TransportEndpoint::uds(path);
+
+    for ep in discovered {
+        let name = ep.name;
+        let path_str = ep.path.to_string_lossy().into_owned();
+        let endpoint = TransportEndpoint::uds(&path_str);
         set.spawn(async move { query_health(&name, &endpoint).await });
     }
 
-    let mut results = Vec::with_capacity(PRIMAL_ENDPOINTS.len());
+    let mut results = Vec::with_capacity(set.len());
     while let Some(Ok(health)) = set.join_next().await {
         results.push(health);
     }
     results.sort_by(|a, b| a.primal.cmp(&b.primal));
     results
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_extract_primal_name_simple() {
+        let path = PathBuf::from("/run/membrane/sweetgrass.sock");
+        assert_eq!(extract_primal_name(&path), "sweetgrass");
+    }
+
+    #[test]
+    fn test_extract_primal_name_with_family_hash() {
+        let path = PathBuf::from("/run/membrane/petaltongue-e8b62b6e.sock");
+        assert_eq!(extract_primal_name(&path), "petaltongue");
+    }
+
+    #[test]
+    fn test_extract_primal_name_default_suffix() {
+        let path = PathBuf::from("/run/membrane/beardog-default.sock");
+        assert_eq!(extract_primal_name(&path), "beardog");
+    }
+
+    #[test]
+    fn test_extract_primal_name_desktop_nucleus() {
+        let path = PathBuf::from("/run/membrane/songbird-desktop-nucleus.sock");
+        assert_eq!(extract_primal_name(&path), "songbird");
+    }
+
+    #[test]
+    fn test_is_candidate_socket_rejects_tarpc() {
+        let path = PathBuf::from("/run/membrane/petaltongue.tarpc.sock");
+        assert!(!is_candidate_socket(&path));
+    }
+
+    #[test]
+    fn test_is_candidate_socket_rejects_negotiate() {
+        let path = PathBuf::from("/run/membrane/petaltongue.negotiate.sock");
+        assert!(!is_candidate_socket(&path));
+    }
+
+    #[test]
+    fn test_is_candidate_socket_accepts_normal() {
+        let path = PathBuf::from("/run/membrane/loamspine.sock");
+        assert!(is_candidate_socket(&path));
+    }
+
+    #[test]
+    fn test_discover_with_env_override() {
+        use petal_tongue_core::test_fixtures::env_test_helpers;
+
+        let tmp = TempDir::new().unwrap();
+        let sock = tmp.path().join("testprimal.sock");
+        std::fs::File::create(&sock).unwrap().write_all(b"").unwrap();
+
+        let discovered = env_test_helpers::with_env_var(
+            "BIOMEOS_RUNTIME_DIR",
+            &tmp.path().to_string_lossy(),
+            discover_primal_sockets,
+        );
+
+        assert!(discovered.iter().any(|e| e.name == "testprimal"));
+    }
+
+    #[test]
+    fn test_default_socket_preferred() {
+        use petal_tongue_core::test_fixtures::env_test_helpers;
+
+        let tmp = TempDir::new().unwrap();
+        std::fs::File::create(tmp.path().join("beardog.sock")).unwrap();
+        std::fs::File::create(tmp.path().join("beardog-default.sock")).unwrap();
+
+        let discovered = env_test_helpers::with_env_var(
+            "BIOMEOS_RUNTIME_DIR",
+            &tmp.path().to_string_lossy(),
+            discover_primal_sockets,
+        );
+
+        let beardog: Vec<_> = discovered.iter().filter(|e| e.name == "beardog").collect();
+        assert_eq!(beardog.len(), 1);
+        assert!(beardog[0].path.to_string_lossy().contains("-default"));
+    }
 }
