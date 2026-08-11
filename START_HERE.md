@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: August 11, 2026 (Wave 157i — Darwin rustix fix, deep debt, 6,644 tests, zero failures)
+**Updated**: August 11, 2026 (Wave 157i — axum 0.8, darwin fix, 650 lockfile pkgs, 6,644 tests, zero failures)
 
 ---
 

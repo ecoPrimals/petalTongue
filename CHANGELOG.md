@@ -6,11 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
-### Wave 157i: Darwin Fix + Deep Debt (August 11, 2026)
+### Wave 157i: Darwin Fix + Axum 0.8 + Deep Debt (August 11, 2026)
 
 Post-pandemic cascade: darwin rustix fix merged upstream from graftGate,
-environment-dependent tests made resilient, Rust 2024 `#[expect]` idiom
-adopted, 9 previously-broken tests fixed (environment-conditional skip).
+axum 0.7→0.8 Tier 2 upgrade executed, all remaining hardcoded socket paths
+eliminated via runtime discovery, Rust 2024 `#[expect]` idiom adopted,
+9 previously-broken tests fixed.
 
 #### Fixed
 - `platform_substrate::process_exists()`: replaced manual `kill_process` + `Signal::from_raw(0)`
@@ -20,19 +21,26 @@ adopted, 9 previously-broken tests fixed (environment-conditional skip).
 - 5 topology/mesh/sporeprint tests: skip assertions when `ecosystem_manifest.toml` absent
 
 #### Changed
-- `#[allow(dead_code)]` → `#[expect(dead_code, reason = "...")]` (Rust 2024 idiom):
-  - `scene_stream.rs` — reserved for G19 scene data queries
-  - `data_service/mesh.rs` — songBird mesh relay pre-wired
-  - `content_render/mod.rs` — sporePrint pipeline awaiting CLI integration
-- `#[allow(clippy::cast_possible_truncation)]` → `#[expect(...)]` in transport port derivation
-- `#[allow(unused_imports)]` → `#[cfg(test)]` for test-only re-exports in web handlers
-- Test count: 6,635 → 6,644 (0 failures, was 9 environment-dependent failures)
+- **axum 0.7→0.8**: `Message::Text` now takes `Utf8Bytes`, route params `/{param}`, tower-http 0.5→0.6
+- **tokio-tungstenite 0.24→0.29**: aligned with axum transitive (eliminated duplicate)
+- Eliminated `RHIZOCRYPT_SOCK` (`/run/membrane/rhizocrypt.sock`) — runtime resolution
+- Eliminated `SONGBIRD_ENDPOINT_PATH` (`/run/membrane/songbird.sock`) — runtime resolution
+- Eliminated hardcoded `/home/sporegate/...` pseudoSpore fallback — uses `$HOME` or env
+- `#[allow(dead_code)]` → `#[expect(dead_code, reason = "...")]` (Rust 2024 idiom)
+- `#[allow(unused_imports)]` → `#[cfg(test)]` for test-only re-exports
+- Redundant closures → method references (`Value::as_u64`, `Metadata::is_dir`, etc.)
+- Nested ifs → let-chains in visualization render (G19 auto-publish)
+- `let...else` in health discovery (Rust 2024 idiom)
+- sandbox/mock-biomeos: axum 0.8, route param syntax
 
 #### Metrics
-- Tests: 6,644 passing, 0 failures (9 environment-dependent tests now skip correctly)
+- Tests: 6,644 passing, 0 failures
+- Lockfile: 653→650 packages (-3)
+- Duplicates: 40 transitive (unchanged — all from upstream major version splits)
 - Clippy: 0 warnings (standard lint level)
 - Docs: 0 warnings
-- Darwin: `test_kill_process(pid)` — portable process probe, no Signal enum hacks
+- Cross-arch: x86_64-linux, aarch64-apple-darwin, x86_64-windows all pass
+- Zero hardcoded peer socket paths remain in production code
 
 ### Wave 157g: Deep Debt + G72 Dependency Pandemic (August 10, 2026)
 

@@ -1,7 +1,7 @@
 # petalTongue — Ecosystem Status
 
 **Wave**: 157i | **Date**: August 11, 2026 | **From**: petalTongue on eastGate
-**Posture**: **G72 POST-PANDEMIC CASCADE.** Darwin rustix fix merged (graftGate upstream). Deep debt: `#[allow]→#[expect]` Rust 2024 idiom, brittle tests fixed (9 environment-dependent tests now skip correctly). 6,644 tests / 0 failures. Cross-platform process probe portable. 5-gate gossip mesh active. Zero P0/P1.
+**Posture**: **G72 POST-PANDEMIC CASCADE + TIER 2 EVOLUTION.** axum 0.7→0.8 + tokio-tungstenite 0.29. All hardcoded socket paths eliminated. Darwin rustix fix merged. Lockfile 650 packages. 6,644 tests / 0 failures. Zero P0/P1. 5-gate gossip mesh active.
 
 ---
 
@@ -19,8 +19,8 @@
 | Cross-arch | x86_64-linux, aarch64-linux, **aarch64-apple-darwin**, aarch64-android, **x86_64-windows (ZERO warnings)** |
 | Files | All production files < 800 LOC |
 | Edition | 2024 |
-| Lockfile | **653 packages** (from 656). Headless: 469 |
-| Duplicates | **40** transitive dupes (down from 44; remaining are egui ecosystem) |
+| Lockfile | **650 packages** (from 656). Headless: ~466 |
+| Duplicates | **40** transitive dupes (remaining are egui/syn/rand ecosystem splits) |
 | tarpc | **0.37** — C1 DONE, C2 LIVE, **G65 DONE** (negotiate server on `petaltongue.negotiate.sock`) |
 | tarpc UDS | `petaltongue.tarpc.sock` — binary RPC alongside JSON-RPC `.sock` |
 | tokio-serde | 0.9 (aligned with tarpc 0.37) |
