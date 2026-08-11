@@ -192,7 +192,7 @@ pub fn process_exists(pid: u32) -> bool {
 /// Target NOFILE (max open file descriptors) for server processes.
 const TARGET_FD_LIMIT: u64 = 65536;
 
-/// Raise the soft file descriptor limit to [`TARGET_FD_LIMIT`] (or hard limit, whichever is lower).
+/// Raise the soft file descriptor limit to 65536 (or hard limit, whichever is lower).
 ///
 /// Server primals that open many sockets (IPC, WebSocket, mesh connections) should
 /// call this at startup to self-heal on gates where `LimitNOFILE` hasn't been configured.

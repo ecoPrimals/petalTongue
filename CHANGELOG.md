@@ -6,25 +6,38 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
-### Wave 157g: G72 Dependency Pandemic — Tier 1 (August 10, 2026)
+### Wave 157g: Deep Debt + G72 Dependency Pandemic (August 10, 2026)
 
-Stadial shift: petalTongue sheds vestigial dependencies. Version alignment
-eliminates duplicate transitive crates, dead workspace member excised,
-rand/tokio-tungstenite/png aligned with upstream ecosystem.
+Stadial shift: petalTongue sheds vestigial dependencies and eliminates
+peer-knowledge hardcoding. Runtime discovery replaces static primal lists.
+Version alignment eliminates duplicate transitive crates.
 
 #### Removed
 - `petal-tongue-telemetry` — vestigial crate (zero imports anywhere in workspace)
+- Hardcoded 13-primal endpoint list in `data_service/health.rs`
+- Hardcoded `/run/user/1000/ecoPrimals` in gossip_injection socket discovery
 
 #### Changed
-- `tokio-tungstenite`: 0.21 → 0.24 (aligns with axum's transitive, eliminates dupe)
-- `rand`: 0.8 → 0.9 (aligns with getrandom 0.3/0.4 transitives)
-- `png`: 0.17 → 0.18 (aligns with egui's transitive)
-- Duplicate crate entries reduced: 44 → 40
+- `data_service/health.rs`: REWROTE — dynamic primal discovery via filesystem scan
+  (BIOMEOS_RUNTIME_DIR → XDG_RUNTIME_DIR/biomeos → /run/membrane). Extracts names
+  from socket filenames, prefers `-default.sock`, filters tarpc/negotiate sockets.
+- `gossip_injection.rs`: `socket_search_dirs()` resolves via env vars at runtime
+- `tokio-tungstenite`: 0.21 → 0.24 (aligns with axum transitive)
+- `rand`: 0.8 → 0.9 (migrated API: `rng()`, `random_range()`)
+- `png`: 0.17 → 0.18 (aligns with egui transitive)
+- `to_string_lossy().to_string()` → `.into_owned()` (allocation idiom)
+- Removed stale `#[allow(dead_code)]` on actively-used `publish_scene_frame()`
+- Fixed `cargo doc` warning (private item link in public doc)
+
+#### Added
+- 8 unit tests for primal name extraction + socket discovery logic
+- Duplicate transitive crates reduced: 44 → 40
 
 #### Metrics
 - Lockfile packages: 656 → 653
 - Headless (no-default-features) dep count: 469 (vs 653 full)
-- Tests: 6,635 passing, 0 clippy warnings, Windows cross-arch clean
+- Production LOC excised: 1,038 (telemetry crate)
+- Tests: 6,635 passing, 0 clippy warnings, 0 doc warnings, Windows clean
 
 ### Wave 157e: Gossip Injection + G19 Auto-Publish (August 10, 2026)
 
