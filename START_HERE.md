@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: August 7, 2026 (Wave 156v — CROSS-ARCH COMPLIANT, Windows clean, 6,644 tests, zero clippy pedantic+nursery)
+**Updated**: August 10, 2026 (Wave 157g — G72 Dep Pandemic Tier 1, runtime discovery, 6,635 tests, zero clippy pedantic+nursery)
 
 ---
 

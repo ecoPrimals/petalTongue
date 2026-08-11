@@ -18,7 +18,7 @@ does not own computation, storage, or security domains.
 
 ## Architecture
 
-19 workspace crates, single UniBin binary (`petaltongue`, 7 subcommands).
+18 workspace crates, single UniBin binary (`petaltongue`, 7 subcommands).
 `offline-topology` feature gates static mesh topology (default off; enable only for offline demos).
 Production code uses `MeshTopologySource` trait with `ManifestMeshTopology` for runtime discovery:
 
@@ -39,7 +39,6 @@ Production code uses `MeshTopologySource` trait with `ManifestMeshTopology` for 
 | `petal-tongue-entropy` | Human entropy capture |
 | `petal-tongue-adapters` | Adapter framework |
 | `petal-tongue-headless` | Headless rendering binary |
-| `petal-tongue-telemetry` | Observability and metrics |
 | `petal-tongue-types` | WASM-portable data types |
 | `petal-tongue-wasm` | Browser rendering module |
 | `doom-core` | Doom WAD rendering (platform stress test) |

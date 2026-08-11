@@ -105,7 +105,6 @@ petaltongue
 | `petal-tongue-entropy` | Human entropy capture (gesture, narrative, visual, audio) |
 | `petal-tongue-animation` | Visual animations |
 | `petal-tongue-adapters` | EcoPrimal adapter traits |
-| `petal-tongue-telemetry` | Telemetry and metrics |
 | `petal-tongue-headless` | Headless rendering (zero display deps) |
 | `petal-tongue-ui-core` | Universal interface traits and headless renderers |
 | `petal-tongue-api` | biomeOS JSON-RPC client |

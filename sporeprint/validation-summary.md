@@ -1,7 +1,7 @@
 +++
 title = "petalTongue Validation Summary"
-description = "Universal user interface primal — 6,755 workspace tests, 56+ IPC methods, 19 crates, 7 modes, pure Rust, BTSP 13/13 + WebGL + sporePrint pipeline"
-date = 2026-07-30
+description = "Universal user interface primal — 6,635 workspace tests, 56+ IPC methods, 18 crates, 7 modes, pure Rust, BTSP 13/13 + WebGL + sporePrint pipeline"
+date = 2026-08-10
 
 [taxonomies]
 primals = ["petaltongue"]
