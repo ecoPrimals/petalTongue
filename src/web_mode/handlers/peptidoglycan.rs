@@ -4,7 +4,7 @@
 //! Serves depot browsing and provenance chain inspection via HTTP.
 //! Data sources:
 //! - Depot: local filesystem (`ECOP_DEPOT_PATH` or plasmidBin default)
-//! - Provenance: `checksums.toml` + `signatures.toml` in depot root
+//! - Provenance: per-architecture `BLAKE3SUMS` files (b3sum standard format)
 //!
 //! Routes:
 //! - `GET /depot/`              — architecture overview
@@ -30,20 +30,44 @@ fn depot_base() -> PathBuf {
     )
 }
 
-fn checksums_path() -> PathBuf {
-    depot_base().join("checksums.toml")
+/// Load BLAKE3 checksums for a specific architecture from per-arch `BLAKE3SUMS`.
+///
+/// Format: `<hash>  <filename>` (b3sum standard output).
+fn load_arch_checksums(arch: &str) -> BTreeMap<String, String> {
+    let path = depot_base().join(arch).join("BLAKE3SUMS");
+    let Ok(content) = std::fs::read_to_string(&path) else {
+        return BTreeMap::new();
+    };
+    content
+        .lines()
+        .filter_map(|line| {
+            let (hash, name) = line.split_once("  ")?;
+            Some((name.to_owned(), hash.to_owned()))
+        })
+        .collect()
 }
 
-fn signatures_path() -> PathBuf {
-    depot_base().join("signatures.toml")
-}
-
-fn load_checksums() -> BTreeMap<String, toml::Value> {
-    let path = checksums_path();
-    std::fs::read_to_string(&path)
-        .ok()
-        .and_then(|s| toml::from_str(&s).ok())
-        .unwrap_or_default()
+/// Load all checksums across all architectures.
+fn load_all_checksums() -> BTreeMap<String, BTreeMap<String, String>> {
+    let base = depot_base();
+    let Ok(entries) = std::fs::read_dir(&base) else {
+        return BTreeMap::new();
+    };
+    entries
+        .flatten()
+        .filter(|e| e.path().is_dir())
+        .filter_map(|e| {
+            let name = e.file_name().to_string_lossy().into_owned();
+            if name.starts_with('.') {
+                return None;
+            }
+            let checksums = load_arch_checksums(&name);
+            if checksums.is_empty() {
+                return None;
+            }
+            Some((name, checksums))
+        })
+        .collect()
 }
 
 /// `GET /depot/` — architecture overview.
@@ -58,11 +82,14 @@ pub(crate) async fn depot_index_handler() -> impl IntoResponse {
                 let name = path.file_name()
                     .map(|n| n.to_string_lossy().into_owned())
                     .unwrap_or_default();
-                if name.starts_with('.') || name == "checksums.toml" || name == "signatures.toml" {
+                if name.starts_with('.') {
                     continue;
                 }
                 let binary_count = std::fs::read_dir(&path)
-                    .map(|rd| rd.flatten().filter(|e| e.path().is_file() && !e.file_name().to_string_lossy().starts_with('.')).count())
+                    .map(|rd| rd.flatten().filter(|e| {
+                        let n = e.file_name().to_string_lossy().into_owned();
+                        e.path().is_file() && !n.starts_with('.') && n != "BLAKE3SUMS"
+                    }).count())
                     .unwrap_or(0);
                 let total_size: u64 = std::fs::read_dir(&path)
                     .into_iter()
@@ -87,13 +114,16 @@ pub(crate) async fn depot_index_handler() -> impl IntoResponse {
         an.cmp(bn)
     });
 
+    let all_checksums = load_all_checksums();
+    let has_checksums = !all_checksums.is_empty();
+
     Json(serde_json::json!({
         "layer": "peptidoglycan",
         "surface": "nestgate.io",
         "architecture_count": architectures.len(),
         "architectures": architectures,
-        "checksums_available": checksums_path().exists(),
-        "signatures_available": signatures_path().exists(),
+        "checksums_available": has_checksums,
+        "provenance_architectures": all_checksums.keys().collect::<Vec<_>>(),
     }))
 }
 
@@ -108,7 +138,7 @@ pub(crate) async fn depot_arch_handler(Path(arch): Path<String>) -> impl IntoRes
         }));
     }
 
-    let checksums = load_checksums();
+    let checksums = load_arch_checksums(&arch);
     let mut binaries = Vec::new();
 
     if let Ok(entries) = std::fs::read_dir(&dir) {
@@ -120,17 +150,13 @@ pub(crate) async fn depot_arch_handler(Path(arch): Path<String>) -> impl IntoRes
             let name = path.file_name()
                 .map(|n| n.to_string_lossy().into_owned())
                 .unwrap_or_default();
-            if name.starts_with('.') {
+            if name.starts_with('.') || name == "BLAKE3SUMS" {
                 continue;
             }
             let meta = std::fs::metadata(&path).ok();
             let size = meta.as_ref().map(|m| m.len()).unwrap_or(0);
 
-            let blake3 = checksums
-                .get(&arch)
-                .and_then(|t| t.get(&name))
-                .and_then(|v| v.as_str())
-                .map(String::from);
+            let blake3 = checksums.get(&name).cloned();
 
             binaries.push(serde_json::json!({
                 "name": name,
@@ -174,12 +200,8 @@ pub(crate) async fn depot_binary_handler(
         .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
         .map(|d| d.as_secs());
 
-    let checksums = load_checksums();
-    let blake3 = checksums
-        .get(&arch)
-        .and_then(|t| t.get(&name))
-        .and_then(|v| v.as_str())
-        .map(String::from);
+    let checksums = load_arch_checksums(&arch);
+    let blake3 = checksums.get(&name).cloned();
 
     Json(serde_json::json!({
         "name": name,
@@ -188,21 +210,20 @@ pub(crate) async fn depot_binary_handler(
         "size_human": human_size(size),
         "blake3": blake3,
         "modified_epoch": modified,
-        "depot_url": format!("https://depot.primals.eco/depot/{arch}/{name}"),
-        "verification": "blake3sum --check",
+        "depot_url": format!("https://depot.primals.eco/primals/{arch}/{name}"),
+        "verification": "b3sum --check BLAKE3SUMS",
     }))
 }
 
 /// `GET /provenance/` — provenance chain overview.
 pub(crate) async fn provenance_index_handler() -> impl IntoResponse {
-    let checksums = load_checksums();
+    let all_checksums = load_all_checksums();
     let mut arch_summaries = Vec::new();
 
-    for (arch, entries) in &checksums {
-        let count = entries.as_table().map_or(0, |t| t.len());
+    for (arch, entries) in &all_checksums {
         arch_summaries.push(serde_json::json!({
             "target": arch,
-            "tracked_binaries": count,
+            "tracked_binaries": entries.len(),
         }));
     }
     arch_summaries.sort_by(|a, b| {
@@ -214,35 +235,30 @@ pub(crate) async fn provenance_index_handler() -> impl IntoResponse {
     Json(serde_json::json!({
         "layer": "peptidoglycan",
         "surface": "nestgate.io",
-        "provenance_source": "checksums.toml + signatures.toml",
+        "provenance_source": "BLAKE3SUMS (per-architecture b3sum files)",
         "architecture_count": arch_summaries.len(),
         "architectures": arch_summaries,
-        "signatures_available": signatures_path().exists(),
         "phase": "Phase 2 — local provenance. Phase 3 adds federated CAS + content.locate mesh queries.",
     }))
 }
 
-/// `GET /provenance/{hash}` — lookup by BLAKE3 hash.
+/// `GET /provenance/{hash}` — lookup by BLAKE3 hash (prefix match supported).
 pub(crate) async fn provenance_hash_handler(Path(hash): Path<String>) -> impl IntoResponse {
-    let checksums = load_checksums();
+    let all_checksums = load_all_checksums();
     let mut matches = Vec::new();
 
-    for (arch, entries) in &checksums {
-        if let Some(table) = entries.as_table() {
-            for (binary, checksum_val) in table {
-                if let Some(checksum) = checksum_val.as_str() {
-                    if checksum == hash || checksum.starts_with(&hash) {
-                        let path = depot_base().join(arch).join(binary);
-                        let size = std::fs::metadata(&path).ok().map(|m| m.len());
-                        matches.push(serde_json::json!({
-                            "binary": binary,
-                            "target": arch,
-                            "blake3": checksum,
-                            "size_bytes": size,
-                            "depot_url": format!("https://depot.primals.eco/depot/{arch}/{binary}"),
-                        }));
-                    }
-                }
+    for (arch, entries) in &all_checksums {
+        for (binary, checksum) in entries {
+            if checksum == &hash || checksum.starts_with(&hash) {
+                let path = depot_base().join(arch).join(binary);
+                let size = std::fs::metadata(&path).ok().map(|m| m.len());
+                matches.push(serde_json::json!({
+                    "binary": binary,
+                    "target": arch,
+                    "blake3": checksum,
+                    "size_bytes": size,
+                    "depot_url": format!("https://depot.primals.eco/primals/{arch}/{binary}"),
+                }));
             }
         }
     }
