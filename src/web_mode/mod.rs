@@ -134,6 +134,12 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .route("/api/coord/depot", get(coord_depot_handler))
         .route("/api/events", get(events_sse_handler))
         .route("/viz/{slug}", get(viz_handler))
+        // nestgate.io Phase 2 — peptidoglycan depot + provenance routes
+        .route("/depot/", get(handlers::peptidoglycan::depot_index_handler))
+        .route("/depot/{arch}", get(handlers::peptidoglycan::depot_arch_handler))
+        .route("/depot/{arch}/{name}", get(handlers::peptidoglycan::depot_binary_handler))
+        .route("/provenance/", get(handlers::peptidoglycan::provenance_index_handler))
+        .route("/provenance/{hash}", get(handlers::peptidoglycan::provenance_hash_handler))
         .nest_service("/static", ServeDir::new(WEB_STATIC_DIR));
 
     // Serve pseudoSpore bundles as downloadable files

@@ -3,6 +3,7 @@
 
 mod api;
 mod manifest;
+pub(crate) mod peptidoglycan;
 mod static_content;
 mod topology;
 
