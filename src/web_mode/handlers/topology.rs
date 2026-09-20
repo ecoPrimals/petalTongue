@@ -514,3 +514,252 @@ pub async fn primal_health_handler() -> Json<serde_json::Value> {
 pub struct VizQuery {
     pub format: Option<String>,
 }
+
+// ── Public Record network graph (lithoSpore data) ───────────────────────
+
+/// Serves the actor/entity network graph for detroit.primals.eco.
+///
+/// Data source: reads actor/entity markdown from the publicRecord repo
+/// worktree if available, otherwise returns the compiled static graph.
+/// This is the NUCLEUS backing for the detroit network visualization.
+pub async fn public_record_network_handler() -> Json<serde_json::Value> {
+    // Try to discover the lithoSpore deployment (repo worktree on this gate).
+    let repo_path = discover_public_record_path();
+
+    if let Some(path) = repo_path {
+        if let Some(graph) = build_graph_from_repo(&path) {
+            return Json(graph);
+        }
+    }
+
+    // Fallback: compiled static graph
+    Json(static_detroit_graph())
+}
+
+fn discover_public_record_path() -> Option<std::path::PathBuf> {
+    let mut candidates = vec![
+        std::path::PathBuf::from("/opt/ecoPrimals/detroit/repo"),
+        std::path::PathBuf::from("/opt/ecoPrimals/detroit"),
+    ];
+    if let Ok(home) = std::env::var("HOME") {
+        candidates.push(std::path::PathBuf::from(home).join("Development/detroit"));
+    }
+    for candidate in candidates {
+        if candidate.join("actors").is_dir() || candidate.join("entities").is_dir() {
+            return Some(candidate);
+        }
+    }
+    None
+}
+
+fn build_graph_from_repo(path: &std::path::Path) -> Option<serde_json::Value> {
+    let mut nodes = Vec::new();
+    let mut links = Vec::new();
+
+    // Read actors
+    let actors_dir = path.join("actors");
+    if actors_dir.is_dir() {
+        if let Ok(entries) = std::fs::read_dir(&actors_dir) {
+            for entry in entries.flatten() {
+                let fp = entry.path();
+                if fp.extension().is_some_and(|e| e == "md") {
+                    if let Some(node) = parse_actor_md(&fp) {
+                        nodes.push(node);
+                    }
+                }
+            }
+        }
+    }
+
+    // Read entities
+    let entities_dir = path.join("entities");
+    if entities_dir.is_dir() {
+        if let Ok(entries) = std::fs::read_dir(&entities_dir) {
+            for entry in entries.flatten() {
+                let fp = entry.path();
+                if fp.extension().is_some_and(|e| e == "md")
+                    && !fp.file_name().is_some_and(|f| f == "ENTITY_MAP.md")
+                {
+                    if let Some(node) = parse_entity_md(&fp) {
+                        nodes.push(node);
+                    }
+                }
+            }
+        }
+    }
+
+    // Read ENTITY_MAP for links if available
+    let entity_map = path.join("entities/ENTITY_MAP.md");
+    if entity_map.is_file() {
+        if let Ok(content) = std::fs::read_to_string(&entity_map) {
+            links = parse_entity_map_links(&content, &nodes);
+        }
+    }
+
+    if nodes.is_empty() {
+        return None;
+    }
+
+    Some(serde_json::json!({
+        "nodes": nodes,
+        "links": links,
+        "source": "lithoSpore",
+        "repo": path.to_string_lossy(),
+    }))
+}
+
+fn parse_actor_md(path: &std::path::Path) -> Option<serde_json::Value> {
+    let content = std::fs::read_to_string(path).ok()?;
+    let stem = path.file_stem()?.to_string_lossy().to_string();
+
+    // Extract title from first # heading
+    let label = content
+        .lines()
+        .find(|l| l.starts_with("# "))
+        .map(|l| l.trim_start_matches("# ").to_string())
+        .unwrap_or_else(|| stem.replace('_', " "));
+
+    // Detect tier from content
+    let tier = if content.contains("Tier 1") { 1 }
+        else if content.contains("Tier 2") { 2 }
+        else if content.contains("Tier 3") { 3 }
+        else if content.contains("judge") || content.contains("Judge") { 2 }
+        else { 1 };
+
+    let node_type = if content.contains("Judge") || content.contains("judge") {
+        "judge"
+    } else if content.contains("BMF") || content.contains("Black Mafia") {
+        "bmf"
+    } else if content.contains("Representative") || content.contains("legislat") || content.contains("political") {
+        "political"
+    } else {
+        "actor"
+    };
+
+    // First paragraph after heading as detail
+    let detail = content
+        .lines()
+        .skip_while(|l| l.starts_with('#') || l.is_empty())
+        .find(|l| !l.is_empty() && !l.starts_with('#'))
+        .unwrap_or("")
+        .to_string();
+
+    Some(serde_json::json!({
+        "id": stem.to_lowercase().replace(' ', "_"),
+        "label": label,
+        "tier": tier,
+        "type": node_type,
+        "detail": truncate(&detail, 80),
+        "file": path.file_name().map(|f| f.to_string_lossy().to_string()),
+    }))
+}
+
+fn parse_entity_md(path: &std::path::Path) -> Option<serde_json::Value> {
+    let content = std::fs::read_to_string(path).ok()?;
+    let stem = path.file_stem()?.to_string_lossy().to_string();
+
+    let label = content
+        .lines()
+        .find(|l| l.starts_with("# "))
+        .map(|l| l.trim_start_matches("# ").to_string())
+        .unwrap_or_else(|| stem.replace('_', " "));
+
+    let entity_type = if content.contains("school") || content.contains("Academy") || content.contains("Prep") {
+        "school"
+    } else {
+        "entity"
+    };
+
+    let detail = content
+        .lines()
+        .skip_while(|l| l.starts_with('#') || l.is_empty())
+        .find(|l| !l.is_empty() && !l.starts_with('#'))
+        .unwrap_or("")
+        .to_string();
+
+    Some(serde_json::json!({
+        "id": stem.to_lowercase().replace(' ', "_"),
+        "label": label,
+        "tier": 0,
+        "type": entity_type,
+        "detail": truncate(&detail, 80),
+        "file": path.file_name().map(|f| f.to_string_lossy().to_string()),
+    }))
+}
+
+fn parse_entity_map_links(content: &str, nodes: &[serde_json::Value]) -> Vec<serde_json::Value> {
+    let mut links = Vec::new();
+    let node_ids: Vec<String> = nodes
+        .iter()
+        .filter_map(|n| n.get("id").and_then(|v| v.as_str()).map(String::from))
+        .collect();
+
+    // Look for "→" or "-->" arrows in entity map markdown
+    for line in content.lines() {
+        if let Some(arrow_idx) = line.find("→").or_else(|| line.find("-->")) {
+            let before = &line[..arrow_idx].trim().to_lowercase().replace(' ', "_");
+            let after_start = if line[arrow_idx..].starts_with("→") {
+                arrow_idx + "→".len()
+            } else {
+                arrow_idx + 3
+            };
+            let after = &line[after_start..].trim().to_lowercase().replace(' ', "_");
+
+            let source = node_ids.iter().find(|id| before.contains(id.as_str()));
+            let target = node_ids.iter().find(|id| after.contains(id.as_str()));
+
+            if let (Some(s), Some(t)) = (source, target) {
+                let link_type = if line.contains('$') || line.contains("fee") || line.contains("pay") {
+                    "money"
+                } else if line.contains("board") || line.contains("Board") {
+                    "controls"
+                } else {
+                    "associate"
+                };
+                links.push(serde_json::json!({
+                    "source": s,
+                    "target": t,
+                    "type": link_type,
+                    "label": truncate(line.trim(), 60),
+                }));
+            }
+        }
+    }
+    links
+}
+
+fn truncate(s: &str, max: usize) -> String {
+    if s.len() <= max { s.to_string() }
+    else { format!("{}…", &s[..max]) }
+}
+
+fn static_detroit_graph() -> serde_json::Value {
+    serde_json::json!({
+        "nodes": [
+            { "id": "banks", "label": "Brian R. Banks", "tier": 1, "type": "actor",
+              "detail": "9 convictions (6 felony, 3 misdemeanor)" },
+            { "id": "holland", "label": "Joseph Holland Jr.", "tier": 1, "type": "actor",
+              "detail": "Drug offender, MDOC #443789" },
+            { "id": "miller", "label": "Judge C. Miller", "tier": 2, "type": "judge",
+              "detail": "Board Chair, Anchor Rock Foundation" },
+            { "id": "yancey", "label": "Judge T. Yancey", "tier": 2, "type": "judge",
+              "detail": "Campaign paid $2,283 to Banks Strategy" },
+            { "id": "pca", "label": "Purpose Charter Academy", "tier": 0, "type": "school",
+              "detail": "K-8, DPSCD authorized" },
+            { "id": "macdowell", "label": "MacDowell Prep", "tier": 0, "type": "school",
+              "detail": "$4.9M revenue, 72.67% extracted" },
+            { "id": "purpose_group", "label": "Purpose Group LLC", "tier": 0, "type": "entity",
+              "detail": "CMO — takes 72.67% of revenue" },
+        ],
+        "links": [
+            { "source": "banks", "target": "pca", "type": "controls", "label": "superintendent" },
+            { "source": "banks", "target": "macdowell", "type": "controls", "label": "superintendent" },
+            { "source": "banks", "target": "purpose_group", "type": "controls", "label": "sole member" },
+            { "source": "banks", "target": "holland", "type": "associate", "label": "co-resident" },
+            { "source": "macdowell", "target": "purpose_group", "type": "money", "label": "72.67%" },
+            { "source": "miller", "target": "banks", "type": "judicial", "label": "Board Chair" },
+            { "source": "yancey", "target": "banks", "type": "judicial", "label": "$2,283" },
+        ],
+        "source": "static_fallback",
+    })
+}
