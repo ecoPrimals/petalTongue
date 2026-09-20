@@ -733,6 +733,155 @@ fn truncate(s: &str, max: usize) -> String {
     else { format!("{}…", &s[..max]) }
 }
 
+// ── Public Record Timeline API ─────────────────────────────────────
+
+/// Serve timeline events for the detroit public-record investigation.
+/// Parses the timeline markdown from the lithoSpore deployment (repo).
+pub async fn public_record_timeline_handler() -> Json<serde_json::Value> {
+    let repo_path = discover_public_record_path();
+
+    if let Some(path) = repo_path {
+        // Try site content first (Zola source), then repo root
+        let timeline_candidates = [
+            path.join("site/content/timeline/_index.md"),
+            path.join("timeline.md"),
+        ];
+        for candidate in &timeline_candidates {
+            if candidate.exists() {
+                if let Some(events) = parse_timeline_md(candidate) {
+                    return Json(serde_json::json!({
+                        "events": events,
+                        "source": "repo",
+                    }));
+                }
+            }
+        }
+    }
+
+    // Static fallback
+    Json(static_detroit_timeline())
+}
+
+/// Parse timeline markdown tables into structured events.
+fn parse_timeline_md(path: &std::path::Path) -> Option<Vec<serde_json::Value>> {
+    let content = std::fs::read_to_string(path).ok()?;
+    let mut events = Vec::new();
+    let mut current_era = String::new();
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+
+        // Track section headers as eras
+        if trimmed.starts_with("## ") {
+            current_era = trimmed.trim_start_matches("## ").to_string();
+            continue;
+        }
+
+        // Parse markdown table rows: | Date | Event | Source |
+        if trimmed.starts_with('|') && !trimmed.contains("---") && !trimmed.contains("Date") {
+            let cols: Vec<&str> = trimmed
+                .split('|')
+                .filter(|s| !s.is_empty())
+                .map(|s| s.trim())
+                .collect();
+
+            if cols.len() >= 2 {
+                let date_raw = cols[0].replace("**", "");
+                let event_raw = cols[1].replace("**", "");
+                let source = if cols.len() >= 3 {
+                    cols[2].replace("**", "")
+                } else {
+                    String::new()
+                };
+
+                // Determine which network nodes are involved
+                let actors = detect_actors(&event_raw);
+                let is_upcoming = current_era.contains("Upcoming")
+                    || event_raw.contains("scheduled")
+                    || event_raw.contains("Prepared");
+
+                events.push(serde_json::json!({
+                    "date": date_raw,
+                    "event": event_raw,
+                    "source": source,
+                    "era": current_era,
+                    "actors": actors,
+                    "upcoming": is_upcoming,
+                }));
+            }
+        }
+    }
+
+    if events.is_empty() { None } else { Some(events) }
+}
+
+/// Detect which network actors/entities are mentioned in an event.
+fn detect_actors(text: &str) -> Vec<String> {
+    let mut actors = Vec::new();
+    let lower = text.to_lowercase();
+
+    let patterns = [
+        ("banks", "banks"),
+        ("holland", "holland"),
+        ("miller", "miller"),
+        ("yancey", "yancey"),
+        ("sabree", "sabree"),
+        ("perkins", "perkins_d"),
+        ("gay-dagnogo", "gay_dagnogo"),
+        ("pca", "pca"),
+        ("purpose charter", "pca"),
+        ("macdowell", "macdowell"),
+        ("purpose group", "purpose_group"),
+        ("purpose foundation", "purpose_foundation"),
+        ("banks strategy", "banks_strategy"),
+        ("pac", "pacs"),
+        ("bmf", "od_banks"),
+        ("od banks", "od_banks"),
+        ("welch", "welch"),
+        ("dpscd", "gay_dagnogo"),
+    ];
+
+    for (pattern, actor_id) in &patterns {
+        if lower.contains(pattern) && !actors.contains(&actor_id.to_string()) {
+            actors.push(actor_id.to_string());
+        }
+    }
+
+    actors
+}
+
+fn static_detroit_timeline() -> serde_json::Value {
+    serde_json::json!({
+        "events": [
+            { "date": "Nov 1998", "event": "Banks convicted — NSF Check, Lincoln Park",
+              "era": "Pre-2017: Criminal History", "actors": ["banks"], "source": "ICHAT" },
+            { "date": "Apr 1999", "event": "Banks convicted — 3 felonies (U&P + 2×FTD), Oakland",
+              "era": "Pre-2017: Criminal History", "actors": ["banks"], "source": "ICHAT" },
+            { "date": "2005", "event": "BMF federal indictment — OD Banks is Defendant #22",
+              "era": "Pre-2017: Criminal History", "actors": ["od_banks", "banks"], "source": "PACER" },
+            { "date": "2014", "event": "Banks runs for MI Senate; Bank on Banks PAC; Holland as Treasurer",
+              "era": "2014–2016: Political Career", "actors": ["banks", "holland", "pacs"], "source": "MI Campaign Finance" },
+            { "date": "2017", "event": "Banks Strategy & Consultants, LLC filed",
+              "era": "2017: The Pivot", "actors": ["banks", "banks_strategy"], "source": "LARA" },
+            { "date": "Nov 2024", "event": "The Purpose Group, LLC filed",
+              "era": "2024: Entity Expansion", "actors": ["banks", "purpose_group"], "source": "LARA" },
+            { "date": "Dec 2024", "event": "Purpose Foundation filed — Banks + Holland hold all positions",
+              "era": "2024: Entity Expansion", "actors": ["banks", "holland", "purpose_foundation"], "source": "LARA" },
+            { "date": "2024", "event": "Judge Yancey campaign pays $2,283 to Banks Strategy",
+              "era": "2024: Entity Expansion", "actors": ["yancey", "banks_strategy", "banks"], "source": "TransparencyUSA" },
+            { "date": "Jul 2025", "event": "PCA authorized by DPSCD Board",
+              "era": "2025: Charter Authorization", "actors": ["pca", "gay_dagnogo"], "source": "DPSCD" },
+            { "date": "May 2026", "event": "Holland discharged from MDOC — WITHOUT IMPROVEMENT",
+              "era": "2026: Exposure", "actors": ["holland"], "source": "MDOC OTIS" },
+            { "date": "Sep 2026", "event": "ICHAT pulled — 9 convictions confirmed",
+              "era": "2026: Exposure", "actors": ["banks"], "source": "MI ICHAT" },
+            { "date": "Nov 3, 2026", "event": "Judge Cylenthia Miller — election day",
+              "era": "Upcoming", "actors": ["miller"], "upcoming": true, "source": "" },
+        ],
+        "source": "static_fallback",
+    })
+}
+
 fn static_detroit_graph() -> serde_json::Value {
     serde_json::json!({
         "nodes": [

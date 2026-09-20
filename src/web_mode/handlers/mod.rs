@@ -22,7 +22,7 @@ pub(super) use topology::VizQuery;
 pub(super) use topology::{
     ecosystem_handler, gate_mesh_handler, live_topology_handler, mesh_peers_handler,
     physical_topology_handler, primal_health_handler, public_record_network_handler,
-    sporeprint_handler, topology_layers_handler, viz_handler,
+    public_record_timeline_handler, sporeprint_handler, topology_layers_handler, viz_handler,
 };
 
 pub use static_content::{build_response, is_ipynb, is_notebook_mime};
