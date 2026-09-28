@@ -576,6 +576,7 @@ async fn cas_rpc_query_ribocipher(
         .map_err(|e| e.to_string())
 }
 
+#[cfg(unix)]
 async fn cas_send_uds(
     path: &str,
     payload: &[u8],
@@ -616,6 +617,15 @@ async fn cas_send_uds(
                 .unwrap_or("no result field");
             format!("RPC error: {err_msg}").into()
         })
+}
+
+#[cfg(not(unix))]
+async fn cas_send_uds(
+    path: &str,
+    _payload: &[u8],
+    _ribocipher: bool,
+) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> {
+    Err(format!("UDS transport not available on this platform (requested: {path}). Use TCP CAS endpoint.").into())
 }
 
 fn base64_decode_or_raw(data: &str) -> Vec<u8> {
