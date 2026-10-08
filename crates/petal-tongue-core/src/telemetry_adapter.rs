@@ -174,7 +174,10 @@ fn binding_id(b: &DataBinding) -> &str {
         | DataBinding::Soundscape { id, .. }
         | DataBinding::GenomeTrack { id, .. }
         | DataBinding::CircularMap { id, .. }
-        | DataBinding::ColorGrid { id, .. } => id,
+        | DataBinding::ColorGrid { id, .. }
+        | DataBinding::FacetedBar { id, .. }
+        | DataBinding::FacetedGauge { id, .. }
+        | DataBinding::Donut { id, .. } => id,
     }
 }
 

@@ -4,7 +4,7 @@
 //! Canonical definitions live in `petal-tongue-types` (WASM-portable).
 //! This module re-exports them for backward compatibility.
 
-pub use petal_tongue_types::{DataBinding, ThresholdRange};
+pub use petal_tongue_types::{DataBinding, FacetGaugeEntry, FacetGroup, Normalization, ThresholdRange};
 
 #[cfg(test)]
 mod tests {

@@ -10,7 +10,7 @@
 use petal_tongue_scene::compiler::GrammarCompiler;
 use petal_tongue_scene::data_binding::DataBindingCompiler;
 use petal_tongue_scene::modality::{ModalityCompiler, ModalityOutput, SvgCompiler};
-use petal_tongue_types::DataBinding;
+use petal_tongue_types::{DataBinding, FacetGaugeEntry, FacetGroup, Normalization};
 use serde_json::json;
 
 fn compile_to_svg(binding: &DataBinding, domain: Option<&str>) -> String {
@@ -79,6 +79,7 @@ fn breseq_evidence_bar() -> DataBinding {
         categories: vec!["RA".into(), "MC".into(), "JC".into(), "UN".into()],
         values: vec![42.0, 12.0, 23.0, 17.0],
         unit: "count".into(),
+        normalization: Default::default(),
     }
 }
 
@@ -117,6 +118,7 @@ fn plannotate_features_bar() -> DataBinding {
         categories: vec!["ori".into(), "AmpR".into(), "lacZ".into()],
         values: vec![600.0, 860.0, 510.0],
         unit: "bp".into(),
+        normalization: Default::default(),
     }
 }
 
@@ -214,6 +216,7 @@ fn rna_mi_heatmap() -> DataBinding {
             1.0, 0.8, 0.2, 0.1, 0.8, 1.0, 0.3, 0.15, 0.2, 0.3, 1.0, 0.7, 0.1, 0.15, 0.7, 1.0,
         ],
         unit: "bits".into(),
+        normalization: Default::default(),
     }
 }
 
@@ -357,4 +360,97 @@ fn svg_viewbox_is_present() {
             "{name}: SVG should have a viewBox attribute"
         );
     }
+}
+
+fn test_faceted_bar_binding(normalization: Normalization) -> DataBinding {
+    DataBinding::FacetedBar {
+        id: "test-faceted".into(),
+        label: "Test Faceted Bar".into(),
+        group_by: "organism".into(),
+        groups: vec![
+            FacetGroup {
+                key: "Meta".into(),
+                categories: vec!["IPs".into(), "UA".into(), "Blame%".into()],
+                values: vec![199.0, 12.0, 45.0],
+            },
+            FacetGroup {
+                key: "Self".into(),
+                categories: vec!["IPs".into(), "UA".into(), "Blame%".into()],
+                values: vec![1.0, 1.0, 0.0],
+            },
+        ],
+        unit: "value".into(),
+        columns: 2,
+        normalization,
+    }
+}
+
+#[test]
+fn faceted_bar_min_max_normalization_produces_svg() {
+    let binding = test_faceted_bar_binding(Normalization::MinMax);
+    let svg = compile_to_svg(&binding, Some("ecology"));
+    assert_valid_svg(&svg, "faceted_bar_min_max");
+    assert_contains_element(&svg, "<rect", "faceted_bar_min_max");
+}
+
+#[test]
+fn faceted_gauge_produces_svg() {
+    let binding = DataBinding::FacetedGauge {
+        id: "test-gauges".into(),
+        label: "Test Gauges".into(),
+        group_by: "entity".into(),
+        gauges: vec![
+            FacetGaugeEntry {
+                key: "Bot-A".into(),
+                value: 0.05,
+                min: 0.0,
+                max: 2.0,
+                normal_range: Some([0.3, 1.5]),
+                warning_range: Some([0.0, 0.1]),
+            },
+            FacetGaugeEntry {
+                key: "Human".into(),
+                value: 0.8,
+                min: 0.0,
+                max: 2.0,
+                normal_range: Some([0.3, 1.5]),
+                warning_range: None,
+            },
+        ],
+        unit: "CV".into(),
+        columns: 2,
+        normalization: Normalization::None,
+    };
+    let svg = compile_to_svg(&binding, Some("ecology"));
+    assert_valid_svg(&svg, "faceted_gauge");
+    assert_contains_element(&svg, "<path", "faceted_gauge");
+}
+
+#[test]
+fn donut_produces_svg() {
+    let binding = DataBinding::Donut {
+        id: "test-donut".into(),
+        label: "Test Donut".into(),
+        categories: vec!["Present".into(), "Absent".into()],
+        values: vec![150.0, 50.0],
+        unit: "IPs".into(),
+    };
+    let svg = compile_to_svg(&binding, Some("ecology"));
+    assert_valid_svg(&svg, "donut");
+    assert_contains_element(&svg, "<path", "donut");
+}
+
+#[test]
+fn faceted_bar_no_normalization_preserves_values() {
+    let binding = test_faceted_bar_binding(Normalization::None);
+    let (_expr, data) = DataBindingCompiler::compile(&binding, Some("ecology"));
+    let y_values: Vec<f64> = data
+        .iter()
+        .map(|row| row["y"].as_f64().expect("y should be f64"))
+        .collect();
+    assert_eq!(y_values, vec![199.0, 12.0, 45.0, 1.0, 1.0, 0.0]);
+
+    let svg = compile_to_svg(&binding, Some("ecology"));
+    assert_valid_svg(&svg, "faceted_bar_no_normalization");
+    assert_contains_element(&svg, "<rect", "faceted_bar_no_normalization");
 }

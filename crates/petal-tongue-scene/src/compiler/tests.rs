@@ -583,6 +583,7 @@ fn all_databinding_variants_produce_nonempty_scenes() {
             categories: vec!["A".into(), "B".into()],
             values: vec![10.0, 20.0],
             unit: "u".into(),
+            normalization: Default::default(),
         },
         DataBinding::Gauge {
             id: "g".into(),
@@ -601,6 +602,7 @@ fn all_databinding_variants_produce_nonempty_scenes() {
             y_labels: vec!["r1".into()],
             values: vec![1.0, 2.0],
             unit: "u".into(),
+            normalization: Default::default(),
         },
         DataBinding::Scatter {
             id: "sc".into(),

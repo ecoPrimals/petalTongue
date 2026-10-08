@@ -315,6 +315,7 @@ mod tests {
                 categories: vec!["WBC".to_owned(), "RBC".to_owned()],
                 values: vec![6.5, 4.2],
                 unit: "k/uL".to_owned(),
+                normalization: Default::default(),
             },
             DataBinding::Spectrum {
                 id: "hrv".to_owned(),

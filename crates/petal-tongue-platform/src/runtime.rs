@@ -179,7 +179,7 @@ impl EmbeddedRuntime {
             .map_err(|e| PlatformError::Serialization(format!("invalid DataBinding JSON: {e}")))?;
 
         let (expr, data) = DataBindingCompiler::compile(&binding, domain);
-        let scene_graph = self.compiler.compile(&expr, &data);
+        let scene_graph = self.compiler.compile_faceted(&expr, &data);
         let output = self.svg_compiler.compile(&scene_graph);
 
         match output {
@@ -211,7 +211,7 @@ impl EmbeddedRuntime {
             .map_err(|e| PlatformError::Serialization(format!("invalid DataBinding JSON: {e}")))?;
 
         let (expr, data) = DataBindingCompiler::compile(&binding, domain);
-        let scene_graph = self.compiler.compile(&expr, &data);
+        let scene_graph = self.compiler.compile_faceted(&expr, &data);
         let output = self.webgl_compiler.compile(&scene_graph);
 
         match output {
@@ -317,6 +317,7 @@ impl EmbeddedRuntime {
                         "pt.render_svg",
                         "pt.render_binding",
                         "pt.render_webgl",
+                        "pt.relay_selectivity",
                         "pt.state",
                         "pt.scenarios",
                         "pt.metrics",
@@ -407,6 +408,19 @@ impl EmbeddedRuntime {
                     "id": request.get("id"),
                     "result": { "scenarios": list }
                 })
+            }
+            "pt.relay_selectivity" => {
+                match crate::relay_selectivity::compute_selectivity() {
+                    Ok(sel) => {
+                        let result = serde_json::to_value(&sel).unwrap_or_default();
+                        serde_json::json!({
+                            "jsonrpc": "2.0",
+                            "id": request.get("id"),
+                            "result": result
+                        })
+                    }
+                    Err(e) => Self::error_response(&request, -32000, &e),
+                }
             }
             _ => Self::error_response(&request, -32601, &format!("unknown method: {method}")),
         };

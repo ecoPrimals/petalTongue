@@ -11,7 +11,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::scenario_builder::{ScenarioBuilder, ScenarioMetadata, VisualizationScene};
-use crate::{DataBinding, ThresholdRange};
+use crate::{DataBinding, Normalization, ThresholdRange};
 
 /// Validation status of a shader at a specific point in the lineage.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -130,6 +130,7 @@ impl ShaderLineage {
                 categories: origins.clone(),
                 values,
                 unit: "ratio".to_owned(),
+                normalization: Normalization::None,
             });
         }
 
@@ -175,6 +176,7 @@ impl ShaderLineage {
                 y_labels: origins,
                 values,
                 unit: "delegations".to_owned(),
+                normalization: Normalization::None,
             });
         }
 

@@ -151,7 +151,7 @@ pub use graph_builder::{
 pub use graph_validation::{GraphValidator, ValidationIssue, ValidationResult};
 
 /// Data binding and threshold types (universal visualization)
-pub use data_channel::{DataBinding, ThresholdRange};
+pub use data_channel::{DataBinding, FacetGaugeEntry, FacetGroup, Normalization, ThresholdRange};
 
 /// Scenario builder trait (springs and primals produce visualization data)
 pub use scenario_builder::{ScenarioBuilder, ScenarioMetadata, VisualizationScene};

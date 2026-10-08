@@ -66,6 +66,9 @@ pub enum DataBinding {
         values: Vec<f64>,
         /// Unit of measurement for the values.
         unit: String,
+        /// Optional normalization strategy for the values.
+        #[serde(default)]
+        normalization: Normalization,
     },
     /// Gauge or meter display for a single value within reference bounds.
     #[serde(rename = "gauge")]
@@ -102,6 +105,9 @@ pub enum DataBinding {
         values: Vec<f64>,
         /// Unit of measurement for cell values.
         unit: String,
+        /// Optional per-column normalization (each column scaled independently).
+        #[serde(default)]
+        normalization: Normalization,
     },
     /// 3D scatter plot (e.g., `PCoA` ordination, phase space, latent embeddings).
     #[serde(rename = "scatter3d")]
@@ -276,6 +282,151 @@ pub enum DataBinding {
         #[serde(default = "default_reveal")]
         reveal_fraction: f64,
     },
+    /// Faceted bar chart — small multiples of bar charts, one per group.
+    ///
+    /// Each group becomes a separate panel rendered through the faceting
+    /// system (`compile_faceted` with `FacetLayout::Wrap`). Used for
+    /// per-organism epitope profiles, per-entity breakdowns, etc.
+    #[serde(rename = "faceted_bar")]
+    FacetedBar {
+        /// Unique identifier for this channel within the visualization.
+        id: String,
+        /// Human-readable display name for the overall visualization.
+        label: String,
+        /// Field name used to partition data into facets.
+        group_by: String,
+        /// Groups: each has a key (facet label) + categories + values.
+        groups: Vec<FacetGroup>,
+        /// Unit of measurement for the values.
+        unit: String,
+        /// Number of columns in the facet wrap layout (default: 3).
+        #[serde(default = "default_facet_columns")]
+        columns: usize,
+        /// Normalization applied **per-category across groups** before rendering.
+        /// E.g., `MinMax` scales each column (IPs, UA Pool, Blame%) independently to \[0,1\].
+        #[serde(default)]
+        normalization: Normalization,
+    },
+    /// Faceted gauge — small multiples of gauge displays, one per group.
+    ///
+    /// Each entry becomes a separate gauge panel. Used for per-entity
+    /// metric comparison (e.g., timing CV, capture ratio per court).
+    #[serde(rename = "faceted_gauge")]
+    FacetedGauge {
+        /// Unique identifier for this channel within the visualization.
+        id: String,
+        /// Human-readable display name for the overall visualization.
+        label: String,
+        /// Field name used to partition data into facets.
+        group_by: String,
+        /// Gauge entries: each has a key (facet label) + value + range.
+        gauges: Vec<FacetGaugeEntry>,
+        /// Unit of measurement for the gauge values.
+        unit: String,
+        /// Number of columns in the facet wrap layout (default: 3).
+        #[serde(default = "default_facet_columns")]
+        columns: usize,
+        /// Normalization applied to gauge values before rendering.
+        #[serde(default)]
+        normalization: Normalization,
+    },
+    /// Donut/pie chart — proportional arc segments in polar coordinates.
+    ///
+    /// Compiles to `GeometryType::Arc` + `CoordinateSystem::Polar`.
+    /// Used for traffic composition, entity type distribution, etc.
+    #[serde(rename = "donut")]
+    Donut {
+        /// Unique identifier for this channel within the visualization.
+        id: String,
+        /// Human-readable display name.
+        label: String,
+        /// Category names for each arc segment.
+        categories: Vec<String>,
+        /// Proportional values for each segment (absolute, not percentages).
+        values: Vec<f64>,
+        /// Unit of measurement for the values.
+        unit: String,
+    },
+}
+
+/// Default number of columns for faceted layouts.
+const fn default_facet_columns() -> usize {
+    3
+}
+
+/// A single group within a `FacetedBar` visualization.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FacetGroup {
+    /// Facet label (e.g., organism name, entity name).
+    pub key: String,
+    /// Category names for the bars within this group.
+    pub categories: Vec<String>,
+    /// Numeric values for each category.
+    pub values: Vec<f64>,
+}
+
+/// A single gauge entry within a `FacetedGauge` visualization.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FacetGaugeEntry {
+    /// Facet label (e.g., entity name, court name).
+    pub key: String,
+    /// Current value to display on the gauge.
+    pub value: f64,
+    /// Minimum scale value.
+    pub min: f64,
+    /// Maximum scale value.
+    pub max: f64,
+    /// Reference range [low, high] considered normal.
+    #[serde(default)]
+    pub normal_range: Option<[f64; 2]>,
+    /// Range [low, high] that triggers a warning.
+    #[serde(default)]
+    pub warning_range: Option<[f64; 2]>,
+}
+
+/// Value normalization strategy applied before rendering.
+///
+/// When multiple metrics share a single visualization (e.g., IPs=199,
+/// UA Pool=12, Blame%=45 in a faceted bar), raw values crush the smaller
+/// metrics against the baseline. Normalization rescales values so different
+/// metrics become visually comparable.
+///
+/// The normalization is applied **per-category across groups** for faceted
+/// types, and **across all values** for flat types.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum Normalization {
+    /// No normalization — raw values (default).
+    #[default]
+    None,
+    /// Min-max scaling to \[0, 1\]: `(x - min) / (max - min)`.
+    /// Each category column is independently scaled.
+    MinMax,
+    /// Symmetric scaling to \[-1, 1\]: `2 * (x - min) / (max - min) - 1`.
+    /// Useful when zero is meaningful (e.g., blame ratio centered around fleet average).
+    Symmetric,
+    /// Z-score standardization: `(x - mean) / std`.
+    /// Output is unbounded — values are in standard deviations from mean.
+    ZScore,
+    /// Log transform: `ln(1 + |x|) * sign(x)`.
+    /// Compresses heavy-tailed distributions (request counts, IP counts).
+    Log1p,
+    /// Ordinal rank normalized to \[0, 1\].
+    /// Each value is replaced by its percentile rank — immune to outliers.
+    Rank,
+    /// Leaky ReLU: `max(α·x, x)` where `α` is a small leak coefficient.
+    /// Passes positive values through, attenuates negatives by `alpha`.
+    /// Default alpha = 0.01 if not specified.
+    LeakyRelu {
+        /// Leak coefficient for negative values (default: 0.01).
+        #[serde(default = "default_leaky_alpha")]
+        alpha: f64,
+    },
+}
+
+/// Default leaky ReLU alpha.
+const fn default_leaky_alpha() -> f64 {
+    0.01
 }
 
 /// Threshold range with status (normal/warning/critical for any metric)

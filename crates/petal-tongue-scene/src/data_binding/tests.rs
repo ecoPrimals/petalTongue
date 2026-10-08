@@ -53,6 +53,7 @@ fn bar_compiles_with_categorical_scale() {
         categories: vec!["A".to_string(), "B".to_string(), "C".to_string()],
         values: vec![0.3, 0.5, 0.2],
         unit: "rel".to_string(),
+        normalization: Default::default(),
     };
     let (expr, data) = DataBindingCompiler::compile(&binding, None);
     assert_eq!(expr.geometry, GeometryType::Bar);
@@ -111,6 +112,7 @@ fn heatmap_compiles_to_tile_row_major() {
         y_labels: vec!["X".to_string(), "Y".to_string()],
         values: vec![1.0, 2.0, 3.0, 4.0],
         unit: String::new(),
+        normalization: Default::default(),
     };
     let (expr, data) = DataBindingCompiler::compile(&binding, None);
     assert_eq!(expr.geometry, GeometryType::Tile);
@@ -216,6 +218,7 @@ fn compile_with_thresholds_injects_status() {
         y_labels: vec!["X".to_string()],
         values: vec![0.1, 0.4],
         unit: String::new(),
+        normalization: Default::default(),
     };
     let thresholds = vec![
         petal_tongue_types::ThresholdRange {
@@ -246,6 +249,7 @@ fn compile_with_thresholds_no_thresholds_passthrough() {
         y_labels: vec!["X".to_string()],
         values: vec![1.0],
         unit: String::new(),
+        normalization: Default::default(),
     };
     let (_expr, data) = DataBindingCompiler::compile_with_thresholds(&binding, None, &[]);
     assert!(data[0].get("status").is_none());
@@ -259,6 +263,7 @@ fn compile_with_thresholds_non_heatmap_unchanged() {
         categories: vec!["A".to_string()],
         values: vec![1.0],
         unit: String::new(),
+        normalization: Default::default(),
     };
     let thresholds = vec![petal_tongue_types::ThresholdRange {
         label: "T".to_string(),
@@ -363,6 +368,7 @@ fn heatmap_sparse_values_uses_zero_fallback() {
         y_labels: vec!["X".to_string(), "Y".to_string()],
         values: vec![1.0, 2.0],
         unit: String::new(),
+        normalization: Default::default(),
     };
     let (_expr, data) = DataBindingCompiler::compile(&binding, None);
     assert_eq!(data.len(), 6);

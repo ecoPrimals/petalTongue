@@ -5,13 +5,17 @@
 //! pipeline for actual rendering.
 
 pub mod describe;
+mod normalize;
 mod utils;
 
-use petal_tongue_types::{DataBinding, ThresholdRange};
+use petal_tongue_types::{DataBinding, Normalization, ThresholdRange};
 use serde_json::Value;
 
+pub use normalize::apply_normalization;
+
 use crate::grammar::{
-    CoordinateSystem, GeometryType, GrammarExpr, ScaleType, VariableBinding, VariableRole,
+    CoordinateSystem, FacetLayout, GeometryType, GrammarExpr, ScaleType, VariableBinding,
+    VariableRole,
 };
 
 /// Compiles `DataBinding` payloads into `GrammarExpr` and data rows for `GrammarCompiler`.
@@ -81,6 +85,7 @@ impl DataBindingCompiler {
                 label,
                 categories,
                 values,
+                normalization,
                 ..
             } => {
                 let expr = GrammarExpr::new(id.as_str(), GeometryType::Bar)
@@ -94,11 +99,16 @@ impl DataBindingCompiler {
                 } else {
                     expr
                 };
+                let mut norm_vals = values.clone();
+                normalize::apply_normalization(&mut norm_vals, normalization);
                 let data: Vec<Value> = categories
                     .iter()
                     .enumerate()
+                    .zip(norm_vals.iter())
                     .zip(values.iter())
-                    .map(|((i, cat), v)| serde_json::json!({"x": i, "y": v, "label": cat, "data_id": cat}))
+                    .map(|(((i, cat), nv), orig)| {
+                        serde_json::json!({"x": i, "y": nv, "label": cat, "original_value": orig, "data_id": cat})
+                    })
                     .collect();
                 (expr, data)
             }
@@ -161,6 +171,7 @@ impl DataBindingCompiler {
                 x_labels,
                 y_labels,
                 values,
+                normalization,
                 ..
             } => {
                 let expr = GrammarExpr::new(id.as_str(), GeometryType::Tile)
@@ -175,16 +186,21 @@ impl DataBindingCompiler {
                     expr
                 };
                 let cols = x_labels.len();
-                let data: Vec<Value> = y_labels
-                    .iter()
-                    .enumerate()
-                    .flat_map(|(row, y_label)| {
-                        x_labels.iter().enumerate().map(move |(col, x_label)| {
-                            let val = values.get(row * cols + col).copied().unwrap_or(0.0);
-                            serde_json::json!({"x": col, "y": row, "value": val, "x_label": x_label, "y_label": y_label, "data_id": format!("{x_label}:{y_label}")})
-                        })
-                    })
-                    .collect();
+                let mut norm_vals = values.clone();
+                normalize::normalize_heatmap_columns(&mut norm_vals, cols, normalization);
+                let mut data: Vec<Value> = Vec::with_capacity(y_labels.len() * cols);
+                for (row, y_label) in y_labels.iter().enumerate() {
+                    for (col, x_label) in x_labels.iter().enumerate() {
+                        let val = norm_vals.get(row * cols + col).copied().unwrap_or(0.0);
+                        let orig = values.get(row * cols + col).copied().unwrap_or(0.0);
+                        data.push(serde_json::json!({
+                            "x": col, "y": row, "value": val,
+                            "original_value": orig,
+                            "x_label": x_label, "y_label": y_label,
+                            "data_id": format!("{x_label}:{y_label}")
+                        }));
+                    }
+                }
                 (expr, data)
             }
             DataBinding::Scatter {
@@ -457,6 +473,132 @@ impl DataBindingCompiler {
                                 "r": cr, "g": cg, "b": cb, "a": ca,
                                 "data_id": format!("{col}:{row}"),
                             })
+                        })
+                    })
+                    .collect();
+                (expr, data)
+            }
+            DataBinding::FacetedBar {
+                id,
+                label,
+                group_by,
+                groups,
+                unit: _,
+                columns,
+                normalization,
+            } => {
+                let expr = GrammarExpr::new(id.as_str(), GeometryType::Bar)
+                    .with_x("x")
+                    .with_y("y")
+                    .with_title(label.as_str())
+                    .with_scale("x", ScaleType::Categorical)
+                    .with_scale("y", ScaleType::Linear)
+                    .with_facet(group_by.as_str(), FacetLayout::Wrap { columns: *columns });
+                let expr = if let Some(d) = domain {
+                    expr.with_domain(d)
+                } else {
+                    expr
+                };
+                let norm_values = normalize::normalize_faceted_columns(groups, normalization);
+                let data: Vec<Value> = groups
+                    .iter()
+                    .zip(norm_values.iter())
+                    .flat_map(|(g, nv)| {
+                        g.categories
+                            .iter()
+                            .enumerate()
+                            .zip(nv.iter())
+                            .zip(g.values.iter())
+                            .map(move |(((i, cat), norm_v), orig_v)| {
+                                serde_json::json!({
+                                    "x": i, "y": norm_v, "label": cat,
+                                    "original_value": orig_v,
+                                    group_by.as_str(): g.key,
+                                    "data_id": format!("{}:{}", g.key, cat),
+                                })
+                            })
+                    })
+                    .collect();
+                (expr, data)
+            }
+            DataBinding::FacetedGauge {
+                id,
+                label,
+                group_by,
+                gauges,
+                unit,
+                columns,
+                normalization,
+            } => {
+                let expr = GrammarExpr::new(id.as_str(), GeometryType::Arc)
+                    .with_x("x")
+                    .with_y("y")
+                    .with_title(label.as_str())
+                    .with_facet(group_by.as_str(), FacetLayout::Wrap { columns: *columns });
+                let expr = if let Some(d) = domain {
+                    expr.with_domain(d)
+                } else {
+                    expr
+                };
+                let mut gauge_vals: Vec<f64> = gauges.iter().map(|g| g.value).collect();
+                if *normalization != Normalization::None {
+                    normalize::apply_normalization(&mut gauge_vals, normalization);
+                }
+                let data: Vec<Value> = gauges
+                    .iter()
+                    .zip(gauge_vals.iter())
+                    .map(|(g, norm_v)| {
+                        let range = g.max - g.min;
+                        let display_y = if *normalization != Normalization::None {
+                            *norm_v
+                        } else if range.abs() > f64::EPSILON {
+                            (g.value - g.min) / range
+                        } else {
+                            0.5
+                        };
+                        serde_json::json!({
+                            "x": 0, "y": display_y,
+                            "label": format!("{}: {:.1} {}", g.key, g.value, unit),
+                            "original_value": g.value,
+                            group_by.as_str(): g.key,
+                            "data_id": &g.key,
+                        })
+                    })
+                    .collect();
+                (expr, data)
+            }
+            DataBinding::Donut {
+                id,
+                label,
+                categories,
+                values,
+                ..
+            } => {
+                let total: f64 = values.iter().sum();
+                let mut expr = GrammarExpr::new(id.as_str(), GeometryType::Arc)
+                    .with_x("x")
+                    .with_y("y")
+                    .with_title(label.as_str())
+                    .with_scale("x", ScaleType::Linear)
+                    .with_scale("y", ScaleType::Linear);
+                expr.coordinate = CoordinateSystem::Polar;
+                let expr = if let Some(d) = domain {
+                    expr.with_domain(d)
+                } else {
+                    expr
+                };
+                let mut angle = 0.0_f64;
+                let data: Vec<Value> = categories
+                    .iter()
+                    .zip(values.iter())
+                    .map(|(cat, val)| {
+                        let fraction = if total > 0.0 { val / total } else { 0.0 };
+                        let start = angle;
+                        angle += fraction * 360.0;
+                        serde_json::json!({
+                            "x": start, "y": angle,
+                            "value": val, "fraction": fraction,
+                            "label": cat, "data_id": cat,
                         })
                     })
                     .collect();

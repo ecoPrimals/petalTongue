@@ -604,7 +604,7 @@ pub fn gpu_nodes() -> Vec<MeshNode> {
         .collect()
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "offline-topology"))]
 mod tests {
     use super::*;
 

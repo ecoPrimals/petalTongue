@@ -10,7 +10,7 @@ use std::sync::{Arc, RwLock};
 use std::thread;
 
 use petal_tongue_core::test_fixtures::primals;
-use petal_tongue_core::{DataBinding, GraphEngine, PrimalHealthStatus};
+use petal_tongue_core::{DataBinding, GraphEngine, Normalization, PrimalHealthStatus};
 use petal_tongue_graph::{AudioSonificationRenderer, draw_channel};
 
 fn run_draw_channel(binding: &DataBinding, domain: Option<&str>) {
@@ -25,9 +25,9 @@ fn chaos_binding_variants() -> Vec<DataBinding> {
     vec![
         DataBinding::TimeSeries { id: "c-ts".into(), label: "TS".into(), x_label: "x".into(), y_label: "y".into(), unit: "u".into(), x_values: vec![], y_values: vec![] },
         DataBinding::Distribution { id: "c-d".into(), label: "D".into(), unit: "u".into(), values: vec![], mean: 0.0, std: 1.0, comparison_value: 0.0 },
-        DataBinding::Bar { id: "c-b".into(), label: "B".into(), categories: vec![], values: vec![], unit: "u".into() },
+        DataBinding::Bar { id: "c-b".into(), label: "B".into(), categories: vec![], values: vec![], unit: "u".into(), normalization: Normalization::None },
         DataBinding::Gauge { id: "c-g".into(), label: "G".into(), value: 0.0, min: 0.0, max: 1.0, unit: "u".into(), normal_range: [0.0, 1.0], warning_range: [0.0, 1.0] },
-        DataBinding::Heatmap { id: "c-h".into(), label: "H".into(), x_labels: vec![], y_labels: vec![], values: vec![], unit: "u".into() },
+        DataBinding::Heatmap { id: "c-h".into(), label: "H".into(), x_labels: vec![], y_labels: vec![], values: vec![], unit: "u".into(), normalization: Normalization::None },
         DataBinding::Scatter { id: "c-s2".into(), label: "S2".into(), x: vec![], y: vec![], point_labels: vec![], x_label: String::new(), y_label: String::new(), unit: "u".into() },
         DataBinding::Scatter3D { id: "c-s3".into(), label: "S3".into(), x: vec![], y: vec![], z: vec![], point_labels: vec![], x_label: String::new(), y_label: String::new(), z_label: String::new(), unit: "u".into() },
         DataBinding::FieldMap { id: "c-f".into(), label: "F".into(), grid_x: vec![], grid_y: vec![], values: vec![], unit: "u".into() },
@@ -95,7 +95,7 @@ fn chaos_nonfinite_values_in_charts() {
     let cases = [
         DataBinding::Distribution { id: "nan-d".into(), label: "d".into(), unit: "u".into(), values: vec![1.0, f64::NAN, 3.0], mean: 2.0, std: 1.0, comparison_value: 2.5 },
         DataBinding::Gauge { id: "nan-g".into(), label: "g".into(), value: f64::NAN, min: 0.0, max: 100.0, unit: "u".into(), normal_range: [20.0, 80.0], warning_range: [10.0, 90.0] },
-        DataBinding::Heatmap { id: "nan-h".into(), label: "h".into(), x_labels: vec!["a".into()], y_labels: vec!["b".into()], values: vec![f64::NAN], unit: "u".into() },
+        DataBinding::Heatmap { id: "nan-h".into(), label: "h".into(), x_labels: vec!["a".into()], y_labels: vec!["b".into()], values: vec![f64::NAN], unit: "u".into(), normalization: Normalization::None },
         DataBinding::Gauge { id: "inf-g".into(), label: "gi".into(), value: f64::INFINITY, min: 0.0, max: 100.0, unit: "u".into(), normal_range: [20.0, 80.0], warning_range: [10.0, 90.0] },
     ];
     for b in cases {

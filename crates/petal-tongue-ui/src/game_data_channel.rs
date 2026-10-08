@@ -17,7 +17,7 @@
 //! | AccessibilityReport     | FieldMap            | WCAG metrics per component                 |
 //! | UiAnalysis              | FieldMap            | Tufte metrics per panel                    |
 
-use petal_tongue_core::DataBinding;
+use petal_tongue_core::{DataBinding, Normalization};
 use serde_json::Value;
 
 /// Known ludoSpring game data channel types.
@@ -141,6 +141,7 @@ fn map_flow_timeline(v: &Value) -> Option<DataBinding> {
         categories,
         values,
         unit: extract_str_or(v, "unit", "seconds"),
+        normalization: Normalization::None,
     })
 }
 
@@ -158,6 +159,7 @@ fn map_interaction_cost_map(v: &Value) -> Option<DataBinding> {
         y_labels,
         values,
         unit: extract_str_or(v, "unit", "bits"),
+        normalization: Normalization::None,
     })
 }
 

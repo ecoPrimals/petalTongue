@@ -165,6 +165,43 @@ pub fn describe_binding(binding: &DataBinding) -> String {
                 )
             }
         }
+        DataBinding::FacetedBar {
+            label,
+            group_by,
+            groups,
+            unit,
+            columns,
+            ..
+        } => {
+            format!(
+                "Faceted bar '{label}': {n} groups faceted by '{group_by}' in {columns}-column layout ({unit}).",
+                n = groups.len(),
+            )
+        }
+        DataBinding::FacetedGauge {
+            label,
+            group_by,
+            gauges,
+            unit,
+            columns,
+            ..
+        } => {
+            format!(
+                "Faceted gauge '{label}': {n} gauges faceted by '{group_by}' in {columns}-column layout ({unit}).",
+                n = gauges.len(),
+            )
+        }
+        DataBinding::Donut {
+            label,
+            categories,
+            unit,
+            ..
+        } => {
+            format!(
+                "Donut chart '{label}': {n} segments ({unit}).",
+                n = categories.len(),
+            )
+        }
     }
 }
 

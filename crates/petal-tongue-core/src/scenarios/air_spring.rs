@@ -5,7 +5,7 @@
 //! biodiversity) via JSON-RPC but has no petalTongue scenario builders.
 //! These builders generate representative visualization data for each domain.
 
-use crate::DataBinding;
+use crate::{DataBinding, Normalization};
 use crate::scenario_builder::{ScenarioBuilder, ScenarioMetadata, VisualizationScene};
 
 /// ET0 (reference evapotranspiration) time series scenario.
@@ -88,6 +88,7 @@ fn build_monthly_et0() -> VisualizationScene {
             45.0, 55.0, 80.0, 105.0, 135.0, 155.0, 165.0, 150.0, 120.0, 90.0, 60.0, 40.0,
         ],
         unit: "mm/month".to_owned(),
+        normalization: Normalization::None,
     })
 }
 
@@ -218,6 +219,7 @@ fn build_kc_stages() -> VisualizationScene {
         ],
         values: vec![0.3, 0.7, 1.15, 0.35],
         unit: "Kc".to_owned(),
+        normalization: Normalization::None,
     })
 }
 

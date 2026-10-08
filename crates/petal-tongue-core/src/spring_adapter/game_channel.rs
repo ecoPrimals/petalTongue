@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::data_channel::DataBinding;
+use crate::data_channel::{DataBinding, Normalization};
 
 use super::SpringAdapterError;
 use super::helpers::{extract_f64_array, extract_string, extract_string_array};
@@ -99,6 +99,7 @@ fn game_channel_to_binding(
                 categories,
                 values,
                 unit,
+                normalization: Normalization::None,
             })
         }
         GameChannelType::UiAnalysis => {
@@ -112,6 +113,7 @@ fn game_channel_to_binding(
                 categories,
                 values,
                 unit,
+                normalization: Normalization::None,
             })
         }
         GameChannelType::InteractionCostMap | GameChannelType::AccessibilityReport => {
@@ -125,6 +127,7 @@ fn game_channel_to_binding(
                 y_labels,
                 values,
                 unit,
+                normalization: Normalization::None,
             })
         }
         GameChannelType::GenerationPreview => {

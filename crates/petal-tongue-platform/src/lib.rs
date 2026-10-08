@@ -57,6 +57,7 @@
 
 pub mod config;
 pub mod lifecycle;
+pub(crate) mod relay_selectivity;
 pub mod runtime;
 pub mod ws_bridge;
 

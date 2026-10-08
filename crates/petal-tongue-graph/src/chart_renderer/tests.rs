@@ -157,7 +157,10 @@ fn binding_label(binding: &DataBinding) -> &str {
         | DataBinding::Soundscape { label, .. }
         | DataBinding::GenomeTrack { label, .. }
         | DataBinding::CircularMap { label, .. }
-        | DataBinding::ColorGrid { label, .. } => label,
+        | DataBinding::ColorGrid { label, .. }
+        | DataBinding::FacetedBar { label, .. }
+        | DataBinding::FacetedGauge { label, .. }
+        | DataBinding::Donut { label, .. } => label,
     }
 }
 
@@ -199,6 +202,7 @@ fn test_draw_channel_dispatch_bar() {
         categories: vec!["A".to_string()],
         values: vec![1.0],
         unit: "u".to_string(),
+        normalization: Default::default(),
     };
     assert_eq!(binding_label(&b), "Bar");
     run_draw_channel(&b, None);
@@ -229,6 +233,7 @@ fn test_draw_channel_dispatch_heatmap() {
         y_labels: vec!["B".to_string()],
         values: vec![1.0],
         unit: "u".to_string(),
+        normalization: Default::default(),
     };
     assert_eq!(binding_label(&b), "Heatmap");
     run_draw_channel(&b, Some("health"));
@@ -333,6 +338,7 @@ fn all_binding_variants() -> Vec<(&'static str, DataBinding)> {
                 categories: vec![],
                 values: vec![],
                 unit: String::new(),
+                normalization: Default::default(),
             },
         ),
         (
@@ -357,6 +363,7 @@ fn all_binding_variants() -> Vec<(&'static str, DataBinding)> {
                 y_labels: vec![],
                 values: vec![],
                 unit: String::new(),
+                normalization: Default::default(),
             },
         ),
         (
@@ -405,6 +412,40 @@ fn all_binding_variants() -> Vec<(&'static str, DataBinding)> {
                 label: "Sp".to_string(),
                 frequencies: vec![],
                 amplitudes: vec![],
+                unit: String::new(),
+            },
+        ),
+        (
+            "FacetedBar",
+            DataBinding::FacetedBar {
+                id: String::new(),
+                label: "FacetedBar".to_string(),
+                group_by: String::new(),
+                groups: vec![],
+                unit: String::new(),
+                columns: 3,
+                normalization: Default::default(),
+            },
+        ),
+        (
+            "FacetedGauge",
+            DataBinding::FacetedGauge {
+                id: String::new(),
+                label: "FacetedGauge".to_string(),
+                group_by: String::new(),
+                gauges: vec![],
+                unit: String::new(),
+                columns: 3,
+                normalization: Default::default(),
+            },
+        ),
+        (
+            "Donut",
+            DataBinding::Donut {
+                id: String::new(),
+                label: "Donut".to_string(),
+                categories: vec![],
+                values: vec![],
                 unit: String::new(),
             },
         ),

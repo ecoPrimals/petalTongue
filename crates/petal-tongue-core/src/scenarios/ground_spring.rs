@@ -6,7 +6,7 @@
 //! no petalTongue scenario builders. These fill the visualization gap.
 
 use crate::scenario_builder::{ScenarioBuilder, ScenarioMetadata, VisualizationScene};
-use crate::{DataBinding, ThresholdRange};
+use crate::{DataBinding, Normalization, ThresholdRange};
 
 /// Seismic wave field map scenario.
 pub struct GroundSpringSeismicScenario;
@@ -268,6 +268,7 @@ fn build_anderson_heatmap() -> VisualizationScene {
         y_labels,
         values,
         unit: "a.u.".to_owned(),
+        normalization: Normalization::None,
     })
 }
 

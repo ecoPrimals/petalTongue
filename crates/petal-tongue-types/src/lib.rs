@@ -12,4 +12,4 @@
 
 mod data_channel;
 
-pub use data_channel::{DataBinding, ThresholdRange};
+pub use data_channel::{DataBinding, FacetGaugeEntry, FacetGroup, Normalization, ThresholdRange};

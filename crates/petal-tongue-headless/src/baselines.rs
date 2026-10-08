@@ -65,7 +65,7 @@ pub fn render_baselines(args: &Args) -> Result<(), HeadlessError> {
     reason = "headless baseline catalog: many representative DataBinding fixtures in one table"
 )]
 fn baseline_bindings() -> Vec<(&'static str, petal_tongue_core::DataBinding)> {
-    use petal_tongue_core::DataBinding;
+    use petal_tongue_core::{DataBinding, Normalization};
     use serde_json::json;
 
     vec![
@@ -93,6 +93,7 @@ fn baseline_bindings() -> Vec<(&'static str, petal_tongue_core::DataBinding)> {
                 categories: vec!["RA".into(), "MC".into(), "JC".into(), "UN".into()],
                 values: vec![42.0, 12.0, 23.0, 17.0],
                 unit: "count".into(),
+                normalization: Normalization::None,
             },
         ),
         (
@@ -150,6 +151,7 @@ fn baseline_bindings() -> Vec<(&'static str, petal_tongue_core::DataBinding)> {
                 categories: vec!["ori".into(), "AmpR".into(), "lacZ".into()],
                 values: vec![600.0, 860.0, 510.0],
                 unit: "bp".into(),
+                normalization: Normalization::None,
             },
         ),
         (
@@ -209,6 +211,7 @@ fn baseline_bindings() -> Vec<(&'static str, petal_tongue_core::DataBinding)> {
                 ],
                 values: vec![-8.2, -3.1, -2.8, -2.3],
                 unit: "kcal/mol".into(),
+                normalization: Normalization::None,
             },
         ),
         (
@@ -236,6 +239,7 @@ fn baseline_bindings() -> Vec<(&'static str, petal_tongue_core::DataBinding)> {
                 y_labels: vec!["strong".into(), "medium".into(), "weak".into()],
                 values: vec![0.9, 0.3, 0.5, 0.6, 0.7, 0.4, 0.2, 0.8, 0.1],
                 unit: "burden".into(),
+                normalization: Normalization::None,
             },
         ),
         (
@@ -270,6 +274,7 @@ fn baseline_bindings() -> Vec<(&'static str, petal_tongue_core::DataBinding)> {
                 ],
                 values: vec![2.3e-6, 8.7e-7, 1.1e-9],
                 unit: "per bp per gen".into(),
+                normalization: Normalization::None,
             },
         ),
         (
@@ -327,6 +332,7 @@ fn baseline_bindings() -> Vec<(&'static str, petal_tongue_core::DataBinding)> {
                     0.1, 0.15, 0.7, 1.0, 0.6, 0.05, 0.1, 0.4, 0.6, 1.0,
                 ],
                 unit: "bits".into(),
+                normalization: Normalization::None,
             },
         ),
         (

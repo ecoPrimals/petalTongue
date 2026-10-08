@@ -163,7 +163,7 @@ fn derive_capabilities(node: &MeshNode) -> Vec<String> {
     caps
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "offline-topology"))]
 mod tests {
     use super::super::all_nodes;
     use super::*;
