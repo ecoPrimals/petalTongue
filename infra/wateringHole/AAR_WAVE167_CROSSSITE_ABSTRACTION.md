@@ -112,6 +112,8 @@ JS should be distributed — single hosted copy, cross-origin inclusion.
 
 **Effort**: Small. Pure JS, no Rust changes.
 **Risk**: Low. Cross-origin `<script>` already proven by hud-widget.js.
+**Status**: ✅ COMPLETE — canonical copy at hud.primals.eco/js/pt-bridge-core.js,
+Detroit and Signal load cross-origin, CORS headers added to Caddy, Caddy reloaded.
 
 ### Wave 169: Config-Driven Bridge
 
@@ -135,6 +137,11 @@ JS should be distributed — single hosted copy, cross-origin inclusion.
 **Effort**: Medium. Need to reconcile three data-fetching strategies.
 **Risk**: Medium. Detroit uses `window.DETROIT_NETWORK` (in-page data),
 HUD/Signal fetch from endpoints. Abstraction must handle both.
+**Status**: ✅ COMPLETE — `petalsite-observatory.js` (327 lines) replaces
+hud-pt.js (306 lines) and signal-pt.js (~300 lines). Config-driven:
+`PetalSiteObservatory({dataUrl, topoUrl, wsUrl, domain, cardClass})`.
+Detroit left as-is (different data domain — network graph, not observatory).
+Hosted at hud.primals.eco/js/petalsite-observatory.js with CORS.
 
 ### Wave 170: petalTongue Serves Observatory Data
 
