@@ -318,6 +318,27 @@
         </section>
 
         <section>
+            <h2>Braid Titration — Schema Evolution <span id="titration-status" style="margin-left:0.5rem"></span></h2>
+            <div class="grid-2">
+                <div class="card">
+                    <h3>Titration Counters</h3>
+                    <div class="stat-row" id="titration-stats">
+                        <div class="stat"><span class="stat-val" id="stat-schema-ver">-</span><span class="stat-label">Schema Version</span></div>
+                        <div class="stat"><span class="stat-val" id="stat-legacy-reads">-</span><span class="stat-label">Legacy Reads</span></div>
+                        <div class="stat"><span class="stat-val" id="stat-repairs">-</span><span class="stat-label">Repairs Applied</span></div>
+                        <div class="stat"><span class="stat-val" id="stat-v0-braids">-</span><span class="stat-label">v0 Braids Seen</span></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Evolution Progress</h3>
+                    <div id="titration-progress" style="font-size:0.8rem">
+                        <div class="empty-state"><p>Loading titration data&hellip;</p></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
             <h2>Data Braids (CAS Surface)</h2>
             <div class="grid-2">
                 <div class="card">
@@ -465,6 +486,14 @@
                 .then(r => r.json())
                 .then(renderPrimalHealth)
                 .catch(() => {});
+
+            fetch('/api/titration')
+                .then(r => r.json())
+                .then(renderTitration)
+                .catch(() => {
+                    document.getElementById('titration-progress').innerHTML =
+                        '<p style="color:var(--fg-dim)">Titration API unreachable</p>';
+                });
         }
 
         function enrollmentPill(e) {
@@ -785,6 +814,55 @@
                         '<td style="font-size:0.75rem;color:var(--fg-dim)">' + esc(p.error || '-') + '</td>' +
                     '</tr>';
                 }).join('');
+            }
+        }
+
+        function renderTitration(data) {
+            var statusEl = document.getElementById('titration-status');
+            if (!data.ok) {
+                statusEl.innerHTML = '<span class="pill pill-warn">offline</span>';
+                document.getElementById('titration-progress').innerHTML =
+                    '<p style="color:var(--fg-dim)">' + esc(data.error || 'sweetGrass unreachable') + '</p>';
+                return;
+            }
+
+            var m = data.metrics || {};
+            var schemaVer = m.current_version !== undefined ? m.current_version : (m.schema_version !== undefined ? m.schema_version : '-');
+            var legacyReads = m.legacy_reads || 0;
+            var repairs = m.repairs_applied || 0;
+            var v0 = m.v0_braids_seen || 0;
+
+            document.getElementById('stat-schema-ver').textContent = 'v' + schemaVer;
+            document.getElementById('stat-legacy-reads').textContent = legacyReads.toLocaleString();
+            document.getElementById('stat-repairs').textContent = repairs.toLocaleString();
+            document.getElementById('stat-v0-braids').textContent = v0.toLocaleString();
+
+            if (legacyReads === 0 && repairs === 0 && v0 === 0) {
+                statusEl.innerHTML = '<span class="pill pill-ok">clean slate</span>';
+                document.getElementById('titration-progress').innerHTML =
+                    '<div style="padding:0.5rem">' +
+                        '<div style="font-weight:600;color:var(--green)">✓ No legacy braids detected</div>' +
+                        '<p style="color:var(--fg-dim);font-size:0.78rem;margin-top:0.3rem">' +
+                            'All braids are schema v' + schemaVer + '. Clean-slate deployment — no migration debt.' +
+                        '</p>' +
+                    '</div>';
+            } else {
+                var repairRate = legacyReads > 0 ? Math.round(repairs / legacyReads * 100) : 0;
+                var barColor = repairRate >= 90 ? 'var(--green)' : repairRate >= 50 ? 'var(--yellow)' : 'var(--red)';
+                statusEl.innerHTML = '<span class="pill pill-info">active</span>';
+                document.getElementById('titration-progress').innerHTML =
+                    '<div style="padding:0.5rem">' +
+                        '<div style="font-weight:600;margin-bottom:0.5rem">Repair Rate: ' + repairRate + '%</div>' +
+                        '<div style="background:var(--border);border-radius:2px;height:6px;margin-bottom:0.5rem">' +
+                            '<div style="background:' + barColor + ';border-radius:2px;height:6px;width:' + repairRate + '%"></div>' +
+                        '</div>' +
+                        '<div style="font-size:0.75rem;color:var(--fg-dim)">' +
+                            'v0 → v' + schemaVer + ' on-read titration. Legacy braids repaired transparently on access.' +
+                        '</div>' +
+                        '<div style="font-size:0.72rem;color:var(--fg-dim);margin-top:0.3rem">' +
+                            'Remaining v0: ' + Math.max(0, v0 - repairs).toLocaleString() + ' braids' +
+                        '</div>' +
+                    '</div>';
             }
         }
 

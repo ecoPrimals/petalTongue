@@ -277,6 +277,38 @@ pub async fn query_all_health() -> Vec<PrimalHealth> {
     results
 }
 
+/// Query `titration.metrics` on sweetGrass via UDS.
+///
+/// Scans socket directories for a `sweetgrass*.sock` endpoint and sends
+/// a riboCipher-framed JSON-RPC request. Returns the raw metrics JSON
+/// (legacy_reads, repairs_applied, v0_braids_seen, schema_version).
+pub async fn query_titration_metrics() -> Option<serde_json::Value> {
+    let discovered = discover_primal_sockets();
+    let sg = discovered.into_iter().find(|e| e.name == "sweetgrass")?;
+    let endpoint = TransportEndpoint::uds(sg.path.clone());
+
+    let request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "method": "titration.metrics",
+        "params": {},
+        "id": 1
+    });
+    let payload = serde_json::to_vec(&request).ok()?;
+
+    let result = tokio::time::timeout(QUERY_TIMEOUT, send_rpc(&endpoint, &payload, true)).await;
+    match result {
+        Ok(Ok(val)) => Some(val),
+        Ok(Err(e)) => {
+            tracing::warn!("titration.metrics query failed: {e}");
+            None
+        }
+        Err(_) => {
+            tracing::warn!("titration.metrics query timed out");
+            None
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

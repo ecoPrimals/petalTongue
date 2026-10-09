@@ -28,7 +28,7 @@ use coord_handlers::{
 use handlers::{
     content_federation_handler, content_stats_handler, docroot_fallback, ecosystem_handler,
     events_sse_handler, gate_mesh_handler, health_handler, index_handler, live_topology_handler,
-    liveness_handler, mesh_peers_handler, physical_topology_handler, primal_health_handler,
+    liveness_handler, mesh_peers_handler, physical_topology_handler, primal_health_handler, titration_metrics_handler,
     primals_handler, pseudospore_bundles_handler, public_record_network_handler,
     public_record_timeline_handler, readiness_handler, snapshot_handler, sporeprint_handler,
     status_handler,
@@ -122,6 +122,7 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .route("/api/physical-topology", get(physical_topology_handler))
         .route("/api/mesh-peers", get(mesh_peers_handler))
         .route("/api/primal-health", get(primal_health_handler))
+        .route("/api/titration", get(titration_metrics_handler))
         .route("/api/sporeprint", get(sporeprint_handler))
         .route("/api/content/stats", get(content_stats_handler))
         .route("/api/content/federation", get(content_federation_handler))

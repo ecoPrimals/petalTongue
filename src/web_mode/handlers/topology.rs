@@ -510,6 +510,26 @@ pub async fn primal_health_handler() -> Json<serde_json::Value> {
     }))
 }
 
+/// Returns braid titration metrics from sweetGrass via UDS.
+///
+/// Queries `titration.metrics` on sweetGrass's riboCipher endpoint.
+/// Returns schema evolution tracking counters: legacy reads, repairs
+/// applied, v0 braids seen, current schema version.
+pub async fn titration_metrics_handler() -> Json<serde_json::Value> {
+    match crate::data_service::health::query_titration_metrics().await {
+        Some(metrics) => Json(serde_json::json!({
+            "ok": true,
+            "metrics": metrics,
+            "source": "sweetgrass_uds",
+        })),
+        None => Json(serde_json::json!({
+            "ok": false,
+            "error": "sweetGrass unreachable or titration.metrics not available",
+            "metrics": null,
+        })),
+    }
+}
+
 #[derive(serde::Deserialize)]
 pub struct VizQuery {
     pub format: Option<String>,
