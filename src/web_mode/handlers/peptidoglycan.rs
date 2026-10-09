@@ -125,7 +125,7 @@ pub(crate) async fn depot_index_handler() -> impl IntoResponse {
 
     Json(serde_json::json!({
         "layer": "peptidoglycan",
-        "surface": "nestgate.io",
+        "surface": "sporeprint.primals.eco",
         "architecture_count": architectures.len(),
         "architectures": architectures,
         "checksums_available": has_checksums,
@@ -240,7 +240,7 @@ pub(crate) async fn provenance_index_handler() -> impl IntoResponse {
 
     Json(serde_json::json!({
         "layer": "peptidoglycan",
-        "surface": "nestgate.io",
+        "surface": "sporeprint.primals.eco",
         "provenance_source": "BLAKE3SUMS (per-architecture b3sum files)",
         "architecture_count": arch_summaries.len(),
         "architectures": arch_summaries,
