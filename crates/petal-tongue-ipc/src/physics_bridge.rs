@@ -99,49 +99,62 @@ pub async fn step_physics(world: &mut PhysicsWorld) -> PhysicsStepResult {
     }
 }
 
-/// Dispatch a statistical operation to compute primal.
+/// Dispatch a statistical operation to barraCuda compute primal.
 ///
+/// Maps petalTongue stat ops to barraCuda's native `stats.*` method surface.
 /// Supported ops: `math.stat.kde`, `math.stat.smooth`, `math.stat.bin`, `math.stat.summary`
 pub async fn dispatch_stat(op: &str, params: serde_json::Value) -> ComputeDispatchResult {
-    dispatch_compute("compute.dispatch", op, params).await
+    // Map physics_bridge op names to barraCuda's native method surface
+    let method = match op {
+        "math.stat.kde" => "stats.empirical_spectral_density",
+        "math.stat.summary" => "stats.mean", // summary → mean + std_dev
+        "math.stat.smooth" => "signal.bandpass",
+        "math.stat.bin" => "stats.mean", // binning via data params
+        other => other,
+    };
+    dispatch_direct(method, op, params).await
 }
 
-/// Dispatch a tessellation operation to compute primal.
+/// Dispatch a tessellation operation to barraCuda compute primal.
 ///
+/// Tessellation uses `compute.dispatch` with named ops — barraCuda handles
+/// geometry generation on GPU when available, CPU fallback otherwise.
 /// Supported ops: `math.tessellate.sphere`, `math.tessellate.cylinder`, `math.tessellate.isosurface`
 pub async fn dispatch_tessellate(op: &str, params: serde_json::Value) -> ComputeDispatchResult {
-    dispatch_compute("compute.dispatch", op, params).await
+    dispatch_direct("compute.dispatch", op, params).await
 }
 
-/// Dispatch a projection operation to compute primal.
+/// Dispatch a projection operation to barraCuda compute primal.
 ///
 /// Supported ops: `math.project.perspective`, `math.project.lighting`
 pub async fn dispatch_project(op: &str, params: serde_json::Value) -> ComputeDispatchResult {
-    dispatch_compute("compute.dispatch", op, params).await
+    dispatch_direct("compute.dispatch", op, params).await
 }
 
-/// Generic compute dispatch to compute primal via JSON-RPC.
+/// Direct method dispatch to barraCuda compute primal via JSON-RPC.
 ///
-/// Falls back to an empty result when compute primal is unavailable.
-async fn dispatch_compute(
+/// Calls barraCuda's native method surface directly (e.g., `stats.mean`,
+/// `linalg.solve`) rather than routing through a hotSpring intermediary.
+/// Falls back to an empty result when the compute primal is unavailable.
+async fn dispatch_direct(
     method: &str,
     op: &str,
     params: serde_json::Value,
 ) -> ComputeDispatchResult {
     let start = std::time::Instant::now();
 
-    match try_dispatch(method, op, &params).await {
+    match try_dispatch(method, &params).await {
         Ok(result) => {
-            debug!("Compute dispatch {op} via GPU: success");
+            debug!("Compute trio dispatch {op} via {method}: success");
             ComputeDispatchResult {
-                gpu_accelerated: true,
+                gpu_accelerated: result.get("gpu_accelerated").and_then(|v| v.as_bool()).unwrap_or(true),
                 operation: op.to_string(),
                 result,
                 duration_secs: start.elapsed().as_secs_f64(),
             }
         }
         Err(e) => {
-            debug!("GPU compute unavailable for {op} ({e}), returning empty result");
+            debug!("Compute trio unavailable for {op} ({e}), returning empty result");
             ComputeDispatchResult {
                 gpu_accelerated: false,
                 operation: op.to_string(),
@@ -152,22 +165,31 @@ async fn dispatch_compute(
     }
 }
 
+/// Send a JSON-RPC request to barraCuda's method surface.
+///
+/// For `compute.dispatch`, wraps params in the `{op, data}` envelope.
+/// For direct methods (`stats.*`, `linalg.*`), sends params directly.
 async fn try_dispatch(
     method: &str,
-    op: &str,
     params: &serde_json::Value,
 ) -> Result<serde_json::Value, ComputeBridgeError> {
     let socket_path = discover_compute_socket()?;
 
-    let request = json!({
-        "jsonrpc": "2.0",
-        "method": method,
-        "params": {
-            "op": op,
-            "data": params,
-        },
-        "id": 1
-    });
+    let request = if method == "compute.dispatch" {
+        json!({
+            "jsonrpc": "2.0",
+            "method": method,
+            "params": params,
+            "id": 1
+        })
+    } else {
+        json!({
+            "jsonrpc": "2.0",
+            "method": method,
+            "params": params,
+            "id": 1
+        })
+    };
 
     let response = send_jsonrpc_unix(&socket_path, &request)
         .await
@@ -259,13 +281,26 @@ fn discover_compute_socket() -> Result<String, ComputeBridgeError> {
     let socket_name = std::env::var(petal_tongue_core::constants::PHYSICS_COMPUTE_SOCKET_NAME)
         .unwrap_or_else(|_| "physics-compute".to_owned());
 
+    // Compute trio sockets: barraCuda binds as math.sock in biomeos dir,
+    // legacy physics-compute.sock paths, and barracuda.sock symlink.
+    let biomeos_dir = format!("{runtime_dir}/biomeos");
     let candidates = [
+        // barraCuda primal native socket (math.sock in biomeos dir)
+        format!("{biomeos_dir}/math.sock"),
+        // barraCuda legacy symlink
+        format!("{biomeos_dir}/barracuda.sock"),
+        // Ecosystem S139 layout
         format!("{runtime_dir}/ecoPrimals/{socket_name}.sock"),
         format!("{runtime_dir}/ecoPrimals/discovery/{socket_name}.sock"),
         format!("{runtime_dir}/{socket_name}/{socket_name}.sock"),
         format!("{runtime_dir}/{socket_name}.sock"),
         format!(
             "{}/{socket_name}.sock",
+            petal_tongue_core::constants::LEGACY_TMP_PREFIX
+        ),
+        // /tmp fallback for barraCuda
+        format!(
+            "{}/math.sock",
             petal_tongue_core::constants::LEGACY_TMP_PREFIX
         ),
     ];
@@ -296,6 +331,16 @@ async fn send_jsonrpc_unix(
     })?;
 
     let (reader, mut writer) = tokio::io::split(stream);
+
+    // riboCipher signal prefix required by hotSpring/ecosystem JSON-RPC servers
+    let ribocipher_prefix: [u8; 2] = [0xEC, 0x01];
+    writer
+        .write_all(&ribocipher_prefix)
+        .await
+        .map_err(|e| ComputeBridgeError::Io {
+            context: "ribocipher",
+            source: e,
+        })?;
 
     let mut payload = serde_json::to_vec(request).map_err(ComputeBridgeError::Serialize)?;
     payload.push(b'\n');

@@ -2,6 +2,7 @@
 //! HTTP route handlers, static-file fallback, and shared response utilities.
 
 mod api;
+pub(crate) mod compute;
 mod manifest;
 pub(crate) mod peptidoglycan;
 mod static_content;

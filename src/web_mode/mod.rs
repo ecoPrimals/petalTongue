@@ -37,7 +37,7 @@ use handlers::{
 
 use std::sync::Arc;
 
-use axum::{Router, routing::get};
+use axum::{Router, routing::{get, post}};
 use tokio::sync::RwLock;
 use tower_http::compression::CompressionLayer;
 use tower_http::services::ServeDir;
@@ -138,6 +138,11 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .route("/api/coord/depot", get(coord_depot_handler))
         .route("/api/events", get(events_sse_handler))
         .route("/viz/{slug}", get(viz_handler))
+        // Compute API — physics_bridge math operations (CPU fallback + GPU when available)
+        .route("/api/compute/status", get(handlers::compute::compute_status_handler))
+        .route("/api/compute/stat", post(handlers::compute::compute_stat_handler))
+        .route("/api/compute/tessellate", post(handlers::compute::compute_tessellate_handler))
+        .route("/api/compute/project", post(handlers::compute::compute_project_handler))
         // nestgate.io Phase 2 — peptidoglycan depot + provenance routes
         .route("/depot/", get(handlers::peptidoglycan::depot_index_handler))
         .route("/depot/{arch}", get(handlers::peptidoglycan::depot_arch_handler))
