@@ -288,6 +288,15 @@ impl ProvenanceTrioClient {
 
         let (reader, mut writer) = tokio::io::split(stream);
 
+        // riboCipher signal prefix — required by ecosystem JSON-RPC servers
+        writer
+            .write_all(&[0xEC, 0x01])
+            .await
+            .map_err(|e| ProvenanceRpcError::Io {
+                context: "ribocipher",
+                source: e,
+            })?;
+
         let request = json!({
             "jsonrpc": "2.0",
             "method": method,
