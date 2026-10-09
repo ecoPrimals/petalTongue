@@ -103,12 +103,14 @@ JS should be distributed — single hosted copy, cross-origin inclusion.
 
 **Scope**: Merge the two copies into one canonical version.
 
-- [ ] Diff the HUD and Detroit copies (61 lines of delta)
-- [ ] Extract relay selectivity into optional module/callback
-- [ ] Host canonical copy at `hud.primals.eco/js/pt-bridge-core.js`
-- [ ] Update Detroit to load cross-origin instead of local copy
-- [ ] Update Signal if it has its own copy
-- [ ] Verify: HUD, Detroit, Signal all render correctly from single source
+- [x] Diff the HUD and Detroit copies (61 lines of delta)
+- [x] Extract relay selectivity into optional module/callback
+- [x] Host canonical copy at `hud.primals.eco/js/pt-bridge-core.js`
+- [x] Update Detroit to load cross-origin instead of local copy
+- [x] Update Signal — had its own copy, now loads cross-origin
+- [x] Verify: HUD, Detroit, Signal all render correctly from single source
+- [x] Add CORS `Access-Control-Allow-Origin: *` to Caddy for HUD JS assets
+- [x] Delete old copies from Detroit + Signal
 
 **Effort**: Small. Pure JS, no Rust changes.
 **Risk**: Low. Cross-origin `<script>` already proven by hud-widget.js.
@@ -119,20 +121,23 @@ Detroit and Signal load cross-origin, CORS headers added to Caddy, Caddy reloade
 
 **Scope**: Replace site-specific `*-pt.js` files with a single parameterized bridge.
 
-- [ ] Define bridge config schema:
+- [x] Define bridge config schema:
   ```js
-  PetalSite({
-    domain: 'detroit',
+  PetalSiteObservatory({
+    dataUrl: '/dashboard.json',
+    topoUrl: '/topology.json',
     wsUrl: 'wss://hud.primals.eco/ws',
-    dataSource: 'network',   // or 'signal', 'local'
-    panels: ['entities', 'epitopes', 'scatter', 'selectivity'],
-    targets: { entities: '#d-entities', epitopes: '#d-epitopes' }
+    domain: 'signal',
+    cardClass: 'dash-card',
+    refreshMs: 15000
   })
   ```
-- [ ] Implement `petalsite.js` — generic bridge that reads config and renders
-- [ ] Migrate HUD: `hud-pt.js` → `PetalSite({domain:'hud', ...})`
-- [ ] Migrate Detroit: `detroit-pt.js` → `PetalSite({domain:'detroit', ...})`
-- [ ] Migrate Signal: `signal-exploration.js` → `PetalSite({domain:'signal', ...})`
+- [x] Implement `petalsite-observatory.js` — observatory bridge (327 lines)
+- [x] Migrate HUD: `hud-pt.js` → `PetalSiteObservatory({dataUrl:'https://signal...', ...})`
+- [x] Migrate Signal: `signal-pt.js` → `PetalSiteObservatory({dataUrl:'/', ...})`
+- [x] Archive old bridges to `/opt/ecoPrimals/_archive/wave169/`
+- [ ] Detroit: remains `detroit-pt.js` — different data domain (network graph, not observatory).
+      Future `PetalSiteGraph()` abstraction when other graph sites appear.
 
 **Effort**: Medium. Need to reconcile three data-fetching strategies.
 **Risk**: Medium. Detroit uses `window.DETROIT_NETWORK` (in-page data),
@@ -194,8 +199,8 @@ answers with the current state of the membrane.
 | Sites on petalTongue scatter | 9 |
 | Sites static-only | 6 |
 | Total JS files across sites | ~40 |
-| Duplicated bridge code | ~560 lines (2 copies) |
-| Diverged lines between copies | 61 |
+| ~~Duplicated bridge code~~ | ~~560 lines~~ → 327 canonical (42% reduction) |
+| Eliminated JS files | 4 (2 pt-bridge-core copies + 2 observatory bridges) |
 | Live-terminal data files | 6 |
 | Sites mounting live-terminal | 4+ |
 | petalTongue Rust source files | 67 |
@@ -215,4 +220,29 @@ answers with the current state of the membrane.
 *This is work we have to do, and we can do it in waves. Each wave
 adds mass to the flywheel without breaking what already turns.*
 
-— Wave 167 · October 9, 2026
+— Waves 167–169 · October 9, 2026
+
+---
+
+## Execution Log
+
+| Wave | Scope | Status | Lines Δ |
+|------|-------|--------|---------|
+| 167 | Cross-site survey + AAR | ✅ | — |
+| 168 | Unify pt-bridge-core.js | ✅ | −251 −309 +309 = −251 |
+| 169 | Config-driven observatory bridge | ✅ | −306 −300 +327 = −279 |
+| 170 | petalTongue serves observatory data | ⬜ NEXT | — |
+| 171+ | Composition pattern | ⬜ | — |
+
+**Canonical JS at hud.primals.eco:**
+
+| File | Lines | Serves |
+|------|------:|--------|
+| `pt-bridge-core.js` | 309 | Shared core — PetalBridge, render helpers |
+| `petalsite-observatory.js` | 327 | Observatory bridge — HUD + Signal |
+| `hud-core.js` | ~450 | HUD dashboard — original hand-wired panels |
+| `hud-widget.js` | ~250 | Embeddable widget |
+
+**Detroit (standalone):** `detroit-pt.js` (376 lines) — different data domain.
+
+**Artisan braid:** Entry #14 (wave169_20261009.txt)
