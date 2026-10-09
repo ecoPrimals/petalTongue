@@ -21,8 +21,9 @@ pub(super) use static_content::{
 #[cfg(test)]
 pub(super) use topology::VizQuery;
 pub(super) use topology::{
-    ecosystem_handler, gate_mesh_handler, live_topology_handler, mesh_peers_handler,
-    physical_topology_handler, primal_health_handler, titration_metrics_handler, public_record_network_handler,
+    compliance_handler, ecosystem_handler, gate_mesh_handler, live_topology_handler,
+    mesh_peers_handler, physical_topology_handler, primal_health_handler,
+    titration_metrics_handler, public_record_network_handler,
     public_record_timeline_handler, sporeprint_handler, topology_layers_handler, viz_handler,
 };
 

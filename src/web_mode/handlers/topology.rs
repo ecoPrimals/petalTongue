@@ -530,6 +530,48 @@ pub async fn titration_metrics_handler() -> Json<serde_json::Value> {
     }
 }
 
+/// AGPL-3.0-or-later compliance verification endpoint.
+///
+/// Returns a machine-readable JSON response proving that the complete
+/// corresponding source code is available, as required by AGPL §13.
+/// Any user interacting with the software over a network can verify
+/// license compliance programmatically.
+pub async fn compliance_handler() -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "license": "AGPL-3.0-or-later",
+        "spdx": "AGPL-3.0-or-later",
+        "project": "ecoPrimals",
+        "copyright": "Copyright (C) 2024\u{2013}2026 ecoPrimals Project",
+        "source_code": {
+            "primary": "https://git.primals.eco/ecoPrimals",
+            "primals": {
+                "bearDog": "https://git.primals.eco/ecoPrimals/bearDog",
+                "sweetGrass": "https://git.primals.eco/ecoPrimals/sweetGrass",
+                "loamSpine": "https://git.primals.eco/ecoPrimals/loamSpine",
+                "rhizoCrypt": "https://git.primals.eco/ecoPrimals/rhizoCrypt",
+                "songBird": "https://git.primals.eco/ecoPrimals/songBird",
+                "petalTongue": "https://git.primals.eco/ecoPrimals/petalTongue",
+                "barraCuda": "https://git.primals.eco/ecoPrimals/barraCuda",
+                "squirrel": "https://git.primals.eco/ecoPrimals/squirrel",
+                "nestGate": "https://git.primals.eco/ecoPrimals/nestGate",
+                "skunkBat": "https://git.primals.eco/ecoPrimals/skunkBat",
+            },
+            "infrastructure": {
+                "sporePrint": "https://git.primals.eco/ecoPrimals/sporePrint",
+                "whitePaper": "https://git.primals.eco/ecoPrimals/whitePaper",
+                "tuebor": "https://github.com/amicusContra/tuebor",
+            },
+        },
+        "forge": "Forgejo (self-hosted) at git.primals.eco",
+        "offer": "Complete corresponding source code is available at the URLs above, as required by AGPL-3.0-or-later §13.",
+        "verification": {
+            "endpoint": "/api/compliance",
+            "format": "JSON",
+            "machine_readable": true,
+        },
+    }))
+}
+
 #[derive(serde::Deserialize)]
 pub struct VizQuery {
     pub format: Option<String>,
