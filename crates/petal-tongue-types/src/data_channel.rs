@@ -347,6 +347,103 @@ pub enum DataBinding {
         /// Unit of measurement for the values.
         unit: String,
     },
+
+    /// Force-directed graph — nodes and edges positioned by Fruchterman-Reingold.
+    ///
+    /// Absorbs hand-rolled JS force simulations: network-graph.js, investigation-game.js,
+    /// signal-exploration.js. Layout computed server-side in Rust (entity_graph.rs).
+    /// Browser receives positioned SVG; thin JS handles mouse events only.
+    ///
+    /// Wave 171: Stage 1 jellystein → primal Rust evolution target.
+    #[serde(rename = "force_graph")]
+    ForceGraph {
+        /// Unique identifier for this channel.
+        id: String,
+        /// Human-readable display name.
+        label: String,
+        /// Graph nodes: each has `id`, `label`, `kind`, and optional metadata.
+        nodes: Vec<ForceGraphNode>,
+        /// Graph edges: each has `source`, `target`, `relation`, and optional weight.
+        edges: Vec<ForceGraphEdge>,
+        /// Layout width in logical pixels.
+        #[serde(default = "default_force_graph_width")]
+        width: f64,
+        /// Layout height in logical pixels.
+        #[serde(default = "default_force_graph_height")]
+        height: f64,
+    },
+
+    /// Chord diagram — bidirectional flow between categories.
+    ///
+    /// Absorbs hand-rolled signal-exploration.js hop chord visualization.
+    /// Compiles to `GeometryType::Arc` + `GeometryType::Curve` in polar coordinates.
+    ///
+    /// Wave 171: Stage 1 jellystein → primal Rust evolution target.
+    #[serde(rename = "chord")]
+    Chord {
+        /// Unique identifier for this channel.
+        id: String,
+        /// Human-readable display name.
+        label: String,
+        /// Category names (displayed as arc segments around the circle).
+        categories: Vec<String>,
+        /// Flow matrix: `flows[i * n + j]` = flow from category i to category j.
+        /// Length must be `categories.len()^2`.
+        flows: Vec<f64>,
+        /// Unit of measurement for the flow values.
+        unit: String,
+    },
+}
+
+/// Default force graph width.
+const fn default_force_graph_width() -> f64 {
+    800.0
+}
+
+/// Default force graph height.
+const fn default_force_graph_height() -> f64 {
+    600.0
+}
+
+/// A node in a force-directed graph visualization.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ForceGraphNode {
+    /// Unique node identifier.
+    pub id: String,
+    /// Human-readable label.
+    pub label: String,
+    /// Node kind/type (determines color, size).
+    #[serde(default)]
+    pub kind: String,
+    /// Tier or importance level (1 = most important).
+    #[serde(default)]
+    pub tier: Option<u8>,
+    /// Metadata fields (nexus, dynasty, community, etc).
+    #[serde(default)]
+    pub metadata: serde_json::Value,
+}
+
+/// An edge in a force-directed graph visualization.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ForceGraphEdge {
+    /// Source node ID.
+    pub source: String,
+    /// Target node ID.
+    pub target: String,
+    /// Relationship label.
+    #[serde(default)]
+    pub relation: String,
+    /// Edge weight (affects spring strength in layout).
+    #[serde(default = "default_edge_weight")]
+    pub weight: f64,
+    /// Flow type (money, power, influence, position, etc).
+    #[serde(default)]
+    pub flow: String,
+}
+
+/// Default edge weight.
+const fn default_edge_weight() -> f64 {
+    1.0
 }
 
 /// Default number of columns for faceted layouts.
