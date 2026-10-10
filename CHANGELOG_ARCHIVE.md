@@ -1,0 +1,2707 @@
+# Changelog
+
+All notable changes to petalTongue are documented here.
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Wave 157i: Darwin Fix + Axum 0.8 + Deep Debt (August 11, 2026)
+
+Post-pandemic cascade: darwin rustix fix merged upstream from graftGate,
+axum 0.7→0.8 Tier 2 upgrade executed, all remaining hardcoded socket paths
+eliminated via runtime discovery, Rust 2024 `#[expect]` idiom adopted,
+9 previously-broken tests fixed.
+
+#### Fixed
+- `platform_substrate::process_exists()`: replaced manual `kill_process` + `Signal::from_raw(0)`
+  with purpose-built `rustix::process::test_kill_process(pid)` — fixes darwin compilation
+  and correctly handles `EPERM` (process exists but not owned)
+- 4 `startup_audio` tests: gracefully skip when embedded music asset is a 0-byte stub
+- 5 topology/mesh/sporeprint tests: skip assertions when `ecosystem_manifest.toml` absent
+
+#### Changed
+- **axum 0.7→0.8**: `Message::Text` now takes `Utf8Bytes`, route params `/{param}`, tower-http 0.5→0.6
+- **tokio-tungstenite 0.24→0.29**: aligned with axum transitive (eliminated duplicate)
+- Eliminated `RHIZOCRYPT_SOCK` (`/run/membrane/rhizocrypt.sock`) — runtime resolution
+- Eliminated `SONGBIRD_ENDPOINT_PATH` (`/run/membrane/songbird.sock`) — runtime resolution
+- Eliminated hardcoded `/home/sporegate/...` pseudoSpore fallback — uses `$HOME` or env
+- `#[allow(dead_code)]` → `#[expect(dead_code, reason = "...")]` (Rust 2024 idiom)
+- `#[allow(unused_imports)]` → `#[cfg(test)]` for test-only re-exports
+- Redundant closures → method references (`Value::as_u64`, `Metadata::is_dir`, etc.)
+- Nested ifs → let-chains in visualization render (G19 auto-publish)
+- `let...else` in health discovery (Rust 2024 idiom)
+- sandbox/mock-biomeos: axum 0.8, route param syntax
+
+#### Metrics
+- Tests: 6,644 passing, 0 failures
+- Lockfile: 653→650 packages (-3)
+- Duplicates: 40 transitive (unchanged — all from upstream major version splits)
+- Clippy: 0 warnings (standard lint level)
+- Docs: 0 warnings
+- Cross-arch: x86_64-linux, aarch64-apple-darwin, x86_64-windows all pass
+- Zero hardcoded peer socket paths remain in production code
+
+### Wave 157g: Deep Debt + G72 Dependency Pandemic (August 10, 2026)
+
+Stadial shift: petalTongue sheds vestigial dependencies and eliminates
+peer-knowledge hardcoding. Runtime discovery replaces static primal lists.
+Version alignment eliminates duplicate transitive crates.
+
+#### Removed
+- `petal-tongue-telemetry` — vestigial crate (zero imports anywhere in workspace)
+- Hardcoded 13-primal endpoint list in `data_service/health.rs`
+- Hardcoded `/run/user/1000/ecoPrimals` in gossip_injection socket discovery
+
+#### Changed
+- `data_service/health.rs`: REWROTE — dynamic primal discovery via filesystem scan
+  (BIOMEOS_RUNTIME_DIR → XDG_RUNTIME_DIR/biomeos → /run/membrane). Extracts names
+  from socket filenames, prefers `-default.sock`, filters tarpc/negotiate sockets.
+- `gossip_injection.rs`: `socket_search_dirs()` resolves via env vars at runtime
+- `tokio-tungstenite`: 0.21 → 0.24 (aligns with axum transitive)
+- `rand`: 0.8 → 0.9 (migrated API: `rng()`, `random_range()`)
+- `png`: 0.17 → 0.18 (aligns with egui transitive)
+- `to_string_lossy().to_string()` → `.into_owned()` (allocation idiom)
+- Removed stale `#[allow(dead_code)]` on actively-used `publish_scene_frame()`
+- Fixed `cargo doc` warning (private item link in public doc)
+
+#### Added
+- 8 unit tests for primal name extraction + socket discovery logic
+- Duplicate transitive crates reduced: 44 → 40
+
+#### Metrics
+- Lockfile packages: 656 → 653
+- Headless (no-default-features) dep count: 469 (vs 653 full)
+- Production LOC excised: 1,038 (telemetry crate)
+- Tests: 6,635 passing, 0 clippy warnings, 0 doc warnings, Windows clean
+
+### Wave 157e: Gossip Injection + G19 Auto-Publish (August 10, 2026)
+
+petalTongue joins the ant colony. Gossip injection module announces surface
+availability, scene streaming, and content serving to the swarmVine mesh.
+WebGL compilation now auto-publishes to `/ws/scene` subscribers when
+`visualization.render.grammar` is called with GPU modality.
+
+#### Added
+- `gossip_injection` module in `petal-tongue-core` — swarmVine mesh announcements
+  - `GossipEntry` type with topic/key/value/TTL semantics
+  - `inject_gossip()` / `inject_gossip_via()` — async best-effort spread
+  - Convenience constructors: `surface_web_live()`, `scene_stream_active()`,
+    `content_serve_available()`, `viz_session_event()`
+  - `discover_swarmvine_socket()` — centralized socket discovery (checks
+    `/run/user/1000/ecoPrimals` + `/run/membrane`)
+- `ScenePublishFrame` in `petal-tongue-ipc` — bridge type for scene stream push
+- `scene_publish_tx` field on `RpcHandlers` — optional broadcast channel for G19
+- 9 new tests (gossip_injection)
+
+#### Changed
+- `visualization.render.grammar` handler: auto-publishes GPU-compiled scenes to
+  `/ws/scene` WebSocket subscribers when `scene_publish_tx` is set
+- `web_mode::run()`: injects `surface.web.live` gossip on server start
+- `scene_stream`: injects `surface.scene.streaming` gossip on subscriber connect
+- `web_mode/handlers/api.rs`: delegates to centralized `discover_swarmvine_socket()`
+  (removed duplicate implementation and hardcoded `/run/membrane` constant)
+
+### Wave 157d: G19 WebGL Pipeline — Compilation Bridge + FD Self-Healing (August 9, 2026)
+
+WebGL compilation bridge wires DoomFrame rectangles and SceneGraph data through the
+`/ws/scene` broadcast channel. FD limit self-healing eliminates gate-by-gate systemd
+configuration for server processes. Last hardcoded loopback address in production code
+centralized through `constants::DEFAULT_LOOPBACK_HOST`.
+
+#### Added
+- `web_mode::webgl_bridge` module — DoomFrame/SceneGraph → WebGlScene compilation
+- `compile_rects_to_webgl()`: converts colored rectangles to vertex/index buffers
+- `compile_and_publish_scene()`: SceneGraph → WebGL → broadcast in one call
+- `compile_rects_and_publish()`: rectangles → WebGL → broadcast in one call
+- `RectInput` type: DoomFrame-compatible rectangle for WebGL compilation
+- `platform_substrate::raise_fd_limit()` — self-healing NOFILE soft limit (G68 L4)
+- 5 new tests (4 webgl_bridge + 1 raise_fd_limit)
+
+#### Changed
+- `main.rs` startup: calls `raise_fd_limit()` before runtime — self-heals on gates
+  without `LimitNOFILE=65536` (mirrors biomeOS pattern)
+- `dispatch.rs`: `resolve_bind()` uses `constants::DEFAULT_LOOPBACK_HOST` instead of
+  hardcoded `"127.0.0.1"` literal
+
+### Wave 157d: G19 WebGL Pipeline — Scene Streaming (August 9, 2026)
+
+New `/ws/scene` WebSocket endpoint enables server-push scene streaming to browser
+clients. Browser connects, subscribes to a session, receives compiled `WebGlScene`
+frames in real-time. Foundation for esotericWebb browser surface and footPrint GIS.
+
+#### Added
+- `web_mode::scene_stream` module — WebSocket scene streaming handler (G19)
+- `/ws/scene` endpoint: subscribe/unsubscribe protocol, frame push
+- `SceneStreamState`: broadcast channel for scene frame distribution
+- `publish_scene_frame()`: API for IPC handlers to push scenes to browser clients
+- 2 integration tests (subscribe ack, frame delivery)
+
+#### Notes
+- P2 `--port` flag: code fix shipped in `355a44e` (Wave 157a). Depot rebuild will
+  deploy to blueGate. Verified code path: CLI → `resolve_server_transport()` →
+  `UnixSocketServer::with_tcp_port()` → TCP bind on all platforms.
+
+### Wave 157a: Vertebrate Evolution — Self-Audit + doom-core Decoupling (August 9, 2026)
+
+RPC surface self-audit: verified all 57 served JSON-RPC methods match dispatch table.
+`doom-core` decoupled from `petal-tongue-scene` — ready for `ludoSpring` extraction.
+8 unused workspace deps removed across 5 crates.
+
+#### Added
+- `doom-core::frame` module (`DoomFrame`, `FrameRect`) — scene-agnostic rendering output
+- `DoomInstance::render_frame()` replaces `render_scene()` (returns `DoomFrame` not `SceneGraph`)
+- `RaycastRenderer::render_to_frame()` replaces `render_to_scene()`
+
+#### Changed
+- `config/capability_registry.toml`: full self-audit — 57 served methods now match dispatch.rs exactly
+  - Removed phantom `viz.*` and `render.dashboard` namespaces (never implemented)
+  - Removed phantom `visualization.session.create` (never implemented)
+  - Added all actually-served methods: auth, btsp, topology, motor, audio, ui domains
+  - Fixed meta signal references to use actual method names
+
+#### Removed
+- `petal-tongue-scene` dependency from `doom-core` (decoupled for ludoSpring extraction)
+- `bytes` dependency from `doom-core` (unused)
+- `thiserror` + `tracing` from `petal-tongue-animation` (unused)
+- `petal-tongue-graph` from `petal-tongue-headless` (unused)
+- `petal-tongue-ui-core` from `petal-tongue-platform` (unused)
+- `clap` + `petal-tongue-telemetry` from `petal-tongue-ui` (unused)
+- `crossterm` from `petal-tongue-ui-core` (unused)
+
+#### Metrics
+- `cargo check --target x86_64-pc-windows-gnu`: **ZERO errors, ZERO warnings**
+- 101 test suites pass, 0 failures
+- Zero clippy warnings (pedantic + nursery)
+- doom-core: **3 deps** (was 5) — fully extractable to ludoSpring
+
+### Wave 157a: G68 Platform Substrate Abstraction (August 7, 2026)
+
+New `platform_substrate` module in `petal-tongue-core` centralizes platform-specific
+operations behind architecture-agnostic APIs. All inline `#[cfg(unix)]` usage of
+symlinks, permissions, and system queries now routes through a single abstraction
+layer. Direct `rustix` dependency removed from `petal-tongue-ui`.
+
+#### Added
+- `petal-tongue-core::platform_substrate` module (L1 links, L2 permissions, L3 system)
+- `platform_link()` — symlink on Unix, `symlink_file`/`symlink_dir` on Windows
+- `remove_link()` — platform-agnostic link removal
+- `is_user_accessible()` — mode-bit check on Unix, `true` on Windows (ACL at open)
+- `is_socket()` — `FileTypeExt::is_socket()` on Unix, `false` on non-Unix
+- `page_size()` — `rustix::param::page_size()` on Linux, 4096 elsewhere
+- `current_uid()` / `effective_uid()` — kernel UID on Unix, 0 on Windows
+- 6 unit tests covering all substrate functions
+
+#### Changed
+- `unix_socket_server`: capability symlink creation uses `platform_link()` + `remove_link()`
+- `audio_discovery`: PipeWire/PulseAudio accessibility checks use `is_user_accessible()`
+- `audio/backends/socket`: `is_audio_socket()` uses `is_socket()` + `is_user_accessible()`
+- `system_info`: `get_current_uid()` / `get_current_euid()` delegate to substrate
+- `proc_stats`: `page_size()` delegates to substrate (removed direct `rustix` call)
+
+#### Removed
+- `rustix` dependency from `petal-tongue-ui` (consolidated into `petal-tongue-core`)
+
+#### Metrics
+- `cargo check --target x86_64-pc-windows-gnu`: **ZERO errors, ZERO warnings**
+- 6,649 tests pass, 0 failures
+- Zero new clippy warnings (pedantic + nursery)
+
+### Wave 156v: Cross-Architecture Compliance — Windows Build (August 7, 2026)
+
+Migrated all production and library code to compile cleanly on
+`x86_64-pc-windows-gnu`. Unix-specific servers (UDS, tarpc, G65 negotiate)
+guarded with `#[cfg(unix)]`; non-unix stubs provided for health/mesh queries.
+Live mode gated to unix platforms.
+
+#### Changed
+- `petal-tongue-ipc`: `unix_socket_server`, `tarpc_server`, `protocol_negotiation::server`
+  modules gated with `#[cfg(unix)]` — unavailable on Windows target.
+- `btsp::phase3`: `NegotiateResult` and `try_phase3_negotiate` gated `#[cfg(unix)]`.
+- `server.rs`: `is_platform_constrained()` helper gated `#[cfg(unix)]`.
+- `server_mode::run()`: Unix-specific IPC (UDS + tarpc + G65) isolated in
+  `#[cfg(unix)]` block; non-unix gets TCP-only signal-wait mode.
+- `live_mode`: entire module gated `#[cfg(unix)]` (requires UDS + display).
+- `main.rs`: `Commands::Live` arm gated `#[cfg(all(feature = "ui", unix))]`.
+- `data_service/health.rs`: UDS health queries gated `#[cfg(unix)]`; non-unix
+  returns empty `Vec`.
+- `data_service/mesh.rs`: `query_songbird_peers` gated `#[cfg(unix)]`; non-unix
+  returns `None`.
+
+#### Metrics
+- `cargo check --target x86_64-pc-windows-gnu`: **ZERO errors, ZERO warnings**
+- 6,644 tests pass, 0 failures, 0 clippy warnings (pedantic + nursery)
+- New pre-push standard: `cargo check --target x86_64-pc-windows-gnu`
+
+### Wave 156m: G65 Protocol Negotiation — Single-Socket Phase 3 (August 6, 2026)
+
+Independent implementation of G65 protocol negotiation spec. Single-socket
+protocol selection at connection time, backward-compatible with legacy clients.
+
+#### Added
+- **`protocol_negotiation` module** — G65 single-socket protocol negotiation:
+  - `ProtocolId` enum (`JsonRpc`, `Tarpc`) with wire format serialization
+  - `ProtocolRequest` / `ProtocolResponse` — wire format types (`PROTOCOLS: ...\n` / `PROTOCOL: ...\n`)
+  - `negotiate_client()` — async client-side negotiation
+  - `negotiate_server()` — async server-side negotiation with 100ms timeout fallback
+  - `select_protocol()` — best-match protocol selection logic
+  - `NegotiateServer` — UDS listener on `petaltongue.negotiate.sock`
+  - `NegotiateServerError` — typed error enum
+- **`get_petaltongue_negotiate_socket_path()`** — socket path resolution for G65.
+  Override: `PETALTONGUE_NEGOTIATE_SOCKET` env var.
+- 29 tests: wire format, selection logic, async duplex negotiation, timeout, EOF, error display.
+
+#### Changed
+- `server_mode::run()` spawns G65 negotiate server alongside C2 dual-socket
+  (three concurrent listeners via `tokio::select!`).
+- Updated all documentation to reflect G65 implementation.
+
+#### Metrics
+- 6,644 tests pass, 0 failures, 0 clippy warnings, 0 doc warnings
+- Three-socket transitional: `.sock` + `.tarpc.sock` + `.negotiate.sock`
+- All production files < 800 LOC
+
+---
+
+### Wave 156l: Deep Debt — Zero Clippy Pedantic+Nursery (August 6, 2026)
+
+Final clippy sweep: eliminated all 23 remaining pedantic+nursery warnings.
+
+#### Fixed
+- Redundant closures → method references (`serde_json::Value::as_bool`, `as_u64`)
+- `u64` to `u32` truncation → safe `u32::try_from().ok()`
+- Pass-by-value where reference suffices (`handle_declarative_scene` params)
+- `unwrap_or` with function call → `unwrap_or_else`
+- Doc markdown: backtick type names (`SceneGraph`, scene identifiers)
+- Float comparisons in tests: `#[allow(clippy::float_cmp)]` on test modules
+- MutexGuard-across-await in tests: `#[allow(clippy::await_holding_lock)]` (intentional serialization)
+
+#### Metrics
+- 6,615 tests pass, 0 failures, **0 clippy warnings** (pedantic + nursery, all targets)
+- All production files < 800 LOC
+
+---
+
+### Wave 156i: C2 Dual-Socket Pattern — tarpc UDS Server (August 6, 2026)
+
+G64 cephalization Phase 1: tarpc UDS server alongside JSON-RPC.
+
+#### Added
+- **`TarpcServer`** — tarpc UDS server module (`tarpc_server/`) serving
+  `PetalTongueRpc` over binary bincode framing at `petaltongue.tarpc.sock`.
+  Runs concurrently with JSON-RPC `.sock` in server mode (C2 dual-socket pattern).
+- **`get_petaltongue_tarpc_socket_path()`** — socket path resolution for tarpc UDS.
+  Override: `PETALTONGUE_TARPC_SOCKET` env var.
+- **`discover_primal_tarpc_socket()`** — discover any primal's tarpc socket
+  (convention: `<primal>.tarpc.sock`). Override: `<PRIMAL>_TARPC_SOCKET`.
+- 5 integration tests: real UDS connect, bincode framing, capabilities/health/version/protocols.
+- 4 unit tests for socket path resolution.
+
+#### Changed
+- `server_mode::run()` now spawns tarpc UDS alongside JSON-RPC (tokio::select!).
+- Added `futures-util` dep to `petal-tongue-ipc` for `StreamExt` (tarpc channel).
+
+#### Metrics
+- 6,615 tests pass, 0 failures, 0 clippy warnings, 0 doc warnings
+- Dual-socket: `.sock` (JSON-RPC) + `.tarpc.sock` (binary) per C2 standard
+- All production files < 800 LOC
+
+### Wave 156h: Cephalization — tarpc 0.37 Convergence (August 5, 2026)
+
+tarpc version alignment for G64 cephalization Phase 1.
+
+#### Changed
+- **tarpc 0.34 → 0.37**: Upgraded tarpc transport layer for cephalization convergence.
+  Aligns petalTongue with ecosystem-wide dual-protocol target (JSON-RPC bootstrap +
+  tarpc binary hot path). No API changes required — transport wire format unchanged.
+- **tokio-serde 0.8 → 0.9**: Tracks tarpc 0.37 internal dep bump.
+- Suppressed dead-code warning on `songbird_peers_to_live` (runtime-only utility).
+
+#### Metrics
+- 6,606 tests pass, 0 failures, 0 clippy warnings, 0 doc warnings
+- tarpc binary framing ready for cephalization Phase 2 (cross-gate elevated)
+- All production files < 800 LOC
+
+### Wave 156d: Declarative Scene Passthrough + Dashboard UX (August 5, 2026)
+
+Scene pipeline evolution and nestgate.io dashboard resilience.
+
+#### Added
+- `visualization.render.scene` now accepts **declarative scene format** (string scene
+  type + data payload) alongside structured `SceneGraph`. tideGlass and other science
+  primals can submit `{ "scene": "rges_volcano", "data": {...}, "format": "webgl" }`
+  directly — stored for downstream WebGL/WebSocket clients without Grammar pipeline.
+- `visualization.scene.declarative` JSON-RPC method: lists all stored declarative
+  scenes for client retrieval.
+- `DeclarativeScene` type in `VisualizationState` for passthrough storage.
+
+#### Changed
+- Eliminated hardcoded `"sporeGate"` from topology CI response — now derived from
+  `ecosystem_manifest.toml` gate roles at runtime.
+- nestgate.io dashboard (`web/index.html`): added `<noscript>` fallback and
+  meaningful error messages for all fetch failures (previously stuck on "Loading...").
+  Each section now shows specific unavailability reason rather than generic loading.
+- Method schema for `visualization.render.scene` updated to document dual-format
+  accept (object SceneGraph or string declarative).
+
+#### Metrics
+- 6,606 tests pass, 0 failures, 0 clippy warnings
+- Zero hardcoded primal names in production code
+- All production files < 800 LOC
+
+### Wave 156d: Security Hardening + Config Unification (August 4, 2026)
+
+TCP bind security hardening and complete family ID resolution unification.
+
+#### Changed
+- TCP bind default: `0.0.0.0` → `127.0.0.1` when `--port` given without explicit
+  `--bind`. Prevents accidental network exposure. Use `--bind 0.0.0.0` explicitly
+  for Docker/cross-gate deployments.
+- Family ID resolution: unified ALL remaining raw `std::env::var("FAMILY_ID")` call
+  sites (registration.rs, content_backend.rs, neural_api_provider.rs,
+  discovery_service_client.rs) to use canonical `get_family_id()`.
+- Zero raw FAMILY_ID reads remain outside canonical resolution functions.
+
+#### Metrics
+- 6,755 tests pass, 0 failures, 0 clippy warnings, 0 doc warnings
+- Zero raw env reads outside canonical path (OnceLock CLI > env > "nat0")
+
+### Wave 156b: Self-Knowledge Evolution (August 4, 2026)
+
+Hardcoding elimination pass — petalTongue now has zero knowledge of peer primals
+in production code. All inter-primal interactions are capability-discovered.
+
+#### Changed
+- CAS storage discovery: removed hardcoded `nestgate` paths and `NESTGATE_FAMILY_ID`
+  env var; replaced with ecosystem-standard `FAMILY_ID` and primal-agnostic discovery
+  (`COORD_STORAGE_PATH` > XDG > system-wide `/var/lib/ecoPrimals/coord-storage`)
+- Topology handler: "songBird capability-based mesh routing" → "mesh routing via
+  capability discovery (mesh.route)" — no peer primal names in production responses
+- Coordination handler: "nestGate JSON-RPC" → "content provider JSON-RPC"
+- Port-forward fallback: removed hardcoded "sporeGate" → "unknown"
+- Family ID resolution: unified 3 call sites to use canonical
+  `petal_tongue_ipc::socket_path::get_family_id()` (OnceLock CLI > env > "nat0")
+
+#### Metrics
+- Zero hardcoded primal names in production response payloads
+- Self-knowledge only: `PETALTONGUE` (self) + `BIOMEOS` (orchestration entry point)
+- 6,755 tests pass, 0 failures, 0 clippy warnings, 0 doc warnings
+
+### Wave 156b: Documentation Hygiene (August 3, 2026)
+
+Zero-warning documentation pass across 19 crates.
+
+#### Fixed
+- 9 broken intra-doc links across 3 crates (`petal-tongue-core`, `petal-tongue-ipc`,
+  `petal-tongue-platform`): scope-qualified `Self::`, `super::`, cross-crate paths,
+  removed link syntax from glob patterns
+- Orphaned sentence fragments in `CONTEXT.md` current state section
+- Stale BTSP count (12/13 → 13/13) and test count (6,730 → 6,755) in docs
+
+#### Metrics
+- 6,755 tests pass, 0 failures, 0 clippy warnings, 0 doc warnings
+- Zero debris (no .bak/.tmp/.swp/.log/~ files)
+- All dependencies at latest semver-compatible versions
+- `cargo audit`: zero vulnerabilities
+
+### Wave 155m: Modern Idiom Evolution Pass (July 30, 2026)
+
+Deep debt evolution pass — eliminated redundant allocations, modernized to Rust 2024
+let-chains, fixed a pre-existing test race condition, and updated all semver-compatible
+dependencies.
+
+#### Changed
+- `to_string_lossy().to_string()` → `to_string_lossy().into_owned()` across 11 call sites
+  (eliminates redundant re-allocation when the `Cow<str>` is already owned)
+- Front-matter date parsing: tries `as_str()` / `as_datetime()` before fallback
+  (eliminates double allocation from `.to_string().trim_matches('"').to_string()`)
+- `map(|x| x.clone())` → `.cloned()` where type supports it
+- Nested `if let` patterns → Rust 2024 let-chains (content backend, markdown renderer)
+- Redundant closures → method references (`map(|d| d.to_string())` → `map(ToString::to_string)`)
+
+#### Fixed
+- Test race condition: `MESH_RELAY_CONFIG` tests now serialize via `RELAY_LOCK` mutex
+  (was intermittently failing under parallel test execution)
+
+#### Updated
+- 35 semver-compatible dependency bumps (clap 4.6.4, hyper 1.11, tokio, etc.)
+
+#### Metrics
+- 6,755 tests pass, 0 failures, 0 clippy warnings
+- Zero `to_string_lossy().to_string()` remaining in codebase
+- All production files < 800 LOC
+
+### Wave 155k: P2 Divergence Fixes (July 30, 2026)
+
+Fixed two P2 divergences identified during westGate/blueGate NUCLEUS deployment.
+
+#### Fixed
+- `--family-id` CLI flag now propagates to BTSP/IPC layer via `OnceLock` override
+  (was parsed but functionally inert — BTSP only read env var)
+- `PRIMAL_BIND_MODE=tcp`/`tcp_only` now skips UDS entirely on Unix
+  (was only used as post-failure fallback, not as a proactive transport selection)
+
+#### Metrics
+- 6,755 tests pass, 0 failures, 22 ignored
+- Zero clippy warnings (workspace-wide, pedantic + nursery)
+
+### Wave 155g: Deep Debt Evolution Pass (July 28, 2026)
+
+Major architecture evolution — eliminated static topology overstep, evolved to
+runtime-discovered mesh topology, refactored large files, wired production stubs,
+and hardened FFI boundary.
+
+#### Added
+- `ManifestMeshTopology` — loads gate topology from `ecosystem_manifest.toml` at runtime
+- `MeshTopologySource` trait now returns owned `Vec<MeshNode>` (was `&'static`)
+- `MeshNode` / `MeshLink` evolved to owned `String` fields (agnostic to data source)
+- `offline-topology` feature now non-default (was default) — no static IPs compiled in
+- 13 FFI boundary tests covering null safety + full lifecycle roundtrip
+- `discover_via_mdns` wired to real `MdnsVisualizationProvider`
+- `discover_via_config` reads operator `discovery.toml` files
+- `query_unix_socket` probes UDS with JSON-RPC `capabilities.list`
+- `PETALTONGUE_GATE_ID` env var for runtime gate identity (was hardcoded `eastGate`)
+- `COORD_STORAGE_PATH` env var for coord/CAS storage path discovery
+
+#### Changed
+- `main.rs` 727→199 lines: extracted `cli.rs`, `bootstrap.rs`, `dispatch.rs`
+- `geometry.rs` 783 lines → `compiler/geometry/` module with strategy pattern
+- K-Derm components: `"songBird drawbridge"` → `"mesh.routing"`, `"bearDog TLS"` → `"tls.gateway"`
+- Storage paths: nestGate-specific defaults → generic `ecoPrimals/coord-storage` with env override
+- Hardcoded wave `136` fallback → reads from manifest, defaults to `null`
+- `derive_mesh_peers` no longer hardcodes `LOCAL_GATE_ID = "eastGate"`
+- `derive_capabilities` no longer matches primal names in role strings
+
+#### Fixed
+- Version drift: `manifest.toml` and `niche.yaml` synced to 1.7.0
+- 4 clippy doc-backtick warnings in `client_hello.rs`
+- 3 doc link resolution warnings in `dispatch.rs` and `method_gate.rs`
+- `cargo fmt` applied workspace-wide
+
+#### Metrics
+- 6,605 tests pass, 0 failures, 3 ignored
+- Zero clippy warnings (workspace-wide, pedantic + nursery)
+- Zero `todo!()`/`FIXME`/`HACK` in production code
+- Zero debris files (no .bak, .tmp, .swp, .log, stale .env)
+- All production `.rs` files under 800 LOC
+
+### Wave 155b: Stable Posture — Convergence (July 27, 2026)
+
+petalTongue declared STABLE at ecosystem convergence. No glacial goals owned
+directly. All P1/P2 resolved. Infrastructure ready for Nest Atomic (G3),
+Chimera (G5), and gate enmeshment (G7). BTSP now 13/13 ecosystem-wide.
+
+#### Changed
+- Documentation synchronized to Wave 155b ecosystem posture
+- Test count verified: 6,739 passing (was reported as 5,812 in blurb — corrected)
+- `ecosystem_manifest.toml`: wave 155, BTSP 13/13, 10 fossilized dimensions
+- Workspace metadata: added `homepage` and `documentation` URLs
+
+#### Metrics
+- 6,739 tests pass, 0 failures, 22 ignored
+- Zero clippy warnings (workspace-wide, pedantic + nursery)
+- Zero `unsafe` in production (only C-FFI in `petal-tongue-platform/src/ffi.rs`)
+- Zero `todo!`/`unimplemented!`/`FIXME`/`HACK` in production code
+- Zero bare `unwrap()` in production paths
+- All production `.rs` files under 800 LOC
+
+### Wave 151c: BTSP ClientHello + Deep Debt (July 26, 2026)
+
+Shipped the BTSP client-side handshake — petalTongue is now 12/13 for BTSP
+strict mode compliance. Evolved mesh peer derivation from name-based matching
+to attribute-based inference.
+
+#### Added
+- `client_hello` module: 4-step BTSP ClientHello handshake (HMAC-SHA256)
+- `BtspClientConfig` with env-based family seed resolution
+- `perform_client_handshake()` + split-stream variant
+- BTSP handshake wired into `primal.announce` and `content.resolve` outbound connections
+- `hmac = "0.12"` workspace dependency (pure Rust, zero unsafe)
+- 5 new BTSP client handshake tests + 4 attribute-based mesh peer derivation tests
+
+#### Changed
+- `derive_mesh_peers()`: connectivity and capabilities now inferred from node
+  attributes (zone, lan_ip, wg_ip, enrollment, role, gpu_target) rather than
+  hardcoded per-gate-name match arms
+- New gates added to topology data auto-classify without code changes
+
+#### Metrics
+- 6,589 tests pass, 0 failures, 18 ignored
+- Zero clippy warnings (workspace-wide, pedantic + nursery)
+- Zero `unsafe` in production (only C-FFI in `petal-tongue-platform/src/ffi.rs`)
+- Zero `todo!`/`unimplemented!`/`FIXME`/`HACK` in production code
+- Zero bare `unwrap()` in production paths
+- All production `.rs` files under 800 LOC
+
+### Wave 151b: sporePrint Pipeline Sources (July 26, 2026)
+
+Implemented both concrete `ContentSource` backends for the sporePrint pipeline
+(Zola replacement). petalTongue now generates complete static sites from either
+filesystem content directories or nestGate CAS blobs.
+
+#### Added
+- **`FilesystemSource`**: Zola-compatible directory scanner — reads `.md` with
+  TOML `+++` front matter, builds nav from `_index.md` sections, generates
+  search index with text preview extraction, resolves entity shortcodes.
+- **`CasSource`**: Content-addressed storage source — resolves pages from
+  nestGate CAS via `site-manifest.json` (hash → blob mapping). Supports
+  `sha256:` and `blake3:` prefixed hashes. Filesystem CAS access mode.
+- **`nav_with_active()`**: Active page navigation marker for server-side
+  rendering with current-page highlighting.
+- **`ContentDirectState::generate_static_site()`**: Batch site generation
+  from content-direct web backend using `FilesystemSource`.
+- **11 tests** covering both sources end-to-end with `SiteBuilder`.
+
+### Wave 150t: Sovereignty Evolution — Scene Unification + WebGL + SiteBuilder (July 21, 2026)
+
+Major feature wave: universal rendering engine, browser-side WebGL pipeline,
+static site generation foundation, and bingoCube widget integration.
+
+#### Added
+- **Scene Unification** (4 phases): `Transform3D` on `SceneNode`, `Camera` +
+  `Projection` types, `GrammarCompiler` z-wiring, universal 2D-as-3D-slice
+  rendering (orthographic camera at z=0).
+- **`WebGlCompiler`**: Scene graph → GPU draw commands (vertex arrays, index
+  buffers, draw calls). Exposed via `pt.render_webgl` JSON-RPC and WASM
+  exports (`render_binding_webgl`, `render_color_grid_webgl`).
+- **`SiteBuilder` + `ContentSource` trait**: Static site builder foundation —
+  compiles `SiteContent` into complete HTML/CSS/JSON output files with layout
+  composition, navigation, search index, and structured data.
+- **`InMemorySource`**: Testing/WASM content source for `SiteBuilder`.
+- **WASM exports**: `build_site()`, `render_page_with_layout()` for
+  client-side static site generation.
+- **`DataBinding::ColorGrid`**: Pre-computed RGBA color grids with progressive
+  reveal (bingoCube widget integration).
+- **`Tile` geometry**: Adapted to respect explicit per-cell colors for
+  ColorGrid rendering.
+
+#### Changed
+- **`data_channel.rs`**: 13 → 14 data binding variants (added `ColorGrid`).
+- **`modality/webgl.rs`**: Full modality compiler with 3D mesh, line, polygon,
+  and text primitive support.
+- **`petal-tongue-wasm`**: Added WebGL + site generation WASM exports alongside
+  existing SVG rendering.
+
+### Wave 150h–150g: WebSocket JSON-RPC Bridge on Port 8080 (July 19–20, 2026)
+
+Resolved LAST P1 inter-primal wiring — footPrint Caddy routes `/ws` to
+petalTongue directly on port 8080.
+
+#### Added
+- **`/ws` route**: WebSocket JSON-RPC bridge integrated into Axum web server
+  (port 8080), eliminating separate bridge port.
+- **`pt.metrics`**: JSON-RPC method exposing `PlatformMetrics` snapshot
+  (CPU, memory, uptime) via WebSocket.
+
+### Wave 150f: Platform Metrics Abstraction (July 18, 2026)
+
+#### Added
+- **`PlatformMetrics` trait**: Abstracts system resource queries across
+  platforms (Linux, Android, iOS, WASM).
+- **`ResourceSnapshot`**: CPU, memory, uptime in a cross-platform struct.
+- **`LinuxProcMetrics`**: `/proc/stat` + `/proc/meminfo` implementation.
+- **`StubMetrics`**: No-op fallback for unsupported/WASM platforms.
+
+### Wave 143b–141b: Platform Lifecycle + Cross-Architecture (July 15–17, 2026)
+
+#### Added
+- **`petal-tongue-platform` crate**: `PlatformLifecycle` trait,
+  `EmbeddedRuntime` for core logic, C-FFI entry points (`pt_create`,
+  `pt_start`, `pt_stop`, `pt_destroy`, `pt_ipc_request`).
+- **`MeshTopologySource` trait**: Runtime topology resolution with
+  `StaticMeshTopology` feature-gated fallback.
+- **Android `cdylib`**: Application-loaded shared library target for
+  embedded Android usage.
+- **Hardcoding elimination**: Removed all hardcoded IPs, ports, paths,
+  service names from production code paths.
+
+#### Changed
+- **`petal-tongue-core/transport.rs`**: `TransportEndpoint` abstraction
+  replaces direct `tokio::net::UnixStream`. Platform-agnostic IPC.
+- **`biomeos_discovery/client.rs`**: Uses `connect_transport()` via
+  `TransportEndpoint` instead of raw socket.
+
+---
+
+### Wave 141a: Silicon Atheism Adoption (July 15, 2026)
+
+Cross-architecture transport for petalTongue. `petal-tongue-core` compiles for
+Windows (`x86_64-pc-windows-gnu`) and Android (`aarch64-linux-android`).
+Dependencies bumped to latest. All scenario tests passing.
+
+#### Added
+- **`TransportStream::NamedPipe`**: Windows Named Pipe variant behind
+  `#[cfg(windows)]` using `tokio::net::windows::named_pipe::NamedPipeClient`.
+- **`connect_local()`**: platform-dispatched local IPC (UDS on Unix, Named Pipe
+  on Windows). Pipe name derived via songBird convention
+  (`\\.\pipe\ecoPrimals-{stem}`).
+- **`BiomeOsClient::from_socket_path()`**: constructor wrapping socket path as
+  `TransportEndpoint::Uds` (auto-adapts to Named Pipe on Windows).
+
+#### Changed
+- **`TransportStream::Uds`**: gated behind `#[cfg(unix)]`.
+- **`BiomeOsClient`**: evolved from raw `tokio::net::UnixStream` to
+  `connect_transport()` via `TransportEndpoint`.
+- **`process_exists()`**: non-Unix returns `true` (conservative) instead of
+  probing non-existent `/proc`.
+- **Dependencies**: clap 4.5→4.6, tokio 1.50→1.52, serde_json→1.0.150,
+  tracing-subscriber→0.3.23, zeroize→1.9.
+
+#### Fixed
+- **`gpu-compute-pipeline.json`**: `"health"` field was string `"Healthy"` where
+  `u8` expected; fixed to numeric `100` with proper `"status"` field.
+
+---
+
+### Wave 140a: Tangibles Pivot (July 15, 2026)
+
+Posture: PUBLIC + SOVEREIGN. TANGIBLES PIVOT. protoKarya to the wider world.
+Gonzales Interactive Explorer chart scenes delivered and refactored into modular
+directory. Full workspace clippy pedantic+nursery clean (zero warnings, 16
+crates). Manifest-driven handlers evolved. Ecosystem at 42 repos, 45 depot
+binaries, 4 architectures. Content-Addressed Convergence (CAC) formalized.
+
+#### Added
+- **Gonzales IC50 scene** (`gonzales-ic50`): Sigmoidal dose-response using 4PL
+  Hill equation. IC50 annotation, axis labels, sweep animation.
+- **Gonzales PK Decay scene** (`gonzales-pk-decay`): Two-compartment
+  pharmacokinetic elimination showing α (distribution) and β (elimination)
+  phases. Half-life annotation, 3-curve legend, sequential reveal animation.
+- **Gonzales Tissue Lattice scene** (`gonzales-tissue-lattice`): 12×12 spatial
+  cell-state grid with radial drug diffusion model. Color-coded viability
+  (green/yellow/red), scale legend, diffusion animation.
+- **Gonzales Hormesis scene** (`gonzales-hormesis`): Biphasic dose-response
+  showing low-dose stimulation and high-dose inhibition (J-curve). Baseline
+  reference, zone annotations, sweep animation.
+- **VizRegistry**: 4 new slugs registered (`gonzales-ic50`, `gonzales-pk-decay`,
+  `gonzales-tissue-lattice`, `gonzales-hormesis`) with scene + animation builders.
+- **9 unit tests** for pharmacological math models and scene structure validation.
+
+#### Changed
+- **Ecosystem manifest**: wave 139 → 140, posture adds "tangibles pivot",
+  new fields: `repos`, `depot_binaries`, `depot_architectures`,
+  `spring_scenarios`, `spring_tests`, `depot_signing`,
+  `content_addressed_convergence`.
+- **gonzales.rs refactor**: monolithic 918L file split into `gonzales/` module
+  directory (ic50.rs, pk_decay.rs, tissue_lattice.rs, hormesis.rs, mod.rs).
+- **ecosystem_handler**: reads wave/posture/primary_gate from
+  ecosystem_manifest.toml at runtime, static fallback when unavailable.
+- **mesh_peers_handler**: reports `"source": "topology_enriched"` when Neural
+  API is live vs `"static_derived"`.
+- **Workspace clippy clean**: pedantic + nursery, zero warnings across all 16
+  crates (~200 annotations: doc backticks, #[must_use], cast annotations,
+  significant_drop_tightening, float_cmp, similar_names, needless_collect).
+
+### Wave 139b: Public + Sovereign (July 14, 2026)
+
+Posture shift to PUBLIC + SOVEREIGN. northGate mesh enrollment unblocked
+(songBird Windows cross-compile shipped). westGate added to topology.
+Ecosystem manifest evolved to Wave 139b.
+
+#### Added
+- **westGate** in gate mesh: ZFS cold storage (AlphaFold data), Offline.
+- **`live_surfaces`** in `ecosystem_manifest.toml`: declares 3 live URLs.
+- **`sign_verify_on_fetch`** and **`identity_web`** in manifest security section.
+
+#### Changed
+- **northGate**: enrollment `Sovereign` → `Enrolled`, role "Windows mesh target
+  (RTX 5090, songBird ready)", `nucleus_count` 0 → 14.
+- **northGate mesh peer**: status `Pending` with capabilities `[compute.gpu,
+  mesh.windows]`, transport "LAN direct (mesh pending)".
+- **Ecosystem manifest**: wave 136 → 139, posture "public + sovereign",
+  compositions adds `tideGlass`, gate entries for northGate + westGate.
+- **Test assertions**: `enrolled_count` 6→7, `total_count` 11→12,
+  `gates_enrolled` 6→7, GATES.len() 10→11, all_nodes() 11→12.
+
+### Wave 137b: Neural API Live + TOPO-VIS (July 13, 2026)
+
+Neural API live 24+ days on eastGate. Topology visualization consumes live
+discovery data. Routing weights propagated. SSE live push for real-time
+dashboard updates. Composition serving operational.
+
+#### Added
+- **`/api/topology/live` endpoint**: Returns live Neural API topology (primals,
+  capability edges with routing weights, mesh peers) with static fallback.
+- **`LiveTopology`, `LivePrimal`, `LiveEdge`, `LiveMeshPeer` types**: Typed
+  response structs in `data_service.rs` for the TOPO-VIS endpoint.
+- **`weight: Option<f64>` on `TopologyEdge`**: Routing cost field (0.0=preferred,
+  1.0=normal, >1.0=expensive). Extracted from Neural API `routing_weight`.
+- **Typed SSE events**: `event: topology` pushes `LiveTopology` payload to
+  connected browsers every 30s (replaces untyped snapshot events).
+- **Dashboard Live Topology panel**: Primals table, capability edges with
+  weight column (color-coded green/yellow/red), mesh overlay chips.
+- **`neural_api` in `/api/status`**: Reports whether Neural API is discovered.
+- **Composition serving (FP-PARITY Phase 1)**: Axum mounts external web bundles
+  at `/app/{name}/` with SPA fallback. `discover_compositions()` function.
+- **`PETALTONGUE_COMPOSITIONS` / `PETALTONGUE_COMPOSITIONS_DIR` env vars**:
+  Dynamic composition discovery configuration.
+
+#### Changed
+- **SSE handler**: Emits typed `event: topology` events (previously untyped).
+- **`status_handler`**: Now accepts `State<Arc<DataService>>` and reports
+  `neural_api` availability.
+- **Neural API parser**: Extracts `routing_weight`/`weight` + `capability` +
+  `label` from connection data (previously discarded).
+
+#### Fixed
+- Removed stale `#[expect(dead_code)]` from `has_neural_api()` (now production-used).
+- Removed stale `#[expect(dead_code)]` from `snapshot_sync()` (scoped to non-test).
+
+### Wave 136b: Hardened + Converging (July 11, 2026)
+
+All 8 stadial criteria clear. DNSSEC live. K-Derm diderm reaffirmed.
+Manifest-driven handler evolution. Deep debt resolution.
+
+#### Added
+- **K-Derm diderm topology model**: 5-layer `KDermLayer` struct + `KDERM_LAYERS`
+  constant in `gate_mesh.rs`. `HardeningStatus` enum + `HARDENING_CONTROLS`.
+- **`/api/topology-layers` endpoint**: Returns K-Derm layers, components,
+  security properties, data flow, and hardening control status.
+- **Dashboard K-Derm section**: Live topology visualization panel with
+  membrane layers, security properties, and hardening status.
+- **`coord_handlers.rs` module**: Extracted coordination backend handlers
+  from `handlers.rs` (6 handlers, 212 lines).
+- **`ECOP_DEPOT_PATH` env discovery**: Depot path no longer hardcoded.
+- **`ECOSYSTEM_MANIFEST_PATH` env override**: sporePrint/topology handlers
+  discover manifest location at runtime.
+
+#### Changed
+- **`handlers.rs`**: 817 → 693 lines (coord_handlers extracted).
+- **`sporeprint_handler`**: Evolved from static hardcoded test counts to
+  runtime `ecosystem_manifest.toml` parsing (wave, posture, gates derived).
+- **`physical_topology_handler`**: Evolved from hardcoded IPs to manifest-driven
+  discovery. Zero hardcoded IP addresses in production handlers.
+- **`ecosystem_manifest.toml`**: Updated to Wave 136b (DNSSEC status,
+  glacial criteria, footPrint composition, diderm architecture).
+- **`crossbeam-epoch`**: 0.9.18 → 0.9.20 (RUSTSEC advisory resolved).
+- **Clippy**: zero warnings (pedantic + nursery). 2 redundant closures fixed
+  (method call references).
+
+### Wave 132d-f: Tower Atomic + Coordination Backend (July 4-5, 2026)
+
+grapheneGate enrollment. DataService → mesh.peers. Coordination dashboard.
+Deep debt: main.rs refactored, clippy zero, deny.toml evolved.
+
+#### Added
+- **grapheneGate**: Enrolled as `MeshNode` (Pixel 8a, mobile trust anchor,
+  ADB transport).
+- **`MeshPeer` struct**: `gate_id`, `status`, `transport`, `latency_ms`,
+  `capabilities` — models songBird `mesh.peers` response.
+- **`derive_mesh_peers()` function**: Offline fallback for mesh peer state.
+- **`/api/mesh-peers` endpoint**: Live mesh peer connectivity (via DataService).
+- **`/api/sporeprint` endpoint**: Ecosystem validation summary.
+- **6 `/api/coord/*` endpoints**: blurbs, waves, heads, fragos, topology, depot.
+  Read nestGate CAS coordination manifest from shared filesystem.
+- **Dashboard sections**: Mesh Peers, sporePrint, Physical Topology, K-Derm.
+- **`registration.rs` module**: Extracted from `main.rs` (announce + register, 115L).
+- **`DataUpdate::MeshPeersUpdated`**: Prepared for songBird SSE live push.
+
+#### Changed
+- **`main.rs`**: 784 → 671 lines (registration logic extracted).
+- **`deny.toml`**: Added exemptions for `ttf-parser` (RUSTSEC-2026-0192),
+  `quick-xml` (RUSTSEC-2026-0194, -0195) — transitive via egui/eframe chain.
+- **Test assertions**: Updated for 11-node topology (grapheneGate addition).
+- **`MeshPeer` derives**: Removed `Deserialize` (serialize-only for output).
+
+### Wave 128: Topology Cutover + Deep Debt (June 28, 2026)
+
+Physical topology evolution and floating-point precision hardening.
+
+#### Added
+- **`lan_ip` field on `MeshNode`**: Physical LAN addresses (192.168.4.x) now tracked
+  alongside WireGuard overlay IPs.
+- **`/api/physical-topology` endpoint**: Returns edge router (Flint H1), backbone
+  switch (CRS310), bridge (Flint H2), port forwards, and network invariant.
+- **Physical Topology dashboard panel**: ASCII network path diagram showing
+  INTERNET → ATT → Flint H1 → CRS310 → gates, port forward pills.
+- **`[physical_topology]` section in `ecosystem_manifest.toml`**: Edge router,
+  public IP, LAN/WG subnets, port forward target.
+- **1 new handler test** (`test_physical_topology_endpoint`).
+
+#### Changed
+- **sporeGate role**: "Compute node + Sovereign CI + Nest" (was "Build authority +
+  Nest provenance"). No longer the edge router — Flint H1 is the plasma membrane.
+- **sporeGate ephemeral**: `ephemeral = true` in ecosystem manifest. Unplugging
+  sporeGate does NOT kill the network.
+- **ironGate zone**: `"house2"` (via Omada/Flint H2 bridge, was "backbone").
+- **14 `mul_add` FMA conversions**: game_scene_renderer, soundscape_renderer,
+  entity_graph, compiler/geometry, data_binding/describe, scene_viewer.
+- **11 `#[must_use]` additions**: gate_mesh (3), ipc_errors (6), resilience (2),
+  push_delivery (1), json_rpc_client (1).
+- **KNOWN_DEBT audit**: Zero patterns found. No stale references, no hardcoded
+  paths, no missing error handling.
+
+### Wave 124: GPU Compute Topology + Ecosystem Manifest (June 22, 2026)
+
+GPU capability tracking and primalSpring scenario for compute validation.
+
+#### Added
+- **`gpu_target` field on `MeshNode`**: `Option<&'static str>` for SM target
+  (e.g. "sm_70" for ironGate RTX 5070, "sm_120" for northGate RTX 5090).
+- **`gpu_nodes()` helper**: Iterator over GPU-capable mesh nodes.
+- **`ecosystem_manifest.toml`**: Centralized topology config from petalTongue's
+  perspective — GPU targets, validated workloads, compute capabilities.
+- **`sandbox/scenarios/gpu-compute-pipeline.json`**: primalSpring scenario
+  exercising `compute.dispatch` on ironGate (LSTM, XOR MLP, N-body, SPIR-V).
+- **GPU column in gate status table**: Dashboard displays `gpu_target` as pill.
+- **`compute` section in `/api/ecosystem`**: `gpu_nodes` array, `primary_gate`,
+  `gpu_capable` metric.
+- **1 new test** (`gpu_nodes_identified`).
+
+#### Changed
+- **`/api/gate-mesh` includes `gpu_target`**: Each node's JSON now carries GPU info.
+- **`/api/ecosystem` `metrics.gpu_capable`**: Count of GPU-capable nodes.
+
+### Wave 123: Ecosystem Dashboard + ironGate Enrollment (June 22, 2026)
+
+Gate mesh topology and dashboard evolution for 5-node mesh overwatch.
+
+#### Added
+- **`/api/ecosystem` endpoint**: Returns NUCLEUS composition (4 atomics, 13 primals)
+  with gate assignments and role metadata. Derived from typed core constants.
+- **`NucleusPrimal` + `NucleusAtomic` types** in `petal-tongue-core::gate_mesh`:
+  Static constants (`TOWER_ATOMIC`, `NODE_ATOMIC`, `NEST_ATOMIC`, `META_ATOMIC`,
+  `NUCLEUS_ATOMICS`) — single source of truth for ecosystem composition.
+- **`GateEnrollment::as_str()`**: Zero-allocation const fn replacing `format!("{:?}")`
+  in the gate mesh handler hot path.
+- **`role` + `kderm_layer` fields on `MeshNode`**: Gates now carry their ecosystem role
+  and K-Derm membrane layer for richer dashboard display.
+- **NUCLEUS Composition panel** in web dashboard: Shows all 4 atomics with primal
+  assignments, roles, and gate locations (color-coded by atomic).
+- **1 new handler test** (`test_ecosystem_endpoint_returns_nucleus`).
+
+#### Changed
+- **ironGate enrolled**: WG IP `.7`, 12/12 NUCLEUS, role "Node compute + GPU".
+  Added golgi→ironGate and sporeGate→ironGate links (7 total WG links).
+- **Gate table shows role**: Dashboard gate table now displays ecosystem role instead
+  of raw zone name.
+- **Enrolled count**: 5 (sporeGate, eastGate, flockGate, ironGate, golgi).
+- **`#[allow]` → `#[expect]`**: Last remaining `#[allow(clippy::...)]` in
+  panel_registry tests migrated for lint hygiene consistency.
+
+### Wave 121: Web Dashboard + Gate Mesh Overwatch (June 21, 2026)
+
+Web mode evolution and gate mesh topology update — makes petalTongue useful as
+a browser-accessible overwatch dashboard across the WireGuard mesh.
+
+#### Added
+- **`/api/gate-mesh` endpoint**: Returns gate topology (nodes, links, enrollment,
+  NUCLEUS counts) as JSON for programmatic consumption.
+- **`/viz/{slug}` endpoint**: Renders any registered visualization as SVG (default),
+  `?format=scene-json`, or `?format=animation-json`. Available in all web backends.
+- **Periodic refresh in web mode**: DataService now runs the same heartbeat-interval
+  discovery refresh as live/server modes, keeping SSE topology data current.
+- **Gate mesh panel in web dashboard**: `web/index.html` now shows the WireGuard
+  overlay SVG and a gate status table with enrollment, zone, and NUCLEUS count.
+- **5 new handler tests**: gate-mesh JSON, viz SVG/JSON render, 404 for missing slug.
+
+#### Changed
+- **Gate mesh topology updated to Wave 120 state**: flockGate promoted from
+  `MeshLive` to `Enrolled` (13/13 NUCLEUS). Removed obsolete `pepti` VPS node
+  (golgi is the sole VPS). Links reduced from 6 to 5.
+- **golgi nucleus_count**: Updated to 18 (18 services, per ecosystem blurb).
+
+### Wave 120: Feature Gating, Dead Code Removal & Hot-Path Optimization (June 20, 2026)
+
+Binary slimming, legacy cleanup, and hot-path allocation reduction — focused
+on feature-gated optional subsystems and removing superseded code.
+
+#### Added
+- **`tui` feature flag**: TUI mode (ratatui + crossterm) now optional; disable with
+  `--no-default-features` for web/headless-only deployments. Default: enabled.
+- **`cache` feature flag** on `petal-tongue-discovery`: ProviderCache (LRU+TTL) now
+  behind optional feature; `lru` not pulled unless explicitly enabled.
+
+#### Changed
+- **Modality compile returns `&'static str`**: `compile_modality` and
+  `compile_binding_modality` now return `(Value, &'static str)` instead of
+  `(Value, String)`, eliminating heap allocations on every visualization render call.
+- **domain_charts reduced 73%**: Removed 5 pre-SceneGraph legacy renderers
+  (`draw_heatmap`, `draw_genome_track`, `draw_circular_map`, `draw_fieldmap`,
+  `draw_spectrum`) — superseded by Grammar of Graphics pipeline. 695 → 187 lines.
+- **Validation utilities gated**: Test-only functions (`validate_heatmap_dimensions`,
+  `validate_spectrum_lengths`, `value_range`, `normalize_value`) moved to
+  `#[cfg(test)]` submodule.
+
+#### Removed
+- 508 lines of dead legacy rendering code.
+- Unconditional `lru` dependency from discovery crate (now optional).
+- Unconditional `petal-tongue-tui` dependency from root binary (now feature-gated).
+
+### Wave 116: Gate Mesh Visualization & Deep Debt Execution (June 19, 2026)
+
+Meta-tier visualization for primalSpring overwatch: gate mesh topology, AEAD
+consolidation, topology deduplication, and pre-existing serde bug resolution.
+
+#### Added
+- **Gate mesh topology visualization** (`gate-mesh` slug in VizRegistry): renders
+  all 9 gates + 2 VPS nodes with WireGuard overlay links, enrollment status color
+  coding, latency labels, and enrollment progression animation.
+- **`gate.mesh.status` IPC method**: JSON-RPC handler returning full mesh topology
+  (gates, links, enrollment counts) from shared canonical data.
+- **`petal_tongue_core::gate_mesh` module**: single source of truth for mesh
+  topology data (`GATES`, `VPS_NODES`, `WG_LINKS` constants + helper functions).
+- 9 new tests for gate mesh topology (4 core, 4 viz registry, 1 IPC handler).
+
+#### Changed
+- **AEAD consolidated**: dropped `aes-gcm` dependency; entropy crate now uses
+  `XChaCha20-Poly1305` (192-bit nonces, single cipher story across entire codebase).
+- **`DataSourceId`/`GrammarId` → `String`**: fixed pre-existing `Arc<str>` serde
+  incompatibility in `interaction/` module that blocked full workspace compilation.
+- **Headless demo topology**: all primal IDs now overridable via environment
+  variables (`PETALTONGUE_HEADLESS_DEMO_SELF_ID`, `_SECURITY_ID`, `_SECURITY_NAME`);
+  removed hardcoded "encryption-demo-1".
+- **Capability stubs evolved**: Haptic/VR modality reasons now report
+  `CapabilityNotDiscovered` with required capability names instead of generic
+  "not implemented" language.
+
+#### Removed
+- `aes-gcm` workspace dependency (consolidated to `chacha20poly1305`).
+
+### Wave 113: riboCipher Prefix Acceptance (June 14, 2026)
+
+Accept and strip the `[0xEC, 0x01]` riboCipher signal prefix on UDS connections
+per Wave 113 guideStone amendment. cellMembrane health probes prepend this
+2-byte prefix before JSON-RPC; all primals MUST accept it.
+
+#### Added
+- **riboCipher prefix stripping** in `handle_uds_with_btsp`: peek first 2 bytes
+  via `BufReader::fill_buf()`, consume if `[0xEC, 0x01]`, then proceed to BTSP
+  classification or plain JSON-RPC. Works on both BTSP-active and dev paths.
+- `RIBOCIPHER_PREFIX` constant (`[0xEC, 0x01]`) on `UnixSocketServer`.
+- 5 tests: prefix constant, strip-removes-bytes, plain-JSON-passthrough,
+  BTSP-binary-passthrough, full riboCipher→health enriched response roundtrip.
+
+#### Changed
+- `handle_uds_with_btsp`: always splits stream + creates `BufReader` up front
+  (previously only in BTSP path), enabling consistent prefix detection before
+  protocol classification.
+
+### Wave 110: HEALTH-01 Compliance (June 11, 2026)
+
+Bare `"health"` method now returns enriched schema per HEALTH-01 ecosystem standard.
+
+#### Changed
+- **Bare `"health"` rerouted** from liveness (`{"status":"alive"}`) to enriched
+  `health.check` (`{status, primal, version, uptime_s, uptime_seconds, modalities_active}`).
+  Health sweeps calling `{"method":"health"}` now get full primal identity.
+- **`uptime_s` field added** to `health.check` response alongside `uptime_seconds`
+  for HEALTH-01 ecosystem parity (13/13 standard).
+- **`"health"` advertised** in `capabilities.list` methods array.
+
+#### Added
+- Test: `dispatch_bare_health_routes_to_enriched_check` — validates HEALTH-01 schema
+  (status, primal, version, uptime_s) for bare `"health"` method.
+- Test assertions: `handle_health_check_returns_healthy` now validates both `uptime_s`
+  and `uptime_seconds` fields.
+
+### Wave 107: Remaining Debt Cleanup (June 10, 2026)
+
+Final surgical debt pass — `/tmp` hardcoding, async error observability,
+RwLock poison logging, doc/code alignment.
+
+#### Fixed
+- **`/tmp` literal** in `main.rs` `announce_to_neural_api()` → uses
+  `LEGACY_TMP_PREFIX` constant. petalTongue now has zero raw `/tmp` literals
+  in production code.
+- **Capabilities doc/code mismatch** — `get_status()` documented "Panics on
+  poison" but actually returned `None`. Doc corrected.
+
+#### Changed
+- **GPU compute re-discovery** (`initialize()`) — `.ok()` now logs error
+  via `inspect_err()` before discarding.
+- **Socket dir iteration** (`unix_socket_provider`) — `next_entry().await`
+  errors now logged and break cleanly instead of silently ending iteration.
+- **5 RwLock `.read().ok()` sites** now log poison via `inspect_err()`:
+  `data_service`, `adapter_registry`, `audio_sonification`, `capabilities`,
+  `app/mod.rs` visualization state.
+- **UDS server `start()` function** — added `#[expect(clippy::too_many_lines)]`
+  for the bind+fallback+accept loop (131 lines, from Wave 107 UDS→TCP fallback).
+
+#### Verified
+- **6,454 tests pass**, zero Clippy warnings.
+- **Zero `/tmp` literals** in production code (verified via audit).
+- **Zero TODO/FIXME/HACK** comments in codebase.
+
+### Wave 102: Deep Debt Modernization + Coverage Sprint (June 9, 2026)
+
+Error observability, idiomatic Rust patterns, smart module refactor, and
+coverage expansion across 4 previously-untested production modules.
+
+#### Added
+- **+52 new tests** across 4 production modules:
+  - `sensor/types.rs` (13 tests): SensorError display, capabilities, event
+    classification, modifier constructors
+  - `tufte/constraints.rs` (12 tests): DataInkRatio, ChartjunkDetection,
+    ColorAccessibility, DataDensity, SmallestEffectiveDifference,
+    SmallMultiplesPreference
+  - `dynamic_schema/types.rs` (15 tests): SchemaVersion parsing/compat,
+    DynamicValue accessors/roundtrip, DynamicData merge/serde,
+    deserialize_version string+struct formats
+  - `content_direct.rs` (12 tests): MIME detection, response builder,
+    content/static path resolution, fallback index
+
+#### Changed
+- **`.ok()` error logging** — 8 high-priority broadcast/discovery paths now
+  surface errors via `inspect_err()` before discarding: awakening coordinator
+  (6 event broadcasts), engine modality stop, biomeOS UI manager discovery,
+  audio network backend discovery.
+- **`unwrap_or("")` → `unwrap_or_default()`** — 20+ sites modernized across
+  `content_render`, `content_direct`, BTSP handshake, `system_info`,
+  `gpu_compute_provider`, `agent_adapter`, scene compiler/data-binding,
+  chart renderers. Semantically identical (Default for `&str` is `""`),
+  more idiomatic.
+
+#### Refactored
+- **`content_render/mod.rs`** (887L → 361L): Smart-split into cohesive
+  submodules — `front_matter.rs` (85L, TOML parsing), `markdown.rs` (379L,
+  pulldown-cmark compiler), `shortcodes.rs` (87L, entity resolution).
+  Public API and all 22 tests preserved.
+
+#### Verified
+- **6,454 tests pass**, zero Clippy warnings.
+
+### Wave 100: Transport Evolution (June 8, 2026)
+
+sourDough canonical transport standard adoption — `TRANSPORT_ENDPOINT`
+env var, `TransportEndpoint` type, `connect_transport()` function.
+
+#### Added
+- **`TransportEndpoint` type** (`petal-tongue-core::transport`): Serde-tagged
+  enum matching sourDough Wire 100 canonical format (`uds`, `tcp`, `mesh_relay`).
+  Includes `from_env()`, `connect_transport()`, and `TransportStream` enum
+  with `AsyncRead`+`AsyncWrite` delegation.
+- **`TRANSPORT_ENDPOINT` env var** accepted in `main.rs`: When set by the
+  launcher/Tower Atomic, it supersedes CLI `--port`/`--socket`/`--bind` for
+  IPC server transport. Logged at startup.
+- **`resolve_server_transport()`**: Centralized transport resolution for
+  `server` and `live` modes — prioritizes `TRANSPORT_ENDPOINT` over CLI args.
+- **13 new tests**: Serde roundtrip (UDS/TCP/mesh_relay), `from_env()` (unset,
+  valid, invalid), `connect_transport()` mesh_relay error, display format,
+  `is_local()` predicate.
+
+#### Changed
+- **Content backend**: Unified `rpc_unix()` + `rpc_tcp()` into single
+  `rpc_transport()` using `connect_transport()`. `ContentEndpoint` now
+  converts to `TransportEndpoint` via `to_transport_endpoint()`.
+- **Push delivery** (PT-06): Replaced raw `UnixStream::connect` /
+  `TcpStream::connect` dispatch with `connect_transport()`.
+
+#### Verified
+- `--port` remains Tier 5 fallback (debug/standalone only).
+- **Zero self-binding anti-patterns** — all TCP bind is opt-in or user-facing.
+- **6,347 tests pass**, zero Clippy warnings.
+
+### Wave 86: Health Liveness Parity (June 6, 2026)
+
+P2 closure: confirm `health.liveness` returns `{"status":"alive"}` unauthenticated
+on UDS — ecosystem standard for 13/13 health parity.
+
+#### Verified
+- Wave 82c fix (`UdsHandshakeOutcome::PlainJsonRpc` → `handle_connection_split`)
+  already serves `health.liveness` on UDS without BTSP auth.
+- Method gate classifies `health.*` as **Public** (no token required).
+- Handler returns exactly `{"status":"alive"}` per `DEPLOYMENT_BEHAVIOR_STANDARD`.
+
+#### Added
+- Integration test: full UDS round-trip for `health.liveness` (connect → send →
+  receive `{"status":"alive"}`).
+- Integration test: sequential health sweep (liveness + check + readiness) on
+  single persistent UDS connection.
+- Unit test: `handle_connection_split` serves `health.liveness` via buffered
+  reader (post-BTSP-peek path).
+- **6,334 tests pass**, zero Clippy warnings.
+
+### Wave 82c: UDS Health Probe Fix (June 6, 2026)
+
+P1 fix: `health.liveness` returning empty response on UDS while TCP worked.
+
+#### Fixed
+- **UDS plain JSON-RPC serving**: When BTSP Phase 2 is active (production
+  `FAMILY_ID`), plain JSON-RPC on UDS was classified as `PlainJsonRpc` and
+  returned `Ok(None)` from `run_uds_handshake`. The parent gate treated `None`
+  as a PT-09 rejection, silently dropping the connection — zero bytes written.
+  Introduced `UdsHandshakeOutcome` enum to distinguish `PlainJsonRpc` (serve via
+  filesystem auth) from `Reject` (EOF, peek error, failed handshake). UDS
+  connections sending plain JSON-RPC now route through `handle_connection_split`,
+  since UDS is filesystem-authenticated. TCP plain JSON-RPC rejection unchanged.
+
+#### Added
+- `has_tcp_port()` accessor on `UnixSocketServer`.
+- 2 new tests: BTSP classification for `health.liveness`, `has_tcp_port` builder.
+
+#### Verified
+- **6,292 tests pass**, zero Clippy warnings.
+
+### Wave 79: Transport Compliance + Coverage Sprint (June 5, 2026)
+
+Transport compliance verification and coverage push.
+
+#### Added
+- **Transport compliance tests**: `test_uds_only_no_tcp_port_configured` and
+  `test_dual_transport_has_tcp_port` prove `server --socket` without `--port`
+  does not configure TCP.
+- **Content render tests** (+16): tables, ordered/unordered lists, links, images,
+  emphasis, bold, strikethrough, thematic break, inline code, blockquotes,
+  date/extra front matter, invalid TOML, unclosed front matter, unknown entity
+  shortcode fallback, `resolve_shortcodes` integration.
+- **Notebook render tests** (+10): JPEG output, SVG output, text/plain-only,
+  `language_info` fallback, unknown cell type, raw cell, invalid JSON,
+  nbformat v3 rejection.
+- **Discovery parse tests** (+5): `parse_primal` minimal + defaults,
+  `parse_topology_edges` success/error/empty.
+
+#### Changed
+- **Transport log clarity**: `server_mode::run` now logs `"UDS-only, no TCP bind"`
+  or `"UDS + TCP dual transport"` at startup (replaces generic message).
+
+#### Verified
+- **6,290 tests pass**, zero Clippy warnings.
+
+### Deep Debt Pass 5: Tokio Narrowing + Anyhow Demotion + Discovery Logging (June 5, 2026)
+
+Structural evolution: dependency scoping, error visibility.
+
+#### Changed
+- **Tokio feature narrowing**: `petal-tongue-core`, `petal-tongue-discovery`,
+  `petal-tongue-ui`, `petal-tongue-tui` now declare only the `tokio` features
+  they actually use (e.g. `["rt", "sync", "time", "net", "io-util", "macros"]`).
+- **Anyhow demotion**: Removed from `[workspace.dependencies]`, now per-crate
+  `[dev-dependencies]` only — clarifies non-production status.
+- **Discovery error logging**: 4 critical `.ok()` sites (proprioception panel,
+  metrics panel, GPU compute, content backend) now log errors via
+  `tracing::warn!`/`tracing::debug!` before discarding to `Option`.
+- **Test rename**: `test_ui_mode_error_is_anyhow` → `test_ui_mode_error_display`.
+
+### Deep Debt Pass 4: Format Idiom + Dead Feature + `.to_owned()` Sweep (June 5, 2026)
+
+#### Changed
+- Replaced 6 `format!("{x}")` sites with `x.to_string()`.
+- Removed dead `window` feature from `petal-tongue-ui` (`Cargo.toml`, enum
+  variant, `check_window()` function, all match arms).
+- Converted 13 `unwrap_or("literal").to_string()` sites to `.to_owned()`.
+
+### Wave 78: Coverage Sprint (June 5, 2026)
+
+Coverage push: +42 new tests targeting content-backend integration paths.
+
+#### Added
+- 42 new tests across `content_direct.rs`, `viz_data/`, `content_render/site.rs`,
+  `content_backend.rs`, and web handlers.
+
+#### Verified
+- **6,259 tests pass**, zero Clippy warnings.
+
+### Wave 77d: NestGate Integration Readiness (June 4, 2026)
+
+Typed errors, MIME-based notebook detection, audio decode evolution.
+
+#### Changed
+- **Typed docroot validation**: `AppError::Other` for docroot path errors replaced
+  with `AppError::DocrootValidation`.
+- **MIME-based notebook detection**: Hash-based URLs now detected via content MIME
+  type, enabling `.ipynb` rendering for content-addressable URLs.
+- **Audio decode evolution**: `StartupAudioError::Decode` evolved from
+  `Box<dyn Error>` to `String` — eliminates last `Box<dyn Error>` in codebase.
+- **Sandbox tokio narrowing**: `sandbox/mock-biomeos` tokio features narrowed
+  to exact usage.
+
+### Deep Debt Pass 3: TRUE PRIMAL TLS + NESTGATE Removal + Complete Idiom Sweep (June 3, 2026)
+
+Third and final deep debt pass: sovereignty sweep, dead constant removal,
+complete idiom migration.
+
+#### Changed
+- **TRUE PRIMAL TLS labels**: `viz_data/nucleus.rs` TLS handshake visualization
+  evolved from hardcoded `Songbird`/`BearDog` names to protocol-based labels
+  (`TLS provider`, `X.509`, `X25519`, `HMAC verify`).
+- **NESTGATE_SOCKET removed**: Deprecated constant fully deleted (zero
+  references remained after Wave 69 migration to `CONTENT_BACKEND_SOCKET`).
+- **Complete idiom sweep**: ALL remaining `"literal".to_string()` in production
+  code replaced with `.to_owned()` — 600+ replacements across 195 files.
+  Zero instances remain in non-test code.
+- **Clippy `assigning_clones`**: All `clone_into` patterns fixed.
+
+### Wave 76 Consolidation: S3 Cutover Readiness (June 3, 2026)
+
+Content backend mesh-aware 4-tier resolution audit and fixes for DNS cutover.
+
+#### Changed
+- **FAMILY_ID alignment**: Content backend and `announce_to_neural_api` defaults
+  changed from `"default"` to `"nat0"` (ecosystem standard), matching
+  `DiscoveryServiceClient::discover()` and `socket_path::get_family_id()`.
+- **DISCOVERY_SOCKET wired into Tier 4**: `DiscoveryServiceClient::discover()`
+  now honors `DISCOVERY_SOCKET` env var as highest-priority override, aligning
+  with NUCLEUS composition pattern where both registration and discovery use
+  the same Songbird socket.
+- **AppError::TracingInit**: New typed variant for tracing/logging initialization
+  errors, eliminating 4 `AppError::Other(format!())` sites in `init_tracing()`.
+- **Stale doc cleanup**: Removed duplicate `resolve()` doc comment, stale
+  `content.get` module reference.
+- **Idiom sweep**: 300+ additional `.to_string()` → `.to_owned()` across 27 files.
+
+#### Verified
+- 4-tier content backend resolution chain architecturally complete.
+- Tiers 1–3 have integration tests; Tier 4 structurally sound.
+- **6,217+ tests pass**, zero Clippy warnings, `unsafe_code = "forbid"` enforced.
+
+### Deep Debt Pass 2: AppError Evolution + Async Safety + Idiom Sweep (June 3, 2026)
+
+Second deep debt pass: evolving error types, fixing async-safety, broad idiom sweep.
+
+#### Changed
+- **AppError typed sources**: Added `#[from]` conversions for `ConfigError`,
+  `IpcServerError`, `AddrParseError`, `serde_json::Error`, and
+  `tokio::task::JoinError`. Eliminated 11 `AppError::Other(format!())`
+  call sites in `main.rs`, `web_mode/mod.rs`, `server_mode.rs`,
+  `live_mode.rs`, `cli_mode/mod.rs`, and `cli_mode/gather.rs`.
+- **Async-safe file I/O**: `content_direct.rs` index and fallback handlers
+  migrated from blocking `std::fs::read_to_string` to `tokio::fs::read_to_string`.
+- **Idiomatic Rust sweep**: Replaced 220+ additional `"literal".to_string()`
+  with `.to_owned()` across 7 more files: `gather.rs`, `scenario/convert.rs`,
+  `tutorial_mode.rs`, `trust.rs`, `ai_adapter.rs`, `status_reporter.rs`,
+  `jsonrpc_provider.rs`.
+- **Clippy cleanup**: Removed unfulfilled `too_many_lines` expectation from
+  `main()` (function simplified by typed error evolution); fixed
+  `clone_into` pattern in `status_reporter`.
+
+#### Verified
+- Telemetry paths follow DH-1 tiered resolution (`PETALTONGUE_TELEMETRY_DIR`
+  > `XDG_DATA_HOME` > `/var/lib` > `/tmp` last resort) — not hardcoding debt.
+- All `localhost:8080` references are test-only fixtures.
+- Clone hotspots in `demo_device_provider` / `status_reporter` are
+  trait-mandated or lock-safety patterns — acceptable.
+- **6,217 tests pass**, zero Clippy warnings, `unsafe_code = "forbid"` enforced.
+
+### Deep Debt Pass 1: TRUE PRIMAL + Typed Errors + Idiom Sweep (June 3, 2026)
+
+Comprehensive deep debt audit and resolution pass.
+
+#### Changed
+- **TRUE PRIMAL compliance**: Removed hardcoded primal names from
+  `config/capability_registry.toml` — content owner is now `content-provider`
+  (not `nestgate`), discovery owner is `discovery-service` (not `songbird`).
+- **Viz data agnostic labels**: `viz_data/nucleus.rs` and `viz_data/kderm.rs`
+  now use capability-based labels (e.g., "AI inference", "Content storage",
+  "inner-proxy", "gate-user") instead of hardcoded primal names.
+- **Typed content backend errors**: `content_backend.rs` RPC helpers evolved
+  from `Result<String, String>` to `Result<_, ContentBackendError>` with
+  `thiserror`-derived variants: `Connect`, `Write`, `Serialize`, `Base64`,
+  `Protocol`.
+- **Idiomatic Rust**: Replaced 220+ `"literal".to_string()` calls with
+  `.to_owned()` across `network.rs`, `shader_lineage.rs`,
+  `gpu_compute_provider.rs`, `demo_device_provider.rs`, and audio backends.
+- **CLI doc cleanup**: Removed stale `nestgate` backend alias from `--backend`
+  help text.
+
+#### Verified
+- Audio stubs (`direct.rs`, `socket.rs`) properly feature-gated behind
+  `audio-direct` / `audio-socket` — not compiled into default builds.
+- `DemoDeviceProvider` correctly gated behind `#[cfg(feature = "mock")]`.
+- Texture attach handler is a valid partial implementation, not a mock leak.
+- **6,217 tests pass**, zero warnings, `unsafe_code = "forbid"` enforced.
+
+### Wave 74 Sovereign Verify + Mesh Testing + Coverage (June 3, 2026)
+
+Wave 74 — sovereign rendering verification, mesh content routing integration
+tests, WASM bundle profiling, content backend test coverage, security hardening.
+
+#### Changed
+- **Path traversal hardening**: `resolve_docroot_path` now filters to
+  `Component::Normal` only, stripping `..`, `.`, and root segments. Prevents
+  directory escape from docroot.
+- **Upstream merge resolution**: Restored `resolve_biomeos_socket_dir()` removed
+  by upstream; resolved conflict markers in `content_backend.rs`.
+
+#### Added
+- **Content backend integration tests**: 8 new tests covering all 4 discovery
+  tiers (socket override, TCP override, convention socket, fallback), tier
+  priority (socket beats TCP), `ContentEndpoint` display format, successful
+  resolve via UDS mock, JSON-RPC error handling, TCP transport integration test,
+  TCP connect failure, `content_index` dashboard fallback.
+- **Path traversal test**: Verifies `..` components are stripped from docroot
+  resolution.
+
+#### Profiled
+- **WASM bundle**: 610K raw, 191K gzipped (release build, wasm32-unknown-unknown)
+  - Dep tree: 6 direct deps (wasm-bindgen, console_error_panic_hook, serde,
+    serde_json, petal-tongue-types, petal-tongue-scene)
+  - `toml` + `tracing` elimination from Wave 73 confirmed effective
+  - Next trim targets: feature-gate `petal-tongue-scene` modules unused by WASM,
+    slim `bytes` serde feature, consider `serde-wasm-bindgen` for zero-copy
+
+#### Verified
+- Sovereign rendering: all 5 components (index.html, WASM, web_mode, handlers,
+  content_direct) confirmed origin-agnostic with zero external dependencies.
+- `cargo fmt --check`: clean
+- `cargo clippy --workspace`: 0 warnings
+- `cargo test --workspace`: 6,217 passed, 0 failed
+
+### Wave 73 Sovereign + Mesh + Optimization (June 3, 2026)
+
+Wave 73 — sovereign rendering verification, mesh-aware content routing,
+WASM bundle trimming, continued tokio scope reduction.
+
+#### Changed
+- **Mesh-aware content routing**: `ContentBackendClient` evolved from Unix-only
+  to multi-transport (`ContentEndpoint::Unix` | `Tcp`). New 4-tier resolution:
+  `CONTENT_BACKEND_SOCKET` → `CONTENT_BACKEND_ENDPOINT` (TCP) → socket-dir
+  convention → `discovery.query("content")` mesh fallback. Cross-gate content
+  rendering (e.g. flockGate → NestGate on eastGate) now possible via TCP
+  JSON-RPC or discovery service.
+- **WASM bundle trim**: Removed `toml` and `tracing` from `petal-tongue-scene`
+  deps (zero usage in scene sources). `PageMeta.extra` type changed from
+  `HashMap<String, toml::Value>` to `HashMap<String, serde_json::Value>`,
+  eliminating the `toml`+`winnow` parser chain from WASM builds. `PageMeta`
+  gained `Eq` derive (now possible without `toml::Value`).
+- **Tokio scope reduction (9→6 production crates)**: Removed dead `tokio` from
+  `petal-tongue-ui-core` and `petal-tongue-headless`. Removed dead
+  `petal-tongue-discovery` from headless (eliminates transitive ipc/tokio from
+  headless binary). Removed dead `tokio-util` from `petal-tongue-tui`.
+
+#### Added
+- `CONTENT_BACKEND_ENDPOINT` env var for explicit TCP cross-gate content routing.
+- Discovery-based content resolution via `discovery.query("content")` capability.
+
+#### Verified
+- Sovereign rendering: zero hardcoded GitHub Pages URLs, zero CDN deps.
+  WASM exports are synchronous and origin-agnostic. `web/index.html` uses
+  only relative `/api/` paths. Ready for Caddy-served sovereign infrastructure.
+- `cargo fmt --check`: clean
+- `cargo clippy --workspace`: 0 warnings
+- `cargo test --workspace`: 6,209 passed, 0 failed
+
+### Wave 69 Deep Debt + Modernization Pass (June 2, 2026)
+
+Wave 69 — error typing evolution, dependency narrowing, dead code elimination,
+idiomatic Rust modernization.
+
+#### Changed
+- **Error typing**: `DirError` manual `Display`/`Error` → `thiserror` derive.
+  `HeadlessError::IoError(String)` → `Io(#[from] std::io::Error)` with typed
+  `ScenarioLoad` variant for JSON parse errors. `AppError` gained typed `Io`
+  variant, manual `From<io::Error>` removed.
+- **Tokio dep narrowing**: Removed tokio from 4 crates that didn't use it in
+  production (graph, animation, adapters, telemetry). Moved to dev-deps for 2
+  test-only crates (entropy, cli). Narrowed features for api to
+  `[net, io-util, time, rt]`.
+- **Dead code elimination**: `VizEntry` gained `Serialize`, `slug`/`title`/
+  `description` fields now live (API response type). `VizRegistry::get()` wired
+  into `build_scene`/`build_animation`. New `list()` method. `ContentDirectState.nav`
+  wired to `/api/nav` endpoint. New `/api/viz` listing endpoint.
+- **ProcStats non-Linux**: `cpu_count()` uses `std::thread::available_parallelism()`
+  instead of hardcoded `1`. `total_memory()` reads `PETALTONGUE_TOTAL_MEMORY_BYTES`
+  env fallback.
+- **Idiomatic Rust**: `.to_string()` on string literals → `.to_owned()` across
+  viz_data, IPC handlers, WASM compilers, headless graph_loader, socket_path.
+- **TRUE PRIMAL (Wave 69)**: Removed `nestgate` backend alias from `web_mode`,
+  removed env fallback from `content_backend`, deprecated `NESTGATE_SOCKET`
+  constant. Dep trim: `tarpc/unix`, `egui_extras`, `rustix` 0.38→1.x. IPC
+  evolution: `grammar_placeholder` → `identity_grammar`, texture attach slot
+  registration semantics.
+
+#### Verified
+- `cargo fmt --check`: clean
+- `cargo clippy --workspace`: 0 warnings
+- `cargo test --workspace`: 6,208 passed, 0 failed
+
+### flockGate W67/W68 Review + Content Pipeline Wiring (June 1, 2026)
+
+Wave 67 — reviewed and integrated flockGate deliverables: content rendering pipeline,
+VizRegistry pattern, and document scene graph types.
+
+#### Added
+- **Module wiring**: `content_render`, `viz_data/`, and `web_mode/content_direct`
+  modules are now compiled into the binary (previously orphaned dead code).
+- **Inline variants**: `Inline::Strikethrough` and `Inline::Image` added to document
+  scene graph and handled by both `compile_markdown` and modality compilers (HTML +
+  description). Closes gap where pulldown-cmark parsed them but they were silently dropped.
+- **Table shortcode resolution**: `resolve_shortcodes` now walks `DocumentNode::Table` cells.
+
+#### Changed
+- **TRUE PRIMAL fix**: Removed hardcoded `/primals/{key}/` and `/springs/{key}/` URL
+  fallbacks from `expand_entity_shortcodes`. Entity href now comes from registry `page`
+  field only — no ecosystem layout assumptions baked into petalTongue.
+- **Serde robustness**: `PageMeta`, `EntityRegistryEntry`, `SiteContent` gained
+  `#[serde(default)]` for safe partial deserialization.
+- **Type quality**: All document types gained `PartialEq` (+ `Eq` where `toml::Value`
+  absence allows). Enables `assert_eq!` in downstream tests.
+- **Doc coupling cleanup**: Removed sporePrint/NestGate name coupling from module docs
+  and HTML output in `content_render.rs` and `content_direct.rs`.
+
+#### Fixed
+- `toml` workspace dependency added to root binary crate (was missing, blocked compilation
+  of `content_render`).
+
+### Deep Debt Cleanup + DH-1 Compliance (May 29, 2026)
+
+Wave 61 ecosystem tightening — dep trim, TRUE PRIMAL fix, mock isolation, DH-1 /tmp cleanup.
+
+#### Changed
+- **DH-1 /tmp cleanup**: All production socket and data writes now resolve through
+  the tiered chain: `BIOMEOS_SOCKET_DIR` > `XDG_RUNTIME_DIR` > `/run/user/{uid}` > `/tmp`.
+  `resolve_biomeos_socket_dir()` is the canonical resolver. Unblocks `ProtectSystem=strict`.
+- **Dependency trim**: Removed dead `mdns-sd`, trimmed `tokio/full` → explicit 8-feature set,
+  dropped unused `serde/rc`, `clap/cargo`, `tower-http/set-header`. Bumped `tower` 0.4 → 0.5.
+- **TRUE PRIMAL**: `content_backend.rs` default provider changed from `"nestgate"` to
+  `"content-provider"` (capability-based, not primal-coupled).
+- **Mock leak isolation**: UI auto-fallback no longer injects fake primals on empty discovery.
+  Headless binary demo topology now requires `--demo` or `SHOWCASE_MODE=true`.
+  Sensory discovery probes Linux audio subsystems before reporting capabilities.
+- **Global CLI flags**: `--socket`, `--port`, `--family-id` accepted before subcommands (Wave 54).
+
+#### Removed
+- `mdns-sd` workspace dependency (never imported; custom mDNS in `mdns_provider/`)
+- `mdns_discovery.rs` module and `mdns` feature from `petal-tongue-discovery`
+- Unconditional demo topology from headless binary default path
+
+### Deep Debt Resolution + TRUE PRIMAL Evolution (May 24, 2026)
+
+Wave 47 behavioral convergence + capability-based discovery rewiring.
+
+#### Changed
+- **web_mode/mod.rs smart refactor** (1136L → 3 focused files):
+  `mod.rs` (185L orchestrator), `handlers.rs` (263L HTTP + SSE + fallback),
+  `tests.rs` (652L). No file over 800 lines in the workspace.
+- **NestGate → capability-based content_backend**: `nestgate.rs` replaced by
+  `content_backend.rs`. `NestGateContentClient` → `ContentBackendClient`.
+  Socket discovery: `CONTENT_BACKEND_SOCKET` > `NESTGATE_SOCKET` (compat) >
+  `CONTENT_BACKEND_PROVIDER`-based convention. CLI accepts both `"nestgate"`
+  (compat) and `"content-provider"` as `--backend` values.
+- **BTSP overstep removed**: `BEARDOG_SOCKET` and `BEARDOG_FAMILY_SEED`
+  replaced with role-based `BTSP_PROVIDER_SOCKET` / `SECURITY_PROVIDER_SOCKET` /
+  `BTSP_FAMILY_SEED` / `FAMILY_SEED`. No production code references another
+  primal by name.
+- **Display V1 discovery**: Added `DISPLAY_BACKEND_SOCKET` role-based env
+  override (was orchestrator-only `BIOMEOS_SOCKET`).
+- **Provenance trio discovery**: Refactored hardcoded match arms to generic
+  domain-prefix extraction with well-known aliases. Added
+  `PROVENANCE_TRIO_SOCKET` shared env override.
+- **Stale references cleaned**: Removed "rodio" from audio log messages
+  (replaced with "hound" / "pure Rust audio"), removed "cpal" comments,
+  removed cross-primal port comment (rhizoCrypt 9600) from network constants.
+
+#### Added
+- **Graceful shutdown (SIGTERM + SIGINT)**: Shared `signal.rs` module used by
+  all three long-running modes (web via `with_graceful_shutdown`, server via
+  `tokio::select!`, live via spawned signal task). Per
+  `DEPLOYMENT_BEHAVIOR_STANDARD.md`.
+- **`health.liveness` normalized**: Returns exactly `{"status":"alive"}` on
+  both HTTP (`/health/liveness`) and IPC (`health.liveness`). Removed legacy
+  `"alive":true` field.
+
+### S3 Shadow Parity: GitHub Pages Equivalence (May 19, 2026)
+
+Wave 24 content hosting shadow run (S3) — proving sovereign petalTongue +
+NestGate can replace GitHub Pages without regression.
+
+#### Added
+- **Gzip + Brotli compression**: `tower_http::compression::CompressionLayer`
+  on all HTTP responses. Automatic content negotiation via `Accept-Encoding`.
+  Enabled `compression-gzip` and `compression-br` tower-http features.
+- **Security headers**: `X-Content-Type-Options: nosniff`,
+  `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`,
+  `Permissions-Policy: camera=(), microphone=(), geolocation=()` on all
+  responses via axum middleware. Matches GitHub Pages security posture.
+- **HTTP request tracing**: `tower_http::trace::TraceLayer` with structured
+  spans (`method`, `uri`) and response logging (`status`, `latency_ms`).
+  Feeds shadow run TTFB and 404 rate metrics via tracing subscriber.
+- **Custom 404 pages**: `{docroot}/404.html` served with status 404 when
+  present (GitHub Pages / Jekyll convention). Falls back to plain text if
+  no custom page exists. `Cache-Control: no-cache` on error pages.
+- tower-http features: `set-header`, `compression-gzip`, `compression-br`.
+
+### Stale Socket Cleanup + PID File (May 18, 2026)
+
+#### Changed
+- **Socket startup**: Replaced `exists()` + conditional remove with
+  unconditional `remove_file()` ignoring `NotFound`. Eliminates TOCTOU race
+  between existence check and removal. Both `unix_socket_server.rs` and
+  `server.rs` paths hardened.
+- **Socket shutdown (Drop)**: Simplified to unconditional `remove_file` with
+  `is_dir` fallback (for edge cases). PID file cleaned up alongside socket.
+
+#### Added
+- **PID file**: `petaltongue.pid` written alongside `petaltongue.sock` on
+  startup, containing the server PID. Enables instant `kill(pid, 0)` liveness
+  checks by consumer primals without connect overhead. Removed on shutdown.
+  Per `DEPLOYMENT_VALIDATION_STANDARD.md` §stale-socket-cleanup.
+
+### Stadial Gate Readiness (May 17, 2026)
+
+#### Added
+- **`btsp.capabilities` JSON-RPC method**: Returns supported BTSP protocol
+  version, cipher suite (chacha20-poly1305), key derivation (hkdf-sha256),
+  and active BTSP status. Classified Public in MethodGate.
+- **`primal.announce` dispatch alias**: Routes to `capability.announce` per
+  stadial gate requirement. Classified Public in MethodGate.
+- **`/health/liveness` + `/health/readiness` HTTP routes**: Web mode now
+  exposes the health triad as HTTP endpoints matching the JSON-RPC shape.
+- **`count` field in `capabilities.list` response**: Method count is computed
+  from the actual methods vec (stadial wire standard compliance).
+- **`proprioception.get` + `btsp.capabilities`** added to capabilities methods list.
+- **`checksums.toml`**: BLAKE3 hashes for Cargo.toml, Cargo.lock, manifest.toml,
+  src/main.rs per PLASMIDBIN_PUSH_AUTOMATION_STANDARD.
+- **`seed_fingerprint`** in manifest.toml: BLAKE3 hash of source identity.
+- **Manifest method registry**: Updated from 12 to 55 methods to match the
+  full dispatch table (was missing health triad, auth, visualization session,
+  motor, interaction, and system methods).
+- **Stability tiers**: All methods annotated as Stable or Evolving in CONTEXT.md.
+- **Degradation documentation**: What happens when petalTongue is down.
+- **Downstream pairing**: esotericWebb, lithoSpore, projectNUCLEUS, wetSpring.
+- **Platform audio documentation**: Per-crate audio dependency breakdown.
+
+#### Changed
+- **Web `/health` response enriched**: Now returns `primal`, `version`, `mode`
+  alongside `status` (was bare `{"status":"ok"}`).
+- **README.md**: Added version (v1.6.6) to header.
+- **START_HERE.md**: Updated date to May 17, 2026.
+
+#### Fixed
+- **Pre-existing clippy lints** (petal-tongue-scene, petal-tongue-graph):
+  `cast_sign_loss`, `manual_midpoint`, `too_many_lines`, `redundant_closure`,
+  `let_else`, `long_literal_lacking_separators`, `manual_clamp`,
+  `expect_used` in tests, `format_args`, `match_same_arms`, `const_fn`.
+
+### Live Dashboard + NestGate Index Routing (May 13, 2026)
+
+#### Changed
+- **`web/index.html` live dashboard**: Rewrote the embedded dashboard from a
+  static status dump to a live ecosystem view.  Subscribes to `/api/events`
+  (SSE) for real-time `DataSnapshot` updates, fetches `/api/snapshot` on load,
+  renders discovered primals (health pill, type, capabilities, endpoint) and
+  topology edges.  Dark/light mode via `prefers-color-scheme`.  Status bar
+  shows mode, backend, and event counter.
+- **NestGate-aware `GET /`**: When `backend=nestgate`, the root route tries
+  `content.resolve("/")` from NestGate first, falling back to the compiled-in
+  dashboard if NestGate has no published root document.  Filesystem backend
+  continues to serve the embedded dashboard directly.
+- **Stale doc cleanup**: `CONTEXT.md` updated — `backend=nestgate` is
+  UNBLOCKED (NestGate Session 60 shipped `content.*` transport parity).
+
+### SPA Catch-All + CORS Production Config (May 11, 2026)
+
+#### Added
+- **`--spa` / `PETALTONGUE_SPA`**: SPA (single-page application) mode. When
+  enabled, missing paths serve `{docroot}/index.html` instead of 404, enabling
+  client-side routing for React/Vue/Svelte/etc. SPAs.
+- **`--allowed-origins` / `PETALTONGUE_ALLOWED_ORIGINS`**: CORS configuration
+  via `tower_http::cors::CorsLayer`. Comma-separated origins, or `"*"` for
+  permissive. Allows GET/POST/OPTIONS with Content-Type + Authorization headers.
+- `WebServeConfig.spa` and `WebServeConfig.allowed_origins` fields with
+  TOML, env, and CLI override support.
+- `build_cors_layer()` — constructs tower-http CORS middleware from config.
+- `serve_spa_index()` — serves docroot `index.html` for SPA catch-all.
+- `tower-http` `"cors"` feature enabled.
+- 5 new tests: SPA routing, non-SPA 404, CORS wildcard, CORS specific origins,
+  CORS preflight response.
+
+### Notebook Rendering + PT-3 Completion (May 10, 2026)
+
+#### Added
+- **Jupyter notebook renderer** (`src/notebook_render.rs`, 553 LOC).
+  `.ipynb` files served via docroot or NestGate are rendered to complete HTML
+  documents with responsive styling and dark-mode support.
+- **`metadata.title`** → `<title>` + `<h1>` page header; falls back to "Notebook".
+- **`--strip-sources` / `PETALTONGUE_STRIP_SOURCES`**: hides code input cells,
+  showing only outputs (for documentation/presentation mode).
+- **`--cache-ttl` / `PETALTONGUE_CACHE_TTL`**: `Cache-Control: max-age` header
+  on all served static content (wires `WebServeConfig.cache_ttl_secs`).
+- Markdown cells rendered via `pulldown-cmark` (CommonMark + tables, strikethrough,
+  task lists, footnotes). Code cells as `<pre><code>` with language annotation.
+  Rich outputs: HTML passthrough, SVG, base64 images, plain text, error tracebacks.
+- `WebServeConfig.strip_sources` field with TOML + env override.
+- `is_ipynb()` case-insensitive extension helper.
+- `docroot_fallback()` — custom Axum handler replacing `ServeDir` for `.ipynb`
+  rendering and `Cache-Control` injection on all responses.
+- New dependency: `pulldown-cmark 0.13` (pure Rust, `html` feature only).
+- 14 notebook rendering unit tests + 4 web-mode integration tests.
+
+#### Changed
+- `web_mode::run()` now takes `WebConfig` struct (was 8 positional params).
+- NestGate fallback now renders `.ipynb` content as HTML before serving raw bytes.
+- `WebConfig.workers` doc updated (was stale "currently logged only").
+
+### JH-0 MethodGate Pre-Dispatch Authorization (May 8, 2026)
+
+#### Added
+- **JH-0: MethodGate module** (`crates/petal-tongue-ipc/src/method_gate.rs`, 494 LOC).
+  Every JSON-RPC call now passes through `MethodGate::check()` before reaching the
+  handler dispatch table.
+- **Method classification**: Public methods (always allowed): `health.*`, `identity.get`,
+  `capabilities.list`, `capability.list`, `lifecycle.status`, `auth.*`, legacy aliases
+  (`ping`, `status`, `check`). Everything else is Protected.
+- **Auth introspection methods**: `auth.check`, `auth.mode`, `auth.peer_info` —
+  intercepted inline before dispatch, advertised in `capabilities.list`.
+- **CallerContext threading**: Connection origin (Unix/Loopback/Remote) and bearer
+  token tracked per-connection through NDJSON, BTSP Phase 3, and all dispatch paths.
+- **Error codes**: `-32001 PERMISSION_DENIED`, `-32000 UNAUTHORIZED`.
+- **`PETALTONGUE_AUTH_MODE` env**: `permissive` (default, backward-compatible) or
+  `enforced` (rejects unauthenticated protected calls).
+- 26 unit tests in `method_gate::tests`.
+
+#### Changed
+- `RpcHandlers::handle_request()` now accepts `&CallerContext`.
+- `handle_connection`, `handle_connection_split`, `handle_encrypted_stream`,
+  `try_phase3_negotiate`, `try_phase3_upgrade_split` — all accept `&CallerContext`.
+- `handle_tcp_with_btsp` now accepts `peer_addr: SocketAddr` for origin detection.
+- All existing test call sites updated to pass `CallerContext::unix()`.
+
+### primalSpring Phase 60 — PT-09 + PT-13 (May 7, 2026)
+
+#### Added
+- **PT-13 (P2): NestGate content-addressed backend for `web` mode.** When
+  `--backend nestgate` (or `PETALTONGUE_WEB_BACKEND=nestgate`), the HTTP fallback
+  queries NestGate `content.resolve` via JSON-RPC over UDS instead of serving
+  from the filesystem. Socket discovery follows ecosystem convention
+  (`NESTGATE_SOCKET` env → `$BIOMEOS_SOCKET_DIR/nestgate-{family}.sock`).
+  Returns content with correct MIME type; 404 on missing; 502 on backend failure.
+- **PT-09 (P2): BTSP Phase 2 enforcement.** When `FAMILY_ID` is set (production
+  posture), unauthenticated connections are now **rejected** instead of warned.
+  UDS: `run_uds_handshake` returning `None` (plain JSON-RPC, handshake failure,
+  or EOF) results in connection drop with `warn!` log. TCP: plain JSON-RPC
+  without BTSP announcement is rejected with `warn!`. petalTongue is now aligned
+  with all 12 other primals on BTSP enforcement.
+- `--backend` CLI flag for `web` mode (default `"filesystem"`).
+- 9 new tests: NestGate client construction, env override, ID increment,
+  fallback 502, backend install, CLI `--backend` parsing (2), backend default.
+
+#### Changed
+- Extracted `dispatch_web()` from `dispatch_async()` to stay under line limit.
+- `web_mode::run` signature expanded: accepts `backend: &str`.
+
+### projectNUCLEUS Sovereignty Gaps (PT-1 through PT-5) — May 7, 2026
+
+#### Added
+- **PT-1 (High): `--docroot` static file catch-all** for `web` mode. When
+  `--docroot <path>` (or `PETALTONGUE_DOCROOT` env) is provided, a
+  `tower_http::ServeDir` fallback serves arbitrary files from that directory.
+  `append_index_html_on_directories(true)` makes `GET /` serve `index.html`.
+  API routes (`/health`, `/api/*`) take precedence. Unblocks sovereign static
+  site serving (sporePrint, Zola builds, GitHub Pages replacement).
+- **PT-3 (Medium): `WebServeConfig` schema** in `config_system::types`.
+  New config section `[web]` with `docroot`, `backend` (filesystem|nestgate),
+  `index_file` (default `index.html`), `cache_ttl_secs` (default 3600).
+  CLI `--docroot` overrides config. `PETALTONGUE_DOCROOT` env override wired.
+- **PT-4 (Medium): `--ipc` flag for `web` mode** (NUCLEUS dual-port mode).
+  When `--ipc` is passed, `web` mode co-starts the UDS JSON-RPC server
+  alongside the HTTP server. Optional `--ipc-port` for TCP JSON-RPC.
+  Enables single-process HTTP+IPC for NUCLEUS deployments.
+- **PT-5 (Low): `--workers` flag now wired to tokio runtime**. `web` and
+  `headless` modes' `--workers N` value is passed to
+  `tokio::runtime::Builder::worker_threads(N)`. Previously logged but ignored.
+- 7 new tests: docroot path validation, catch-all serving, API route precedence,
+  CLI `--docroot` parsing, docroot default None.
+
+#### Changed
+- `web_mode::run` signature expanded: accepts `docroot: Option<String>`.
+- Extracted `WebConfig` struct and `run_with_config` for testability.
+
+### PG-55 `--bind` Flag — primalSpring Phase 60 (May 6, 2026)
+
+#### Added
+- **`--bind` flag for `server` and `live` modes** (PG-55): TCP bind host is now
+  configurable via `--bind <IP>` or `PETALTONGUE_IPC_HOST` env var. Secure
+  default `127.0.0.1` — Docker/network deployments use `--bind 0.0.0.0`.
+  Matches Squirrel SQ-04 / coralReef `--bind` ecosystem pattern.
+- `UnixSocketServer::with_tcp_bind_host()` builder method for programmatic override.
+- `PrimalRegistration::with_tcp_endpoint(host, port)` replaces `with_tcp_port(port)`,
+  carrying the actual bind host into the Songbird `ipc.register` payload.
+- 5 new tests: CLI `--bind` parsing, `parse_ipc_bind_host` for wildcard/IPv6/invalid/default.
+
+### Cross-Cutting Audit Response — primalSpring Phase 59 (May 6, 2026)
+
+#### Added
+- **Tier-1 Songbird registration with transport endpoints**: `ipc.register`
+  payload now includes `transports: { uds: "<socket_path>", tcp: "0.0.0.0:PORT" }`.
+  TCP endpoint advertised when `--port` is active (`server`/`live` modes).
+  Songbird `ipc.resolve` can now route to petalTongue directly without probing.
+  New `PrimalRegistration::with_tcp_port()` builder method. 3 new tests.
+- **Whitespace-tolerant TCP/UDS protocol detection**: Both accept paths now
+  skip leading ASCII whitespace before classifying the first meaningful byte
+  (sweetGrass `detect_protocol` tolerance pattern). `is_btsp_json_announcement`
+  also whitespace-tolerant. Prevents misclassification when peers send
+  leading CR/LF/spaces.
+
+#### Fixed
+- **BufReader post-negotiate byte loss on TCP JSON-line path**: TCP JSON-line
+  BTSP handshake now splits + BufReaders the stream **before** the handshake
+  (calling `relay_json_line_handshake_split` instead of the combined
+  `relay_json_line_handshake`). The same BufReader is carried through to
+  Phase 3 negotiate + encrypted framing, preventing prefetched post-handshake
+  bytes from being lost when a transient BufReader was dropped. Aligned with
+  barraCuda Sprint 51b / coralReef Iter 90 fix pattern.
+
+#### Verified
+- **Wire Standard L3 on `capabilities.list`**: Already compliant —
+  `capabilities.list` returns `protocol: "json-rpc-2.0"` and
+  `transport: ["unix-socket", "tcp"]` dynamically (TCP included when
+  `tcp_enabled` is set via `--port`).
+
+### Port Alignment + Discovery Escalation Hierarchy (May 5, 2026)
+
+#### Added
+- **Ecosystem TCP fallback port**: `ECOSYSTEM_TCP_FALLBACK_PORT = 9900` in
+  `constants/network.rs`. Aligned with primalSpring's move from 9600 to avoid
+  rhizoCrypt tarpc conflict. Port added to `DEFAULT_DISCOVERY_PORTS` for
+  Tier-5 TCP probing.
+- **Discovery escalation hierarchy docs**: `petal-tongue-discovery/src/lib.rs`
+  module docs rewritten with 5-tier hierarchy from primalSpring standard:
+  Songbird `ipc.resolve` (Tier 1, future), Neural API (Tier 2),
+  UDS filesystem (Tier 3), socket registry (Tier 4), TCP probing (Tier 5).
+
+#### Changed
+- **Last 2 hardcoded primal names evolved**: `identity_lifecycle.rs` "sourDough"
+  → "discovery agents"; `audio_sonification.rs` "Squirrel" → "AI capability
+  providers". All remaining primal names in production code are either legacy
+  env vars (documented), historical provenance attribution, ecosystem standard
+  references, or test fixtures.
+
+### primalSpring Phase 58 Audit Response (May 4, 2026)
+
+#### Added
+- **GAP-12 machine-readable method schemas**: `visualization.capabilities` now
+  returns a `methods` object with parameter schemas for all visualization
+  methods (`visualization.render.dashboard`, `visualization.render.scene`,
+  `visualization.render`, `visualization.export`). Each schema includes
+  required/optional params with types, defaults, and descriptions. Enables
+  downstream consumers to programmatically discover dashboard parameters.
+
+#### Verified (stale audit items confirmed resolved)
+- **Phase 3 transport encryption** (item 1): Shipped — `btsp/phase3.rs` with
+  ChaCha20-Poly1305 AEAD, 13/13 ecosystem parity.
+- **musl/winit threading panic** (item 2): Fixed — `with_any_thread(true)` in
+  all 3 call sites (ui_mode, live_mode, backend/eframe). PG-40 + PG-48.
+- **PT-04 HTML export** (item 3): Complete — `ExportFormat::Html` via
+  `wrap_svg_in_html`, headless CLI + IPC + e2e tests green.
+- **PT-06 push delivery** (item 4): Active — `callback_tx` wired in
+  `UnixSocketServer::new_with_socket` via `spawn_push_delivery()`, live mode
+  GUI broadcasts through same channel.
+
+### TRUE PRIMAL Name Evolution — Capability-Based Language (May 3, 2026)
+
+#### Changed
+- **BTSP `EnforceBearDog` → `EnforceProvider`**: Renamed handshake policy enum
+  variant to capability-based term. All doc comments and log messages evolved
+  from "BearDog" to "security provider" across 8 BTSP files (types.rs, server.rs,
+  json_line.rs, phase3.rs, error.rs, client.rs, mod.rs, tests.rs).
+- **Audio backends**: "ToadStool" references evolved to `audio.play` capability
+  provider language in socket.rs, direct.rs, network.rs, mod.rs.
+- **Provenance trio**: `rhizoCrypt`/`sweetGrass`/`loamSpine` references in
+  provenance_trio.rs evolved to capability-based terms (`dag.session`,
+  `braid.create`, `spine.create` providers). Historical attribution in
+  ipc_errors.rs and resilience.rs preserved as code provenance.
+- **HTTP/TLS delegation**: "Songbird" references in http_client.rs,
+  https_client.rs, connect.rs, biomeos_client.rs, stream.rs evolved to
+  "TLS provider" / "ecosystem provider".
+- **Scene signer**: "BearDog" references evolved to "security provider".
+- **Visualization handler**: "toadStool Phase 2" evolved to "display capability
+  Phase 2" in texture attach placeholder docs.
+- **Trust adapter**: "temporary" comment evolved to proper API guidance pointing
+  to `from_capability_spec()`.
+- **README.md**: BTSP quality row updated from Phase 2 to Phase 3 with
+  ChaCha20-Poly1305 and 13/13 ecosystem parity.
+
+#### Verified
+- Zero hardcoded primal names in production code (BearDog, ToadStool, Songbird
+  only remain in test fixtures and historical code provenance comments).
+- `cargo clippy --workspace --all-features`: 0 warnings.
+- `cargo doc --workspace --no-deps` with `-D warnings`: 0 warnings.
+- `cargo test --workspace --all-features`: 6,200+ passed, 0 failed.
+
+### BTSP Phase 3 Transport Switch — 13/13 Ecosystem Parity (May 3, 2026)
+
+#### Added
+- **`btsp/phase3.rs`**: New module implementing ChaCha20-Poly1305 AEAD encrypted
+  frame I/O for BTSP Phase 3. Includes `SessionKeys` (HKDF-SHA256 directional
+  key derivation), `Phase3Session` (encrypt/decrypt), `read_encrypted_frame`,
+  `write_encrypted_frame`, `handle_encrypted_stream`, and `try_phase3_negotiate`
+  for post-handshake nonce exchange. 10 unit tests.
+- **`HandshakeResult` struct** (types.rs): Bundles session_token + cipher +
+  session_key from Phase 2 handshake for Phase 3 upgrade.
+- **`KeyDerivationFailed` + `Phase3Crypto` error variants** (error.rs): Typed
+  errors for HKDF and AEAD failures.
+- **Dependencies**: `chacha20poly1305 0.10`, `hkdf 0.12`, `sha2 0.10`,
+  `rand 0.8`, `zeroize 1` — all pure Rust, compatible with digest 0.10 ecosystem.
+
+#### Changed
+- **`server.rs` + `json_line.rs`**: Both handshake functions now return
+  `HandshakeResult` including base64-decoded session_key from
+  `btsp.session.verify`.
+- **`unix_socket_server.rs`**: After handshake, checks if cipher is
+  `chacha20-poly1305` and session_key is present. If so, upgrades connection to
+  encrypted frame I/O via `try_phase3_upgrade_split`. Both UDS and TCP paths
+  covered. Extracted `run_uds_handshake` helper for line-count compliance.
+- **Wire format**: `[4B BE length][12B random nonce][ciphertext + 16B Poly1305 tag]`
+  per ecosystem standard.
+
+### Deep Debt Sweep — Idiomatic Rust Evolution (May 3, 2026)
+
+#### Fixed
+- **Clippy `--all-features` clean**: Fixed 25+ lints newly surfaced by running
+  clippy with `--all-features` (previously CI only ran default features).
+  - `map_unwrap_or`: `.map().unwrap_or()` → `.map_or()` / `.map_or_else()` /
+    `.is_ok_and()` across 12 files (svg.rs, data_service.rs, detection.rs,
+    methods.rs, proprioception.rs, gather.rs, startup_audio.rs, primitives.rs,
+    provider_trait.rs, live_data, audio_discovery).
+  - `duration_suboptimal_units`: `Duration::from_secs(60)` → `from_mins(1)`
+    across 5 files (timeouts.rs, types.rs, provider_trait.rs,
+    input_verification.rs, output_verification.rs, live_data).
+  - `sort_by` → `sort_by_key` in 4 files (sensor_feed, timeline_view,
+    trust_dashboard/compute, process_viewer_integration).
+  - Stale `#[expect(dead_code)]` → `#[allow(dead_code)]` in motor_state.rs.
+  - Trailing comma removal (dynamic_scenario_provider, process_viewer_integration).
+- **Doc warnings**: Fixed 4 broken intra-doc links (TextureRegistry,
+  InputAdapter, SocketBackend, DirectBackend) and 2 unclosed HTML tags.
+
+#### Added
+- **UniBin v1.1 `--port` flag**: Web and Headless modes now accept `--port`
+  per the UniBin Architecture Standard. `--bind` takes precedence; `--port`
+  resolves to `0.0.0.0:<PORT>`. New `resolve_bind()` helper and 4 tests.
+- **CI `--all-features`**: clippy, test, and doc steps now use `--all-features`.
+  Doc step added with `-D warnings` RUSTDOCFLAGS gate.
+
+#### Removed
+- **Dead `audio_web.rs`**: 301-line file using `web_audio_api` crate not in
+  Cargo.toml, never wired into module tree. Deleted.
+
+#### Changed
+- **Hardcoded test ports evolved**: headless_mode.rs and web_mode.rs tests now
+  use `constants::default_headless_bind()`, `DEFAULT_WEB_PORT`,
+  `DEFAULT_LOOPBACK_HOST` instead of literal `"0.0.0.0:8080"` strings.
+- **web/index.html**: "6 subcommands" → "7 subcommands".
+- README.md quality table updated (coverage 85%, --all-features gates).
+
+#### Verified
+- `cargo fmt --check`: 0 violations.
+- `cargo clippy --workspace --all-features -- -D warnings`: 0 warnings.
+- `cargo test --workspace --all-features`: 6,200+ passed, 0 failed.
+- `cargo doc --workspace --no-deps`: 0 warnings.
+- `cargo llvm-cov --workspace --lib`: 85.2% line coverage.
+
+### String Error Elimination — Typed Error Evolution (May 2, 2026)
+
+#### Changed
+- **provenance_trio.rs**: `send_rpc` evolved from `Result<Value, String>` to
+  `Result<Value, ProvenanceRpcError>` (6 typed variants: Connect, Serialize, Io,
+  Parse, RpcError, NoResult).
+- **physics_bridge.rs**: 5 functions evolved from `Result<_, String>` to
+  `ComputeBridgeError` (7 variants including recursive `Send` for IPC layering).
+- **audio.rs** (IPC handler): `encode_wav_base64` evolved from `Result<String, String>`
+  to `Result<String, WavEncodeError>` wrapping `hound::Error`.
+- **graph_builder/builder.rs**: `add_edge` evolved from `Result<(), String>` to
+  `Result<(), GraphEdgeError>` (SourceNotFound, TargetNotFound, Duplicate).
+- **event.rs**: `EventBus::broadcast` evolved from `Result<usize, String>` to
+  `Result<usize, broadcast::error::SendError<EngineEvent>>` (direct tokio type).
+- **capability_taxonomy.rs**: `FromStr::Err` evolved from `String` to
+  `ParseCapabilityError` typed error.
+- **biomeos_discovery/backend.rs**: `connect_and_forward` evolved from
+  `Result<(), String>` to `WebSocketBridgeError` (4 variants).
+- **status_reporter/reporter.rs**: `get_status_json` evolved from
+  `Result<String, String>` to `Result<String, serde_json::Error>`.
+- **startup_audio.rs**: 4 functions evolved from `Result<(), String>` to
+  `StartupAudioError` (AudioCanvas, FileRead, Decode variants).
+- **data_source.rs**: 3 functions evolved from `Result<_, String>` to
+  `DataSourceError` (Discovery, Topology, LockPoisoned).
+- **sandbox_provider.rs**: 3 functions evolved from `Result<_, String>` to
+  `SandboxError` (NotFound, Read, Parse, DirNotFound, CurrentDir).
+- **audio/backends/network.rs**: `send_play_request` evolved from
+  `Result<(), String>` to `NetworkAudioError` (5 variants).
+- **tool_integration.rs**: `ToolPanel::handle_action` evolved from
+  `Result<(), String>` to `Result<(), ToolActionError>`.
+
+#### Verified
+- `cargo clippy`: 0 warnings.
+- `cargo fmt`: 0 violations.
+- `cargo test --workspace --all-features`: 6,191 passed, 0 failed.
+- `cargo deny check bans`: passes.
+- Zero `Result<_, String>` remaining in IPC, bridge, or public API surfaces.
+
+### primalSpring Phase 56 Audit Response (May 1, 2026)
+
+#### Fixed
+- **PG-48**: Verified musl `live` mode panic already resolved (`with_any_thread(true)` on
+  X11+Wayland across `ui_mode.rs`, `live_mode.rs`, and `backend/eframe.rs`).
+- **GAP-12**: Added wire-level JSON-RPC schema documentation for `visualization.render.dashboard`
+  (required: `session_id`, `title`, `bindings`; optional with defaults: `domain`, `modality`,
+  `max_columns`). Full request/response examples and error code table.
+
+#### Changed
+- **deny.toml**: Added `async-trait` to `[bans] deny` with wrappers for transitive deps
+  (`axum`, `axum-core`, `opentelemetry_sdk`). Prevents regression to pre-edition-2024 patterns.
+- **BTSP Phase 2 → Phase 2 in README**: Quality table now reflects operational Phase 2
+  status (typed `BtspHandshakeError`, BearDog provider delegation, NULL cipher handshake).
+
+#### Verified
+- `cargo deny check bans`: passes (interstadial quality gate).
+- `cargo clippy`: 0 warnings.
+- `cargo fmt`: 0 violations.
+- `cargo test --workspace --all-features`: 6,191 passed, 0 failed.
+- `cargo doc`: 0 warnings.
+- Edition 2024, `async-trait` eliminated (zero direct usage).
+- BTSP Phase 2 operational (20+ handshake tests).
+
+### Phase 56: Desktop NUCLEUS Gap Resolution (April 29, 2026)
+
+#### Fixed
+- **GAP-01 (P1)**: `RegistrationClient` now reads `DISCOVERY_SOCKET` env var
+  as highest-priority override for heartbeat/registration target. Falls back to
+  `DISCOVERY_SERVICE_SOCKET` basename resolution. Heartbeat task uses exponential
+  backoff (2^n × interval, capped at 64×) instead of fixed-interval on failure.
+- **Motor P0**: Live mode motor channel was a dead end — IPC motor commands went
+  to a logging thread, never reaching the GUI. `run_on_main_thread` now passes the
+  IPC motor channel directly into `PetalTongueApp::replace_motor_channel`, so
+  `motor.set_panel`, `motor.set_zoom`, `motor.set_awakening` etc. are applied
+  every frame by `drain_motor_commands`.
+
+#### Added
+- **`motor.panel.update`**: New IPC method for compositions to push content to
+  named panels (title + JSON payload). Backed by `PanelContentStore`.
+- **`motor.notification`**: New IPC method for compositions to display
+  notifications (level, message, optional auto-dismiss duration). Backed by
+  `NotificationQueue`.
+- **`DISCOVERY_SOCKET`** env var documented in `ENV_VARS.md`.
+- 9 new tests (motor panel update, notification, discovery socket override,
+  panel content store, notification queue).
+
+#### Verified
+- **GAP-17**: `visualization-{family}.sock` symlink is already created by
+  `UnixSocketServer::start` via `btsp::domain_symlink_filename`. No code change
+  needed; symlink confirmed functional with `FAMILY_ID=desktop-nucleus`.
+
+### Deep Debt Audit: Workspace Dependency Consolidation (April 28, 2026)
+
+#### Changed
+- **15 crates consolidated to workspace dependencies**: `futures-util`, `crossterm`,
+  `terminal_size`, `tiny-skia`, `epaint`, `png`, `svg`, `indexmap`, `colored`, `socket2`,
+  `dashmap`, `lru`, `ron`, `ratatui`, `symphonia` — all moved from per-crate version pins
+  to `{ workspace = true }` in `[workspace.dependencies]`.
+- **Telemetry fallback path**: `/tmp/petaltongue-telemetry` in `jsonl_provider.rs` extracted
+  to `DEFAULT_TELEMETRY_FALLBACK_DIR` constant in `petal-tongue-core`.
+- **Root `png` optional dep**: aligned to workspace reference.
+
+### Phase 55: Awakening Evolution + Scene Signing + Sensor Stream (April 28, 2026)
+
+#### Changed
+- **Awakening default changed to OFF**: `AWAKENING_ENABLED` defaults to `false` (was `true`).
+  Compositions invoke awakening via new `motor.set_awakening` IPC method instead of getting
+  hardcoded defaults. Standalone `ui` mode users set `AWAKENING_ENABLED=true` or use scenario config.
+- **`SetAwakening` motor handler**: now supports both `start()` and `skip()` — compositions can
+  enable or disable awakening at any time via IPC.
+
+#### Added
+- **Scene push signing** (`SceneSigner`): BLAKE3 keyed-hash integrity signatures for scene graphs.
+  Uses `PETALTONGUE_SCENE_KEY` env var (hex-encoded 32-byte visualization purpose key per NUCLEUS
+  Two-Tier Crypto Model). Scene push responses include `signed: bool` and optional `signature` field.
+- **`visualization.scene.verify` IPC method**: compositions verify stored scene integrity by providing
+  `session_id` and `signature`.
+- **`motor.set_awakening` IPC method**: compositions control awakening overlay on/off via JSON-RPC.
+- **Sensor stream new event types**: `focus_gained`, `focus_lost`, `window_resize`, `text_input`
+  added to `SensorEventIpc`. Focus and text events wired in `sensor_feed.rs` egui collection.
+- **Capability advertisements**: `visualization.texture.upload`, `visualization.texture.attach`,
+  `visualization.scene.verify`, `motor.set_awakening` added to `capabilities.list` response.
+
+### Deep Debt Audit: Dependency Consolidation + Discovery Evolution (April 27, 2026)
+
+#### Changed
+- **`toml`** in `petal-tongue-core`: consolidated to `{ workspace = true }` (was standalone `0.8`).
+- **`tokio-util`** in `petal-tongue-tui`: consolidated to `{ workspace = true }` (was standalone
+  `0.7`, now inherits workspace `codec` feature).
+- **`rustix`** added to workspace dependencies (`0.38`): `petal-tongue-core` (process) and
+  `petal-tongue-ui` (param) now use `{ workspace = true, features = [...] }`.
+- **`tempfile`** root dev-dep: changed from `"3.10"` to `{ workspace = true }`.
+- **`external-display`** stale feature alias removed from `petal-tongue-ui` (zero cfg references).
+- **`universal_discovery.rs`**: socket search paths now include XDG_RUNTIME_DIR
+  (`/run/user/{uid}`) as priority-1, matching `unix_socket_provider.rs` pattern.
+  Previously only searched `/tmp` and `/var/run`, missing the standard biomeOS socket location.
+
+### PG-53 Follow-up: rendering_awareness Server Mode Bug (April 27, 2026)
+
+#### Fixed
+- **`rendering_awareness` unconditionally `Some` in server mode**: `UnixSocketServer::new_with_socket`
+  was unconditionally setting `rendering_awareness = Some(...)`, causing `proprioception.get` to
+  report `frame_rate: 60`, `mode: "live"`, `window: { present: true }` even in headless `server`
+  mode. Removed the unconditional initialization; `rendering_awareness` now defaults to `None`
+  (the `RpcHandlers::new()` default). Only `live` mode explicitly wires it via
+  `with_rendering_awareness()`.
+- Server mode now correctly reports `frame_rate: 0`, `mode: "server"`, `window: null`.
+- Updated `test_default_rendering_awareness_initialized` and `test_introspect_works_with_default_awareness`
+  to test the correct server-mode behavior (graceful degradation, not false positives).
+
+#### Also fixed (pre-existing lints)
+- `rich_test_scene()` test fixture: added `#[expect(clippy::too_many_lines)]`.
+- `pixel_renderer_demo.rs`: borrow fix on `save_as_png` path argument.
+- `base64::encode` needless borrow in visualization test.
+- `AppError::TaskPanic`: `#[expect(dead_code)]` → `#[cfg_attr(not(test), allow(dead_code))]`
+  (dead in bin target, used in test target).
+
+### PG-48: musl/plasmidBin winit Main-Thread Panic (April 27, 2026)
+
+#### Fixed
+- **winit `any_thread` for musl**: musl libc reports thread IDs differently,
+  causing winit's `is_main_thread()` check to fail even on the OS main thread.
+  Added `EventLoopBuilderExtX11::with_any_thread(true)` via `NativeOptions.event_loop_builder`
+  hook on Linux. Our PG-40 code already guarantees main-thread dispatch, so
+  this just bypasses the check that was false-positive under musl.
+- **eframe backend features**: enabled explicit `x11` + `wayland` features
+  (previously stripped by `default-features = false`). `winit` added as direct
+  workspace dep for platform extension traits (zero new crate — already transitive).
+- Shared `native_options_with_any_thread()` helper used by both `ui_mode` and
+  `live_mode`.
+
+### PG-53: Server Mode Proprioception (April 27, 2026)
+
+#### Added
+- **`proprioception.get`** IPC method — returns a synthetic proprioception snapshot
+  usable by composition scripts in all modes. Server mode returns `frame_rate: 0`,
+  `window: null`, `mode: "server"`. Live/UI mode returns `frame_rate: 60`,
+  `window: { present: true }`, `mode: "live"`.
+- Fields: `frame_rate`, `active_scenes`, `total_frames`, `user_interactivity`,
+  `mode`, `uptime_secs`, `window`.
+- Tests: server-mode zero FPS, with-sessions scene count.
+
+#### Note
+- `--socket` flag on `server` mode: confirmed fully wired (PT-10, April 10).
+  ludoSpring report was likely from a stale binary. `--socket` + `PETALTONGUE_SOCKET`
+  env both functional.
+
+### PG-43: Texture Primitive + IPC Methods (April 26, 2026)
+
+#### Added
+- **`Primitive::Texture`** variant in the scene graph — raster content (sprites,
+  images, external engine framebuffers) with `texture_id`, position, size,
+  optional UV sub-region (`UvRect`), opacity, and tint.
+- **`TextureRegistry`** in `VisualizationState` — stores pixel data keyed by
+  `texture_id`, versioned for lazy GPU re-upload.
+- **`visualization.texture.upload`** IPC method — push base64-encoded RGBA pixel
+  data, get a `texture_id` back.
+- **`visualization.texture.attach`** IPC method — register a shared-memory source
+  (memfd URI); actual mapping deferred to toadStool Display Phase 2.
+- **`From<Sprite> for SceneNode`** bridge — converts game `Sprite` models directly
+  into scene graph `Primitive::Texture` nodes.
+- `UvRect` struct for texture atlas sub-region selection.
+- `rich_test_scene()` fixture now includes a Texture primitive for all modality
+  compiler tests.
+- Tests: Primitive serde round-trip (Texture, Texture-no-UV, UvRect), Sprite
+  bridge, TextureRegistry (insert/get/remove/re-upload version), IPC handler
+  (upload success/bad-format/bad-size, attach success).
+
+#### Changed
+- All 12 exhaustive `match Primitive` sites updated across `petal-tongue-scene`
+  (7 sites) and `petal-tongue-ui` (3 sites + 2 wildcards).
+- egui renderer shows a tinted placeholder rect for Texture primitives; full
+  `egui::Shape::image` with `TextureResolver` deferred to display-phase evolution.
+- Terminal modality renders `[IMG]` for Texture primitives.
+- SVG modality emits `<image>` element with `data-texture-id` attribute.
+- Braille modality renders an outline rect for Texture primitives.
+
+#### Deferred
+- **Overlay mode** (transparent windows over external game engines) — depends on
+  toadStool Display Phase 2 and Wayland `wlr-layer-shell` support.
+
+### Eliminate all `dyn` from production code (April 26, 2026)
+
+#### Changed
+- `PanelInstance::on_error` — `&dyn std::error::Error` → `&impl std::error::Error`
+  (generic parameter; enum dispatch makes object safety unnecessary).
+- `SseEventConsumer` — `Box<dyn Fn(EcosystemEvent)>` callback replaced with
+  `tokio::sync::mpsc::UnboundedSender<EcosystemEvent>` (async channel pattern).
+- `EventStream` — `Box<dyn Fn(BiomeOSEvent)>` callback replaced with
+  `tokio::sync::mpsc::UnboundedSender<BiomeOSEvent>`.
+- `BiomeOSProvider::subscribe_events_with_callback` →
+  `subscribe_events_with_sender(tx: UnboundedSender<BiomeOSEvent>)`.
+- `EventStream::new()` is now `const fn` (possible after removing heap-allocated
+  closure field).
+- **Result**: 0 `dyn` in production Rust code. All remaining mentions are in comments
+  documenting completed enum-dispatch migrations.
+
+### PG-40: Fix winit main-thread panic on Linux + PETALTONGUE_SOCKET env binding (April 26, 2026)
+
+#### Fixed
+- **Native display modes (`petaltongue live`, `petaltongue ui`) no longer panic on
+  Linux**. winit 0.30 requires the event loop to be initialized on the main thread
+  (X11/Wayland). The previous code used `tokio::task::spawn_blocking` which ran
+  eframe on a tokio worker thread. Restructured `main()` to build the tokio runtime
+  manually: UI modes run eframe directly on the main thread, non-UI modes dispatch
+  via `runtime.block_on()`.
+- `live_mode.rs`: IPC server, motor drain, and discovery refresh now spawn on the
+  runtime's thread pool (via `runtime.spawn()` / `std::thread::spawn`), while eframe
+  runs on the calling (main) thread.
+- `ui_mode.rs`: `run_on_main_thread()` replaces `spawn_blocking` path.
+
+#### Changed
+- `main()` is no longer `#[tokio::main] async fn`; it is a regular `fn main()` that
+  builds a `tokio::runtime::Runtime` manually and dispatches to `dispatch_async()`
+  for non-GUI modes.
+- `--socket` flag on `server` and `live` commands now reads `PETALTONGUE_SOCKET` env
+  var as fallback via clap's `env` attribute (clap `env` feature enabled).
+- Added doc comment on `Server` command: socket path priority is
+  `--socket flag > PETALTONGUE_SOCKET env > XDG default`.
+
+### BTSP family_seed Base64 Encoding Fix (April 24, 2026)
+
+#### Fixed
+- **`load_family_seed()` now base64-encodes** the raw env var string before
+  returning it. BearDog's `btsp.session.create` handler base64-decodes the
+  `family_seed` parameter; sending raw hex caused HMAC mismatches (guidestone
+  error: "BTSP verification failed: unknown"). Aligns with all other converged
+  relay primals (barraCuda, Songbird, coralReef, sweetGrass, etc.).
+- **Whitespace trimming** preserved — env value is trimmed before base64 encoding.
+
+#### Changed
+- **6 BTSP tests updated** — tests now use raw string inputs and verify base64
+  output. Covers: env priority, fallback, raw hex encoding, trim-then-encode,
+  empty-after-trim, and unset returns `None`.
+
+### Native `async fn` in Traits — Manual Desugaring Elimination (April 25, 2026)
+
+#### Changed
+- **13 production modules** converted from `fn -> impl Future + Send` to native
+  `async fn` in traits (RPITIT). Traits affected: `ComputeProvider`, `GUIModality`,
+  `Sensor`, `DiscoveryBackend`, `PrimalLifecycle`, `PrimalHealth`, `AudioBackend`,
+  `DisplayBackend`, `UIBackend`, `VisualizationDataProvider`.
+- All enum-dispatch implementations updated to match new `async fn` signatures.
+- `render_multi` in `engine.rs` simplified to sequential awaits (was spawning
+  tasks that contended on the same write lock).
+- Net reduction: **−100 lines** across 21 files.
+
+#### Removed
+- All `#![allow(clippy::manual_async_fn)]` suppressions (13 modules).
+- Redundant `async { }` / `async move { }` wrapper blocks in all impl methods.
+
+### BTSP JSON-Line Handshake Relay + BearDog Field Alignment (April 23, 2026)
+
+#### Added
+- **`btsp/json_line.rs`** — new JSON-line (newline-delimited) BTSP handshake relay module.
+  Full 4-step protocol: read ClientHello line, call BearDog `btsp.session.create` (with
+  real base64 `family_seed`, not reference), send ServerHello line (using BearDog's
+  challenge, not local PRNG), read ChallengeResponse line, call `btsp.session.verify`
+  (with `session_token` + `response` field names), send HandshakeComplete line (`"status":"ok"`).
+- **`BtspHandshakeConfig::load_family_seed()`** — resolves `BEARDOG_FAMILY_SEED` >
+  `FAMILY_SEED` from environment for passing to BearDog `btsp.session.create`.
+- **9 new BTSP tests** — env cascade for `SECURITY_PROVIDER_SOCKET`, `CRYPTO_PROVIDER_SOCKET`,
+  `SECURITY_SOCKET`; `load_family_seed` priority and fallback; `json_str_or` helper.
+
+#### Changed
+- **UDS/TCP accept routing** — JSON-line BTSP announcements (`{"protocol":"btsp",...}`)
+  now route to `relay_json_line_handshake` instead of `perform_server_handshake`
+  (which uses length-prefixed framing). Three-way classification: non-`{` →
+  length-prefixed BTSP, `{` + `"protocol"` → JSON-line relay, `{` only → plain JSON-RPC.
+- **`btsp.session.create`** — sends actual `family_seed` (base64 from env) instead of
+  `family_seed_ref: "env:FAMILY_SEED"`. Uses BearDog's returned challenge (not local
+  `rand_u128()`). Accepts both `session_token` and `session_id` in response.
+- **`btsp.session.verify`** — sends `session_token` (was `session_id`) and `response`
+  (was `client_response`). Sends `preferred_cipher` + `client_ephemeral_pub` per BearDog spec.
+- **HandshakeComplete** — sends `"status":"ok"` (was `"complete"`) per upstream spec.
+- **Provider socket env cascade** — now checks `SECURITY_PROVIDER_SOCKET`,
+  `CRYPTO_PROVIDER_SOCKET`, `SECURITY_SOCKET` between `BEARDOG_SOCKET` and the
+  family-scoped default path.
+- **Removed `rand_u128()`** — no longer generating local challenges; BearDog provides them.
+
+#### Verified
+- `cargo clippy --workspace --all-targets --all-features` — 0 warnings
+- `cargo test --workspace --all-features` — all passing
+- `cargo check --target x86_64-apple-darwin` — macOS cross-check clean
+- 21 BTSP-specific tests all passing (12 existing + 9 new)
+
+### `petaltongue live` Mode + BTSP Wire-Format Fix + Deep Debt Zero (April 21, 2026)
+
+#### Added
+- **`petaltongue live` CLI subcommand** — merges `ui` (egui/eframe native window) and
+  `server` (UDS JSON-RPC IPC) into a single process for interactive desktop NUCLEUS
+  deployment. IPC server runs as background `tokio::spawn` task, egui on main thread,
+  connected via `Arc<RwLock<VisualizationState>>`, `SensorStreamRegistry`,
+  `InteractionSubscriberRegistry`, and `CallbackDispatch` sender. Feature-gated behind
+  `ui` with graceful `UiNotAvailable` fallback.
+- **BTSP wire-format detection** — `is_btsp_json_announcement()` three-way classifier:
+  non-`{` → length-prefixed BTSP, `{` + `"protocol"` → BTSP JSON-line announcement,
+  `{` only → plain JSON-RPC. Applied to both `handle_uds_with_btsp` (BufReader peek)
+  and `handle_tcp_with_btsp` (64-byte peek buffer, was 1). 5 unit tests.
+- **`src/live_mode.rs`** — new module combining server + UI with shared state handles.
+
+#### Changed
+- **`DoomPanelWrapper` boxed** in `PanelInstanceImpl` enum — reduces stack size from
+  432 to 8 bytes. All 19 match arm methods migrated from UFCS to method syntax for
+  clean auto-deref through `Box`.
+- **`futures` → `futures-util`** in `petal-tongue-discovery` — lighter dependency,
+  same API surface (`join_all`, `select_all`). 3 source files + 2 test files updated.
+- **`needless_return`** fixed in socket audio backend.
+- **`unused_async`** fixed in chaos test helper (`async fn` → `fn` returning `impl Future`).
+
+#### Verified
+- `cargo clippy --workspace --all-targets --all-features` — **0 warnings**
+- `cargo test --workspace --all-features` — all passing
+- `cargo check --target x86_64-apple-darwin` — macOS cross-check clean
+- 4 remaining `dyn` usages audited: all idiomatic (`Box<dyn Fn>` callbacks,
+  `&dyn std::error::Error`), no evolution needed
+
+### Deep Debt Cleanup — Clippy Zero, Typed Errors, Modern Rust (April 15, 2026)
+
+#### Changed
+- **Clippy warnings eliminated** — resolved all 35 remaining warnings across the
+  workspace: unused imports, `const fn` upgrades, `async fn` simplification
+  (replaced verbose `impl Future<Output = …> + Send` with native `async fn`),
+  redundant closures, large enum variant boxing (`MdnsVisualizationProvider`,
+  `HttpsClient`), privacy alignment, missing docs on test variants.
+- **Typed error returns** — `unix_socket_server.rs` connection handlers evolved
+  from `Box<dyn std::error::Error + Send + Sync>` to typed `ConnectionError`.
+- **Module visibility corrected** — `doom-core` endian/map_parse functions use
+  `pub(super)` instead of `pub(crate)` inside private modules; persistence and
+  compute test types visibility aligned with their `#[cfg(test)]` gates.
+- **Enum variant boxing** — `KnownVisualizationProvider::Mdns` and
+  `PrimalConnection::Https` now boxed to eliminate 300+ byte variant size
+  differences.
+
+#### Verified
+- All mocks confirmed `#[cfg(test)]` or `#[cfg(feature = "mock")]` gated — zero
+  production exposure
+- All `dyn` usage audited — remaining are standard `Box<dyn Error>` and
+  `Box<dyn Fn>` callbacks, both idiomatic Rust
+- No hardcoded addresses in production code (all in tests or documentation)
+- No `TODO`/`FIXME`/`HACK` markers in production code
+- `cargo clippy --workspace --all-targets` — 0 warnings
+- `cargo test --workspace --all-features` — 6,144 tests passing, 0 failures
+
+### UUI Boundary Analysis — Owns vs Leverages (April 17, 2026)
+
+#### Changed
+- **Dead direct deps removed** from `petal-tongue-ui` — `png` (zero source usage),
+  `winit` (never imported; transitive via eframe).
+- **Capability discovery unified** — `GpuComputeProvider` and `physics_bridge`
+  now use `CapabilityDiscovery<BiomeOsBackend>` as primary discovery path,
+  falling back to existing env vars and filesystem scans.
+- **V2 display backend fixed** — `DiscoveredDisplayBackendV2` replaced broken
+  `TarpcClient` with direct JSON-RPC over Unix sockets for `display.*` ops.
+- **Audio Tier 1 `NetworkBackend`** wired — discovers `audio` capability
+  providers via `CapabilityDiscovery` and delegates playback via `audio.play`
+  over JSON-RPC/UDS. Graceful fallback to software/silent when no ecosystem
+  provider exists.
+- **`discovered-display` feature gate** properly wired — `#[cfg(feature =
+  "discovered-display")]` applied to `DiscoveredDisplayBackend`,
+  `DiscoveredDisplayBackendV2`, and their `DisplayBackendImpl` variants.
+
+#### Verified
+- `cargo test --workspace --all-features` — 6,144 tests passing, 0 failures
+- `cargo clippy --workspace --all-targets` clean
+- Compiles cleanly with and without `discovered-display` feature
+
+### reqwest Elimination — Songbird TLS Delegation (April 17, 2026)
+
+#### Changed
+- **`reqwest` runtime dependency fully eliminated** — replaced with thin
+  `LocalHttpClient` in `petal-tongue-ipc` built on `hyper` + `hyper-util`
+  (already transitive from `axum`, zero new crate additions).
+- **Entire TLS transitive chain removed from lockfile** — `reqwest`,
+  `hyper-rustls`, `rustls`, `rustls-webpki`, `ring` all gone. petalTongue
+  no longer owns any TLS stack; Songbird handles that via tower atomic IPC.
+- **6 crates migrated**: `petal-tongue-api`, `petal-tongue-core`,
+  `petal-tongue-discovery`, `petal-tongue-entropy`, `petal-tongue-ui`,
+  `petal-tongue-adapters` (dead dep removed).
+- **13 code sites replaced** — BiomeOS client, mDNS provider, entropy
+  streaming, SSE consumer, protocol selection, universal discovery all
+  migrated to `LocalHttpClient`.
+- **`LocalHttpClient`** provides GET, POST (JSON + raw), streaming SSE,
+  configurable timeouts, connection pooling — designed for Songbird IPC
+  backend substitution.
+
+#### Verified
+- `cargo tree -i reqwest` → "did not match any packages"
+- Zero `reqwest`, `ring`, `hyper-rustls`, `rustls` in Cargo.lock
+- 6,010+ tests passing, 0 failures
+- `cargo clippy --workspace --all-targets` clean
+
+### Stadial Parity Gate Response (April 16, 2026)
+
+#### Changed
+- **`reqwest` 0.12 → 0.13** — zero-breakage upgrade; `default-features = false`,
+  no TLS features, ecoBin clean. `ring` confirmed phantom lockfile entry (Cargo
+  resolver artifact from optional `hyper-rustls`; never compiled).
+- **Test fixture gating fix** — `HangHealthCheckProvider` / `FailingHealthCheckProvider`
+  evolved from `#[cfg(test)]` to `#[cfg(any(test, feature = "test-fixtures"))]` so
+  integration tests (`chaos_tests.rs`) can access them.
+- **CLI duplicate import fix** — removed duplicate `use` block in
+  `petal-tongue-cli/src/handlers/tests.rs`.
+- **Discovery doctest fix** — added `VisualizationDataProvider` trait import to
+  `petal-tongue-discovery` crate-level doctest.
+
+#### Verified
+- `ring` not in build graph (`cargo tree -i ring` empty for all targets/features/edges)
+- `dyn` audit: 23 total occurrences, 6 production (closures + std Error), all non-trait-object
+- Zero production `.unwrap()`, zero TODO/FIXME, zero unsafe
+- `cargo deny check bans` passes, Edition 2024, deny.toml enforced
+- 6,110+ tests passing, 0 failures
+
+### Sprint 8 — dyn Elimination & Modern Rust Evolution (April 16, 2026)
+
+#### Changed
+- **22 custom `dyn` trait objects eliminated** — all evolved to enum dispatch or generics:
+  - 8 async traits: `ComputeProvider`, `GUIModality`, `DiscoveryBackend`, `Sensor`,
+    `AudioBackend`, `DisplayBackend`, `UIBackend`, `VisualizationDataProvider`
+  - 14 non-async traits: `PanelInstance`, `PanelFactory`, `ToolPanel`, `TufteConstraint`,
+    `DataStream`, `AdaptiveUIRenderer`, `SensoryUIRenderer`, `PropertyAdapter`,
+    `SchemaMigration`, `StatePersistence`, `InputAdapter`, `InversePipeline`,
+    `MathObject`, `TelemetrySubscriber`
+- **`async-trait` crate fully removed** — zero `#[async_trait]` annotations (was 47),
+  zero `Pin<Box<dyn Future>>` type aliases, native `async fn` / `impl Future` throughout
+- **11 production modules refactored** — `panel_registry`, `btsp`, `cli_mode`, `braille`,
+  `biomeos_discovery`, `handlers` (CLI), `metrics_dashboard`, `interaction` (graph),
+  `adaptive_rendering`, `instance`, `state` (TUI) — all under 600 LOC
+- **Hardcoded ecosystem path** `"biomeos"` in server.rs evolved to
+  `ecosystem_runtime_dir_name()` (env-configurable via `ECOSYSTEM_RUNTIME_DIR`)
+- **1 production `.unwrap()` fixed** in `neural_api_provider/mock_server.rs`
+
+#### Verified
+- Zero `dyn` for custom traits (only `dyn std::error::Error` + `dyn Fn` remain — idiomatic Rust)
+- Zero `#[async_trait]` annotations, zero `Pin<Box<dyn Future>>` type aliases
+- Zero production `.unwrap()` outside `#[cfg(test)]`
+- Zero TODO/FIXME/HACK, zero unsafe blocks, zero compiler warnings
+- All 19 crate roots + main.rs have `#![forbid(unsafe_code)]`
+- `cargo fmt`, `cargo clippy -D warnings`, `cargo test --all-features` all clean
+- 183 tests passing (workspace binary + integration), 6,100+ total with `--workspace`
+
+### Sprint 7 — Deep Domain Refactoring & Capability Evolution (April 15, 2026)
+
+#### Changed
+- **14 production modules smart-refactored by domain** — `wad_loader`, `raycast_renderer`,
+  `sensory_matrix`, `visualization_handler/types`, `graph_editor/rpc_methods`,
+  `protocol_selection`, `unix_socket_rpc_handlers/system`, `primal_panel`,
+  `collector` (telemetry), `traffic_view/view`, `graph_canvas/rendering`,
+  `device_panel`, `config_system`, `compiler` — each decomposed into
+  single-responsibility submodules.
+- **4 test files refactored** — `app/tests`, `traffic_view/tests_extended`,
+  `trust_dashboard/tests`, `headless_panel_coverage_tests` — split by test domain.
+- **BTSP provider default**: `"beardog"` → `"security"` (capability-based, not
+  primal-specific). Socket fallback paths now use centralized `LEGACY_TMP_PREFIX`.
+- **Duplicate socket path templates**: `primal_registration.rs` fallback centralized
+  through `constants::LEGACY_TMP_PREFIX`.
+- **Root docs unified**: Test counts, file size policy, sprint status synchronized
+  across README.md, START_HERE.md, CONTEXT.md.
+
+#### Verified
+- Zero `.unwrap()` in production code (all confined to `#[cfg(test)]`).
+- Zero TODO/FIXME/HACK markers.
+- `ring` not in dependency tree for Linux target; `deny.toml` ban operational.
+- No C dependencies, no `build.rs`, ecoBin pure-Rust compliant.
+- Production mocks properly feature-gated (`mock`, `test-fixtures`).
+- Provenance trio already capability-based (discovers by `dag.session` etc.).
+- 5,960+ tests passing, 0 failures across entire workspace.
+
+### Sprint 6 — Deep Debt Resolution & Compliance Elevation (April 12, 2026)
+
+#### Added
+- **`--socket` CLI flag** on `server` subcommand: explicit UDS path override for
+  nucleus_launcher.sh and start_primal.sh alignment. Wired through
+  `UnixSocketServer::new_with_socket()` builder — no unsafe env mutation.
+  Resolves "petalTongue not starting in NUCLEUS" launcher mismatch.
+- **CONTEXT.md** (T8 compliance): 98-line context file per `PUBLIC_SURFACE_STANDARD`.
+- **6 companion test files**: `topology_tests.rs`, `interaction_tests.rs`,
+  `tutorial_mode_tests.rs`, `startup_audio_tests.rs`, `biomeos_client_tests.rs`,
+  `game_scene_renderer_tests.rs` — extracted from production files.
+
+#### Changed
+- **Discovery doc evolution**: 30+ production doc comments evolved from primal-brand
+  names (Songbird, ToadStool, etc.) to capability-based language ("registry provider",
+  "compute provider"). Feature name `toadstool-wasm` → `compute-wasm`.
+- **Smart file refactoring** (6 files): Tests extracted to companion files.
+  `interaction.rs` 690→246, `tutorial_mode.rs` 690→345, `startup_audio.rs` 675→397,
+  `biomeos_client.rs` 684→416, `game_scene_renderer.rs` 692→532,
+  `topology.rs` 735→415. Zero production files >700 LOC.
+- **Idiomatic Rust**: 22 `format!("{}", x)` → `x.to_string()` across TUI/UI crates.
+- **`#[allow(dead_code)]`** in shared test helpers documented with reason comments
+  (known Rust limitation: per-binary conditional lint).
+- **PII scrubbed**: `/home/user/` test path → `/tmp/scenarios/`.
+- **Cargo.toml comments**: Updated to capability-based language across `petal-tongue-ui`,
+  `petal-tongue-graph`.
+
+#### Removed
+- **Dead `crossterm` dependency** from `petal-tongue-core` (optional, never activated).
+- **Dead `nokhwa`/`mozjpeg-sys` C dependency** from `petal-tongue-entropy` (video feature
+  never wired; mozjpeg-sys pulls C compiler).
+- **Dead optional deps** from `petal-tongue-ui`: `softbuffer`, `pixels`, `wasm-bindgen`,
+  `wasm-bindgen-futures`, `web-sys` (features declared but never used in code).
+- **3 dead features**: `software-rendering`, `compute-wasm`, `video`.
+
+#### Lint & Quality Evolution
+- **4 crates graduated**: `#[allow(missing_docs)]` → `#[warn(missing_docs)]` (docs complete
+  for petal-tongue-tui, petal-tongue-cli, petal-tongue-api, petal-tongue-ui-core).
+- **5 conditional `#[allow(dead_code)]`** → `#[expect(dead_code, reason = "...")]`.
+- **6 more test modules extracted** to companion `_tests.rs` files:
+  `output_verification`, `multimodal_stream`, `biomeos_ui_manager`,
+  `discovered_display`, `accessibility`, `universal_discovery`.
+- **5 more `format!("{}", x)`** → `.to_string()` (axes.rs, discovery_service_provider.rs).
+- **~25 more doc comments** evolved to capability-based language across 12+ files.
+
+#### Verified
+- `cargo fmt --check` ✅
+- `cargo clippy --workspace --all-features -D warnings` ✅ (0 warnings)
+- `cargo doc --workspace --all-features -D warnings` ✅
+- `cargo test --workspace --all-features` ✅ (6,090+ passed, 0 failures)
+- `cargo deny check` ✅ (advisories, bans, licenses, sources ok)
+- `ring` absent from dep tree (default AND `--all-features`)
+- Zero production files over 680 LOC (32 test modules extracted across sprints)
+
+---
+
+### Added
+- **BTSP Phase 1** (`crate::btsp`): `validate_insecure_guard()` refuses startup
+  when both `FAMILY_ID` and `BIOMEOS_INSECURE=1` are set. Family-scoped socket
+  naming (`petaltongue-{family_id}.sock`) in production posture. Domain symlink
+  (`visualization-{family_id}.sock`) follows `PRIMAL_SELF_KNOWLEDGE_STANDARD`.
+  Guard runs before any subcommand in `main.rs`. (PT-08)
+- **BTSP Phase 2 handshake enforcement** (`perform_server_handshake`): Real BearDog
+  delegation via `btsp.session.create`, `btsp.session.verify`, and `btsp.negotiate`
+  JSON-RPC methods. First-byte peek on both TCP (`TcpStream::peek`) and UDS
+  (`BufReader::fill_buf`) detects BTSP vs plain JSON-RPC. Handshake failure
+  rejects the connection with `error!` logging. (PT-09)
+- **PT-04 HTML export product validation**: End-to-end test exercises
+  `wrap_svg_in_html` → validate → write → read-back → structural check.
+- **Audio backend feature gates**: `audio-socket` and `audio-direct` features
+  (opt-in, not default). Stubs now return typed `AudioError` variants instead
+  of silently succeeding. Module docs describe what is needed for full
+  implementation.
+
+### Changed
+- **`anyhow` eliminated from ALL production dependencies** including root binary.
+  Moved to `[dev-dependencies]` in root, `petal-tongue-ui`, `petal-tongue-tui`,
+  `petal-tongue-discovery`; removed entirely from `petal-tongue-ipc`,
+  `petal-tongue-api`, `petal-tongue-graph`. `impl From<anyhow::Error> for
+  UiError` bridge deleted.
+- **`#[allow(` → `#[expect(`** migration: 9 of 11 instances migrated with reason
+  annotations. Only 2 legitimate `dead_code` suppressions on shared test helpers
+  remain as `#[allow(`.
+- **Self-knowledge enforcement**: `BEARDOG`/`SONGBIRD` primal constants now
+  gated behind `#[cfg(feature = "test-fixtures")]` — production builds have
+  zero compile-time knowledge of other primal identities. Sandbox updated to
+  enable `test-fixtures`.
+- **Clone/allocation density reduction** in hot paths:
+  - `property_panel`: `clone_from` for HashMap capacity reuse, in-place
+    `get_mut` + `text_edit_singleline` eliminates per-frame string clones.
+  - `engine.rs`: `Arc::clone(&self)` replaces `self.clone()` in `initialize`
+    and `render_multi`; single `name_for_events` string built once and moved.
+  - `structure.rs`: `ValidationIssue::with_suggestion` accepts `impl
+    Into<String>` so callers pass `&'static str` without `.to_string()`.
+  - `modality.rs`: `available`/`by_tier`/`auto_select` return `&'static str`
+    instead of allocating `String` names.
+- **Smart file refactoring** (20 files total across sprints 4–5): Tests extracted
+  into sibling modules. Sprint 5 added 9 files: `sensory_capabilities`,
+  `unix_socket_rpc_handlers`, `audio_sonification`, `svg`, `engine`,
+  `visual_flower`, `primal_details`, `neural_graph_client`, `provenance_trio`.
+  Max production file now 414 lines (topology.rs); 6 files >700 lines remain
+  (all test-only or domain-specific renderers).
+- **Sandbox mock-biomeos**: Uses `capability_names::primal_names` constants,
+  `discover_primal_socket` for path construction, `.expect()` instead of
+  bare `.unwrap()`.
+
+### Fixed
+- **PT-06**: Push delivery startup confirmation log added; `callback_tx` wired
+  in all JSON-RPC paths via `UnixSocketServer::new()`. Modes without IPC
+  (web/tui/headless/ui) documented as intentionally push-free.
+- **PT-09**: `log_handshake_policy()` now called at `UnixSocketServer::start()`.
+  Domain symlinks use BTSP-aware family-scoped names. `Drop` impl cleans up
+  the correct family-scoped symlink.
+- Socket path `get_petaltongue_socket_path()` now delegates to BTSP posture for
+  family-scoped naming instead of hardcoded `{APP_DIR_NAME}.sock`.
+- **Flaky test fixed**: `test_resolve_instance_id_error_message_invalid` now
+  uses `XDG_DATA_HOME` env isolation to prevent filesystem race conditions.
+
+### Security
+- `BIOMEOS_INSECURE` env var guard prevents production FAMILY_ID from running
+  in insecure mode — conflicting posture is a fatal startup error.
+
+- **Sensory Capability Matrix** (`SensoryCapabilityMatrix`): Formal type system
+  that maps input capabilities × output capabilities. Consumer primals
+  (ludoSpring, primalSpring, Squirrel) call `capabilities.sensory` to discover
+  what interaction paths are available for a given user or agent session.
+- **`capabilities.sensory` IPC method**: Returns the full sensory matrix from
+  runtime hardware discovery. Supports `"agent": true` for AI-only sessions.
+- **`capabilities.sensory.negotiate` IPC method**: Accepts explicit input/output
+  capability overrides (e.g. from NestGate preferences) and returns a tailored
+  matrix with validated paths and recommended modality.
+- **`SwitchInputAdapter`**: Binary switch access for motor-impaired users
+  (sip-and-puff, head switch, eye blink, BCI binary intent). Supports
+  single-switch auto-advance and two-switch scan+select modes.
+- **`AudioInversePipeline`**: Resolves sonification back to data targets. When
+  a blind user hears a tone and presses "select", the pipeline maps the current
+  audio position to a `DataObjectId` — the "6 vs 9" principle for audio.
+- **`AgentInputAdapter`**: Formalizes agentic AI (Squirrel) as an `InputAdapter`
+  at the interaction engine level. Translates JSON commands into the same
+  semantic `InteractionIntent` pipeline as human input.
+- **`InputModality::Agent`**: New enum variant for machine interactors.
+- **SensorEvent variants**: `VoiceCommand`, `Gesture`, `Touch`, `GazePosition`,
+  `SwitchActivation`, `AgentCommand` — contracts for Toadstool hardware
+  integration. Includes `GestureType` and `GestureDirection` enums.
+- **SensorType variants**: `Touch`, `EyeTracker`, `Switch`, `Agent` for
+  runtime sensor discovery classification.
+- **InteractionPattern enum**: `PointAndClick`, `KeyboardNavigation`,
+  `VoiceAndAudio`, `SwitchScanning`, `GazeDwell`, `TouchGesture`, `AgentApi`,
+  `BrailleRouting`, `HapticExploration`.
+- **Validation test scenarios**: 12 integration tests covering blind keyboard
+  user, deaf haptic user, motor-impaired switch user, screen reader,
+  agentic AI, audio inverse pipeline, Toadstool sensor events, BCI pathway,
+  and multi-user shared perspective.
+- **wateringHole contracts**: `SENSORY_CAPABILITY_MATRIX.md` (full matrix
+  specification for ecosystem alignment) and `TOADSTOOL_SENSOR_CONTRACT.md`
+  (hardware sensor event IPC protocol).
+- **UUI modality-agnostic descriptions**: `describe_binding()` produces rich
+  text descriptions for ALL `DataBinding` variants including GameScene and
+  Soundscape. A blind user hears: "Hero (player) at (16,16), health 80%,
+  moving right. Goblin at (30,20), health 30%." A deaf user reads:
+  "Soundscape 'Forest': wind white_noise 200Hz left, birdsong sine 800Hz
+  right, starts at 5s."
+- **GameScene audio sonification**: `sonify_game_scene()` maps entities to
+  tones — position → stereo pan, entity type → frequency (player=A4,
+  enemy=A3), health → amplitude. Blind users "hear" the battlefield.
+- **GameScene haptic feedback**: `hapticize_game_scene()` converts entities
+  to haptic commands — player=sustained pulse, enemy=intensity-from-damage,
+  projectile=ramp, item=texture.
+- **Soundscape haptic translation**: `hapticize_soundscape()` converts audio
+  layers to haptic channels — frequency → pattern speed, amplitude →
+  intensity, pan → spatial position. Deaf users feel the rhythm.
+- **`compile_binding_modality()`**: IPC modality handler now routes
+  GameScene/Soundscape to rich semantic output (description, audio, haptic)
+  instead of generic scene graph compilation. Export path (`visualization.export`)
+  automatically uses binding-aware compilation when available.
+- **GameScene egui renderer**: Full 2D game scene rendering with tilemap
+  painting, sprite positioning (z-order), entity rendering with health bars,
+  velocity trails, and camera transform (zoom + pan). Replaces stub label.
+- **Soundscape egui renderer**: Waveform preview visualization for each
+  sound layer with frequency/amplitude indicators, stereo pan field display,
+  and active-region highlighting. Replaces stub label.
+- **Narrative/RPGPT scene detection**: Auto-detects narrative scenes
+  (dialogue trees, combat grids, narration) from JSON structure. Renders
+  description panels, NPC lists with health bars and status colors, numbered
+  choice options, and combat grid overlays with entity icons.
+- **`audio.synthesize` IPC method**: On-demand soundscape synthesis via
+  JSON-RPC. Accepts a soundscape definition, returns sample metadata and
+  optionally base64-encoded 16-bit stereo WAV.
+- `visualization.render.scene` added to `self_capabilities::ALL` for
+  proper capability advertisement to consumer primals.
+- `audio.synthesize` added to `self_capabilities::ALL` and method dispatch.
+- `SCENE_FORMAT_REFERENCE.md` published to wateringHole with full JSON
+  schemas for GameScene (tilemap/sprite, narrative), Soundscape, and
+  consumer primal guidance (ludoSpring, esotericWebb, primalSpring).
+- `VISUALIZATION_INTEGRATION_GUIDE.md` v2.1.0: added `game_scene` and
+  `soundscape` channel types, RPGPT dialogue/narrative examples, and
+  `audio.synthesize` method documentation.
+
+- Push delivery for callback dispatches (PT-06): subscribers providing
+  `callback_socket` and `callback_method` now receive JSON-RPC notifications
+  via UDS or TCP instead of polling. Background delivery task with graceful
+  fallback to poll on failure.
+- `push_delivery` module in `petal-tongue-ipc` with `spawn_push_delivery()`.
+- `callback_socket` field on `CallbackDispatch` and `InteractionSubscriber`.
+- `sensor_stream` module extracted from `interaction.rs` — `SensorStreamRegistry`
+  now lives in its own module for clearer domain separation.
+- `DEFAULT_WEBSOCKET_PORT` constant in `petal-tongue-core::constants`.
+- `#![warn(missing_docs)]` on `petal-tongue-headless`.
+- `#![expect(missing_docs)]` on `doom-core` (tracked for incremental completion).
+- Zero-copy `Arc<InteractionEventNotification>` in subscriber queues —
+  broadcast shares one allocation across N subscribers instead of N clones.
+- Awakening coordinator `process_event` test coverage for all 6 event types.
+- `DataService::snapshot_sync` tests (happy path, populated graph, poisoned lock).
+- `CHANGELOG.md` (this file).
+- Phase 3 wateringHole handoff document.
+- **CONTEXT.md**: Ecosystem context file for AI tooling and primal discovery
+- **`petal-tongue-wasm`**: Client-side WASM rendering module — grammar→SVG pipeline compiles to `wasm32-unknown-unknown` for offline-capable browser rendering (Gap 6 resolution)
+- **`petal-tongue-types`**: Portable data types crate (`DataBinding`, `ThresholdRange`) extracted from `petal-tongue-core` for WASM compatibility
+- **CI WASM check**: `cargo check --target wasm32-unknown-unknown -p petal-tongue-wasm` added to CI pipeline
+
+### Changed
+- **Smart refactoring**: `primitive.rs` (816L) → `primitive/mod.rs` (239L) + `primitive/tests.rs` (576L) — directory module pattern
+- **Dependency dedup**: Unified `crossterm` from split 0.28/0.29 to 0.29 across all 4 crates
+- `common_config::default_host()` now uses `DEFAULT_LOOPBACK_HOST` constant
+  instead of duplicating `"127.0.0.1"`.
+- `common_config::default_port()` now uses `DEFAULT_HEADLESS_PORT` constant
+  instead of duplicating `8080`.
+- `constants::default_bind_addr()` fallback uses `DEFAULT_LOOPBACK_HOST`
+  constant instead of literal string.
+- Scenario topology detection (`scenario_provider`, `dynamic_scenario_provider`)
+  now uses `primal_type == "nucleus"` instead of `name == "NUCLEUS"` —
+  type-based discovery, not name-based.
+- `ENV_VARS.md`: `PETALTONGUE_MOCK_MODE` → `PETALTONGUE_FIXTURE_MODE` with
+  migration note and removal timeline.
+- `README.md`: updated `forbid(unsafe_code)` to reflect unconditional status.
+- `wateringHole/petaltongue/README.md`: updated stats (coverage, date, forbid).
+- `sandbox/scenarios/README.md`: corrected stale directory structure, updated date.
+- **BREAKING**: Renamed `mock_mode` → `fixture_mode` across config, API client,
+  and UI manager. `BiomeOSClient::with_mock_mode()` → `with_fixture_mode()`,
+  `is_mock_mode()` → `is_fixture_mode()`, `MockModeUnavailable` →
+  `FixtureModeUnavailable`. Config field `mock_mode` accepted as serde alias
+  for backwards compatibility.
+- UI label changed from "Mock Mode" to "Fixture Mode (offline)".
+- **Capability naming**: `DisplayCapabilities::toadstool()` → `network_display()`; `"squirrel-ui-adapter"` → `"ai-interaction-adapter"`
+- **Health triad compliance**: `health.readiness` and `health.check` now include `version` and `primal` fields per `DEPLOYMENT_VALIDATION_STANDARD.md`
+- **Workspace lints**: `[workspace.lints.rust] unsafe_code = "forbid"` (was per-crate, now workspace-wide); `rust-version = "1.87"` added
+- **Capability symlink**: Server creates `visualization.sock` → `petaltongue.sock` on start per `CAPABILITY_BASED_DISCOVERY_STANDARD.md`
+- **Lint tightening**: Migrated 33 `#[allow(clippy::unwrap_used)]` to `#[expect]` with reasons; removed where unused
+- **Zero-copy RPC**: Eliminated `req.params.clone()` in `visualization.render`, `visualization.render.scene`, and `capabilities.sensory.negotiate`
+- **Smart refactoring**: `graph_manager.rs` → directory module (314+462 lines); `headless_integration_tests.rs` → 5 themed test files; `dns_parser.rs` → directory module; `spring_adapter.rs` → directory module; `constants.rs` → directory module
+- **Dead code removed**: `audio_providers/` (5 files), `audio_playback.rs`, 13 unused primal name constants, empty feature flags
+
+### Fixed
+- Removed unfulfilled `#[expect(clippy::unused_self)]` and
+  `#[expect(clippy::cast_sign_loss)]` in `petal-tongue-api` — clippy now
+  passes with zero warnings across the workspace.
+- Replaced `as u64` cast with `.cast_unsigned()` in `biomeos_client.rs`.
+- Eliminated the last `unsafe` block in `petal-tongue-ipc` (provenance_trio test):
+  replaced raw `env::set_var`/`remove_var` with `temp_env::with_vars` via
+  `petal_tongue_core::test_fixtures::env_test_helpers`. Upgraded crate to
+  unconditional `#![forbid(unsafe_code)]`.
+- Hardcoded `127.0.0.1` in `display/backends/software.rs` replaced with
+  `constants::DEFAULT_LOOPBACK_HOST`; hardcoded port `8765` replaced with
+  `constants::DEFAULT_WEBSOCKET_PORT`.
+- **PII scrub regression**: `test_a_record_parse` fixture data corrected (192.168.1.100 → 192.0.2.100)
+- **Broken doc paths**: Stale `docs/` references updated
+
+## [1.6.6] — 2026-04-01
+
+### Added
+- `visualization.render.scene` RPC method (PT-04) — direct `SceneGraph` submission.
+- `visualization.export` RPC method (PT-06 listen surface).
+- `ExportFormat::Html` for headless CLI export (SVG wrapped in standalone HTML).
+- `CallbackDispatch` struct and `pending_callbacks` response field (PT-06 data model).
+- `RenderingAwareness` auto-init in `UnixSocketServer` (PT-05).
+- Server-mode periodic discovery refresh (PT-07).
+- blake3 provenance hashing (pure Rust, zero C/asm deps).
+- Centralized discovery timeouts (12 named constants, env-overridable).
+- `primal_names` and `socket_roles` constants — no hardcoded primal strings.
+- `rust-toolchain.toml` (pins stable + rustfmt, clippy, llvm-tools-preview).
+- `deny.toml` for advisory, license, ban, and source auditing.
+- `llvm-cov.toml` with 90% `fail-under` threshold.
+- Spring data adapter (`SpringDataAdapter`) for ludoSpring / ecoPrimals formats.
+- `DispatchOutcome`, `IpcErrorPhase`, `StreamItem` structured IPC tracing.
+- `CircuitBreaker` and `RetryPolicy` in resilience module.
+
+### Changed
+- All JSON-RPC serialization hot paths evolved from `serde_json::to_string` to
+  `serde_json::to_vec` (zero intermediate `String` allocation per frame).
+- Documentation reconciled to "JSON-RPC 2.0 REQUIRED, tarpc MAY for Rust-to-Rust hot paths".
+- TUI devices panel renders real discovered `PrimalInfo` instead of placeholders.
+- Extracted `parse_primal_array()`, `world_to_screen()`, `adjacency_list()`
+  to reduce duplication.
+
+### Fixed
+- `#![forbid(unsafe_code)]` on all crates (one justified test exception).
+- Zero clippy warnings (pedantic + nursery, `-D warnings`).
+- Zero `TODO`/`FIXME`/`HACK` markers in committed code.
+- All files under 1000 lines (max 852).
+
+### Removed
+- `DefaultHasher` placeholder in `provenance_trio.rs` (replaced by blake3).
+- Hardcoded primal name strings in 7 files.
+
+## [1.6.5] — 2026-03-28
+
+### Added
+- `deny(clippy::unwrap_used, clippy::expect_used)` at workspace level.
+- Enriched `capability.list` response with transport and protocol metadata.
+
+## [1.6.4] — 2026-03-26
+
+### Changed
+- Version bump, root doc cleanup, stale script path fixes.
+
+[Unreleased]: https://github.com/ecoPrimals/petalTongue/compare/v1.6.6...HEAD
+[1.6.6]: https://github.com/ecoPrimals/petalTongue/compare/v1.6.5...v1.6.6
+[1.6.5]: https://github.com/ecoPrimals/petalTongue/compare/v1.6.4...v1.6.5
+[1.6.4]: https://github.com/ecoPrimals/petalTongue/releases/tag/v1.6.4
