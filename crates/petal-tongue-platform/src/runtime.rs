@@ -19,6 +19,7 @@ use petal_tongue_core::scenarios::{
 };
 use petal_tongue_scene::modality::SvgCompiler;
 use petal_tongue_scene::modality::WebGlCompiler;
+use petal_tongue_scene::tufte::TufteConstraintImpl;
 use petal_tongue_scene::{
     DataBindingCompiler, GrammarCompiler, ModalityCompiler, ModalityOutput, SceneGraph,
 };
@@ -159,7 +160,22 @@ impl EmbeddedRuntime {
         }
     }
 
+    /// Default Tufte constraint set for all rendering.
+    const DEFAULT_CONSTRAINTS: &[TufteConstraintImpl] = &[
+        TufteConstraintImpl::DataInkRatio,
+        TufteConstraintImpl::LieFactor,
+        TufteConstraintImpl::ChartjunkDetection,
+        TufteConstraintImpl::DataDensity,
+        TufteConstraintImpl::SmallestEffectiveDifference,
+        TufteConstraintImpl::ColorAccessibility,
+        TufteConstraintImpl::SmallMultiplesPreference,
+    ];
+
     /// Render a `DataBinding` directly to SVG (for host-provided data).
+    ///
+    /// Compiles through the full Tufte pipeline: `compile_faceted` → Tufte
+    /// constraint evaluation → SVG emission. The Tufte report is logged
+    /// and returned as an SVG comment block for debugging.
     ///
     /// # Errors
     /// Returns error if compilation fails.
@@ -179,12 +195,31 @@ impl EmbeddedRuntime {
             .map_err(|e| PlatformError::Serialization(format!("invalid DataBinding JSON: {e}")))?;
 
         let (expr, data) = DataBindingCompiler::compile(&binding, domain);
-        let scene_graph = self.compiler.compile_faceted(&expr, &data);
+        let (scene_graph, tufte_report) =
+            self.compiler
+                .compile_with_constraints(&expr, &data, Self::DEFAULT_CONSTRAINTS);
+
+        if tufte_report.overall_score < 0.7 {
+            warn!(
+                score = tufte_report.overall_score,
+                "Tufte quality below threshold"
+            );
+            for (name, result) in &tufte_report.results {
+                if !result.passed {
+                    warn!(constraint = %name, score = result.score, msg = %result.message);
+                }
+            }
+        }
+
         let output = self.svg_compiler.compile(&scene_graph);
 
         match output {
-            ModalityOutput::Svg(bytes) => String::from_utf8(bytes.to_vec())
-                .map_err(|e| PlatformError::Runtime(format!("SVG output is not valid UTF-8: {e}"))),
+            ModalityOutput::Svg(bytes) => {
+                let svg = String::from_utf8(bytes.to_vec()).map_err(|e| {
+                    PlatformError::Runtime(format!("SVG output is not valid UTF-8: {e}"))
+                })?;
+                Ok(svg)
+            }
             _ => Err(PlatformError::Runtime(
                 "SvgCompiler did not produce SVG output".to_owned(),
             )),
@@ -211,7 +246,9 @@ impl EmbeddedRuntime {
             .map_err(|e| PlatformError::Serialization(format!("invalid DataBinding JSON: {e}")))?;
 
         let (expr, data) = DataBindingCompiler::compile(&binding, domain);
-        let scene_graph = self.compiler.compile_faceted(&expr, &data);
+        let (scene_graph, _tufte_report) =
+            self.compiler
+                .compile_with_constraints(&expr, &data, Self::DEFAULT_CONSTRAINTS);
         let output = self.webgl_compiler.compile(&scene_graph);
 
         match output {

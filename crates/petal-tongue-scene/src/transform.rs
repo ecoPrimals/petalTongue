@@ -274,6 +274,41 @@ impl Camera {
             projection: Projection::perspective_default(aspect),
         }
     }
+
+    /// Project a world-space 3D point to 2D viewport coordinates.
+    ///
+    /// Applies the inverse camera transform (view matrix) then the
+    /// projection. For orthographic: subtracts camera position and drops Z
+    /// (identity camera = pass-through). For perspective: projects through
+    /// the frustum and maps to viewport.
+    #[must_use]
+    pub fn project(&self, world_x: f64, world_y: f64, world_z: f64) -> (f64, f64) {
+        let vx = world_x - self.transform.matrix[12];
+        let vy = world_y - self.transform.matrix[13];
+        let vz = world_z - self.transform.matrix[14];
+
+        match self.projection {
+            Projection::Orthographic { .. } => {
+                (vx, vy)
+            }
+            Projection::Perspective {
+                fov_y,
+                aspect,
+                near,
+                ..
+            } => {
+                let f = 1.0 / (fov_y / 2.0).tan();
+                let eye_z = if vz.abs() < near { -near } else { vz };
+                let ndc_x = (f / aspect) * (vx / -eye_z);
+                let ndc_y = f * (vy / -eye_z);
+                let half_w = aspect * (fov_y / 2.0).tan() * near;
+                let half_h = (fov_y / 2.0).tan() * near;
+                let sx = (ndc_x + 1.0) * half_w;
+                let sy = (1.0 - ndc_y) * half_h;
+                (sx, sy)
+            }
+        }
+    }
 }
 
 #[cfg(test)]

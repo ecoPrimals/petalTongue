@@ -6,7 +6,7 @@ use bytes::Bytes;
 
 use crate::primitive::{AnchorPoint, Color, FillRule, Primitive};
 use crate::scene_graph::SceneGraph;
-use crate::transform::{Projection, Transform2D};
+use crate::transform::{Camera, Projection, Transform3D};
 
 use super::{ModalityCompiler, ModalityOutput};
 
@@ -44,14 +44,15 @@ impl ModalityCompiler for SvgCompiler {
 
     fn compile(&self, scene: &SceneGraph) -> ModalityOutput {
         let (vw, vh) = Self::viewport_from_scene(scene);
+        let camera = scene.effective_camera();
         let mut buf = String::new();
         let _ = write!(
             buf,
             r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {vw} {vh}">"#,
         );
 
-        for (transform, prim) in scene.flatten() {
-            Self::emit_primitive(&mut buf, prim, &transform);
+        for (transform, prim, _node_id) in scene.flatten_3d() {
+            Self::emit_primitive(&mut buf, prim, &transform, &camera);
         }
 
         buf.push_str("</svg>");
@@ -60,11 +61,25 @@ impl ModalityCompiler for SvgCompiler {
 }
 
 impl SvgCompiler {
+    /// Apply a 3D world transform to a 2D point (z=0) then project through the camera.
+    fn project_point(
+        transform: &Transform3D,
+        camera: &Camera,
+        x: f64,
+        y: f64,
+    ) -> (f64, f64) {
+        let m = &transform.matrix;
+        let wx = m[0] * x + m[4] * y + m[12];
+        let wy = m[1] * x + m[5] * y + m[13];
+        let wz = m[2] * x + m[6] * y + m[14];
+        camera.project(wx, wy, wz)
+    }
+
     #[expect(
         clippy::too_many_lines,
         reason = "emit_primitive is a single match over primitive variants"
     )]
-    fn emit_primitive(buf: &mut String, prim: &Primitive, transform: &Transform2D) {
+    fn emit_primitive(buf: &mut String, prim: &Primitive, transform: &Transform3D, camera: &Camera) {
         match prim {
             Primitive::Point {
                 x,
@@ -74,7 +89,7 @@ impl SvgCompiler {
                 stroke,
                 ..
             } => {
-                let (x, y) = transform.apply(*x, *y);
+                let (x, y) = Self::project_point(transform, camera, *x, *y);
                 let fill_attr = fill.map_or_else(|| "none".to_owned(), Self::color_attr);
                 let stroke_attr = stroke.as_ref().map_or_else(
                     || "stroke=\"none\"".to_owned(),
@@ -95,7 +110,7 @@ impl SvgCompiler {
                 let pts: Vec<String> = points
                     .iter()
                     .map(|&[px, py]| {
-                        let (sx, sy) = transform.apply(px, py);
+                        let (sx, sy) = Self::project_point(transform, camera, px, py);
                         format!("{sx},{sy}")
                     })
                     .collect();
@@ -117,7 +132,7 @@ impl SvgCompiler {
                 corner_radius,
                 ..
             } => {
-                let (x, y) = transform.apply(*x, *y);
+                let (x, y) = Self::project_point(transform, camera, *x, *y);
                 let fill_attr = fill.map_or_else(|| "none".to_owned(), Self::color_attr);
                 let stroke_attr = stroke.as_ref().map_or_else(
                     || "stroke=\"none\"".to_owned(),
@@ -143,7 +158,7 @@ impl SvgCompiler {
                 anchor,
                 ..
             } => {
-                let (sx, sy) = transform.apply(*x, *y);
+                let (sx, sy) = Self::project_point(transform, camera, *x, *y);
                 let anchor_str = match anchor {
                     AnchorPoint::TopLeft | AnchorPoint::CenterLeft | AnchorPoint::BottomLeft => {
                         "start"
@@ -175,7 +190,7 @@ impl SvgCompiler {
                 let pts: Vec<String> = points
                     .iter()
                     .map(|&[px, py]| {
-                        let (sx, sy) = transform.apply(px, py);
+                        let (sx, sy) = Self::project_point(transform, camera, px, py);
                         format!("{sx},{sy}")
                     })
                     .collect();
@@ -211,7 +226,7 @@ impl SvgCompiler {
                 stroke,
                 ..
             } => {
-                let (cx, cy) = transform.apply(*cx, *cy);
+                let (cx, cy) = Self::project_point(transform, camera, *cx, *cy);
                 let x1 = cx + radius * start_angle.cos();
                 let y1 = cy + radius * start_angle.sin();
                 let x2 = cx + radius * end_angle.cos();
@@ -242,12 +257,12 @@ impl SvgCompiler {
                 fill_rule,
                 ..
             } => {
-                let (sx, sy) = transform.apply(start[0], start[1]);
+                let (sx, sy) = Self::project_point(transform, camera, start[0], start[1]);
                 let mut d = format!("M {sx} {sy}");
                 for seg in segments {
-                    let (c1x, c1y) = transform.apply(seg.cp1[0], seg.cp1[1]);
-                    let (c2x, c2y) = transform.apply(seg.cp2[0], seg.cp2[1]);
-                    let (ex, ey) = transform.apply(seg.end[0], seg.end[1]);
+                    let (c1x, c1y) = Self::project_point(transform, camera, seg.cp1[0], seg.cp1[1]);
+                    let (c2x, c2y) = Self::project_point(transform, camera, seg.cp2[0], seg.cp2[1]);
+                    let (ex, ey) = Self::project_point(transform, camera, seg.end[0], seg.end[1]);
                     let _ = write!(d, " C {c1x} {c1y}, {c2x} {c2y}, {ex} {ey}");
                 }
                 let fill_attr = fill.map_or_else(|| "none".to_owned(), Self::color_attr);
@@ -274,8 +289,8 @@ impl SvgCompiler {
                 opacity,
                 ..
             } => {
-                let (tx, ty) = transform.apply(*x, *y);
-                let (bx, by) = transform.apply(x + width, y + height);
+                let (tx, ty) = Self::project_point(transform, camera, *x, *y);
+                let (bx, by) = Self::project_point(transform, camera, x + width, y + height);
                 let sw = (bx - tx).abs();
                 let sh = (by - ty).abs();
                 let _ = writeln!(

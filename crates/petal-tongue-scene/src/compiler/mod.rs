@@ -33,6 +33,9 @@ impl GrammarCompiler {
     }
 
     /// Compile grammar expression and data, then evaluate Tufte constraints.
+    ///
+    /// Uses `compile_faceted` internally so facet layouts are preserved.
+    /// Returns both the scene graph and the Tufte quality report.
     #[must_use]
     pub fn compile_with_constraints(
         &self,
@@ -40,7 +43,7 @@ impl GrammarCompiler {
         data: &[Value],
         constraints: &[TufteConstraintImpl],
     ) -> (SceneGraph, TufteReport) {
-        let graph = self.compile(expr, data);
+        let graph = self.compile_faceted(expr, data);
         let primitives: Vec<Primitive> = graph
             .flatten()
             .into_iter()
