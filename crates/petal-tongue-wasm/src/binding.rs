@@ -121,7 +121,9 @@ pub fn binding_id(binding: &DataBinding) -> &str {
         | DataBinding::ColorGrid { id, .. }
         | DataBinding::FacetedBar { id, .. }
         | DataBinding::FacetedGauge { id, .. }
-        | DataBinding::Donut { id, .. } => id,
+        | DataBinding::Donut { id, .. }
+        | DataBinding::ForceGraph { id, .. }
+        | DataBinding::Chord { id, .. } => id,
     }
 }
 
@@ -140,7 +142,12 @@ pub fn binding_label(binding: &DataBinding) -> &str {
         | DataBinding::Soundscape { label, .. }
         | DataBinding::GenomeTrack { label, .. }
         | DataBinding::CircularMap { label, .. }
-        | DataBinding::ColorGrid { label, .. } => label,
+        | DataBinding::ColorGrid { label, .. }
+        | DataBinding::FacetedBar { label, .. }
+        | DataBinding::FacetedGauge { label, .. }
+        | DataBinding::Donut { label, .. }
+        | DataBinding::ForceGraph { label, .. }
+        | DataBinding::Chord { label, .. } => label,
     }
 }
 

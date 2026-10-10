@@ -202,6 +202,29 @@ pub fn describe_binding(binding: &DataBinding) -> String {
                 n = categories.len(),
             )
         }
+        DataBinding::ForceGraph {
+            label,
+            nodes,
+            edges,
+            ..
+        } => {
+            format!(
+                "Force-directed graph '{label}': {n} nodes, {e} edges.",
+                n = nodes.len(),
+                e = edges.len(),
+            )
+        }
+        DataBinding::Chord {
+            label,
+            categories,
+            unit,
+            ..
+        } => {
+            format!(
+                "Chord diagram '{label}': {n} categories ({unit}).",
+                n = categories.len(),
+            )
+        }
     }
 }
 

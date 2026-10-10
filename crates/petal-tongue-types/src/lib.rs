@@ -12,4 +12,7 @@
 
 mod data_channel;
 
-pub use data_channel::{DataBinding, FacetGaugeEntry, FacetGroup, Normalization, ThresholdRange};
+pub use data_channel::{
+    DataBinding, FacetGaugeEntry, FacetGroup, ForceGraphEdge, ForceGraphNode, Normalization,
+    ThresholdRange,
+};

@@ -604,6 +604,198 @@ impl DataBindingCompiler {
                     .collect();
                 (expr, data)
             }
+            DataBinding::ForceGraph {
+                id,
+                label,
+                nodes,
+                edges,
+                width,
+                height,
+            } => {
+                // Fruchterman-Reingold force layout computed here in Rust.
+                // Positions nodes, then emits point + line primitives.
+                let n = nodes.len();
+                let id_to_idx: std::collections::HashMap<&str, usize> = nodes
+                    .iter()
+                    .enumerate()
+                    .map(|(i, n)| (n.id.as_str(), i))
+                    .collect();
+
+                // Initial circular layout
+                #[expect(clippy::cast_precision_loss)]
+                let mut positions: Vec<(f64, f64)> = (0..n)
+                    .map(|i| {
+                        let angle = 2.0 * std::f64::consts::PI * (i as f64) / (n.max(1) as f64);
+                        let r = width.min(*height) * 0.35;
+                        (width / 2.0 + r * angle.cos(), height / 2.0 + r * angle.sin())
+                    })
+                    .collect();
+
+                // Fruchterman-Reingold iterations
+                #[expect(clippy::cast_precision_loss)]
+                let k = (width * height / n.max(1) as f64).sqrt();
+                let iterations = 80;
+
+                for iter in 0..iterations {
+                    #[expect(clippy::cast_precision_loss)]
+                    let temp = 0.1 * width * (1.0 - f64::from(iter) / f64::from(iterations));
+                    let mut disp = vec![(0.0_f64, 0.0_f64); n];
+
+                    // Repulsive forces
+                    for i in 0..n {
+                        for j in (i + 1)..n {
+                            let dx = positions[i].0 - positions[j].0;
+                            let dy = positions[i].1 - positions[j].1;
+                            let dist = dx.hypot(dy).max(1.0);
+                            let force = k * k / dist;
+                            let fx = (dx / dist) * force;
+                            let fy = (dy / dist) * force;
+                            disp[i].0 += fx;
+                            disp[i].1 += fy;
+                            disp[j].0 -= fx;
+                            disp[j].1 -= fy;
+                        }
+                    }
+
+                    // Attractive forces
+                    for edge in edges {
+                        let Some(&si) = id_to_idx.get(edge.source.as_str()) else {
+                            continue;
+                        };
+                        let Some(&ti) = id_to_idx.get(edge.target.as_str()) else {
+                            continue;
+                        };
+                        let dx = positions[si].0 - positions[ti].0;
+                        let dy = positions[si].1 - positions[ti].1;
+                        let dist = dx.hypot(dy).max(1.0);
+                        let force = dist * dist / k * edge.weight;
+                        let fx = (dx / dist) * force;
+                        let fy = (dy / dist) * force;
+                        disp[si].0 -= fx;
+                        disp[si].1 -= fy;
+                        disp[ti].0 += fx;
+                        disp[ti].1 += fy;
+                    }
+
+                    // Apply with temperature
+                    for i in 0..n {
+                        let (dx, dy) = disp[i];
+                        let dist = dx.hypot(dy).max(0.001);
+                        let scale = temp.min(dist) / dist;
+                        positions[i].0 = dx.mul_add(scale, positions[i].0).clamp(40.0, width - 40.0);
+                        positions[i].1 = dy.mul_add(scale, positions[i].1).clamp(40.0, height - 40.0);
+                    }
+                }
+
+                // Build grammar: scatter plot of positioned nodes + lines for edges
+                let mut expr = GrammarExpr::new(id.as_str(), GeometryType::Point)
+                    .with_x("x")
+                    .with_y("y")
+                    .with_title(label.as_str())
+                    .with_scale("x", ScaleType::Linear)
+                    .with_scale("y", ScaleType::Linear);
+                if let Some(d) = domain {
+                    expr = expr.with_domain(d);
+                }
+
+                let mut data: Vec<Value> = Vec::with_capacity(n + edges.len());
+
+                // Edges as line segments
+                for edge in edges {
+                    if let (Some(&si), Some(&ti)) = (
+                        id_to_idx.get(edge.source.as_str()),
+                        id_to_idx.get(edge.target.as_str()),
+                    ) {
+                        data.push(serde_json::json!({
+                            "x": positions[si].0, "y": positions[si].1,
+                            "x2": positions[ti].0, "y2": positions[ti].1,
+                            "type": "edge", "relation": edge.relation,
+                            "flow": edge.flow,
+                            "data_id": format!("e-{}-{}", edge.source, edge.target),
+                        }));
+                    }
+                }
+
+                // Nodes as positioned points
+                for (i, node) in nodes.iter().enumerate() {
+                    data.push(serde_json::json!({
+                        "x": positions[i].0, "y": positions[i].1,
+                        "type": "node",
+                        "label": node.label,
+                        "kind": node.kind,
+                        "tier": node.tier,
+                        "data_id": node.id,
+                        "metadata": node.metadata,
+                    }));
+                }
+
+                (expr, data)
+            }
+            DataBinding::Chord {
+                id,
+                label,
+                categories,
+                flows,
+                ..
+            } => {
+                // Chord diagram: arcs for categories, curves for flows
+                let n = categories.len();
+                let totals: Vec<f64> = (0..n)
+                    .map(|i| (0..n).map(|j| flows.get(i * n + j).copied().unwrap_or(0.0)).sum())
+                    .collect();
+                let grand_total: f64 = totals.iter().sum();
+
+                let mut expr = GrammarExpr::new(id.as_str(), GeometryType::Arc)
+                    .with_x("x")
+                    .with_y("y")
+                    .with_title(label.as_str())
+                    .with_scale("x", ScaleType::Linear)
+                    .with_scale("y", ScaleType::Linear);
+                expr.coordinate = CoordinateSystem::Polar;
+                if let Some(d) = domain {
+                    expr = expr.with_domain(d);
+                }
+
+                let mut data: Vec<Value> = Vec::new();
+
+                // Category arcs
+                let mut angle = 0.0_f64;
+                let mut arc_starts = Vec::with_capacity(n);
+                for (i, cat) in categories.iter().enumerate() {
+                    let fraction = if grand_total > 0.0 {
+                        totals[i] / grand_total
+                    } else {
+                        1.0 / n.max(1) as f64
+                    };
+                    let start = angle;
+                    angle += fraction * 360.0;
+                    arc_starts.push(start);
+                    data.push(serde_json::json!({
+                        "x": start, "y": angle,
+                        "type": "arc",
+                        "label": cat, "data_id": cat,
+                        "value": totals[i],
+                    }));
+                }
+
+                // Flow chords (non-zero flows between categories)
+                for i in 0..n {
+                    for j in 0..n {
+                        let flow = flows.get(i * n + j).copied().unwrap_or(0.0);
+                        if flow > 0.0 && i != j {
+                            data.push(serde_json::json!({
+                                "x": arc_starts[i], "y": arc_starts[j],
+                                "type": "chord",
+                                "from": categories[i], "to": categories[j],
+                                "value": flow,
+                                "data_id": format!("chord-{}-{}", categories[i], categories[j]),
+                            }));
+                        }
+                    }
+                }
+
+                (expr, data)
+            }
         }
     }
 

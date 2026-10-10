@@ -177,7 +177,9 @@ fn binding_id(b: &DataBinding) -> &str {
         | DataBinding::ColorGrid { id, .. }
         | DataBinding::FacetedBar { id, .. }
         | DataBinding::FacetedGauge { id, .. }
-        | DataBinding::Donut { id, .. } => id,
+        | DataBinding::Donut { id, .. }
+        | DataBinding::ForceGraph { id, .. }
+        | DataBinding::Chord { id, .. } => id,
     }
 }
 

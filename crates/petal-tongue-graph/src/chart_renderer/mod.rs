@@ -167,6 +167,11 @@ pub fn draw_channel(ui: &mut Ui, binding: &DataBinding, domain: Option<&str>) {
                 ui.label("(empty faceted/donut scene)");
             }
         }
+        DataBinding::ForceGraph { .. } | DataBinding::Chord { .. } => {
+            if !scene_paint::draw_binding_via_scene(ui, binding, domain) {
+                ui.label("(empty force graph / chord scene)");
+            }
+        }
     }
 }
 

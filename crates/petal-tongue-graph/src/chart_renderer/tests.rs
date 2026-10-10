@@ -160,7 +160,9 @@ fn binding_label(binding: &DataBinding) -> &str {
         | DataBinding::ColorGrid { label, .. }
         | DataBinding::FacetedBar { label, .. }
         | DataBinding::FacetedGauge { label, .. }
-        | DataBinding::Donut { label, .. } => label,
+        | DataBinding::Donut { label, .. }
+        | DataBinding::ForceGraph { label, .. }
+        | DataBinding::Chord { label, .. } => label,
     }
 }
 

@@ -566,7 +566,7 @@ fn circular_map_binding_compiles_to_arc_polar() {
 
 #[test]
 fn all_databinding_variants_produce_nonempty_scenes() {
-    use petal_tongue_types::DataBinding;
+    use petal_tongue_types::{DataBinding, Normalization};
     let bindings: Vec<DataBinding> = vec![
         DataBinding::TimeSeries {
             id: "ts".into(),
@@ -602,7 +602,7 @@ fn all_databinding_variants_produce_nonempty_scenes() {
             y_labels: vec!["r1".into()],
             values: vec![1.0, 2.0],
             unit: "u".into(),
-            normalization: Default::default(),
+            normalization: Normalization::None,
         },
         DataBinding::Scatter {
             id: "sc".into(),
@@ -638,6 +638,44 @@ fn all_databinding_variants_produce_nonempty_scenes() {
                 serde_json::json!({"start_angle": 0.0, "end_angle": 180.0, "ring": 0, "label": "feat"}),
             ],
             unit: "bp".into(),
+        },
+        DataBinding::ForceGraph {
+            id: "fg".into(),
+            label: "FG".into(),
+            nodes: vec![
+                petal_tongue_types::ForceGraphNode {
+                    id: "a".into(),
+                    label: "A".into(),
+                    kind: "entity".into(),
+                    tier: None,
+                    metadata: serde_json::Value::Null,
+                },
+                petal_tongue_types::ForceGraphNode {
+                    id: "b".into(),
+                    label: "B".into(),
+                    kind: "entity".into(),
+                    tier: Some(1),
+                    metadata: serde_json::Value::Null,
+                },
+            ],
+            edges: vec![
+                petal_tongue_types::ForceGraphEdge {
+                    source: "a".into(),
+                    target: "b".into(),
+                    relation: "link".into(),
+                    weight: 1.0,
+                    flow: String::new(),
+                },
+            ],
+            width: 800.0,
+            height: 600.0,
+        },
+        DataBinding::Chord {
+            id: "ch".into(),
+            label: "CH".into(),
+            categories: vec!["x".into(), "y".into(), "z".into()],
+            flows: vec![0.0, 3.0, 1.0, 2.0, 0.0, 4.0, 5.0, 1.0, 0.0],
+            unit: "hops".into(),
         },
     ];
 
