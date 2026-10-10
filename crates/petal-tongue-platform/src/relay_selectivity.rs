@@ -27,6 +27,9 @@ use std::path::Path;
 // ═══════════════════════════════════════════════════════════════
 // Anderson transport math — copied from BarraCuda anderson_transport.rs
 // Canonical source: barraCuda/crates/barracuda/src/special/anderson_transport.rs
+//
+// INVARIANT: These must match canonical exactly. Do not modify here.
+// When divergence is found, resync from canonical (barraCuda).
 // ═══════════════════════════════════════════════════════════════
 
 /// Thouless-formula approximation for the 1D localization length.
