@@ -1,0 +1,22 @@
+[package]
+name = "spore-words"
+description = "SayWhere geocoding — IETF draft-saywhere-geocoding implementation for human-memorable geographic coordinates"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+readme.workspace = true
+keywords = ["geocoding", "geohash", "bip39", "saywhere", "gps"]
+categories = ["algorithms", "encoding", "science::geo"]
+
+[dependencies]
+blake3 = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+
+[lints]
+workspace = true
