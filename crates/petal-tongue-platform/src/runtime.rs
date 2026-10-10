@@ -318,6 +318,7 @@ impl EmbeddedRuntime {
                         "pt.render_binding",
                         "pt.render_webgl",
                         "pt.relay_selectivity",
+                        "pt.membrane_stack",
                         "pt.state",
                         "pt.scenarios",
                         "pt.metrics",
@@ -413,6 +414,19 @@ impl EmbeddedRuntime {
                 match crate::relay_selectivity::compute_selectivity() {
                     Ok(sel) => {
                         let result = serde_json::to_value(&sel).unwrap_or_default();
+                        serde_json::json!({
+                            "jsonrpc": "2.0",
+                            "id": request.get("id"),
+                            "result": result
+                        })
+                    }
+                    Err(e) => Self::error_response(&request, -32000, &e),
+                }
+            }
+            "pt.membrane_stack" => {
+                match crate::membrane_stack_reader::read_membrane_stack() {
+                    Ok(stack) => {
+                        let result = serde_json::to_value(&stack).unwrap_or_default();
                         serde_json::json!({
                             "jsonrpc": "2.0",
                             "id": request.get("id"),
