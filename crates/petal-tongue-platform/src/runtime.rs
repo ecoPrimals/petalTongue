@@ -19,6 +19,7 @@ use petal_tongue_core::scenarios::{
 };
 use petal_tongue_scene::modality::SvgCompiler;
 use petal_tongue_scene::modality::WebGlCompiler;
+use petal_tongue_animation::AnimationEngine;
 use petal_tongue_scene::tufte::TufteConstraintImpl;
 use petal_tongue_scene::{
     DataBindingCompiler, GrammarCompiler, ModalityCompiler, ModalityOutput, SceneGraph,
@@ -49,6 +50,7 @@ pub struct EmbeddedRuntime {
     svg_compiler: Arc<SvgCompiler>,
     webgl_compiler: Arc<WebGlCompiler>,
     scene_cache: Arc<RwLock<Option<SceneGraph>>>,
+    animation_engine: AnimationEngine,
     event_callback: Option<EventCallback>,
     builders: Vec<Box<dyn ScenarioBuilder>>,
     metrics: Box<dyn PlatformMetrics>,
@@ -75,6 +77,7 @@ impl EmbeddedRuntime {
             svg_compiler: Arc::new(SvgCompiler::new()),
             webgl_compiler: Arc::new(WebGlCompiler::new()),
             scene_cache: Arc::new(RwLock::new(None)),
+            animation_engine: AnimationEngine::new(),
             event_callback: None,
             builders: Self::builtin_builders(),
             metrics: platform_metrics::detect(),
@@ -357,6 +360,8 @@ impl EmbeddedRuntime {
                         "pt.relay_selectivity",
                         "pt.membrane_stack",
                         "pt.transit_summary",
+                        "pt.animation_state",
+                        "pt.animation_ingest",
                         "pt.state",
                         "pt.scenarios",
                         "pt.metrics",
@@ -434,6 +439,87 @@ impl EmbeddedRuntime {
                         "render_pipeline": "compile_with_constraints → compile_faceted → evaluate_all",
                         "projection": "flatten_3d + Camera::project",
                         "state": format!("{:?}", self.state)
+                    }
+                })
+            }
+            "pt.animation_state" => {
+                self.animation_engine.update();
+                let pulses: Vec<serde_json::Value> = self
+                    .animation_engine
+                    .node_pulses
+                    .iter()
+                    .map(|p| {
+                        serde_json::json!({
+                            "node_id": p.node_id,
+                            "phase": p.phase,
+                            "frequency": p.frequency,
+                            "intensity": p.intensity,
+                            "radius_multiplier": p.radius_multiplier(),
+                            "alpha": p.alpha()
+                        })
+                    })
+                    .collect();
+                let edges: Vec<serde_json::Value> = self
+                    .animation_engine
+                    .edge_animations
+                    .iter()
+                    .map(|e| {
+                        serde_json::json!({
+                            "source": e.source,
+                            "target": e.target,
+                            "bandwidth": e.bandwidth,
+                            "thickness": e.thickness_multiplier,
+                            "particles": e.particles.len()
+                        })
+                    })
+                    .collect();
+                serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": request.get("id"),
+                    "result": {
+                        "pulses": pulses,
+                        "edges": edges,
+                        "total_particles": self.animation_engine.edge_animations.iter()
+                            .map(|e| e.particles.len())
+                            .sum::<usize>()
+                    }
+                })
+            }
+            "pt.animation_ingest" => {
+                let edges = request
+                    .pointer("/params/edges")
+                    .and_then(serde_json::Value::as_array);
+                let pulses = request
+                    .pointer("/params/pulses")
+                    .and_then(serde_json::Value::as_array);
+
+                if let Some(edges) = edges {
+                    for edge in edges {
+                        let source = edge["source"].as_str().unwrap_or("").to_owned();
+                        let target = edge["target"].as_str().unwrap_or("").to_owned();
+                        let bandwidth = edge["bandwidth"].as_f64().unwrap_or(0.0) as f32;
+                        if !source.is_empty() && !target.is_empty() {
+                            self.animation_engine
+                                .set_edge_animation(source, target, bandwidth);
+                        }
+                    }
+                }
+                if let Some(pulses) = pulses {
+                    for pulse in pulses {
+                        let node_id = pulse["node_id"].as_str().unwrap_or("").to_owned();
+                        let frequency = pulse["frequency"].as_f64().unwrap_or(1.0) as f32;
+                        if !node_id.is_empty() {
+                            self.animation_engine.set_node_pulse(node_id, frequency);
+                        }
+                    }
+                }
+
+                serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": request.get("id"),
+                    "result": {
+                        "edges_active": self.animation_engine.edge_animations.len(),
+                        "pulses_active": self.animation_engine.node_pulses.len()
                     }
                 })
             }
