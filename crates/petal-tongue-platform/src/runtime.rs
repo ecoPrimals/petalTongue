@@ -356,6 +356,7 @@ impl EmbeddedRuntime {
                         "pt.render_webgl",
                         "pt.relay_selectivity",
                         "pt.membrane_stack",
+                        "pt.transit_summary",
                         "pt.state",
                         "pt.scenarios",
                         "pt.metrics",
@@ -418,6 +419,23 @@ impl EmbeddedRuntime {
                     }),
                     Err(e) => Self::error_response(&request, -32000, &e.to_string()),
                 }
+            }
+            "pt.transit_summary" => {
+                let constraints: Vec<String> = Self::DEFAULT_CONSTRAINTS
+                    .iter()
+                    .map(|c| format!("{c:?}"))
+                    .collect();
+                serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": request.get("id"),
+                    "result": {
+                        "tufte_constraints_active": constraints.len(),
+                        "tufte_constraints": constraints,
+                        "render_pipeline": "compile_with_constraints → compile_faceted → evaluate_all",
+                        "projection": "flatten_3d + Camera::project",
+                        "state": format!("{:?}", self.state)
+                    }
+                })
             }
             "pt.state" => serde_json::json!({
                 "jsonrpc": "2.0",
