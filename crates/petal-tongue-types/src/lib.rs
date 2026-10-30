@@ -11,8 +11,12 @@
 //! renderable output.
 
 mod data_channel;
+pub mod taxonomy;
 
 pub use data_channel::{
     DataBinding, FacetGaugeEntry, FacetGroup, ForceGraphEdge, ForceGraphNode, Normalization,
     ThresholdRange,
+};
+pub use taxonomy::{
+    Entity, EntityKind, EntityTaxonomy, PageRef, Primal, Relation, SpeciesDefinition,
 };
