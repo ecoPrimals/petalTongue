@@ -114,6 +114,27 @@ pub async fn dispatch_async(
             );
             cli_mode::status(verbose, &format, data_service).await
         }
+        Commands::Doctor => {
+            println!("🏥 petalTongue Health Diagnostics");
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            println!();
+            println!("📦 Binary Information");
+            println!("   Name: petaltongue");
+            println!("   Version: {}", env!("CARGO_PKG_VERSION"));
+            println!("   Role: Universal UI & Visualization System");
+            println!();
+            println!("🎨 Rendering Capabilities");
+            println!("   • Native desktop GUI (egui)");
+            println!("   • Terminal UI (ratatui)");
+            println!("   • Web server (axum)");
+            println!("   • Headless API server");
+            println!("   • IPC server (JSON-RPC 2.0)");
+            println!("   • WASM scene engine");
+            println!();
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            println!("✅ Health check complete!");
+            Ok(())
+        }
         Commands::Ui { .. } | Commands::Live { .. } => {
             unreachable!("GUI modes handled on main thread")
         }

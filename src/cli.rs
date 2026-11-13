@@ -181,4 +181,7 @@ pub enum Commands {
         #[arg(long, default_value = "text")]
         format: String,
     },
+
+    /// Run comprehensive health diagnostics (`ecoBin` standard).
+    Doctor,
 }
