@@ -83,11 +83,15 @@ pub async fn run(
         result = jsonrpc_future => {
             result?;
         }
-        result = tarpc_server.serve() => {
-            if let Err(e) = result {
-                tracing::error!("tarpc server error: {e}");
+        // A tarpc transport that cannot bind (a Unix socket on Windows) must not end the
+        // primal: JSON-RPC is already serving over its TCP fallback. Say so once and keep
+        // going. A clean stop of the tarpc server still ends server mode, as before.
+        () = async {
+            if let Err(e) = tarpc_server.serve().await {
+                tracing::warn!("tarpc transport unavailable, continuing without it: {e}");
+                std::future::pending::<()>().await;
             }
-        }
+        } => {}
         result = negotiate_server.serve() => {
             if let Err(e) = result {
                 tracing::error!("G65 negotiate server error: {e}");
