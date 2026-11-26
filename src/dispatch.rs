@@ -57,6 +57,8 @@ pub async fn dispatch_async(
             cache_ttl,
             spa,
             allowed_origins,
+            static_only,
+            follow_links,
         } => {
             dispatch_web(
                 port,
@@ -71,6 +73,8 @@ pub async fn dispatch_async(
                 cache_ttl,
                 spa,
                 allowed_origins,
+                static_only,
+                follow_links,
                 config,
                 data_service,
                 global_socket,
@@ -144,6 +148,7 @@ pub async fn dispatch_async(
 /// Dispatch `web` command — extracted to keep `dispatch_async` under the line limit.
 #[expect(
     clippy::too_many_arguments,
+    clippy::fn_params_excessive_bools,
     reason = "web dispatch aggregates CLI + config params"
 )]
 async fn dispatch_web(
@@ -159,6 +164,8 @@ async fn dispatch_web(
     cache_ttl: Option<u64>,
     spa: bool,
     allowed_origins: Vec<String>,
+    static_only: bool,
+    follow_links: bool,
     config: Config,
     data_service: std::sync::Arc<data_service::DataService>,
     global_socket: Option<String>,
@@ -197,6 +204,8 @@ async fn dispatch_web(
         cache_ttl = effective_cache_ttl,
         spa = effective_spa,
         allowed_origins = ?effective_origins,
+        static_only,
+        follow_links,
         "Launching web UI server (Pure Rust!)"
     );
 
@@ -228,6 +237,8 @@ async fn dispatch_web(
         cache_ttl_secs: effective_cache_ttl,
         spa: effective_spa,
         allowed_origins: effective_origins,
+        static_only,
+        follow_links,
         compositions: discover_compositions(),
     };
     web_mode::run(cfg, data_service).await

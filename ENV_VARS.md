@@ -178,6 +178,27 @@ Cache-Control max-age for static file responses.
 SPA mode: serve `index.html` for missing paths (client-side routing support
 for React/Vue/Svelte apps).
 
+### **PETALTONGUE_STATIC_ONLY**
+**Type**: Boolean  
+**Default**: `false`  
+**CLI flag**: `--static-only` (web subcommand)  
+**Example**: `PETALTONGUE_STATIC_ONLY=1`
+
+Works only: serve the docroot and `/health/liveness`, nothing else. None of the
+API, depot, WebSocket or built-in page routes are mounted, so the docroot owns
+every path, `/` and `/static/` included. Needs `--docroot` and the filesystem
+backend. This is the shape for a public face of a site.
+
+### **PETALTONGUE_FOLLOW_LINKS**
+**Type**: Boolean  
+**Default**: `false`  
+**CLI flag**: `--follow-links` (web subcommand)  
+**Example**: `PETALTONGUE_FOLLOW_LINKS=1`
+
+A requested path that resolves through a symlink to a place outside the docroot
+answers 404. Set this for a docroot that is assembled from links to other
+folders and is meant to serve what they point at.
+
 ### **PETALTONGUE_ALLOWED_ORIGINS**
 **Type**: String (comma-separated)  
 **Default**: None  

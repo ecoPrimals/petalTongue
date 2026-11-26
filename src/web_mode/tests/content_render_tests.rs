@@ -113,7 +113,7 @@ async fn test_docroot_custom_404_html() {
     let nb_cfg = Arc::new(crate::notebook_render::NotebookRenderConfig::default());
     let docroot = tmp.path().to_string_lossy().into_owned();
     let app = Router::new().fallback(move |req: axum::extract::Request| {
-        docroot_fallback(req, docroot, nb_cfg, 0, false)
+        docroot_fallback(req, docroot, nb_cfg, 0, false, false)
     });
 
     let req = axum::http::Request::builder()

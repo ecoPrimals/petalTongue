@@ -65,6 +65,11 @@ pub struct WebConfig<'a> {
     pub spa: bool,
     /// Allowed CORS origins (empty = no CORS layer, `["*"]` = wildcard).
     pub allowed_origins: Vec<String>,
+    /// Works only (`--static-only`): serve the docroot and a liveness answer,
+    /// none of the API, depot, WebSocket or built-in page routes.
+    pub static_only: bool,
+    /// Follow symlinks that lead out of the docroot (`--follow-links`).
+    pub follow_links: bool,
     /// Composition mount points: each entry maps a URL prefix to a static directory.
     /// Discovered via `PETALTONGUE_COMPOSITIONS` env (comma-separated `name=path` pairs)
     /// or by the `--composition` CLI flag.
@@ -108,6 +113,11 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
     });
     let cache_ttl = cfg.cache_ttl_secs;
     let spa = cfg.spa;
+    let follow_links = cfg.follow_links;
+
+    if cfg.static_only {
+        return run_static_only(&cfg, addr, nb_config).await;
+    }
 
     let mut app = Router::new()
         .route("/health", get(health_handler))
@@ -291,7 +301,14 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
             let docroot_owned = docroot.clone();
             let nb = Arc::clone(&nb_config);
             app = app.fallback(move |req: axum::extract::Request| {
-                docroot_fallback(req, docroot_owned, Arc::clone(&nb), cache_ttl, spa)
+                docroot_fallback(
+                    req,
+                    docroot_owned,
+                    Arc::clone(&nb),
+                    cache_ttl,
+                    spa,
+                    follow_links,
+                )
             });
         }
     }
@@ -358,6 +375,62 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
             tracing::debug!("gossip inject (surface.web.live): {e}");
         }
     });
+    axum::serve(listener, app)
+        .with_graceful_shutdown(crate::signal::shutdown_signal())
+        .await?;
+
+    tracing::info!("Web server shut down gracefully");
+    Ok(())
+}
+
+/// Works-only server (`--static-only`): the docroot and a liveness answer.
+///
+/// None of the API, depot, WebSocket or built-in page routes are mounted, so the
+/// docroot owns every path, `/` and `/static/` included. This is the shape for a
+/// public face: the data routes stay with the instance that runs behind the gate.
+async fn run_static_only(
+    cfg: &WebConfig<'_>,
+    addr: std::net::SocketAddr,
+    nb_config: Arc<crate::notebook_render::NotebookRenderConfig>,
+) -> Result<(), AppError> {
+    if cfg.backend != "filesystem" {
+        return Err(AppError::WebConfig(format!(
+            "--static-only serves files from the docroot; it does not go with the {} backend",
+            cfg.backend
+        )));
+    }
+    let Some(docroot) = cfg.docroot.clone() else {
+        return Err(AppError::WebConfig(
+            "--static-only needs a --docroot to serve".to_owned(),
+        ));
+    };
+    if !std::path::Path::new(&docroot).is_dir() {
+        return Err(AppError::WebConfig(format!(
+            "--docroot path does not exist or is not a directory: {docroot}"
+        )));
+    }
+    let (cache_ttl, spa, follow_links) = (cfg.cache_ttl_secs, cfg.spa, cfg.follow_links);
+    tracing::info!(
+        docroot = %docroot,
+        spa,
+        follow_links,
+        "Works only: serving the docroot and nothing else"
+    );
+
+    let mut app = Router::new()
+        .route("/health/liveness", get(liveness_handler))
+        .fallback(move |req: axum::extract::Request| {
+            docroot_fallback(req, docroot, nb_config, cache_ttl, spa, follow_links)
+        })
+        .layer(CompressionLayer::new())
+        .layer(axum::middleware::from_fn(security_headers_middleware))
+        .layer(TraceLayer::new_for_http());
+    if !cfg.allowed_origins.is_empty() {
+        app = app.layer(build_cors_layer(&cfg.allowed_origins));
+    }
+
+    tracing::info!("Web server (works only) listening on http://{}", addr);
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
     axum::serve(listener, app)
         .with_graceful_shutdown(crate::signal::shutdown_signal())
         .await?;

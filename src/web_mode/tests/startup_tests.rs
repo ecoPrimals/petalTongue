@@ -19,6 +19,8 @@ struct OwnedWebConfig {
     cache_ttl_secs: u64,
     spa: bool,
     allowed_origins: Vec<String>,
+    static_only: bool,
+    follow_links: bool,
 }
 
 impl OwnedWebConfig {
@@ -33,6 +35,8 @@ impl OwnedWebConfig {
             cache_ttl_secs: 0,
             spa: false,
             allowed_origins: Vec::new(),
+            static_only: false,
+            follow_links: false,
         }
     }
 
@@ -47,6 +51,8 @@ impl OwnedWebConfig {
             cache_ttl_secs: self.cache_ttl_secs,
             spa: self.spa,
             allowed_origins: self.allowed_origins.clone(),
+            static_only: self.static_only,
+            follow_links: self.follow_links,
             compositions: Vec::new(),
         }
     }
@@ -312,4 +318,104 @@ async fn test_run_starts_within_timeout() {
             panic!("run() failed unexpectedly: {e}");
         }
     }
+}
+
+/// The whole answer to one GET, headers and body, as text.
+async fn probe_http_text(port: u16, path: &str) -> Option<String> {
+    let addr = format!("127.0.0.1:{port}");
+    let mut stream = tokio::net::TcpStream::connect(&addr).await.ok()?;
+    let request = format!("GET {path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n");
+    stream.write_all(request.as_bytes()).await.ok()?;
+    let mut buf = Vec::new();
+    stream.read_to_end(&mut buf).await.ok()?;
+    Some(String::from_utf8_lossy(&buf).into_owned())
+}
+
+#[tokio::test]
+async fn test_run_static_only_serves_the_docroot_and_nothing_else() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    std::fs::write(
+        tmp.path().join("index.html"),
+        "<html>the site's own front page</html>",
+    )
+    .expect("write");
+    std::fs::create_dir_all(tmp.path().join("static")).expect("mkdir");
+    std::fs::write(tmp.path().join("static/data.json"), "{}").expect("write");
+
+    let port = reserve_loopback_port();
+    let mut cfg = OwnedWebConfig::filesystem(port);
+    cfg.docroot = Some(tmp.path().to_string_lossy().into_owned());
+    cfg.static_only = true;
+
+    let (handle, port) = spawn_run(cfg);
+
+    assert!(
+        wait_for_http(port, "/health/liveness", 1500).await,
+        "works-only server should start"
+    );
+    let front = probe_http_text(port, "/").await.unwrap_or_default();
+    assert!(
+        front.contains("the site's own front page"),
+        "the docroot owns /: {front}"
+    );
+    assert_eq!(
+        probe_http_status(port, "/static/data.json").await,
+        Some(200),
+        "the docroot owns /static/"
+    );
+    for path in [
+        "/health",
+        "/health/readiness",
+        "/api/status",
+        "/api/primals",
+        "/api/mesh-peers",
+        "/api/physical-topology",
+        "/api/public-record/network",
+        "/api/events",
+        "/ws",
+        "/depot/",
+        "/viz/anything",
+    ] {
+        assert_eq!(
+            probe_http_status(port, path).await,
+            Some(404),
+            "{path} should not exist on a works-only server"
+        );
+    }
+
+    handle.abort();
+    let _ = handle.await;
+}
+
+#[tokio::test]
+async fn test_run_static_only_needs_a_docroot() {
+    let mut cfg = test_config("127.0.0.1:0");
+    cfg.static_only = true;
+
+    let result = run(cfg, Arc::new(DataService::new())).await;
+    let msg = result
+        .expect_err("static-only without a docroot should fail")
+        .to_string();
+    assert!(
+        msg.contains("docroot"),
+        "error should mention docroot: {msg}"
+    );
+}
+
+#[tokio::test]
+async fn test_run_static_only_rejects_other_backends() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let mut cfg = test_config("127.0.0.1:0");
+    cfg.static_only = true;
+    cfg.backend = "content-direct";
+    cfg.docroot = Some(tmp.path().to_string_lossy().into_owned());
+
+    let result = run(cfg, Arc::new(DataService::new())).await;
+    let msg = result
+        .expect_err("static-only with another backend should fail")
+        .to_string();
+    assert!(
+        msg.contains("content-direct"),
+        "error should name the backend: {msg}"
+    );
 }

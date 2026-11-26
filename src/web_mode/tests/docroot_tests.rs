@@ -128,7 +128,7 @@ async fn test_docroot_renders_ipynb_as_html() {
     let docroot = tmp.path().to_string_lossy().into_owned();
     let app = Router::new()
         .fallback(move |req: axum::extract::Request| {
-            docroot_fallback(req, docroot, nb_cfg, 0, false)
+            docroot_fallback(req, docroot, nb_cfg, 0, false, false)
         })
         .with_state(Arc::new(DataService::new()));
 
@@ -166,7 +166,7 @@ async fn test_docroot_cache_control_header() {
     let docroot = tmp.path().to_string_lossy().into_owned();
     let app = Router::new()
         .fallback(move |req: axum::extract::Request| {
-            docroot_fallback(req, docroot, nb_cfg, 3600, false)
+            docroot_fallback(req, docroot, nb_cfg, 3600, false, false)
         })
         .with_state(Arc::new(DataService::new()));
 
@@ -223,7 +223,7 @@ async fn test_spa_serves_index_for_missing_path() {
     let docroot = tmp.path().to_string_lossy().into_owned();
     let app = Router::new()
         .fallback(move |req: axum::extract::Request| {
-            docroot_fallback(req, docroot, nb_cfg, 0, true)
+            docroot_fallback(req, docroot, nb_cfg, 0, true, false)
         })
         .with_state(Arc::new(DataService::new()));
 
@@ -264,7 +264,7 @@ async fn test_non_spa_returns_404() {
     let docroot = tmp.path().to_string_lossy().into_owned();
     let app = Router::new()
         .fallback(move |req: axum::extract::Request| {
-            docroot_fallback(req, docroot, nb_cfg, 0, false)
+            docroot_fallback(req, docroot, nb_cfg, 0, false, false)
         })
         .with_state(Arc::new(DataService::new()));
 
@@ -351,4 +351,89 @@ async fn test_security_headers_applied() {
             .unwrap()
             .contains("camera=()")
     );
+}
+
+/// Ask `docroot_fallback` for one path and return the status.
+#[cfg(unix)]
+async fn docroot_status(docroot: &std::path::Path, uri: &str, follow_links: bool) -> u16 {
+    let nb_cfg = Arc::new(crate::notebook_render::NotebookRenderConfig::default());
+    let docroot = docroot.to_string_lossy().into_owned();
+    let app = Router::new()
+        .fallback(move |req: axum::extract::Request| {
+            docroot_fallback(req, docroot, nb_cfg, 0, false, follow_links)
+        })
+        .with_state(Arc::new(DataService::new()));
+    let req = axum::http::Request::builder()
+        .uri(uri)
+        .body(axum::body::Body::empty())
+        .unwrap();
+    tower::ServiceExt::oneshot(app, req)
+        .await
+        .unwrap()
+        .status()
+        .as_u16()
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn test_docroot_refuses_a_link_that_leads_out() {
+    use std::os::unix::fs::symlink;
+
+    let outside = tempfile::tempdir().expect("tempdir");
+    std::fs::write(outside.path().join("private.txt"), "not for visitors").expect("write");
+    std::fs::write(outside.path().join("index.html"), "<html>outside</html>").expect("write");
+    std::fs::write(outside.path().join("notes.ipynb"), "{}").expect("write");
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let root = tmp.path();
+    std::fs::write(root.join("page.html"), "<html>page</html>").expect("write");
+    std::fs::create_dir(root.join("section")).expect("mkdir");
+    symlink(outside.path().join("private.txt"), root.join("out.txt")).expect("link");
+    symlink(outside.path(), root.join("store")).expect("link");
+    symlink(
+        outside.path().join("index.html"),
+        root.join("section/index.html"),
+    )
+    .expect("link");
+    symlink(outside.path().join("notes.ipynb"), root.join("notes.ipynb")).expect("link");
+    symlink(root.join("page.html"), root.join("alias.html")).expect("link");
+
+    for path in [
+        "/out.txt",
+        "/%6Fut.txt",
+        "/store/",
+        "/store/private.txt",
+        "/section/",
+        "/notes.ipynb",
+    ] {
+        assert_eq!(
+            docroot_status(root, path, false).await,
+            404,
+            "{path} leads out of the docroot"
+        );
+    }
+    for path in ["/page.html", "/alias.html"] {
+        assert_eq!(
+            docroot_status(root, path, false).await,
+            200,
+            "{path} stays inside the docroot"
+        );
+    }
+    assert_eq!(
+        docroot_status(root, "/nothing-here.html", false).await,
+        404,
+        "a path that does not exist is an ordinary 404"
+    );
+    for path in [
+        "/out.txt",
+        "/store/private.txt",
+        "/section/",
+        "/notes.ipynb",
+    ] {
+        assert_eq!(
+            docroot_status(root, path, true).await,
+            200,
+            "{path} is served when links are followed"
+        );
+    }
 }

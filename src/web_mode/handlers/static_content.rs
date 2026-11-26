@@ -23,14 +23,22 @@ use crate::data_service::DataService;
 ///
 /// When `spa` is `true`, missing paths serve `{docroot}/index.html` instead of
 /// 404, enabling client-side routing for single-page applications.
+///
+/// Unless `follow_links` is `true`, a requested path that resolves through a
+/// symlink to a place outside the docroot answers 404.
 pub async fn docroot_fallback(
     req: axum::extract::Request,
     docroot: String,
     nb_config: Arc<crate::notebook_render::NotebookRenderConfig>,
     cache_ttl: u64,
     spa: bool,
+    follow_links: bool,
 ) -> axum::response::Response {
     let uri_path = req.uri().path();
+
+    if !follow_links && leads_outside(&docroot, uri_path).await {
+        return serve_custom_404(&docroot).await;
+    }
 
     if is_ipynb(uri_path) {
         let file_path = resolve_docroot_path(&docroot, uri_path);
@@ -139,10 +147,72 @@ pub fn build_response(
         })
 }
 
+/// Whether a requested path resolves, through a symlink anywhere along it, to a
+/// place outside the docroot.
+///
+/// A path that does not exist is not outside: it gets the ordinary 404 further on.
+async fn leads_outside(docroot: &str, uri_path: &str) -> bool {
+    let Ok(root) = tokio::fs::canonicalize(docroot).await else {
+        return true;
+    };
+    let Some(decoded) = percent_decode_path(uri_path) else {
+        return true;
+    };
+    // The file service percent-decodes the path; the notebook branch reads it as sent.
+    let as_sent = (decoded != uri_path).then(|| resolve_docroot_path(docroot, uri_path));
+    for candidate in std::iter::once(resolve_docroot_path(docroot, &decoded)).chain(as_sent) {
+        if resolves_outside(&root, &candidate).await {
+            return true;
+        }
+    }
+    false
+}
+
+/// Whether `candidate`, or the `index.html` it would answer with as a directory,
+/// has its real location outside `root` (already canonical).
+async fn resolves_outside(root: &std::path::Path, candidate: &std::path::Path) -> bool {
+    let Ok(real) = tokio::fs::canonicalize(candidate).await else {
+        return false;
+    };
+    if !real.starts_with(root) {
+        return true;
+    }
+    tokio::fs::canonicalize(real.join("index.html"))
+        .await
+        .is_ok_and(|index| !index.starts_with(root))
+}
+
+/// Percent-decode a URI path the way the file service does: bytes, then UTF-8.
+fn percent_decode_path(path: &str) -> Option<String> {
+    let mut out = Vec::with_capacity(path.len());
+    let mut rest = path.as_bytes();
+    while let Some((&byte, tail)) = rest.split_first() {
+        let escaped = match (byte, tail) {
+            (b'%', [hi, lo, after @ ..]) => hex_value(*hi)
+                .zip(hex_value(*lo))
+                .map(|(hi, lo)| ((hi << 4) | lo, after)),
+            _ => None,
+        };
+        let (decoded, next) = escaped.unwrap_or((byte, tail));
+        out.push(decoded);
+        rest = next;
+    }
+    String::from_utf8(out).ok()
+}
+
+const fn hex_value(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        b'A'..=b'F' => Some(byte - b'A' + 10),
+        _ => None,
+    }
+}
+
 /// Map a URI path to a filesystem path under docroot, preventing traversal.
 ///
-/// Strips leading `/`, rejects `..` path components to prevent directory
-/// escape, and canonicalizes to ensure the result stays under `docroot`.
+/// Strips leading `/` and keeps only normal path components, so `..` cannot
+/// climb out. Symlinks are a separate matter: see `leads_outside`.
 pub fn resolve_docroot_path(docroot: &str, uri_path: &str) -> std::path::PathBuf {
     let cleaned = uri_path.trim_start_matches('/');
     let safe: std::path::PathBuf = std::path::Path::new(cleaned)

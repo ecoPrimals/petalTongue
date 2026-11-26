@@ -639,3 +639,27 @@ fn test_neural_api_announce_payload_shape() {
         "latency must include accessibility"
     );
 }
+
+#[test]
+fn test_cli_parse_web_static_only() {
+    let cli = Cli::parse_from([
+        "petaltongue",
+        "web",
+        "--docroot",
+        "/var/www/site",
+        "--static-only",
+    ]);
+    let Commands::Web {
+        static_only,
+        follow_links,
+        ..
+    } = cli.command
+    else {
+        unreachable!("parsed web")
+    };
+    assert!(static_only);
+    assert!(
+        !follow_links,
+        "links that lead out are refused unless asked for"
+    );
+}

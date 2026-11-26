@@ -114,6 +114,15 @@ pub enum Commands {
         /// CORS allowed origins (comma-separated, or "*" for all)
         #[arg(long, env = "PETALTONGUE_ALLOWED_ORIGINS", value_delimiter = ',')]
         allowed_origins: Vec<String>,
+
+        /// Works only: serve the docroot and a liveness answer, none of the API,
+        /// depot, WebSocket or built-in page routes (the docroot owns "/")
+        #[arg(long, env = "PETALTONGUE_STATIC_ONLY")]
+        static_only: bool,
+
+        /// Follow symlinks that lead out of the docroot (off: such paths answer 404)
+        #[arg(long, env = "PETALTONGUE_FOLLOW_LINKS")]
+        follow_links: bool,
     },
 
     /// Run headless API server (Pure Rust! ✅)

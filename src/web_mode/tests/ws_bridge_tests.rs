@@ -43,6 +43,8 @@ async fn spawn_server(port: u16) {
         cache_ttl_secs: 0,
         spa: false,
         allowed_origins: Vec::new(),
+        static_only: false,
+        follow_links: false,
         compositions: Vec::new(),
     };
     let _ = run(cfg, data_service).await;
