@@ -114,22 +114,58 @@ impl Session {
     }
 }
 
+/// Under these names the window keeps, from one opening to the next, the
+/// folder last worked in and the model last chosen.
+const KEPT_WORKSPACE: &str = "gaia-ide.workspace";
+const KEPT_MODEL: &str = "gaia-ide.model";
+
+/// Fill in from what was kept last time what this opening did not say.
+///
+/// A folder or a file named on the command line wins over the kept folder.
+/// Returns the options to open with and the model to start on, if any.
+/// The browser page keeps the same two things, so the window is no step
+/// back from it.
+pub fn remembered(
+    mut options: IdeOptions,
+    kept: Option<&dyn eframe::Storage>,
+) -> (IdeOptions, Option<String>) {
+    let kept_under = |key: &str| {
+        kept.and_then(|storage| storage.get_string(key))
+            .filter(|value| !value.trim().is_empty())
+    };
+    if options.workspace.is_none() && options.file.is_none() {
+        options.workspace = kept_under(KEPT_WORKSPACE);
+    }
+    (options, kept_under(KEPT_MODEL))
+}
+
+/// Keep the folder and the model for the next opening.
+pub fn remember(state: &State, keep: &mut dyn eframe::Storage) {
+    keep.set_string(KEPT_WORKSPACE, state.workspace.clone());
+    keep.set_string(KEPT_MODEL, state.model.clone());
+}
+
 /// The window.
 pub struct IdeApp {
     session: Session,
 }
 
 impl IdeApp {
-    /// A window that starts by looking for the server.
-    pub fn new(options: IdeOptions, ctx: &egui::Context) -> Result<Self, String> {
-        view::style(ctx);
+    /// A window that starts by looking for the server, in the folder and
+    /// with the model it had when it was last closed.
+    pub fn new(options: IdeOptions, cc: &eframe::CreationContext<'_>) -> Result<Self, String> {
+        view::style(&cc.egui_ctx);
         let wake = {
-            let ctx = ctx.clone();
+            let ctx = cc.egui_ctx.clone();
             Arc::new(move || ctx.request_repaint())
         };
-        Ok(Self {
-            session: Session::new(options, wake)?,
-        })
+        let (options, model) = remembered(options, cc.storage);
+        let mut session = Session::new(options, wake)?;
+        // It stays chosen only if the server still offers it (`State::apply`).
+        if let Some(model) = model {
+            session.state.model = model;
+        }
+        Ok(Self { session })
     }
 }
 
@@ -138,6 +174,10 @@ impl eframe::App for IdeApp {
         self.session.take_in();
         let asked = view::draw(ctx, &mut self.session.state);
         self.session.carry_out(asked);
+    }
+
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        remember(&self.session.state, storage);
     }
 }
 
@@ -158,7 +198,90 @@ pub fn run(options: IdeOptions, native: eframe::NativeOptions) -> Result<(), Str
     eframe::run_native(
         APP_ID,
         native,
-        Box::new(move |cc| Ok(Box::new(IdeApp::new(options, &cc.egui_ctx)?))),
+        Box::new(move |cc| Ok(Box::new(IdeApp::new(options, cc)?))),
     )
     .map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use super::*;
+
+    /// What eframe keeps on disk between openings, held in memory.
+    #[derive(Default)]
+    struct Kept(HashMap<String, String>);
+
+    impl eframe::Storage for Kept {
+        fn get_string(&self, key: &str) -> Option<String> {
+            self.0.get(key).cloned()
+        }
+        fn set_string(&mut self, key: &str, value: String) {
+            self.0.insert(key.to_string(), value);
+        }
+        fn flush(&mut self) {}
+    }
+
+    fn closed_in(workspace: &str, model: &str) -> Kept {
+        let mut state = State::new(Some(workspace.to_string()), None);
+        state.model = model.to_string();
+        let mut kept = Kept::default();
+        remember(&state, &mut kept);
+        kept
+    }
+
+    #[test]
+    fn the_window_opens_where_it_was_closed() {
+        let kept = closed_in("/work/shop", "qwen2.5-coder:14b");
+        let (options, model) = remembered(IdeOptions::default(), Some(&kept));
+        assert_eq!(options.workspace.as_deref(), Some("/work/shop"));
+        assert_eq!(model.as_deref(), Some("qwen2.5-coder:14b"));
+    }
+
+    #[test]
+    fn a_folder_or_a_file_named_now_wins_over_the_one_kept() {
+        let kept = closed_in("/work/shop", "gaia:latest");
+        let named = IdeOptions {
+            workspace: Some("/work/other".to_string()),
+            ..Default::default()
+        };
+        let (options, _) = remembered(named, Some(&kept));
+        assert_eq!(options.workspace.as_deref(), Some("/work/other"));
+
+        let named = IdeOptions {
+            file: Some("/elsewhere/a.rs".to_string()),
+            ..Default::default()
+        };
+        let (options, _) = remembered(named, Some(&kept));
+        assert_eq!(
+            options.workspace, None,
+            "the file's own place, not the kept folder"
+        );
+    }
+
+    #[test]
+    fn a_first_opening_has_nothing_kept() {
+        let (options, model) = remembered(IdeOptions::default(), None);
+        assert_eq!((options.workspace, model), (None, None));
+
+        // Closed before the server ever answered: nothing worth keeping.
+        let kept = closed_in("", "");
+        let (options, model) = remembered(IdeOptions::default(), Some(&kept));
+        assert_eq!((options.workspace, model), (None, None));
+    }
+
+    #[test]
+    fn a_kept_model_the_server_no_longer_offers_gives_way() {
+        let mut state = State::new(None, None);
+        state.model = "gone:1b".to_string();
+        state.apply(Event::Models(Ok((
+            vec![state::Model {
+                name: "gaia:latest".to_string(),
+                tools: true,
+            }],
+            "squirrel".to_string(),
+        ))));
+        assert_eq!(state.model, "gaia:latest");
+    }
 }
