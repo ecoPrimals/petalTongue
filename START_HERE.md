@@ -31,6 +31,8 @@ petaltongue live                               # NUCLEUS interactive (IPC + GUI)
 petaltongue live --port 9090                   # live mode with TCP listener
 petaltongue live --port 9090 --bind 0.0.0.0    # live mode network-facing
 petaltongue status                             # System info
+petaltongue ide                                # Gaia IDE window (needs gaia-ide running on this device)
+petaltongue ide --workspace ~/project src/a.rs # open a folder and a file in it
 
 # Global flags (apply to all subcommands):
 petaltongue --socket /run/user/1000/biomeos/petaltongue.sock server

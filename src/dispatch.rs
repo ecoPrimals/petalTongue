@@ -139,7 +139,7 @@ pub async fn dispatch_async(
             println!("✅ Health check complete!");
             Ok(())
         }
-        Commands::Ui { .. } | Commands::Live { .. } => {
+        Commands::Ui { .. } | Commands::Live { .. } | Commands::Ide { .. } => {
             unreachable!("GUI modes handled on main thread")
         }
     }

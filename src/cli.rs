@@ -193,4 +193,21 @@ pub enum Commands {
 
     /// Run comprehensive health diagnostics (`ecoBin` standard).
     Doctor,
+
+    /// Open the Gaia IDE in a window of its own
+    ///
+    /// The window is a face for the `gaia-ide` server (biomeOS), which must
+    /// be running on this device. Nothing is registered with the ecosystem.
+    Ide {
+        /// The port the IDE's server listens on (default: 3142)
+        #[arg(long)]
+        port: Option<u16>,
+
+        /// The folder to work in (default: the first the server may open)
+        #[arg(long)]
+        workspace: Option<String>,
+
+        /// A file to open at the start
+        file: Option<String>,
+    },
 }

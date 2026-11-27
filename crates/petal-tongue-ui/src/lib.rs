@@ -102,6 +102,7 @@ pub mod graph_manager; // Graph manager - save/load/execute via Neural API
 pub mod graph_metrics_plotter;
 pub mod headless_harness; // Headless egui harness for UI introspection and testing
 pub mod human_entropy_window;
+pub mod ide; // The Gaia IDE in a window of its own (a face for biomeOS's gaia-ide server)
 pub mod input_verification; // Universal input verification (keyboard, pointer, etc.)
 pub mod keyboard_shortcuts;
 pub mod live_data;

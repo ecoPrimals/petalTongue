@@ -33,6 +33,7 @@ doom-core = { path = "../doom-core", optional = true }  # Doom integration for p
 
 tokio = { workspace = true, features = ["rt-multi-thread", "sync", "time", "net", "io-util", "macros", "fs"] }
 tokio-tungstenite = { workspace = true }
+futures-util = { workspace = true }  # the Gaia IDE window's conversation with its server
 serde = { workspace = true }
 serde_json = { workspace = true }
 toml = { workspace = true }

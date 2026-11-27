@@ -15,6 +15,40 @@ fn test_cli_parse_ui() {
 }
 
 #[test]
+fn test_cli_parse_ide() {
+    let cli = Cli::parse_from(["petaltongue", "ide"]);
+    assert!(matches!(
+        cli.command,
+        Commands::Ide {
+            port: None,
+            workspace: None,
+            file: None
+        }
+    ));
+
+    let cli = Cli::parse_from([
+        "petaltongue",
+        "ide",
+        "--port",
+        "3143",
+        "--workspace",
+        "/work",
+        "src/a.rs",
+    ]);
+    let Commands::Ide {
+        port,
+        workspace,
+        file,
+    } = cli.command
+    else {
+        panic!("ide parses as ide");
+    };
+    assert_eq!(port, Some(3143));
+    assert_eq!(workspace.as_deref(), Some("/work"));
+    assert_eq!(file.as_deref(), Some("src/a.rs"));
+}
+
+#[test]
 fn test_cli_parse_tui() {
     let cli = Cli::parse_from(["petaltongue", "tui"]);
     assert!(matches!(cli.command, Commands::Tui { .. }));

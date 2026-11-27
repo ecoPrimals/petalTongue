@@ -5,7 +5,7 @@
 //!
 //! # Architecture
 //!
-//! `UniBin`: 1 binary, 7 subcommands (ui, tui, web, headless, server, live, status)
+//! `UniBin`: 1 binary, 9 subcommands (ui, tui, web, headless, server, live, status, doctor, ide)
 //! ecoBin: 100% Pure Rust (ui uses egui/eframe for platform windowing)
 //!
 //! # Concurrency
@@ -30,6 +30,8 @@ mod data_service;
 mod dispatch;
 mod error;
 mod headless_mode;
+#[cfg(feature = "ui")]
+mod ide_mode;
 #[cfg(feature = "ui")]
 mod live_mode;
 mod notebook_render;
@@ -67,6 +69,25 @@ fn main() -> Result<(), AppError> {
     }
 
     init_tracing(&cli.log_level, &cli.log_format)?;
+
+    // The IDE window is only a face for a server already running here: it
+    // needs no data service and announces nothing, so it starts before both.
+    if let Commands::Ide {
+        port,
+        workspace,
+        file,
+    } = &cli.command
+    {
+        // The window's own `--port` is the IDE server's; the global one is
+        // petalTongue's own and means nothing here.
+        #[cfg(feature = "ui")]
+        return ide_mode::run_on_main_thread(*port, workspace.clone(), file.clone());
+        #[cfg(not(feature = "ui"))]
+        {
+            let _ = (port, workspace, file);
+            return Err(AppError::UiNotAvailable);
+        }
+    }
 
     // Self-heal FD limits on gates without systemd LimitNOFILE configuration.
     let fd_limit = petal_tongue_core::platform_substrate::raise_fd_limit();

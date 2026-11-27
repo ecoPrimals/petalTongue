@@ -25,6 +25,7 @@ petaltongue server --port 9090  # IPC server (UDS + TCP)
 petaltongue live        # NUCLEUS interactive (IPC + GUI in one process)
 petaltongue live --port 9090    # live mode with TCP listener
 petaltongue status      # System status
+petaltongue ide         # Gaia IDE in a window of its own (a face for biomeOS's gaia-ide server)
 ```
 
 See [START_HERE.md](./START_HERE.md) for configuration and development setup.
