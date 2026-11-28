@@ -20,7 +20,7 @@ use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 
 use super::http::{Door, Failure, TOKEN_HEADER, query};
-use super::state::{Entry, Event, Model, NotSaved};
+use super::state::{ChangeReport, Entry, Event, GitChange, Model, NotSaved};
 
 /// The port the IDE's server listens on unless told otherwise.
 pub const DEFAULT_PORT: u16 = 3142;
@@ -202,6 +202,22 @@ impl Link {
         });
     }
 
+    /// Read what has changed since the last commit in `path`'s repository.
+    pub fn changes(&self, path: String) {
+        let place = self.place.clone();
+        self.ask(async move {
+            let found = async {
+                let answer = place
+                    .door()?
+                    .get(&format!("/api/git/status?path={}", query(&path)))
+                    .await?;
+                Ok(changes_of(&answer))
+            }
+            .await;
+            Event::Changes { of: path, found }
+        });
+    }
+
     /// Ask which models there are.
     pub fn models(&self) {
         let place = self.place.clone();
@@ -341,6 +357,32 @@ async fn converse(
                 Some(Err(e)) => return e.to_string(),
             },
         }
+    }
+}
+
+/// What has changed since the last commit, as the server said it.
+fn changes_of(answer: &Value) -> ChangeReport {
+    let status = &answer["status"];
+    let files = status["files"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|file| {
+            Some(GitChange {
+                path: file["path"].as_str()?.to_string(),
+                staged: file["staged"].as_str().and_then(|s| s.chars().next())?,
+                unstaged: file["unstaged"].as_str().and_then(|s| s.chars().next())?,
+                conflict: file["conflict"].as_bool().unwrap_or(false),
+            })
+        })
+        .collect();
+    ChangeReport {
+        repo: answer["repo"].as_str().map(str::to_string),
+        branch: status["branch"].as_str().map(str::to_string),
+        ahead: status["ahead"].as_u64().unwrap_or(0),
+        behind: status["behind"].as_u64().unwrap_or(0),
+        clipped: status["clipped"].as_bool().unwrap_or(false),
+        files,
     }
 }
 

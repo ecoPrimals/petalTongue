@@ -66,7 +66,8 @@ fn the_first_folder_the_server_may_open_becomes_the_workspace() {
         vec![
             Action::Models,
             Action::Reach,
-            Action::List("/work".to_string())
+            Action::List("/work".to_string()),
+            Action::Changes("/work".to_string())
         ]
     );
     assert_eq!(state.dirs.get("/work"), Some(&Dir::Loading));
@@ -291,7 +292,13 @@ fn a_file_saved_into_a_listed_folder_has_the_folder_read_again() {
         "/work/a.rs".to_string(),
         Ok(("one\n".to_string(), Some(2))),
     ));
-    assert_eq!(next, vec![Action::List("/work".to_string())]);
+    assert_eq!(
+        next,
+        vec![
+            Action::List("/work".to_string()),
+            Action::Changes("/work".to_string())
+        ]
+    );
 }
 
 #[test]
@@ -803,7 +810,10 @@ fn choosing_another_folder_reads_it_and_forgets_the_old_tree() {
     ));
     assert_eq!(
         state.set_workspace("/other/"),
-        vec![Action::List("/other".to_string())]
+        vec![
+            Action::List("/other".to_string()),
+            Action::Changes("/other".to_string())
+        ]
     );
     assert_eq!(state.workspace, "/other");
     assert!(!state.dirs.contains_key("/work"));
@@ -898,4 +908,73 @@ fn a_call_written_out_is_known_by_its_shape() {
     ));
     assert!(!is_a_call_written_out("{\"name\": \"x\"}"));
     assert!(!is_a_call_written_out(""));
+}
+
+fn report(path: &str, staged: char, unstaged: char) -> ChangeReport {
+    ChangeReport {
+        repo: Some("/work".to_string()),
+        branch: Some("main".to_string()),
+        ahead: 2,
+        behind: 0,
+        clipped: false,
+        files: vec![GitChange {
+            path: path.to_string(),
+            staged,
+            unstaged,
+            conflict: false,
+        }],
+    }
+}
+
+#[test]
+fn changes_since_the_last_commit_are_kept_and_a_stale_answer_is_not() {
+    let mut state = connected();
+    assert_eq!(state.changes, GitChanges::Loading);
+    state.apply(Event::Changes {
+        of: "/work".to_string(),
+        found: Ok(report("src/a.rs", '.', 'M')),
+    });
+    let GitChanges::Ready(kept) = &state.changes else {
+        panic!("the changes are kept");
+    };
+    assert_eq!(kept.files[0].word(), "changed");
+    assert_eq!(kept.files[0].full("/work"), "/work/src/a.rs");
+    assert_eq!(kept.ahead, 2);
+
+    state.apply(Event::Changes {
+        of: "/elsewhere".to_string(),
+        found: Err("gone".to_string()),
+    });
+    assert!(matches!(state.changes, GitChanges::Ready(_)));
+
+    state.apply(Event::Changes {
+        of: "/work".to_string(),
+        found: Ok(ChangeReport {
+            repo: None,
+            branch: None,
+            ahead: 0,
+            behind: 0,
+            files: Vec::new(),
+            clipped: false,
+        }),
+    });
+    assert_eq!(state.changes, GitChanges::NotARepo);
+}
+
+#[test]
+fn the_words_for_a_change() {
+    let word = |staged, unstaged, conflict| {
+        GitChange {
+            path: "a".to_string(),
+            staged,
+            unstaged,
+            conflict,
+        }
+        .word()
+    };
+    assert_eq!(word('.', '?', false), "new");
+    assert_eq!(word('A', '.', false), "added");
+    assert_eq!(word('.', 'D', false), "deleted");
+    assert_eq!(word('R', '.', false), "renamed");
+    assert_eq!(word('.', 'M', true), "conflict");
 }

@@ -184,6 +184,76 @@ pub struct NotSaved {
     pub changed_on_disk: bool,
 }
 
+/// One file changed since the last commit.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GitChange {
+    /// Its path inside the repository.
+    pub path: String,
+    /// What is staged: a letter (`M`, `A`, `D`, `R`, …) or `.` for nothing.
+    pub staged: char,
+    /// What is changed and not staged; `?` for a file git does not track yet.
+    pub unstaged: char,
+    /// Both sides changed it and git could not join them.
+    pub conflict: bool,
+}
+
+impl GitChange {
+    /// A word for the kind of change, for the list.
+    pub fn word(&self) -> &'static str {
+        if self.conflict {
+            return "conflict";
+        }
+        match (self.staged, self.unstaged) {
+            (_, '?') => "new",
+            ('D', _) | (_, 'D') => "deleted",
+            ('R', _) | (_, 'R') => "renamed",
+            ('A', _) | (_, 'A') => "added",
+            _ => "changed",
+        }
+    }
+
+    /// The file's whole path, from the repository's top.
+    pub fn full(&self, repo: &str) -> String {
+        if self.path.starts_with('/') {
+            self.path.clone()
+        } else {
+            format!("{}/{}", repo.trim_end_matches('/'), self.path)
+        }
+    }
+}
+
+/// What the server said has changed since the last commit.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ChangeReport {
+    /// The repository's top. `None` when the folder is not in one.
+    pub repo: Option<String>,
+    /// The branch, when one is checked out.
+    pub branch: Option<String>,
+    /// Commits here that the followed branch does not have.
+    pub ahead: u64,
+    /// Commits there that are not here.
+    pub behind: u64,
+    /// The files that differ from the last commit.
+    pub files: Vec<GitChange>,
+    /// More files changed than are listed.
+    pub clipped: bool,
+}
+
+/// What the window knows of those changes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GitChanges {
+    /// Not asked yet.
+    Unknown,
+    /// Asked for, not answered yet.
+    Loading,
+    /// The folder is not inside a git repository.
+    NotARepo,
+    /// Read.
+    Ready(ChangeReport),
+    /// Why it could not be read.
+    Failed(String),
+}
+
 /// What came back from the server.
 #[derive(Debug, Clone)]
 pub enum Event {
@@ -216,6 +286,13 @@ pub enum Event {
     Agent(Value),
     /// The agent's connection ended.
     AgentClosed(String),
+    /// What has changed since the last commit in the folder `of`.
+    Changes {
+        /// The folder that was asked about.
+        of: String,
+        /// What the server said.
+        found: Result<ChangeReport, String>,
+    },
 }
 
 /// What the user (or an event) asks the link to do.
@@ -238,6 +315,8 @@ pub enum Action {
     Reach,
     /// Send this to the agent.
     Agent(Value),
+    /// Read what has changed since the last commit in this folder.
+    Changes(String),
 }
 
 /// Everything the window knows.
@@ -253,6 +332,8 @@ pub struct State {
     pub workspace_typed: String,
     /// What is known of each folder asked about.
     pub dirs: BTreeMap<String, Dir>,
+    /// What has changed since the last commit in the workspace.
+    pub changes: GitChanges,
     /// The files open in the editor.
     pub buffers: Vec<Buffer>,
     /// Which of them is shown.
@@ -304,6 +385,7 @@ impl State {
             workspace_typed: workspace.clone(),
             workspace,
             dirs: BTreeMap::new(),
+            changes: GitChanges::Unknown,
             buffers: Vec::new(),
             current: None,
             closing: None,
@@ -395,10 +477,12 @@ impl State {
                 }
                 // A new file shows up in its folder.
                 let parent = parent_of(&path);
+                let mut next = Vec::new();
                 if self.dirs.contains_key(parent) {
-                    return vec![Action::List(parent.to_string())];
+                    next.push(Action::List(parent.to_string()));
                 }
-                Vec::new()
+                next.extend(self.ask_changes());
+                next
             }
             Event::Models(Ok((models, via))) => {
                 self.models = models.into_iter().filter(|m| m.tools).collect();
@@ -441,7 +525,27 @@ impl State {
                 }
                 Vec::new()
             }
+            Event::Changes { of, found } => {
+                // An answer for a folder the user has since left is stale.
+                if of == self.workspace {
+                    self.changes = match found {
+                        Err(why) => GitChanges::Failed(why),
+                        Ok(report) if report.repo.is_none() => GitChanges::NotARepo,
+                        Ok(report) => GitChanges::Ready(report),
+                    };
+                }
+                Vec::new()
+            }
         }
+    }
+
+    /// Ask what has changed since the last commit in the workspace.
+    fn ask_changes(&mut self) -> Vec<Action> {
+        if self.workspace.is_empty() {
+            return Vec::new();
+        }
+        self.changes = GitChanges::Loading;
+        vec![Action::Changes(self.workspace.clone())]
     }
 
     /// Make `workspace` the folder shown in the tree.
@@ -451,7 +555,9 @@ impl State {
         }
         self.dirs.clear();
         self.dirs.insert(self.workspace.clone(), Dir::Loading);
-        vec![Action::List(self.workspace.clone())]
+        let mut next = vec![Action::List(self.workspace.clone())];
+        next.extend(self.ask_changes());
+        next
     }
 
     /// The user chose another folder to work in.

@@ -109,6 +109,7 @@ impl Session {
                 Action::Models => self.link.models(),
                 Action::Reach => self.link.reach(),
                 Action::Agent(message) => self.link.agent(&message),
+                Action::Changes(path) => self.link.changes(path),
             }
         }
     }

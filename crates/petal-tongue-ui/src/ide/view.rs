@@ -11,7 +11,10 @@ use std::sync::Arc;
 
 use egui::{Align, Color32, Key, Layout, Modifiers, RichText, ScrollArea, TextEdit};
 
-use super::state::{Action, Buffer, Change, Dir, Item, Proposal, Server, State, Step, StepState};
+use super::state::{
+    Action, Buffer, Change, ChangeReport, Dir, GitChanges, Item, Proposal, Server, State, Step,
+    StepState,
+};
 
 /// The most lines of a proposed change shown in the chat. The whole of it
 /// is seen in the editor once applied.
@@ -241,6 +244,8 @@ fn tree_panel(ui: &mut egui::Ui, state: &mut State, actions: &mut Vec<Action>) {
         });
     });
     ui.separator();
+    changes_block(ui, state, actions);
+    ui.separator();
 
     let mut wants = Vec::new();
     let current = state.buffer().map(|b| b.path.clone());
@@ -267,6 +272,70 @@ fn tree_panel(ui: &mut egui::Ui, state: &mut State, actions: &mut Vec<Action>) {
 enum Want {
     List(String),
     File(String),
+}
+
+/// The files that differ from the last commit, above the tree.
+fn changes_block(ui: &mut egui::Ui, state: &mut State, actions: &mut Vec<Action>) {
+    let title = match &state.changes {
+        GitChanges::Ready(report) if !report.files.is_empty() => {
+            format!("Changes ({})", report.files.len())
+        }
+        _ => "Changes".to_string(),
+    };
+    let mut open_these = Vec::new();
+    egui::CollapsingHeader::new(RichText::new(title).strong())
+        .default_open(true)
+        .id_salt("ide_changes")
+        .show(ui, |ui| match &state.changes {
+            GitChanges::Unknown | GitChanges::Loading => {
+                ui.weak("reading…");
+            }
+            GitChanges::NotARepo => {
+                ui.weak("This folder is not in a git repository.");
+            }
+            GitChanges::Failed(why) => {
+                ui.colored_label(ui.visuals().error_fg_color, why);
+            }
+            GitChanges::Ready(report) => {
+                ui.weak(changes_line(report));
+                if report.files.is_empty() {
+                    ui.weak("Nothing changed since the last commit.");
+                }
+                ScrollArea::vertical()
+                    .id_salt("ide_changes_scroll")
+                    .max_height(180.0)
+                    .show(ui, |ui| {
+                        for file in &report.files {
+                            let label = format!("{}  {}", file.word(), file.path);
+                            if ui.selectable_label(false, label).clicked() {
+                                if let Some(repo) = &report.repo {
+                                    open_these.push(file.full(repo));
+                                }
+                            }
+                        }
+                    });
+                if report.clipped {
+                    ui.weak("More files changed than are listed.");
+                }
+            }
+        });
+    for path in open_these {
+        actions.extend(state.want_file(&path));
+    }
+}
+
+fn changes_line(report: &ChangeReport) -> String {
+    let mut line = report
+        .branch
+        .clone()
+        .unwrap_or_else(|| "no branch".to_string());
+    if report.ahead > 0 {
+        let _ = write!(line, " · {} to push", report.ahead);
+    }
+    if report.behind > 0 {
+        let _ = write!(line, " · {} to pull", report.behind);
+    }
+    line
 }
 
 fn tree(
@@ -522,9 +591,10 @@ fn welcome(ui: &mut egui::Ui) {
         ui.add_space(12.0);
         ui.label(
             RichText::new(
-                "This window is younger than the IDE's page in the browser. The terminal, \
-                 the list of changes since the last commit, finding a file by name, and \
-                 renaming or deleting files are on the page and not here yet.",
+                "This window is younger than the IDE's page in the browser. The list of \
+                 changes since the last commit is under the folder's name. The terminal, \
+                 finding a file by name, and renaming or deleting files are on the page \
+                 and not here yet.",
             )
             .weak(),
         );
